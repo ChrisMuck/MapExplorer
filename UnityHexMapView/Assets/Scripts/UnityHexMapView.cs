@@ -197,8 +197,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["TreeTrunk"] = Material("Tree Trunk", "4c3327", 0.82f);
         featureMaterials["TreeCrown"] = Material("Tree Crown", "2a613f", 0.86f);
         featureMaterials["TreeCrownDark"] = Material("Tree Crown Dark", "1b3f2d", 0.9f);
+        featureMaterials["ForestCover"] = Material("Forest Cover", "203d2d", 0.88f);
         featureMaterials["Rock"] = Material("Rock", "777b71", 0.9f);
         featureMaterials["DarkRock"] = Material("Dark Rock", "383c36", 0.92f);
+        featureMaterials["MountainBlock"] = Material("Mountain Block", "6c6a5d", 0.92f);
+        featureMaterials["SnowBlock"] = Material("Snow Block", "c8c8aa", 0.86f);
         featureMaterials["SnowCap"] = Material("Snow Cap", "d8dedb", 0.72f);
         featureMaterials["Flag"] = Material("Flag", "c4574d", 0.62f);
         featureMaterials["Gold"] = Material("Ore Gold", "c89d3b", 0.58f);
@@ -414,30 +417,42 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var region = regions[regionIndex];
             var root = NewChild($"ForestRegion_{regionIndex:D2}");
-            var maxTrees = Mathf.Clamp(region.Count * 3, 4, 80);
-            var treeIndex = 0;
 
-            for (var i = 0; i < region.Count && treeIndex < maxTrees; i++)
+            for (var i = 0; i < region.Count; i++)
             {
                 var coord = region[i];
-                if (!tiles.TryGetValue(coord, out var tile))
-                {
-                    continue;
-                }
-
-                var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
-                var treeCount = interior ? 3 : 2;
-                for (var j = 0; j < treeCount && treeIndex < maxTrees; j++)
-                {
-                    var angle = Hash01(coord.x, coord.y, 21000 + j) * Mathf.PI * 2f;
-                    var radius = Mathf.Lerp(0.16f, interior ? 0.74f : 0.58f, Hash01(coord.y, coord.x, 21100 + j)) * hexSize;
-                    var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                    var leanToNeighbor = ForestNeighborOffset(coord, j) * (interior ? 0.22f : 0.34f);
-                    var position = tile.World + offset + leanToNeighbor + Vector3.up * (VisualTileTopY + 0.04f);
-                    AddTreeAt(root.transform, position, coord, treeIndex);
-                    treeIndex++;
-                }
+                AddForestHexCluster(root.transform, coord, regionIndex * 1000 + i);
             }
+        }
+    }
+
+    private void AddForestHexCluster(Transform parent, Vector2Int coord, int seedOffset)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
+        var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", parent);
+        cover.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.035f);
+        cover.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 20500) * 60f, 0f);
+        AddMesh(cover, "Cover", CylinderMesh(0.88f * hexSize, 0.96f * hexSize, 0.08f, 6), featureMaterials["ForestCover"]);
+
+        var treeCount = interior ? 8 : 6;
+        for (var i = 0; i < treeCount; i++)
+        {
+            var angle = i * Mathf.PI * 2f / treeCount + Mathf.Lerp(-0.2f, 0.2f, Hash01(coord.x, coord.y, seedOffset + i));
+            var ring = i == 0 ? 0.08f : Mathf.Lerp(0.34f, 0.78f, Hash01(coord.y, coord.x, seedOffset + 80 + i));
+            if (i == treeCount - 1 && interior)
+            {
+                ring = 0.92f;
+            }
+
+            var neighborPull = ForestNeighborOffset(coord, i) * (interior ? 0.18f : 0.28f);
+            var offset = new Vector3(Mathf.Cos(angle) * ring * hexSize, 0f, Mathf.Sin(angle) * ring * hexSize) + neighborPull;
+            var position = tile.World + offset + Vector3.up * (VisualTileTopY + 0.07f);
+            AddTreeAt(parent, position, coord, seedOffset + i, interior ? 1.28f : 1.12f);
         }
     }
 
@@ -465,7 +480,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var region = regions[regionIndex];
             var root = NewChild($"MountainRange_{regionIndex:D2}");
-            var maxPeaks = Mathf.Clamp(region.Count, 2, 42);
+            var foundationHeight = Mathf.Lerp(0.22f, 0.48f, Mathf.Clamp01(region.Count / 18f)) * hexSize;
+            AddMountainFoundation(root, region, foundationHeight);
+
+            var maxPeaks = Mathf.Clamp(region.Count * 2, 3, 70);
             var peakIndex = 0;
 
             region.Sort((a, b) => MountainRangeStrength(b).CompareTo(MountainRangeStrength(a)));
@@ -478,20 +496,44 @@ public sealed class UnityHexMapView : MonoBehaviour
                 }
 
                 var ridgeStrength = Mathf.Max(MountainRangeStrength(coord), CountMatchingNeighbors(coord, IsMountainTerrain) / 6f);
-                var skipChance = Mathf.Lerp(0.52f, 0.12f, ridgeStrength);
-                if (peakIndex > 1 && Hash01(coord.x, coord.y, 22000) < skipChance)
+                var skipChance = Mathf.Lerp(0.42f, 0.06f, ridgeStrength);
+                if (peakIndex > 2 && Hash01(coord.x, coord.y, 22000) < skipChance)
                 {
                     continue;
                 }
 
-                var angle = Hash01(coord.x, coord.y, 22100) * Mathf.PI * 2f;
-                var radius = Mathf.Lerp(0.04f, 0.32f, Hash01(coord.y, coord.x, 22200)) * hexSize;
-                var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                var position = tile.World + offset;
-                AddMountainAt(root.transform, position, coord, tiles[coord].Terrain == TerrainKind.Snow, ridgeStrength);
-                peakIndex++;
+                var peaksOnHex = ridgeStrength > 0.68f ? 2 : 1;
+                for (var j = 0; j < peaksOnHex && peakIndex < maxPeaks; j++)
+                {
+                    var angle = (j / (float)peaksOnHex) * Mathf.PI * 2f + Hash01(coord.x, coord.y, 22100 + j) * 0.9f;
+                    var radius = Mathf.Lerp(0.04f, 0.36f, Hash01(coord.y, coord.x, 22200 + j)) * hexSize;
+                    var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                    var position = tile.World + offset;
+                    AddMountainAt(root.transform, position, coord, tiles[coord].Terrain == TerrainKind.Snow, ridgeStrength, VisualTileTopY + foundationHeight);
+                    peakIndex++;
+                }
             }
         }
+    }
+
+    private void AddMountainFoundation(GameObject root, IReadOnlyList<Vector2Int> region, float height)
+    {
+        var hasSnow = RegionHasSnow(region);
+        var mesh = MountainFoundationMesh(region, height);
+        AddMesh(root, "MountainFoundation", mesh, hasSnow ? featureMaterials["SnowBlock"] : featureMaterials["MountainBlock"]);
+    }
+
+    private bool RegionHasSnow(IReadOnlyList<Vector2Int> region)
+    {
+        foreach (var coord in region)
+        {
+            if (tiles.TryGetValue(coord, out var tile) && tile.Terrain == TerrainKind.Snow)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<List<Vector2Int>> FindTerrainRegions(TerrainMatcher matcher)
@@ -549,6 +591,67 @@ public sealed class UnityHexMapView : MonoBehaviour
         return count;
     }
 
+    private Mesh MountainFoundationMesh(IReadOnlyList<Vector2Int> region, float height)
+    {
+        var regionSet = new HashSet<Vector2Int>(region);
+        var vertices = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+        var topY = VisualTileTopY + height;
+        var bottomY = VisualTileTopY + 0.015f;
+        var radius = hexSize * 0.995f;
+
+        foreach (var coord in region)
+        {
+            if (!tiles.TryGetValue(coord, out var tile))
+            {
+                continue;
+            }
+
+            for (var i = 0; i < 6; i++)
+            {
+                var a = HexCorner(radius, i);
+                var b = HexCorner(radius, (i + 1) % 6);
+                var start = vertices.Count;
+                vertices.Add(tile.World + new Vector3(0f, topY, 0f)); uvs.Add(new Vector2(0.5f, 0.5f));
+                vertices.Add(tile.World + new Vector3(b.x, topY + CornerLift(coord, i + 1), b.y)); uvs.Add(TopUv(b, radius));
+                vertices.Add(tile.World + new Vector3(a.x, topY + CornerLift(coord, i), a.y)); uvs.Add(TopUv(a, radius));
+                triangles.Add(start);
+                triangles.Add(start + 1);
+                triangles.Add(start + 2);
+            }
+
+            for (var i = 0; i < 6; i++)
+            {
+                if (regionSet.Contains(coord + Directions[i]))
+                {
+                    continue;
+                }
+
+                var a = HexCorner(radius, i);
+                var b = HexCorner(radius, (i + 1) % 6);
+                var start = vertices.Count;
+                vertices.Add(tile.World + new Vector3(a.x, topY + CornerLift(coord, i), a.y)); uvs.Add(new Vector2(i / 6f, 0f));
+                vertices.Add(tile.World + new Vector3(b.x, topY + CornerLift(coord, i + 1), b.y)); uvs.Add(new Vector2((i + 1) / 6f, 0f));
+                vertices.Add(tile.World + new Vector3(a.x, bottomY, a.y)); uvs.Add(new Vector2(i / 6f, 1f));
+                vertices.Add(tile.World + new Vector3(b.x, bottomY, b.y)); uvs.Add(new Vector2((i + 1) / 6f, 1f));
+                triangles.Add(start);
+                triangles.Add(start + 1);
+                triangles.Add(start + 2);
+                triangles.Add(start + 2);
+                triangles.Add(start + 1);
+                triangles.Add(start + 3);
+            }
+        }
+
+        return MeshFrom(vertices, uvs, triangles, "MountainFoundation");
+    }
+
+    private float CornerLift(Vector2Int coord, int corner)
+    {
+        return Mathf.Lerp(-0.035f, 0.055f, Hash01(coord.x, coord.y, 24000 + corner)) * hexSize;
+    }
+
     private delegate bool TerrainMatcher(TerrainKind terrain);
 
     private static bool IsForestTerrain(TerrainKind terrain)
@@ -568,13 +671,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         AddTreeAt(parent, new Vector3(Mathf.Cos(angle) * distance, elevation + 0.04f, Mathf.Sin(angle) * distance), coord, index);
     }
 
-    private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index)
+    private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index, float scaleMultiplier = 1f)
     {
         var root = NewChild("Tree", parent);
         root.transform.localPosition = localPosition;
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, index + 91) * 360f, 0f);
         var scale = Mathf.Lerp(0.78f, 1.28f, Hash01(coord.x, coord.y, index + 151));
-        root.transform.localScale = Vector3.one * scale;
+        root.transform.localScale = Vector3.one * scale * scaleMultiplier;
 
         var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         trunk.name = "Trunk";
