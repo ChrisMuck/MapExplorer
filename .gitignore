@@ -1,0 +1,39 @@
+# Godot
+.godot/
+*.translation
+
+# Unity generated folders
+UnityHexMapView/Library/
+UnityHexMapView/Temp/
+UnityHexMapView/Obj/
+UnityHexMapView/Build/
+UnityHexMapView/Builds/
+UnityHexMapView/Logs/
+UnityHexMapView/UserSettings/
+UnityHexMapView/MemoryCaptures/
+
+# Unity generated files
+UnityHexMapView/*.csproj
+UnityHexMapView/*.sln
+UnityHexMapView/*.suo
+UnityHexMapView/*.tmp
+UnityHexMapView/*.user
+UnityHexMapView/*.userprefs
+UnityHexMapView/*.pidb
+UnityHexMapView/*.booproj
+UnityHexMapView/*.svd
+UnityHexMapView/*.pdb
+UnityHexMapView/*.mdb
+UnityHexMapView/*.opendb
+UnityHexMapView/*.VC.db
+UnityHexMapView/sysinfo.txt
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+
+# Codex/local agent workspace
+.agents/
+.codex/
