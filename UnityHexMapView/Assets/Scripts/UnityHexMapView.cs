@@ -197,8 +197,12 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["TreeTrunk"] = Material("Tree Trunk", "4c3327", 0.82f);
         featureMaterials["TreeCrown"] = Material("Tree Crown", "2a613f", 0.86f);
         featureMaterials["TreeCrownDark"] = Material("Tree Crown Dark", "1b3f2d", 0.9f);
+        featureMaterials["ForestMass"] = TransparentMaterial("Forest Mass", "17281d", 0.34f);
+        featureMaterials["ForestFloor"] = TransparentMaterial("Forest Floor", "1e3425", 0.26f);
         featureMaterials["Rock"] = Material("Rock", "777b71", 0.9f);
         featureMaterials["DarkRock"] = Material("Dark Rock", "383c36", 0.92f);
+        featureMaterials["RidgeBase"] = Material("Ridge Base", "56574e", 0.92f);
+        featureMaterials["RidgeSnow"] = TransparentMaterial("Ridge Snow", "d8d8bf", 0.5f);
         featureMaterials["SnowCap"] = Material("Snow Cap", "d8dedb", 0.72f);
         featureMaterials["Flag"] = Material("Flag", "c4574d", 0.62f);
         featureMaterials["Gold"] = Material("Ore Gold", "c89d3b", 0.58f);
@@ -414,29 +418,52 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var region = regions[regionIndex];
             var root = NewChild($"ForestRegion_{regionIndex:D2}");
-            var maxTrees = Mathf.Clamp(region.Count * 3, 4, 80);
-            var treeIndex = 0;
+            AddForestRegionGround(root, region, regionIndex);
 
-            for (var i = 0; i < region.Count && treeIndex < maxTrees; i++)
+            var treeTotal = Mathf.Clamp(Mathf.RoundToInt(region.Count * 4.8f), 8, 150);
+            for (var treeIndex = 0; treeIndex < treeTotal; treeIndex++)
             {
-                var coord = region[i];
+                var coord = PickRegionCoord(region, regionIndex, treeIndex, 5);
                 if (!tiles.TryGetValue(coord, out var tile))
                 {
                     continue;
                 }
 
                 var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
-                var treeCount = interior ? 3 : 2;
-                for (var j = 0; j < treeCount && treeIndex < maxTrees; j++)
-                {
-                    var angle = Hash01(coord.x, coord.y, 21000 + j) * Mathf.PI * 2f;
-                    var radius = Mathf.Lerp(0.16f, interior ? 0.74f : 0.58f, Hash01(coord.y, coord.x, 21100 + j)) * hexSize;
-                    var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                    var leanToNeighbor = ForestNeighborOffset(coord, j) * (interior ? 0.22f : 0.34f);
-                    var position = tile.World + offset + leanToNeighbor + Vector3.up * (VisualTileTopY + 0.04f);
-                    AddTreeAt(root.transform, position, coord, treeIndex);
-                    treeIndex++;
-                }
+                var angle = Hash01(coord.x, coord.y, 21000 + treeIndex) * Mathf.PI * 2f;
+                var radius = Mathf.Lerp(0.08f, interior ? 0.92f : 0.7f, Hash01(coord.y, coord.x, 21100 + treeIndex)) * hexSize;
+                var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                var leanToNeighbor = ForestNeighborOffset(coord, treeIndex) * Mathf.Lerp(0.08f, interior ? 0.42f : 0.58f, Hash01(coord.x, coord.y, 21200 + treeIndex));
+                var position = tile.World + offset + leanToNeighbor + Vector3.up * (VisualTileTopY + 0.04f);
+                AddTreeAt(root.transform, position, coord, treeIndex);
+            }
+        }
+    }
+
+    private void AddForestRegionGround(GameObject root, IReadOnlyList<Vector2Int> region, int regionIndex)
+    {
+        if (region.Count == 0)
+        {
+            return;
+        }
+
+        var blobCount = Mathf.Clamp(Mathf.CeilToInt(region.Count / 5f), 1, 12);
+        for (var i = 0; i < blobCount; i++)
+        {
+            var centerCoord = PickRegionCoord(region, regionIndex, i, 17);
+            if (!tiles.TryGetValue(centerCoord, out var centerTile))
+            {
+                continue;
+            }
+
+            var neighborCount = CountMatchingNeighbors(centerCoord, IsForestTerrain);
+            var radius = Mathf.Lerp(1.05f, 2.25f, Mathf.Clamp01((neighborCount + region.Count * 0.08f) / 7f)) * hexSize;
+            var y = VisualTileTopY + 0.024f + i * 0.001f;
+            AddMesh(root, $"ForestFloor_{i}", IrregularDiskMesh(centerTile.World, radius, y, 14, regionIndex * 101 + i), featureMaterials["ForestFloor"]);
+
+            if (region.Count > 2)
+            {
+                AddMesh(root, $"ForestMass_{i}", IrregularDiskMesh(centerTile.World + Vector3.up * 0.03f, radius * 0.8f, y + 0.08f, 12, regionIndex * 151 + i), featureMaterials["ForestMass"]);
             }
         }
     }
@@ -465,11 +492,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var region = regions[regionIndex];
             var root = NewChild($"MountainRange_{regionIndex:D2}");
-            var maxPeaks = Mathf.Clamp(region.Count, 2, 42);
+            AddMountainRidgeBase(root, region, regionIndex);
+
+            var maxPeaks = Mathf.Clamp(Mathf.CeilToInt(region.Count * 0.42f), 2, 24);
             var peakIndex = 0;
 
             region.Sort((a, b) => MountainRangeStrength(b).CompareTo(MountainRangeStrength(a)));
-            for (var i = 0; i < region.Count && peakIndex < maxPeaks; i++)
+            for (var i = 0; i < region.Count && peakIndex < maxPeaks; i += 2)
             {
                 var coord = region[i];
                 if (!tiles.TryGetValue(coord, out var tile))
@@ -478,8 +507,8 @@ public sealed class UnityHexMapView : MonoBehaviour
                 }
 
                 var ridgeStrength = Mathf.Max(MountainRangeStrength(coord), CountMatchingNeighbors(coord, IsMountainTerrain) / 6f);
-                var skipChance = Mathf.Lerp(0.52f, 0.12f, ridgeStrength);
-                if (peakIndex > 1 && Hash01(coord.x, coord.y, 22000) < skipChance)
+                var skipChance = Mathf.Lerp(0.68f, 0.22f, ridgeStrength);
+                if (peakIndex > 2 && Hash01(coord.x, coord.y, 22000) < skipChance)
                 {
                     continue;
                 }
@@ -492,6 +521,63 @@ public sealed class UnityHexMapView : MonoBehaviour
                 peakIndex++;
             }
         }
+    }
+
+    private void AddMountainRidgeBase(GameObject root, List<Vector2Int> region, int regionIndex)
+    {
+        if (region.Count < 2)
+        {
+            return;
+        }
+
+        var path = new List<Vector3>();
+        var sorted = new List<Vector2Int>(region);
+        sorted.Sort((a, b) =>
+        {
+            var pa = a.x * 1.2f + a.y * 0.45f;
+            var pb = b.x * 1.2f + b.y * 0.45f;
+            return pa.CompareTo(pb);
+        });
+
+        var step = Mathf.Max(1, sorted.Count / 18);
+        for (var i = 0; i < sorted.Count; i += step)
+        {
+            if (tiles.TryGetValue(sorted[i], out var tile))
+            {
+                path.Add(tile.World + Vector3.up * (VisualTileTopY + 0.035f));
+            }
+        }
+
+        if (path.Count < 2 && tiles.TryGetValue(sorted[^1], out var lastTile))
+        {
+            path.Add(lastTile.World + Vector3.up * (VisualTileTopY + 0.035f));
+        }
+
+        if (path.Count < 2)
+        {
+            return;
+        }
+
+        var smoothPath = SmoothPath(path, 3);
+        AddMesh(root, $"RidgeBase_{regionIndex}", RibbonMesh(smoothPath, Mathf.Lerp(1.4f, 2.2f, Mathf.Clamp01(region.Count / 24f)) * hexSize), featureMaterials["RidgeBase"]);
+
+        if (RegionHasSnow(region))
+        {
+            AddMesh(root, $"RidgeSnow_{regionIndex}", RibbonMesh(RaisePoints(smoothPath, 0.025f), Mathf.Lerp(0.72f, 1.15f, Mathf.Clamp01(region.Count / 24f)) * hexSize), featureMaterials["RidgeSnow"]);
+        }
+    }
+
+    private bool RegionHasSnow(IReadOnlyList<Vector2Int> region)
+    {
+        foreach (var coord in region)
+        {
+            if (tiles.TryGetValue(coord, out var tile) && tile.Terrain == TerrainKind.Snow)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<List<Vector2Int>> FindTerrainRegions(TerrainMatcher matcher)
@@ -547,6 +633,52 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         return count;
+    }
+
+    private Vector2Int PickRegionCoord(IReadOnlyList<Vector2Int> region, int regionIndex, int index, int salt)
+    {
+        if (region.Count == 0)
+        {
+            return Vector2Int.zero;
+        }
+
+        unchecked
+        {
+            var h = mapSeed;
+            h = h * 73856093 ^ regionIndex * 19349663;
+            h = h * 83492791 ^ index * 297121507;
+            h = h * 1103515245 ^ salt * 12345;
+            return region[(h & 0x7fffffff) % region.Count];
+        }
+    }
+
+    private Mesh IrregularDiskMesh(Vector3 center, float radius, float y, int segments, int seedOffset)
+    {
+        var vertices = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        vertices.Add(new Vector3(center.x, y, center.z));
+        uvs.Add(new Vector2(0.5f, 0.5f));
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.72f, 1.18f, Hash01(seedOffset, i, 23000));
+            var pointRadius = radius * wobble;
+            var point = new Vector3(center.x + Mathf.Cos(angle) * pointRadius, y, center.z + Mathf.Sin(angle) * pointRadius);
+            vertices.Add(point);
+            uvs.Add(new Vector2(Mathf.Cos(angle) * 0.5f + 0.5f, Mathf.Sin(angle) * 0.5f + 0.5f));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            triangles.Add(0);
+            triangles.Add(1 + (i + 1) % segments);
+            triangles.Add(1 + i);
+        }
+
+        return MeshFrom(vertices, uvs, triangles, "IrregularDisk");
     }
 
     private delegate bool TerrainMatcher(TerrainKind terrain);
@@ -649,8 +781,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         ridgeStrength = Mathf.Clamp01(Mathf.Max(0.32f, ridgeStrength));
         var rotation = Hash01(coord.x, coord.y, 5021) * 360f;
-        var height = Mathf.Lerp(0.82f, 1.55f, ridgeStrength) * hexSize;
-        var baseRadius = Mathf.Lerp(0.42f, 0.64f, ridgeStrength) * hexSize;
+        var height = Mathf.Lerp(1.08f, 2.05f, ridgeStrength) * hexSize;
+        var baseRadius = Mathf.Lerp(0.56f, 0.9f, ridgeStrength) * hexSize;
         var capHeight = height * 0.28f;
 
         var root = NewChild("Mountain", parent);
