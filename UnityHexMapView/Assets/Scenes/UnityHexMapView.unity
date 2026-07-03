@@ -169,4 +169,7 @@ MonoBehaviour:
   zoomedInSize: 5
   zoomedOutSize: 24
   zoomSpeed: 3.5
-  showDebugHexGrid: 1
+  showDebugHexGrid: 0
+  showSelectionPreview: 1
+  selectedPreviewHex: {x: 0, y: 0}
+  reachablePreviewRadius: 2

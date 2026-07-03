@@ -29,7 +29,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     [Range(3f, 30f)] public float zoomedInSize = 5f;
     [Range(8f, 60f)] public float zoomedOutSize = 24f;
     [Range(0.5f, 8f)] public float zoomSpeed = 3.5f;
-    public bool showDebugHexGrid = true;
+    public bool showDebugHexGrid = false;
+    public bool showSelectionPreview = true;
+    public Vector2Int selectedPreviewHex = Vector2Int.zero;
+    [Range(0, 8)] public int reachablePreviewRadius = 2;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -40,6 +43,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<string, Material> featureMaterials = new();
     private Transform cameraRig;
     private Camera strategyCamera;
+#if UNITY_EDITOR
+    private bool editorRebuildQueued;
+#endif
 
     private static readonly Vector2Int[] Directions =
     {
@@ -53,14 +59,14 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void OnEnable()
     {
-        Rebuild();
+        RequestRebuild();
     }
 
     private void OnValidate()
     {
         if (isActiveAndEnabled)
         {
-            Rebuild();
+            RequestRebuild();
         }
     }
 
@@ -92,10 +98,47 @@ public sealed class UnityHexMapView : MonoBehaviour
         CreateMaterials();
         BuildMap();
         BuildFeatures();
+        BuildHexOverlays();
         BuildWaterPlane();
         BuildLighting();
         BuildCamera();
     }
+
+    private void RequestRebuild()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            QueueEditorRebuild();
+            return;
+        }
+#endif
+        Rebuild();
+    }
+
+#if UNITY_EDITOR
+    private void QueueEditorRebuild()
+    {
+        if (editorRebuildQueued)
+        {
+            return;
+        }
+
+        editorRebuildQueued = true;
+        UnityEditor.EditorApplication.delayCall += RebuildFromEditorDelay;
+    }
+
+    private void RebuildFromEditorDelay()
+    {
+        editorRebuildQueued = false;
+        if (this == null || !isActiveAndEnabled)
+        {
+            return;
+        }
+
+        Rebuild();
+    }
+#endif
 
     private void ClearGeneratedChildren()
     {
@@ -136,7 +179,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         sideMaterials[TerrainKind.Mountain] = Material("Mountain Side", "3c403c", 0.94f);
         sideMaterials[TerrainKind.Snow] = Material("Snow Side", "7b867f", 0.86f);
 
-        featureMaterials["Rim"] = Material("Hex Rim", "18231d", 0.94f);
+        featureMaterials["DebugHex"] = TransparentMaterial("Debug Hex", "101916", 0.32f);
+        featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "8fd56c", 0.3f);
+        featureMaterials["SelectedHex"] = EmissiveMaterial("Selected Hex", "e8e7b0", "fff5a2", 0.35f);
         featureMaterials["RiverBank"] = Material("River Bank", "244950", 0.82f);
         featureMaterials["River"] = EmissiveMaterial("River", "36a0b9", "74d7ec", 0.08f);
         featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "c7f3ee", 0.16f);
@@ -292,9 +337,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
                 var tile = NewChild($"Hex_{q}_{r}_{terrain}");
                 tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
-                AddMesh(tile, "Top", HexTopMesh(hexSize * 0.96f, VisualTileTopY), topMaterials[terrain]);
-                AddMesh(tile, "Sides", HexSideMesh(hexSize * 0.96f, VisualTileTopY), sideMaterials[terrain]);
-                AddMesh(tile, "Rim", HexRingMesh(hexSize * 0.982f, showDebugHexGrid ? hexSize * 0.925f : hexSize * 0.955f, VisualTileTopY + 0.012f), featureMaterials["Rim"]);
+                AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), topMaterials[terrain]);
                 AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
             }
         }
@@ -557,6 +600,56 @@ public sealed class UnityHexMapView : MonoBehaviour
             new Vector2Int(-12, 10), new Vector2Int(-11, 9), new Vector2Int(-10, 9), new Vector2Int(-9, 8),
             new Vector2Int(-8, 8), new Vector2Int(-7, 7), new Vector2Int(-6, 7), new Vector2Int(-5, 6)
         });
+    }
+
+    private void BuildHexOverlays()
+    {
+        if (showDebugHexGrid)
+        {
+            foreach (var coord in tiles.Keys)
+            {
+                AddHexOverlay(coord, "DebugHex", 0.988f, 0.94f, 0.055f, featureMaterials["DebugHex"]);
+            }
+        }
+
+        if (!showSelectionPreview)
+        {
+            return;
+        }
+
+        foreach (var coord in tiles.Keys)
+        {
+            if (coord == selectedPreviewHex)
+            {
+                continue;
+            }
+
+            if (HexDistance(coord, selectedPreviewHex) <= reachablePreviewRadius)
+            {
+                AddHexOverlay(coord, "ReachableHex", 0.972f, 0.91f, 0.07f, featureMaterials["ReachableHex"]);
+            }
+        }
+
+        AddHexOverlay(selectedPreviewHex, "SelectedHex", 1.005f, 0.88f, 0.09f, featureMaterials["SelectedHex"]);
+    }
+
+    private void AddHexOverlay(Vector2Int coord, string name, float outerScale, float innerScale, float yOffset, Material material)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var overlay = NewChild($"{name}_{coord.x}_{coord.y}");
+        overlay.transform.localPosition = tile.World;
+        AddMesh(overlay, name, HexRingMesh(hexSize * outerScale, hexSize * innerScale, VisualTileTopY + yOffset), material);
+    }
+
+    private static int HexDistance(Vector2Int a, Vector2Int b)
+    {
+        var dq = a.x - b.x;
+        var dr = a.y - b.y;
+        return (Mathf.Abs(dq) + Mathf.Abs(dr) + Mathf.Abs(dq + dr)) / 2;
     }
 
     private void BuildRiver(IReadOnlyList<Vector2Int> coords)
