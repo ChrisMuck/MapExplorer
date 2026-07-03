@@ -163,32 +163,32 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void CreateMaterials()
     {
-        topMaterials[TerrainKind.Water] = Material("Water", "2a6d87", "1f5369", "3f8da0", 11, 0.3f);
-        topMaterials[TerrainKind.Coast] = Material("Coast", "c49a54", "96713b", "d7b36a", 12, 0.28f);
-        topMaterials[TerrainKind.Grass] = Material("Grass", "5c8a42", "3f6b31", "78a760", 13, 0.34f);
-        topMaterials[TerrainKind.Forest] = Material("Forest", "2c5b3c", "173323", "3f734b", 14, 0.3f);
-        topMaterials[TerrainKind.Hills] = Material("Hills", "777044", "5d5533", "948852", 15, 0.32f);
-        topMaterials[TerrainKind.Mountain] = Material("Mountain", "73766f", "51564f", "8e9188", 16, 0.22f);
-        topMaterials[TerrainKind.Snow] = Material("Snow", "cbd2cc", "aeb8b1", "e5e8df", 17, 0.14f);
+        topMaterials[TerrainKind.Water] = Material("Water", "3f7180", "355f6c", "527f88", 11, 0.18f);
+        topMaterials[TerrainKind.Coast] = Material("Coast", "b49463", "9a7c50", "c0a472", 12, 0.18f);
+        topMaterials[TerrainKind.Grass] = Material("Grass", "6d8350", "576f42", "819466", 13, 0.2f);
+        topMaterials[TerrainKind.Forest] = Material("Forest", "36583f", "263f31", "49654a", 14, 0.18f);
+        topMaterials[TerrainKind.Hills] = Material("Hills", "7a7456", "67614a", "898365", 15, 0.18f);
+        topMaterials[TerrainKind.Mountain] = Material("Mountain", "777972", "62655f", "888a83", 16, 0.14f);
+        topMaterials[TerrainKind.Snow] = Material("Snow", "c9cec6", "b8beb6", "d9ddd4", 17, 0.1f);
 
-        sideMaterials[TerrainKind.Water] = Material("Water Side", "173849", 0.7f);
-        sideMaterials[TerrainKind.Coast] = Material("Coast Side", "6d4d2b", 0.85f);
-        sideMaterials[TerrainKind.Grass] = Material("Grass Side", "314c2b", 0.9f);
-        sideMaterials[TerrainKind.Forest] = Material("Forest Side", "14281d", 0.92f);
-        sideMaterials[TerrainKind.Hills] = Material("Hills Side", "423b25", 0.94f);
-        sideMaterials[TerrainKind.Mountain] = Material("Mountain Side", "3c403c", 0.94f);
-        sideMaterials[TerrainKind.Snow] = Material("Snow Side", "7b867f", 0.86f);
+        sideMaterials[TerrainKind.Water] = Material("Water Side", "2f535d", 0.7f);
+        sideMaterials[TerrainKind.Coast] = Material("Coast Side", "7e6748", 0.85f);
+        sideMaterials[TerrainKind.Grass] = Material("Grass Side", "465c37", 0.9f);
+        sideMaterials[TerrainKind.Forest] = Material("Forest Side", "223829", 0.92f);
+        sideMaterials[TerrainKind.Hills] = Material("Hills Side", "514d3b", 0.94f);
+        sideMaterials[TerrainKind.Mountain] = Material("Mountain Side", "4f524d", 0.94f);
+        sideMaterials[TerrainKind.Snow] = Material("Snow Side", "878e87", 0.86f);
 
         featureMaterials["DebugHex"] = TransparentMaterial("Debug Hex", "101916", 0.32f);
-        featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "8fd56c", 0.3f);
-        featureMaterials["SelectedHex"] = EmissiveMaterial("Selected Hex", "e8e7b0", "fff5a2", 0.35f);
-        featureMaterials["RiverBank"] = Material("River Bank", "244950", 0.82f);
-        featureMaterials["River"] = EmissiveMaterial("River", "36a0b9", "74d7ec", 0.08f);
-        featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "c7f3ee", 0.16f);
-        featureMaterials["RoadShadow"] = TransparentMaterial("Road Bed", "382817", 0.26f);
-        featureMaterials["Road"] = Material("Road", "946b3b", "5f4227", "b88b52", 41, 0.18f);
-        featureMaterials["RoadCenter"] = TransparentMaterial("Road Center", "d1b071", 0.16f);
-        featureMaterials["Border"] = EmissiveMaterial("Territory Border", "1690b0", "48d0ef", 0.18f);
+        featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "a8c884", 0.24f);
+        featureMaterials["SelectedHex"] = EmissiveMaterial("Selected Hex", "ded69a", "f2e5a7", 0.22f);
+        featureMaterials["RiverBank"] = Material("River Bank", "3f5d5c", 0.82f);
+        featureMaterials["River"] = EmissiveMaterial("River", "57919b", "8fc8cf", 0.04f);
+        featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "d8ede8", 0.11f);
+        featureMaterials["RoadShadow"] = TransparentMaterial("Road Bed", "4c3c2a", 0.2f);
+        featureMaterials["Road"] = Material("Road", "8b6d48", "6f5438", "9c815b", 41, 0.12f);
+        featureMaterials["RoadCenter"] = TransparentMaterial("Road Center", "c3aa78", 0.11f);
+        featureMaterials["Border"] = EmissiveMaterial("Territory Border", "4b9aaa", "88c8d1", 0.08f);
         featureMaterials["SettlementWall"] = Material("Settlement Wall", "766f5e", 0.9f);
         featureMaterials["SettlementRoof"] = Material("Settlement Roof", "79425f", 0.82f);
         featureMaterials["SettlementRoofWarm"] = Material("Settlement Roof Warm", "9b6240", 0.82f);
@@ -204,7 +204,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["MineWood"] = Material("Mine Wood", "5d422d", 0.86f);
         featureMaterials["WallStone"] = Material("Ancient Wall Stone", "8d8772", 0.9f);
         featureMaterials["TowerRoof"] = Material("Tower Roof", "4e5267", 0.78f);
-        featureMaterials["WaterPlane"] = Material("Distant Water", "214b56", 0.44f);
+        featureMaterials["WaterPlane"] = Material("Distant Water", "3b5f63", 0.44f);
     }
 
     private Material Material(string name, string hex, float smoothness)
