@@ -12,6 +12,11 @@ UnityHexMapView/Logs/
 UnityHexMapView/UserSettings/
 UnityHexMapView/MemoryCaptures/
 
+# .NET build output
+bin/
+obj/
+.artifacts/
+
 # Unity generated files
 UnityHexMapView/*.csproj
 UnityHexMapView/*.sln

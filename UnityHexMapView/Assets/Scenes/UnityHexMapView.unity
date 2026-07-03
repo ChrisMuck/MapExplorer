@@ -162,7 +162,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00f1e473fe7247c49a4ee9d9e8636f7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapRadius: 16
+  mapWidth: 40
+  mapHeight: 30
   hexSize: 1
   mapSeed: 4711
   cameraOrbitSpeed: 0.018
@@ -173,3 +174,5 @@ MonoBehaviour:
   showSelectionPreview: 1
   selectedPreviewHex: {x: 0, y: 0}
   reachablePreviewRadius: 2
+  usePrefabOverrides: 1
+  prefabLibrary: {fileID: 11400000, guid: f4cbe2541f3f4578b16d0ef77f8de0b4, type: 2}

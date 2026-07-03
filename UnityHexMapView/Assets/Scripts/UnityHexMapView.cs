@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Game.App;
+using Game.Core;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -22,10 +24,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         public Vector3 World;
     }
 
-    [Range(3, 32)] public int mapRadius = 16;
+    [Range(4, 80)] public int mapWidth = 40;
+    [Range(4, 60)] public int mapHeight = 30;
     [Range(0.5f, 2f)] public float hexSize = 1f;
     public int mapSeed = 4711;
-    [Range(0f, 0.12f)] public float cameraOrbitSpeed = 0.018f;
     [Range(3f, 30f)] public float zoomedInSize = 5f;
     [Range(8f, 60f)] public float zoomedOutSize = 24f;
     [Range(0.5f, 8f)] public float zoomSpeed = 3.5f;
@@ -33,6 +35,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     public bool showSelectionPreview = true;
     public Vector2Int selectedPreviewHex = Vector2Int.zero;
     [Range(0, 8)] public int reachablePreviewRadius = 2;
+    [SerializeField] private bool useCoreTutorialState = true;
+    [SerializeField] private bool usePrefabOverrides = true;
+    [SerializeField] private HexMapPrefabLibrary prefabLibrary;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -43,6 +48,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<string, Material> featureMaterials = new();
     private Transform cameraRig;
     private Camera strategyCamera;
+    private HexMapPrefabLibrary runtimePrefabLibrary;
+    private GameState coreGameState;
+    private readonly MovementCostService movementCostService = new MovementCostService();
+    private HexMapPrefabLibrary Prefabs => prefabLibrary != null ? prefabLibrary : runtimePrefabLibrary;
 #if UNITY_EDITOR
     private bool editorRebuildQueued;
 #endif
@@ -77,11 +86,6 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        if (cameraRig != null)
-        {
-            cameraRig.Rotate(Vector3.up, cameraOrbitSpeed * Mathf.Rad2Deg * Time.deltaTime, Space.World);
-        }
-
         UpdateCameraZoom();
     }
 
@@ -94,6 +98,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         sideMaterials.Clear();
         featureMaterials.Clear();
         strategyCamera = null;
+        EnsurePrefabLibrary();
 
         CreateMaterials();
         BuildMap();
@@ -198,11 +203,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["TreeCrown"] = Material("Tree Crown", "2a613f", 0.86f);
         featureMaterials["TreeCrownDark"] = Material("Tree Crown Dark", "1b3f2d", 0.9f);
         featureMaterials["ForestCover"] = Material("Forest Cover", "203d2d", 0.88f);
-        featureMaterials["Rock"] = Material("Rock", "777b71", 0.9f);
-        featureMaterials["DarkRock"] = Material("Dark Rock", "383c36", 0.92f);
-        featureMaterials["MountainBlock"] = Material("Mountain Block", "6c6a5d", 0.92f);
-        featureMaterials["SnowBlock"] = Material("Snow Block", "c8c8aa", 0.86f);
-        featureMaterials["SnowCap"] = Material("Snow Cap", "d8dedb", 0.72f);
+        featureMaterials["Rock"] = DoubleSidedMaterial(Material("Rock", "777b71", 0.9f));
+        featureMaterials["DarkRock"] = DoubleSidedMaterial(Material("Dark Rock", "383c36", 0.92f));
+        featureMaterials["MountainBase"] = DoubleSidedMaterial(Material("Mountain Base", "666356", 0.92f));
+        featureMaterials["Foothill"] = DoubleSidedMaterial(Material("Foothill", "6e6c55", 0.9f));
+        featureMaterials["SnowCap"] = DoubleSidedMaterial(Material("Snow Cap", "d8dedb", 0.72f));
         featureMaterials["Flag"] = Material("Flag", "c4574d", 0.62f);
         featureMaterials["Gold"] = Material("Ore Gold", "c89d3b", 0.58f);
         featureMaterials["MineWood"] = Material("Mine Wood", "5d422d", 0.86f);
@@ -219,6 +224,17 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Material Material(string name, string hex, string baseHex, string accentHex, int seedOffset, float strength)
     {
         return Material(name, ColorFromHex(hex), 0.88f, NoiseTexture(baseHex, accentHex, seedOffset, strength));
+    }
+
+    private Material DoubleSidedMaterial(Material material)
+    {
+        if (material.HasProperty("_Cull"))
+        {
+            material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+        }
+
+        material.doubleSidedGI = true;
+        return material;
     }
 
     private Material Material(string name, Color color, float smoothness, Texture2D texture = null)
@@ -311,16 +327,30 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void BuildMap()
     {
-        for (var q = -mapRadius; q <= mapRadius; q++)
+        if (useCoreTutorialState)
         {
-            var rMin = Mathf.Max(-mapRadius, -q - mapRadius);
-            var rMax = Mathf.Min(mapRadius, -q + mapRadius);
-            for (var r = rMin; r <= rMax; r++)
+            coreGameState = new GameApplication().CreateTutorialGame();
+            BuildMapFromCoreState(coreGameState.World.Map);
+            selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+            return;
+        }
+
+        coreGameState = null;
+        BuildProceduralMap();
+    }
+
+    private void BuildProceduralMap()
+    {
+        for (var row = 0; row < mapHeight; row++)
+        {
+            for (var column = 0; column < mapWidth; column++)
             {
-                var coord = new Vector2Int(q, r);
+                var coord = OffsetToCenteredAxial(column, row);
                 var world = AxialToWorld(coord);
-                var radialFade = Mathf.Clamp01(new Vector2(world.x, world.z).magnitude / (mapRadius * 1.7f));
-                var heightNoise = Noise(q * 0.18f, r * 0.18f, 0) - radialFade * 0.08f;
+                var normalizedColumn = mapWidth > 1 ? (column - (mapWidth - 1) * 0.5f) / ((mapWidth - 1) * 0.5f) : 0f;
+                var normalizedRow = mapHeight > 1 ? (row - (mapHeight - 1) * 0.5f) / ((mapHeight - 1) * 0.5f) : 0f;
+                var edgeFade = Mathf.Clamp01(new Vector2(normalizedColumn, normalizedRow).magnitude * 0.58f);
+                var heightNoise = Noise(coord.x * 0.18f, coord.y * 0.18f, 0) - edgeFade * 0.08f;
                 var terrain = PickTerrain(heightNoise, coord);
                 var mountainRange = MountainRangeStrength(coord);
                 if (mountainRange > 0.82f)
@@ -339,11 +369,65 @@ public sealed class UnityHexMapView : MonoBehaviour
                 var elevation = TerrainElevation(terrain, heightNoise);
                 tiles[coord] = new TileData { Terrain = terrain, Elevation = elevation, World = world };
 
-                var tile = NewChild($"Hex_{q}_{r}_{terrain}");
+                var tile = NewChild($"Hex_{column}_{row}_{terrain}");
                 tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
                 AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), topMaterials[terrain]);
                 AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
             }
+        }
+    }
+
+    private void BuildMapFromCoreState(HexMapState map)
+    {
+        mapWidth = map.Bounds.Width;
+        mapHeight = map.Bounds.Height;
+
+        foreach (var coreTile in map.Tiles)
+        {
+            var coord = CoreCoordToViewCoord(coreTile.Coord);
+            var world = AxialToWorld(coord);
+            var terrain = TerrainFromCore(coreTile.Terrain);
+            var elevation = coreTile.Elevation > 0
+                ? coreTile.Elevation * 0.18f
+                : TerrainElevation(terrain, Noise(coord.x * 0.18f, coord.y * 0.18f, 0));
+
+            tiles[coord] = new TileData { Terrain = terrain, Elevation = elevation, World = world };
+
+            var tile = NewChild($"Hex_{coreTile.Coord.Q}_{coreTile.Coord.R}_{terrain}");
+            tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
+            AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), topMaterials[terrain]);
+            AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
+        }
+    }
+
+    private Vector2Int CoreCoordToViewCoord(HexCoord coord)
+    {
+        return OffsetToCenteredAxial(coord.Q, coord.R);
+    }
+
+    private static TerrainKind TerrainFromCore(TerrainType terrain)
+    {
+        switch (terrain)
+        {
+            case TerrainType.Water:
+                return TerrainKind.Water;
+            case TerrainType.Coast:
+                return TerrainKind.Coast;
+            case TerrainType.Forest:
+                return TerrainKind.Forest;
+            case TerrainType.Hills:
+            case TerrainType.Swamp:
+                return TerrainKind.Hills;
+            case TerrainType.Mountain:
+                return TerrainKind.Mountain;
+            case TerrainType.Snow:
+                return TerrainKind.Snow;
+            case TerrainType.Grassland:
+            case TerrainType.DryPlains:
+            case TerrainType.Desert:
+                return TerrainKind.Grass;
+            default:
+                return TerrainKind.Grass;
         }
     }
 
@@ -393,12 +477,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void AddTileDetails(Transform parent, TerrainKind terrain, float elevation, Vector2Int coord)
     {
-        if (terrain == TerrainKind.Hills)
-        {
-            AddRock(parent, elevation, -0.28f, 0.08f, 0);
-            AddRock(parent, elevation, 0.22f, -0.18f, 1);
-        }
-        else if (terrain == TerrainKind.Coast && Mathf.Abs(coord.x * 3 + coord.y * 5) % 7 == 0)
+        if (terrain == TerrainKind.Coast && Mathf.Abs(coord.x * 3 + coord.y * 5) % 7 == 0)
         {
             AddFlag(parent, elevation);
         }
@@ -408,6 +487,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         BuildForestRegions();
         BuildMountainRanges();
+        BuildMountainTransitionDetails();
     }
 
     private void BuildForestRegions()
@@ -434,10 +514,14 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
+        if (TryPlacePrefab(Prefabs.forestClusterPrefabs, parent, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
+        {
+            return;
+        }
+
         var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", parent);
-        cover.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.035f);
-        cover.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 20500) * 60f, 0f);
-        AddMesh(cover, "Cover", CylinderMesh(0.88f * hexSize, 0.96f * hexSize, 0.08f, 6), featureMaterials["ForestCover"]);
+        cover.transform.localPosition = tile.World;
+        AddMesh(cover, "Cover", HexTopMesh(hexSize * 0.995f, VisualTileTopY + 0.006f), featureMaterials["ForestCover"]);
 
         var treeCount = interior ? 8 : 6;
         for (var i = 0; i < treeCount; i++)
@@ -480,14 +564,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var region = regions[regionIndex];
             var root = NewChild($"MountainRange_{regionIndex:D2}");
-            var foundationHeight = Mathf.Lerp(0.22f, 0.48f, Mathf.Clamp01(region.Count / 18f)) * hexSize;
-            AddMountainFoundation(root, region, foundationHeight);
 
-            var maxPeaks = Mathf.Clamp(region.Count * 2, 3, 70);
-            var peakIndex = 0;
-
-            region.Sort((a, b) => MountainRangeStrength(b).CompareTo(MountainRangeStrength(a)));
-            for (var i = 0; i < region.Count && peakIndex < maxPeaks; i++)
+            for (var i = 0; i < region.Count; i++)
             {
                 var coord = region[i];
                 if (!tiles.TryGetValue(coord, out var tile))
@@ -495,45 +573,38 @@ public sealed class UnityHexMapView : MonoBehaviour
                     continue;
                 }
 
-                var ridgeStrength = Mathf.Max(MountainRangeStrength(coord), CountMatchingNeighbors(coord, IsMountainTerrain) / 6f);
-                var skipChance = Mathf.Lerp(0.42f, 0.06f, ridgeStrength);
-                if (peakIndex > 2 && Hash01(coord.x, coord.y, 22000) < skipChance)
+                var mountainNeighbors = CountMatchingNeighbors(coord, IsMountainTerrain);
+                var snowy = tile.Terrain == TerrainKind.Snow;
+                var strength = Mathf.Max(MountainRangeStrength(coord), mountainNeighbors / 6f);
+                if (mountainNeighbors >= 4)
                 {
-                    continue;
+                    AddMountainPeakAsset(root.transform, coord, snowy, strength, regionIndex * 1000 + i);
                 }
-
-                var peaksOnHex = ridgeStrength > 0.68f ? 2 : 1;
-                for (var j = 0; j < peaksOnHex && peakIndex < maxPeaks; j++)
+                else
                 {
-                    var angle = (j / (float)peaksOnHex) * Mathf.PI * 2f + Hash01(coord.x, coord.y, 22100 + j) * 0.9f;
-                    var radius = Mathf.Lerp(0.04f, 0.36f, Hash01(coord.y, coord.x, 22200 + j)) * hexSize;
-                    var offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                    var position = tile.World + offset;
-                    AddMountainAt(root.transform, position, coord, tiles[coord].Terrain == TerrainKind.Snow, ridgeStrength, VisualTileTopY + foundationHeight);
-                    peakIndex++;
+                    AddRockyRidgeAsset(root.transform, coord, snowy, strength, regionIndex * 1000 + i);
                 }
             }
         }
     }
 
-    private void AddMountainFoundation(GameObject root, IReadOnlyList<Vector2Int> region, float height)
+    private void BuildMountainTransitionDetails()
     {
-        var hasSnow = RegionHasSnow(region);
-        var mesh = MountainFoundationMesh(region, height);
-        AddMesh(root, "MountainFoundation", mesh, hasSnow ? featureMaterials["SnowBlock"] : featureMaterials["MountainBlock"]);
-    }
-
-    private bool RegionHasSnow(IReadOnlyList<Vector2Int> region)
-    {
-        foreach (var coord in region)
+        var root = NewChild("Foothills");
+        foreach (var pair in tiles)
         {
-            if (tiles.TryGetValue(coord, out var tile) && tile.Terrain == TerrainKind.Snow)
+            var terrain = pair.Value.Terrain;
+            if (IsMountainTerrain(terrain) || terrain == TerrainKind.Water || terrain == TerrainKind.Coast)
             {
-                return true;
+                continue;
+            }
+
+            var mountainNeighbors = CountMatchingNeighbors(pair.Key, IsMountainTerrain);
+            if (terrain == TerrainKind.Hills || mountainNeighbors > 0)
+            {
+                AddFoothillsAsset(root.transform, pair.Key, terrain == TerrainKind.Hills, mountainNeighbors);
             }
         }
-
-        return false;
     }
 
     private List<List<Vector2Int>> FindTerrainRegions(TerrainMatcher matcher)
@@ -591,65 +662,127 @@ public sealed class UnityHexMapView : MonoBehaviour
         return count;
     }
 
-    private Mesh MountainFoundationMesh(IReadOnlyList<Vector2Int> region, float height)
+    private void AddMountainPeakAsset(Transform parent, Vector2Int coord, bool snowy, float strength, int seedOffset)
     {
-        var regionSet = new HashSet<Vector2Int>(region);
-        var vertices = new List<Vector3>();
-        var uvs = new List<Vector2>();
-        var triangles = new List<int>();
-        var topY = VisualTileTopY + height;
-        var bottomY = VisualTileTopY + 0.015f;
-        var radius = hexSize * 0.995f;
-
-        foreach (var coord in region)
+        if (!tiles.TryGetValue(coord, out var tile))
         {
-            if (!tiles.TryGetValue(coord, out var tile))
+            return;
+        }
+
+        var root = NewChild($"MountainPeak_{coord.x}_{coord.y}", parent);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.015f);
+        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
+        var peakPrefabs = snowy && HasPrefab(Prefabs.snowyMountainPeakPrefabs) ? Prefabs.snowyMountainPeakPrefabs : Prefabs.mountainPeakPrefabs;
+        if (TryPlacePrefab(peakPrefabs, root.transform, "MountainPeakPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.92f, 1.18f, strength), coord.x, coord.y, seedOffset, out _))
+        {
+            return;
+        }
+
+        var baseHeight = Mathf.Lerp(0.12f, 0.2f, strength) * hexSize;
+        var baseSockel = CreateFacetedMound("PeakSockel", 0.78f * hexSize, 0.58f * hexSize, baseHeight, featureMaterials["MountainBase"], seedOffset);
+        baseSockel.transform.SetParent(root.transform, false);
+        baseSockel.transform.localPosition = Vector3.zero;
+        baseSockel.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
+
+        var peakHeight = Mathf.Lerp(0.78f, 1.24f, strength) * hexSize;
+        var peak = CreateFacetedPeak("HighPeak", 0.52f * hexSize, 0.34f * hexSize, 0.055f * hexSize, peakHeight, featureMaterials["Rock"], seedOffset + 11);
+        peak.transform.SetParent(root.transform, false);
+        peak.transform.localPosition = new Vector3(-0.04f * hexSize, baseHeight * 0.45f, 0.02f * hexSize);
+        peak.transform.localRotation = Quaternion.Euler(0f, 18f, 0f);
+
+        var cap = CreateFacetedPeak("SnowCap", 0.22f * hexSize, 0.14f * hexSize, 0.02f * hexSize, peakHeight * 0.24f, snowy ? featureMaterials["SnowCap"] : featureMaterials["Rock"], seedOffset + 12);
+        cap.transform.SetParent(root.transform, false);
+        cap.transform.localPosition = peak.transform.localPosition + Vector3.up * (peakHeight * 0.74f);
+        cap.transform.localRotation = peak.transform.localRotation;
+
+        var secondaryCount = strength > 0.74f ? 2 : 1;
+        for (var i = 0; i < secondaryCount; i++)
+        {
+            var angle = i * Mathf.PI * 1.25f + Hash01(coord.x, coord.y, seedOffset + 20 + i) * 0.55f;
+            var secondaryHeight = peakHeight * Mathf.Lerp(0.42f, 0.58f, Hash01(coord.y, coord.x, seedOffset + 40 + i));
+            var secondary = CreateFacetedPeak("SidePeak", 0.34f * hexSize, 0.22f * hexSize, 0.035f * hexSize, secondaryHeight, i == 0 ? featureMaterials["DarkRock"] : featureMaterials["Rock"], seedOffset + 41 + i);
+            secondary.transform.SetParent(root.transform, false);
+            secondary.transform.localPosition = new Vector3(Mathf.Cos(angle) * 0.32f * hexSize, baseHeight * 0.35f, Mathf.Sin(angle) * 0.32f * hexSize);
+            secondary.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 0f);
+        }
+    }
+
+    private void AddRockyRidgeAsset(Transform parent, Vector2Int coord, bool snowy, float strength, int seedOffset)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var root = NewChild($"RockyRidge_{coord.x}_{coord.y}", parent);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.012f);
+        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
+        var ridgePrefabs = snowy && HasPrefab(Prefabs.snowyRockyRidgePrefabs) ? Prefabs.snowyRockyRidgePrefabs : Prefabs.rockyRidgePrefabs;
+        if (TryPlacePrefab(ridgePrefabs, root.transform, "RockyRidgePrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.88f, 1.08f, strength), coord.x, coord.y, seedOffset, out _))
+        {
+            return;
+        }
+
+        var baseHeight = 0.1f * hexSize;
+        var baseRock = CreateFacetedMound("RidgeSockel", 0.58f * hexSize, 0.44f * hexSize, baseHeight, featureMaterials["MountainBase"], seedOffset + 100);
+        baseRock.transform.SetParent(root.transform, false);
+        baseRock.transform.localPosition = Vector3.zero;
+
+        var count = strength > 0.52f ? 3 : 2;
+        for (var i = 0; i < count; i++)
+        {
+            var angle = i * Mathf.PI * 2f / count + Hash01(coord.x, coord.y, seedOffset + i) * 0.35f;
+            var height = Mathf.Lerp(0.26f, 0.52f, Hash01(coord.y, coord.x, seedOffset + 60 + i)) * hexSize;
+            var radius = Mathf.Lerp(0.22f, 0.34f, Hash01(coord.x, coord.y, seedOffset + 80 + i)) * hexSize;
+            var ridge = CreateFacetedPeak("SmallPeak", radius, radius * 0.62f, 0.035f * hexSize, height, i == 1 ? featureMaterials["DarkRock"] : featureMaterials["Rock"], seedOffset + 81 + i);
+            ridge.transform.SetParent(root.transform, false);
+            ridge.transform.localPosition = new Vector3(Mathf.Cos(angle) * 0.28f * hexSize, baseHeight * 0.35f, Mathf.Sin(angle) * 0.28f * hexSize);
+            ridge.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 20f, 0f);
+
+            if (snowy && i == 0)
+            {
+                var cap = CreateFacetedPeak("SmallSnowCap", radius * 0.46f, radius * 0.26f, 0.012f * hexSize, height * 0.2f, featureMaterials["SnowCap"], seedOffset + 91 + i);
+                cap.transform.SetParent(root.transform, false);
+                cap.transform.localPosition = ridge.transform.localPosition + Vector3.up * (height * 0.7f);
+                cap.transform.localRotation = ridge.transform.localRotation;
+            }
+        }
+    }
+
+    private void AddFoothillsAsset(Transform parent, Vector2Int coord, bool hillHex, int mountainNeighbors)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var root = NewChild($"Foothills_{coord.x}_{coord.y}", parent);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.025f);
+        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 25000) * 360f, 0f);
+        if (TryPlacePrefab(Prefabs.foothillsPrefabs, root.transform, "FoothillsPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * (hillHex ? 1f : 0.82f), coord.x, coord.y, 25000 + mountainNeighbors, out _))
+        {
+            return;
+        }
+
+        var count = Mathf.Clamp((hillHex ? 3 : 1) + mountainNeighbors, 2, 6);
+        for (var i = 0; i < count; i++)
+        {
+            var angle = i * Mathf.PI * 2f / count + Hash01(coord.x, coord.y, 25100 + i) * 0.45f;
+            var distance = Mathf.Lerp(0.16f, 0.58f, Hash01(coord.y, coord.x, 25200 + i)) * hexSize;
+            var height = Mathf.Lerp(0.12f, hillHex ? 0.34f : 0.24f, Hash01(coord.x, coord.y, 25300 + i)) * hexSize;
+            if (TryPlacePrefab(Prefabs.foothillRockPrefabs, root.transform, "FoothillRockPrefab", new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance), Quaternion.Euler(8f, angle * Mathf.Rad2Deg + 25f, -5f), Vector3.one * hexSize * Mathf.Lerp(0.65f, 1f, height / Mathf.Max(0.01f, 0.34f * hexSize)), coord.x, coord.y, 25300 + i, out _))
             {
                 continue;
             }
 
-            for (var i = 0; i < 6; i++)
-            {
-                var a = HexCorner(radius, i);
-                var b = HexCorner(radius, (i + 1) % 6);
-                var start = vertices.Count;
-                vertices.Add(tile.World + new Vector3(0f, topY, 0f)); uvs.Add(new Vector2(0.5f, 0.5f));
-                vertices.Add(tile.World + new Vector3(b.x, topY + CornerLift(coord, i + 1), b.y)); uvs.Add(TopUv(b, radius));
-                vertices.Add(tile.World + new Vector3(a.x, topY + CornerLift(coord, i), a.y)); uvs.Add(TopUv(a, radius));
-                triangles.Add(start);
-                triangles.Add(start + 1);
-                triangles.Add(start + 2);
-            }
-
-            for (var i = 0; i < 6; i++)
-            {
-                if (regionSet.Contains(coord + Directions[i]))
-                {
-                    continue;
-                }
-
-                var a = HexCorner(radius, i);
-                var b = HexCorner(radius, (i + 1) % 6);
-                var start = vertices.Count;
-                vertices.Add(tile.World + new Vector3(a.x, topY + CornerLift(coord, i), a.y)); uvs.Add(new Vector2(i / 6f, 0f));
-                vertices.Add(tile.World + new Vector3(b.x, topY + CornerLift(coord, i + 1), b.y)); uvs.Add(new Vector2((i + 1) / 6f, 0f));
-                vertices.Add(tile.World + new Vector3(a.x, bottomY, a.y)); uvs.Add(new Vector2(i / 6f, 1f));
-                vertices.Add(tile.World + new Vector3(b.x, bottomY, b.y)); uvs.Add(new Vector2((i + 1) / 6f, 1f));
-                triangles.Add(start);
-                triangles.Add(start + 1);
-                triangles.Add(start + 2);
-                triangles.Add(start + 2);
-                triangles.Add(start + 1);
-                triangles.Add(start + 3);
-            }
+            var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rock.name = "FoothillRock";
+            rock.transform.SetParent(root.transform, false);
+            rock.transform.localPosition = new Vector3(Mathf.Cos(angle) * distance, height * 0.5f, Mathf.Sin(angle) * distance);
+            rock.transform.localScale = new Vector3(0.18f * hexSize, height, 0.22f * hexSize);
+            rock.transform.localRotation = Quaternion.Euler(8f, angle * Mathf.Rad2Deg + 25f, -5f);
+            rock.GetComponent<MeshRenderer>().sharedMaterial = i % 2 == 0 ? featureMaterials["Foothill"] : featureMaterials["Rock"];
         }
-
-        return MeshFrom(vertices, uvs, triangles, "MountainFoundation");
-    }
-
-    private float CornerLift(Vector2Int coord, int corner)
-    {
-        return Mathf.Lerp(-0.035f, 0.055f, Hash01(coord.x, coord.y, 24000 + corner)) * hexSize;
     }
 
     private delegate bool TerrainMatcher(TerrainKind terrain);
@@ -673,10 +806,16 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index, float scaleMultiplier = 1f)
     {
+        var rotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, index + 91) * 360f, 0f);
+        var scale = Mathf.Lerp(0.78f, 1.28f, Hash01(coord.x, coord.y, index + 151));
+        if (TryPlacePrefab(Prefabs.treePrefabs, parent, "Tree", localPosition, rotation, Vector3.one * scale * scaleMultiplier, coord.x, coord.y, index, out _))
+        {
+            return;
+        }
+
         var root = NewChild("Tree", parent);
         root.transform.localPosition = localPosition;
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, index + 91) * 360f, 0f);
-        var scale = Mathf.Lerp(0.78f, 1.28f, Hash01(coord.x, coord.y, index + 151));
+        root.transform.localRotation = rotation;
         root.transform.localScale = Vector3.one * scale * scaleMultiplier;
 
         var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -729,6 +868,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void AddRock(Transform parent, float elevation, float x, float z, int index)
     {
+        if (TryPlacePrefab(Prefabs.rockPrefabs, parent, "RockPrefab", new Vector3(x, elevation + 0.06f + index * 0.02f, z), Quaternion.Euler(7f, 25f + index * 40f, 4f), new Vector3(0.22f, 0.14f + index * 0.06f, 0.28f), index, Mathf.RoundToInt(x * 100f), 8101, out _))
+        {
+            return;
+        }
+
         var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
         rock.name = "Rock";
         rock.transform.SetParent(parent, false);
@@ -802,6 +946,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void AddFlag(Transform parent, float elevation)
     {
+        if (TryPlacePrefab(Prefabs.coastMarkerPrefabs, parent, "CoastMarker", Vector3.up * elevation, Quaternion.identity, Vector3.one * hexSize, 0, Mathf.RoundToInt(elevation * 1000f), 8401, out _))
+        {
+            return;
+        }
+
         var root = NewChild("CoastMarker", parent);
         var pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         pole.name = "Pole";
@@ -820,6 +969,12 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void BuildFeatures()
     {
+        if (useCoreTutorialState && coreGameState != null)
+        {
+            BuildCoreFeatures(coreGameState.World);
+            return;
+        }
+
         BuildRiver(new[]
         {
             new Vector2Int(-8, 1), new Vector2Int(-7, 1), new Vector2Int(-6, 0), new Vector2Int(-5, 0),
@@ -870,6 +1025,58 @@ public sealed class UnityHexMapView : MonoBehaviour
         });
     }
 
+    private void BuildCoreFeatures(WorldState world)
+    {
+        foreach (var path in world.Paths)
+        {
+            var coords = CorePathToViewPath(path.Coords);
+            switch (path.Kind)
+            {
+                case WorldPathKind.River:
+                    BuildRiver(coords);
+                    break;
+                case WorldPathKind.Road:
+                    BuildRoad(coords);
+                    break;
+                case WorldPathKind.TerritoryBorder:
+                    BuildTerritoryBorder(coords);
+                    break;
+                case WorldPathKind.Wall:
+                    BuildGreatWall(coords);
+                    break;
+            }
+        }
+
+        foreach (var location in world.Locations)
+        {
+            var coord = CoreCoordToViewCoord(location.Coord);
+            switch (location.Kind)
+            {
+                case LocationKind.Settlement:
+                case LocationKind.BaseCamp:
+                    BuildSettlement(coord);
+                    break;
+                case LocationKind.Watchtower:
+                    BuildTower(coord);
+                    break;
+                case LocationKind.Mine:
+                    BuildMine(coord);
+                    break;
+            }
+        }
+    }
+
+    private IReadOnlyList<Vector2Int> CorePathToViewPath(IReadOnlyList<HexCoord> coords)
+    {
+        var viewCoords = new List<Vector2Int>(coords.Count);
+        foreach (var coord in coords)
+        {
+            viewCoords.Add(CoreCoordToViewCoord(coord));
+        }
+
+        return viewCoords;
+    }
+
     private void BuildHexOverlays()
     {
         if (showDebugHexGrid)
@@ -892,13 +1099,43 @@ public sealed class UnityHexMapView : MonoBehaviour
                 continue;
             }
 
-            if (HexDistance(coord, selectedPreviewHex) <= reachablePreviewRadius)
+            if (IsReachablePreviewCoord(coord))
             {
                 AddHexOverlay(coord, "ReachableHex", 0.972f, 0.91f, 0.07f, featureMaterials["ReachableHex"]);
             }
         }
 
         AddHexOverlay(selectedPreviewHex, "SelectedHex", 1.005f, 0.88f, 0.09f, featureMaterials["SelectedHex"]);
+    }
+
+    private bool IsReachablePreviewCoord(Vector2Int coord)
+    {
+        if (useCoreTutorialState && coreGameState != null)
+        {
+            if (HexDistance(coord, selectedPreviewHex) != 1)
+            {
+                return false;
+            }
+
+            var coreCoord = ViewCoordToCoreCoord(coord);
+            if (!coreGameState.World.Map.TryGetTile(coreCoord, out var tile) || tile == null)
+            {
+                return false;
+            }
+
+            var cost = movementCostService.GetEntryCost(tile);
+            return cost.CanEnter && cost.Cost <= coreGameState.Expedition.MovementPoints;
+        }
+
+        return HexDistance(coord, selectedPreviewHex) <= reachablePreviewRadius;
+    }
+
+    private HexCoord ViewCoordToCoreCoord(Vector2Int coord)
+    {
+        var row = coord.y + mapHeight / 2;
+        var centeredColumn = coord.x + (coord.y - (coord.y & 1)) / 2;
+        var column = centeredColumn + mapWidth / 2;
+        return new HexCoord(column, row);
     }
 
     private void AddHexOverlay(Vector2Int coord, string name, float outerScale, float innerScale, float yOffset, Material material)
@@ -959,6 +1196,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         settlement.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         var rotation = Hash01(coord.x, coord.y, 7301) * 360f;
         settlement.transform.localRotation = Quaternion.Euler(0f, rotation, 0f);
+        if (TryPlacePrefab(Prefabs.settlementPrefabs, settlement.transform, "SettlementPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, 7301, out _))
+        {
+            return;
+        }
+
         AddMesh(settlement, "Plaza", CylinderMesh(0.48f * hexSize, 0.42f * hexSize, 0.05f, 6), featureMaterials["SettlementWall"]);
 
         var houseCount = 4 + Mathf.Abs(coord.x * 3 + coord.y * 5) % 3;
@@ -968,12 +1210,20 @@ public sealed class UnityHexMapView : MonoBehaviour
             var radius = Mathf.Lerp(0.2f, 0.38f, Hash01(coord.y, coord.x, 7500 + i)) * hexSize;
             var height = Mathf.Lerp(0.14f, 0.28f, Hash01(coord.x, coord.y, 7600 + i)) * hexSize;
             var width = Mathf.Lerp(0.16f, 0.26f, Hash01(coord.y, coord.x, 7700 + i)) * hexSize;
+            var housePosition = new Vector3(Mathf.Cos(angle) * radius, height * 0.5f + 0.03f, Mathf.Sin(angle) * radius);
+            var houseRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 28f, 0f);
+            var houseDepth = width * Mathf.Lerp(0.82f, 1.25f, Hash01(coord.x, coord.y, 7800 + i));
+            if (TryPlacePrefab(Prefabs.settlementHousePrefabs, settlement.transform, "HousePrefab", housePosition, houseRotation, new Vector3(width, height, houseDepth), coord.x, coord.y, 7600 + i, out _))
+            {
+                continue;
+            }
+
             var house = GameObject.CreatePrimitive(PrimitiveType.Cube);
             house.name = "House";
             house.transform.SetParent(settlement.transform, false);
-            house.transform.localPosition = new Vector3(Mathf.Cos(angle) * radius, height * 0.5f + 0.03f, Mathf.Sin(angle) * radius);
-            house.transform.localScale = new Vector3(width, height, width * Mathf.Lerp(0.82f, 1.25f, Hash01(coord.x, coord.y, 7800 + i)));
-            house.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 28f, 0f);
+            house.transform.localPosition = housePosition;
+            house.transform.localScale = new Vector3(width, height, houseDepth);
+            house.transform.localRotation = houseRotation;
             house.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["SettlementWall"];
 
             var roofMaterial = i % 3 == 0 ? featureMaterials["SettlementRoofWarm"] : featureMaterials["SettlementRoof"];
@@ -992,12 +1242,19 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         for (var i = 0; i < 3; i++)
         {
+            var fencePosition = new Vector3(-0.34f + i * 0.2f, 0.065f, -0.42f);
+            var fenceRotation = Quaternion.Euler(0f, -8f, 0f);
+            if (TryPlacePrefab(Prefabs.settlementFencePrefabs, settlement.transform, "FencePrefab", fencePosition, fenceRotation, Vector3.one * hexSize, coord.x, coord.y, 7900 + i, out _))
+            {
+                continue;
+            }
+
             var fence = GameObject.CreatePrimitive(PrimitiveType.Cube);
             fence.name = "Fence";
             fence.transform.SetParent(settlement.transform, false);
-            fence.transform.localPosition = new Vector3(-0.34f + i * 0.2f, 0.065f, -0.42f);
+            fence.transform.localPosition = fencePosition;
             fence.transform.localScale = new Vector3(0.16f, 0.08f, 0.035f);
-            fence.transform.localRotation = Quaternion.Euler(0f, -8f, 0f);
+            fence.transform.localRotation = fenceRotation;
             fence.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["MineWood"];
         }
     }
@@ -1012,6 +1269,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         var tower = NewChild($"Watchtower_{coord.x}_{coord.y}");
         tower.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         tower.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 9001) * 360f, 0f);
+        if (TryPlacePrefab(Prefabs.towerPrefabs, tower.transform, "WatchtowerPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, 9001, out _))
+        {
+            return;
+        }
 
         AddMesh(tower, "TowerBase", CylinderMesh(0.34f * hexSize, 0.3f * hexSize, 0.12f, 6), featureMaterials["WallStone"]);
 
@@ -1041,6 +1302,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         var mine = NewChild($"Mine_{coord.x}_{coord.y}");
         mine.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         mine.transform.localRotation = Quaternion.Euler(0f, -25f, 0f);
+        if (TryPlacePrefab(Prefabs.minePrefabs, mine.transform, "MinePrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, 9201, out _))
+        {
+            return;
+        }
 
         var hill = CreateCone("MineHill", 0.5f * hexSize, 0.12f * hexSize, 0.46f * hexSize, featureMaterials["DarkRock"]);
         hill.transform.SetParent(mine.transform, false);
@@ -1101,6 +1366,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         for (var i = 0; i < points.Count; i += 2)
         {
+            if (TryPlacePrefab(Prefabs.wallTowerPrefabs, wall.transform, "WallTowerPrefab", points[i] + Vector3.up * (0.18f * hexSize), Quaternion.identity, Vector3.one * hexSize, i, points.Count, 9501, out _))
+            {
+                continue;
+            }
+
             var tower = CreateCone("WallTower", 0.22f * hexSize, 0.18f * hexSize, 0.46f * hexSize, featureMaterials["WallStone"]);
             tower.transform.SetParent(wall.transform, false);
             tower.transform.localPosition = points[i] + Vector3.up * (0.18f * hexSize);
@@ -1116,11 +1386,17 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        var rotation = Quaternion.LookRotation(new Vector3(delta.x, 0f, delta.z), Vector3.up);
+        if (TryPlacePrefab(Prefabs.wallSegmentPrefabs, parent, $"WallSegmentPrefab_{index}", Vector3.Lerp(a, b, 0.5f) + Vector3.up * (0.12f * hexSize), rotation, new Vector3(0.22f * hexSize, 0.28f * hexSize, length), index, Mathf.RoundToInt(length * 100f), 9601, out _))
+        {
+            return;
+        }
+
         var segment = GameObject.CreatePrimitive(PrimitiveType.Cube);
         segment.name = $"WallSegment_{index}";
         segment.transform.SetParent(parent, false);
         segment.transform.localPosition = Vector3.Lerp(a, b, 0.5f) + Vector3.up * (0.12f * hexSize);
-        segment.transform.localRotation = Quaternion.LookRotation(new Vector3(delta.x, 0f, delta.z), Vector3.up);
+        segment.transform.localRotation = rotation;
         segment.transform.localScale = new Vector3(0.22f * hexSize, 0.28f * hexSize, length);
         segment.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["WallStone"];
 
@@ -1388,13 +1664,126 @@ public sealed class UnityHexMapView : MonoBehaviour
         return cone;
     }
 
+    private GameObject CreateFacetedPeak(string name, float baseRadius, float shoulderRadius, float tipRadius, float height, Material material, int seedOffset)
+    {
+        var peak = new GameObject(name);
+        var filter = peak.AddComponent<MeshFilter>();
+        var renderer = peak.AddComponent<MeshRenderer>();
+        filter.sharedMesh = FacetedPeakMesh(baseRadius, shoulderRadius, tipRadius, height, seedOffset);
+        renderer.sharedMaterial = material;
+        return peak;
+    }
+
+    private GameObject CreateFacetedMound(string name, float baseRadius, float topRadius, float height, Material material, int seedOffset)
+    {
+        var mound = new GameObject(name);
+        var filter = mound.AddComponent<MeshFilter>();
+        var renderer = mound.AddComponent<MeshRenderer>();
+        filter.sharedMesh = FacetedMoundMesh(baseRadius, topRadius, height, seedOffset);
+        renderer.sharedMaterial = material;
+        return mound;
+    }
+
+    private Mesh FacetedPeakMesh(float baseRadius, float shoulderRadius, float tipRadius, float height, int seedOffset)
+    {
+        const int segments = 7;
+        var vertices = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        var shoulderY = height * 0.44f;
+        var apexAngle = Hash01(seedOffset, 17, 26097) * Mathf.PI * 2f;
+        var apexOffset = tipRadius * Mathf.Lerp(0.15f, 0.55f, Hash01(seedOffset, 19, 26099));
+        var apexIndex = vertices.Count;
+        vertices.Add(new Vector3(Mathf.Cos(apexAngle) * apexOffset, height, Mathf.Sin(apexAngle) * apexOffset));
+        uvs.Add(new Vector2(0.5f, 1f));
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.84f, 1.14f, Hash01(seedOffset, i, 26000));
+            var shoulderWobble = Mathf.Lerp(0.82f, 1.12f, Hash01(seedOffset, i, 26031));
+            vertices.Add(new Vector3(Mathf.Cos(angle) * baseRadius * wobble, 0f, Mathf.Sin(angle) * baseRadius * wobble));
+            uvs.Add(new Vector2(i / (float)segments, 0f));
+            vertices.Add(new Vector3(Mathf.Cos(angle + 0.08f) * shoulderRadius * shoulderWobble, shoulderY, Mathf.Sin(angle + 0.08f) * shoulderRadius * shoulderWobble));
+            uvs.Add(new Vector2(i / (float)segments, 0.55f));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            var next = (i + 1) % segments;
+            var baseA = 1 + i * 2;
+            var shoulderA = baseA + 1;
+            var baseB = 1 + next * 2;
+            var shoulderB = baseB + 1;
+
+            triangles.Add(baseA);
+            triangles.Add(shoulderA);
+            triangles.Add(shoulderB);
+            triangles.Add(baseA);
+            triangles.Add(shoulderB);
+            triangles.Add(baseB);
+
+            triangles.Add(shoulderA);
+            triangles.Add(apexIndex);
+            triangles.Add(shoulderB);
+        }
+
+        return MeshFrom(vertices, uvs, triangles, "FacetedPeak");
+    }
+
+    private Mesh FacetedMoundMesh(float baseRadius, float topRadius, float height, int seedOffset)
+    {
+        const int segments = 8;
+        var vertices = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var triangles = new List<int>();
+
+        vertices.Add(Vector3.up * height);
+        uvs.Add(new Vector2(0.5f, 0.5f));
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.82f, 1.18f, Hash01(seedOffset, i, 27000));
+            var topWobble = Mathf.Lerp(0.8f, 1.13f, Hash01(seedOffset, i, 27041));
+            vertices.Add(new Vector3(Mathf.Cos(angle) * baseRadius * wobble, 0f, Mathf.Sin(angle) * baseRadius * wobble));
+            uvs.Add(new Vector2(i / (float)segments, 1f));
+            vertices.Add(new Vector3(Mathf.Cos(angle + 0.12f) * topRadius * topWobble, height, Mathf.Sin(angle + 0.12f) * topRadius * topWobble));
+            uvs.Add(new Vector2(i / (float)segments, 0f));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            var next = (i + 1) % segments;
+            var baseA = 1 + i * 2;
+            var topA = baseA + 1;
+            var baseB = 1 + next * 2;
+            var topB = baseB + 1;
+
+            triangles.Add(baseA);
+            triangles.Add(topA);
+            triangles.Add(topB);
+            triangles.Add(baseA);
+            triangles.Add(topB);
+            triangles.Add(baseB);
+
+            triangles.Add(0);
+            triangles.Add(topB);
+            triangles.Add(topA);
+        }
+
+        return MeshFrom(vertices, uvs, triangles, "FacetedMound");
+    }
+
     private void BuildWaterPlane()
     {
         var plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.name = "DistantWaterPlane";
         plane.transform.SetParent(transform, false);
         plane.transform.localPosition = new Vector3(0f, -0.42f, 0f);
-        plane.transform.localScale = Vector3.one * mapRadius * hexSize * 0.44f;
+        var boardSize = BoardWorldSize();
+        plane.transform.localScale = new Vector3(boardSize.x * 0.14f, 1f, boardSize.y * 0.14f);
         plane.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["WaterPlane"];
     }
 
@@ -1434,7 +1823,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         var camera = cameraObject.AddComponent<Camera>();
         strategyCamera = camera;
         camera.orthographic = true;
-        camera.orthographicSize = Mathf.Clamp(mapRadius * 1.05f, zoomedInSize, zoomedOutSize);
+        var boardSize = BoardWorldSize();
+        camera.orthographicSize = Mathf.Clamp(Mathf.Max(boardSize.x * 0.31f, boardSize.y * 0.5f), zoomedInSize, zoomedOutSize);
         camera.nearClipPlane = 0.05f;
         camera.farClipPlane = 180f;
         camera.backgroundColor = ColorFromHex("30383a");
@@ -1492,6 +1882,116 @@ public sealed class UnityHexMapView : MonoBehaviour
         return go;
     }
 
+    private bool TryPlacePrefab(GameObject[] prefabs, Transform parent, string objectName, Vector3 localPosition, Quaternion localRotation, Vector3 scaleMultiplier, int seedA, int seedB, int seedOffset, out GameObject instance)
+    {
+        instance = null;
+        if (!usePrefabOverrides || prefabs == null || prefabs.Length == 0)
+        {
+            return false;
+        }
+
+        var prefab = PickPrefab(prefabs, seedA, seedB, seedOffset);
+        if (prefab == null)
+        {
+            return false;
+        }
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            instance = UnityEditor.PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+        }
+#endif
+        if (instance == null)
+        {
+            instance = Instantiate(prefab, parent);
+        }
+        else
+        {
+            instance.transform.SetParent(parent, false);
+        }
+
+        instance.name = objectName;
+        instance.transform.localPosition = localPosition;
+        instance.transform.localRotation = localRotation;
+        var prefabScale = instance.transform.localScale;
+        instance.transform.localScale = new Vector3(prefabScale.x * scaleMultiplier.x, prefabScale.y * scaleMultiplier.y, prefabScale.z * scaleMultiplier.z);
+        return true;
+    }
+
+    private void EnsurePrefabLibrary()
+    {
+        if (prefabLibrary != null || runtimePrefabLibrary != null)
+        {
+            return;
+        }
+
+        runtimePrefabLibrary = ScriptableObject.CreateInstance<HexMapPrefabLibrary>();
+        runtimePrefabLibrary.hideFlags = HideFlags.DontSave;
+    }
+
+    private static bool HasPrefab(GameObject[] prefabs)
+    {
+        if (prefabs == null)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private GameObject PickPrefab(GameObject[] prefabs, int seedA, int seedB, int seedOffset)
+    {
+        var validCount = 0;
+        for (var i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount == 0)
+        {
+            return null;
+        }
+
+        var target = Mathf.FloorToInt(Hash01(seedA, seedB, seedOffset) * validCount);
+        var validIndex = 0;
+        for (var i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] == null)
+            {
+                continue;
+            }
+
+            if (validIndex == target)
+            {
+                return prefabs[i];
+            }
+
+            validIndex++;
+        }
+
+        for (var i = 0; i < prefabs.Length; i++)
+        {
+            if (prefabs[i] != null)
+            {
+                return prefabs[i];
+            }
+        }
+
+        return null;
+    }
+
     private Mesh MeshFrom(List<Vector3> vertices, List<Vector2> uvs, List<int> triangles, string meshName)
     {
         var mesh = new Mesh { name = meshName, hideFlags = HideFlags.DontSave };
@@ -1508,6 +2008,21 @@ public sealed class UnityHexMapView : MonoBehaviour
         var x = hexSize * Sqrt3 * (coord.x + coord.y * 0.5f);
         var z = hexSize * 1.5f * coord.y;
         return new Vector3(x, 0f, z);
+    }
+
+    private Vector2Int OffsetToCenteredAxial(int column, int row)
+    {
+        var centeredRow = row - mapHeight / 2;
+        var centeredColumn = column - mapWidth / 2;
+        var q = centeredColumn - (centeredRow - (centeredRow & 1)) / 2;
+        return new Vector2Int(q, centeredRow);
+    }
+
+    private Vector2 BoardWorldSize()
+    {
+        var width = Sqrt3 * hexSize * (mapWidth + 0.5f);
+        var height = 1.5f * hexSize * (mapHeight + 0.5f);
+        return new Vector2(width, height);
     }
 
     private static Vector2 HexCorner(float radius, int index)
