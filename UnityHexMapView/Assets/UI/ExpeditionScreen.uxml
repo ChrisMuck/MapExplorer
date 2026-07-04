@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- =====================================================================
+     ExpeditionScreen.uxml  —  Layout 3a (Feldbuch, aufklappbares Panel)
+     Struktur = HTML-Mockup. Karte selbst ist NICHT hier drin: die
+     .map-area ist transparent, darunter liegt deine Weltkarte
+     (eigene Kamera / RenderTexture / Tilemap). Dieses UIDocument ist
+     ein Overlay.
+     Ordne im Editor die USS zu und weise den Controller (UIDocument-GO) zu.
+     ===================================================================== -->
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="ExpeditionScreen.uss" />
+
+    <ui:VisualElement class="screen">
+
+        <!-- ======================= TOP BAR ======================= -->
+        <ui:VisualElement class="topbar">
+            <ui:VisualElement class="topbar__brand">
+                <ui:VisualElement class="brand-dot" />
+                <ui:Label text="EXPEDITION" class="brand-text sans" />
+            </ui:VisualElement>
+            <ui:VisualElement class="divider-v" />
+            <ui:VisualElement class="days mono">
+                <ui:Label name="value-expedition-day" text="Expedition · Tag 7" class="day" />
+                <ui:Label name="value-world-day" text="Welt · Tag 12" class="day day--muted" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="spacer" />
+
+            <ui:VisualElement class="stats">
+                <ui:VisualElement class="stat">
+                    <ui:Label text="VORRÄTE" class="stat__label" />
+                    <ui:Label name="value-supplies" text="42" class="stat__value mono" />
+                </ui:VisualElement>
+                <ui:VisualElement class="stat">
+                    <ui:Label text="MEDIZIN" class="stat__label" />
+                    <ui:Label name="value-medicine" text="4" class="stat__value mono" />
+                </ui:VisualElement>
+                <ui:VisualElement class="stat">
+                    <ui:Label text="MORAL" class="stat__label" />
+                    <ui:Label name="value-morale" text="Stabil" class="stat__value--good" />
+                </ui:VisualElement>
+                <ui:VisualElement class="stat">
+                    <ui:Label text="GRUPPE" class="stat__label" />
+                    <ui:Label name="value-party" text="5" class="stat__value mono" />
+                </ui:VisualElement>
+                <ui:VisualElement class="mp-box">
+                    <ui:Label text="BEWEGUNG" class="stat__label" />
+                    <ui:Label name="value-mp" text="2/4" class="mp-value mono" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="divider-v" />
+
+            <ui:VisualElement class="alert" name="alert">
+                <ui:Label text="⚠" class="alert__icon" />
+                <ui:Label name="alert-text" text="Späher überfällig" class="alert__text" />
+                <ui:Label name="alert-count" text="2" class="badge mono" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ======================= BODY ======================= -->
+        <ui:VisualElement class="body">
+
+            <!-- LEFT CONTEXT PANEL -->
+            <ui:VisualElement class="left-panel">
+                <ui:Label text="AUSGEWÄHLTES FELD" class="section-label" />
+                <ui:Label name="coord" text="Feld 14 / 08" class="coord mono" />
+                <ui:VisualElement class="chip-row">
+                    <ui:Label name="selected-knowledge" text="Gemeldet" class="chip chip--gold" />
+                    <ui:Label name="selected-reliability" text="Verlässlichkeit: Mittel" class="chip" />
+                </ui:VisualElement>
+                <ui:Label name="selected-meta" text="Letzter Bericht — Expedition 1, Tag 5" class="meta mono" />
+                <ui:VisualElement class="hr" />
+                <ui:Label text="GEMELDETE ZEICHEN" class="section-label" />
+                <ui:VisualElement class="sign-row">
+                    <ui:Label text="—" class="dash" />
+                    <ui:Label name="selected-sign-1" text="Drei geschnitzte Pfähle" />
+                </ui:VisualElement>
+                <ui:VisualElement class="sign-row">
+                    <ui:Label text="—" class="dash" />
+                    <ui:Label name="selected-sign-2" text="Rauch weiter östlich" />
+                </ui:VisualElement>
+                <ui:VisualElement class="note">
+                    <ui:Label text="NOTIZ" class="note__label" />
+                    <ui:Label name="selected-note" text="„Mögliche Grenze der Grenzwächter. Mit großer Gruppe meiden.“" class="note__text serif" />
+                </ui:VisualElement>
+                <!-- Klick öffnet Berichte-Panel -->
+                <ui:VisualElement class="linkrow" name="link-reports">
+                    <ui:Label text="✦" class="ico" />
+                    <ui:Label text="Verknüpft: „Rauch hinter dem Kamm“" class="linkrow__text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- MAP AREA (transparent overlay über der Weltkarte) -->
+            <ui:VisualElement class="map-area">
+
+                <!-- DOCKED SIDE PANEL (3a) -->
+                <ui:VisualElement class="side-panel" name="side-panel">
+                    <ui:VisualElement class="side-panel__header">
+                        <ui:VisualElement class="side-panel__title-wrap">
+                            <ui:VisualElement class="title-dot" />
+                            <ui:Label name="side-panel-title" text="Berichte" class="side-panel__title sans" />
+                        </ui:VisualElement>
+                        <ui:Label text="»" class="side-panel__close" name="side-panel-close" tooltip="Einklappen" />
+                    </ui:VisualElement>
+
+                    <ui:ScrollView class="side-panel__body">
+
+                        <!-- BERICHTE -->
+                        <ui:VisualElement class="section" name="section-reports">
+                            <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 13px;">
+                                <ui:Label text="BERICHTE" class="section-label" />
+                                <ui:Label name="report-count-label" text="0" style="font-size: 11px; color: rgb(240,207,122);" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="report-list" class="report-list" />
+                            <ui:VisualElement name="report-card-main" class="card" style="display: none;">
+                                <ui:VisualElement class="card__head">
+                                    <ui:VisualElement class="avatar" />
+                                    <ui:VisualElement style="flex-grow: 1;">
+                                        <ui:Label name="report-title-main" text="Rauch hinter dem Kamm" class="card__title serif" />
+                                        <ui:Label name="report-sub-main" text="Mara · Späher · Tag 5" class="card__sub mono" />
+                                    </ui:VisualElement>
+                                    <ui:VisualElement class="unread-dot" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="tag-row">
+                                    <ui:Label name="report-reliability-main" text="Verlässlichkeit: Mittel" class="tag tag--gold" />
+                                    <ui:Label name="report-direction-main" text="Nordost" class="tag" />
+                                </ui:VisualElement>
+                                <ui:Label name="report-excerpt-main" text="„Mara folgte dem Fluss zwei Tage nach Nordosten. Hinter dem zweiten Kamm fand sie drei geschnitzte Pfähle…“" class="excerpt serif" />
+                                <ui:VisualElement name="report-hint-list" class="hint-list" />
+                                <ui:VisualElement class="card__actions">
+                                    <ui:Label name="action-open-report" text="Öffnen" class="btn--primary" style="flex-grow: 1; -unity-text-align: middle-center; margin-right: 8px;" />
+                                    <ui:Label name="action-marker-from-report" text="Marker" class="btn" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="report-card-secondary" class="card card--plain" style="display: none;">
+                                <ui:VisualElement class="card__head" style="margin-bottom: 7px;">
+                                    <ui:VisualElement class="avatar" style="width: 30px; height: 30px;" />
+                                    <ui:VisualElement style="flex-grow: 1;">
+                                        <ui:Label text="Verlassenes Lager" class="card__title serif" style="font-size: 14px;" />
+                                        <ui:Label text="Jonas · Späher · Tag 4" class="card__sub mono" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="tag-row" style="margin-bottom: 0;">
+                                    <ui:Label text="Verlässlichkeit: Hoch" class="tag tag--good" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <!-- TRUPP -->
+                        <ui:VisualElement class="section" name="section-expedition">
+                            <ui:Label text="TRUPP · 5 MITGLIEDER" class="section-label" style="margin-bottom: 9px;" />
+                            <ui:VisualElement class="roster-row" style="background-color: rgb(38,45,36); border-width: 0;">
+                                <ui:VisualElement class="avatar" style="width: 36px; height: 36px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Mara ★" class="name serif" />
+                                    <ui:Label text="Späherin" class="role" />
+                                </ui:VisualElement>
+                                <ui:Label text="Auf Mission" class="status-pill status-pill--mission" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="roster-row">
+                                <ui:VisualElement class="avatar" style="width: 36px; height: 36px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Jonas ★" class="name serif" />
+                                    <ui:Label text="Späher" class="role" />
+                                </ui:VisualElement>
+                                <ui:Label text="Bereit" class="status-pill status-pill--ready" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="roster-row">
+                                <ui:VisualElement class="avatar" style="width: 36px; height: 36px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Bren" class="name serif" />
+                                    <ui:Label text="Soldat" class="role" />
+                                </ui:VisualElement>
+                                <ui:Label text="Gesund" class="status-good" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="roster-row">
+                                <ui:VisualElement class="avatar" style="width: 36px; height: 36px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Elin" class="name serif" />
+                                    <ui:Label text="Medic" class="role" />
+                                </ui:VisualElement>
+                                <ui:Label text="Gesund" class="status-good" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <!-- SPÄHER -->
+                        <ui:VisualElement class="section" name="section-scouts">
+                            <ui:Label text="AKTIVE MISSION" class="section-label" style="margin-bottom: 13px;" />
+                            <ui:VisualElement class="card" style="border-color: rgba(127,160,196,0.28);">
+                                <ui:VisualElement class="card__head" style="margin-bottom: 11px;">
+                                    <ui:Label text="✦" style="color: rgb(127,160,196); font-size: 16px; margin-right: 8px;" />
+                                    <ui:Label text="Mara" class="card__title serif" style="font-size: 16px; flex-grow: 1;" />
+                                    <ui:Label text="Auf Mission" class="status-pill status-pill--mission" />
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Richtung" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Nordost" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Fokus" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Fraktionsspuren" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Verhalten" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Vorsichtig" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row;"><ui:Label text="Zurück erwartet" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Tag 6 · überfällig" style="font-size: 12px; color: rgb(232,182,167);" /></ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:Label text="BEREIT" class="section-label" style="margin-bottom: 9px; margin-top: 4px;" />
+                            <ui:VisualElement class="roster-row">
+                                <ui:Label text="✦" style="color: rgb(127,160,196); margin-right: 10px;" />
+                                <ui:Label text="Jonas" class="name serif" style="flex-grow: 1;" />
+                                <ui:Label text="Bereit" class="status-good" />
+                            </ui:VisualElement>
+                            <ui:Label name="action-send-scout-panel" text="＋ Späher senden" class="btn--primary" style="-unity-text-align: middle-center; margin-top: 4px;" />
+                        </ui:VisualElement>
+
+                        <!-- JOURNAL -->
+                        <ui:VisualElement class="section" name="section-journal">
+                            <ui:Label text="EXPEDITIONS-TAGEBUCH" class="section-label" style="margin-bottom: 14px;" />
+                            <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(240,207,122,0.25); padding-left: 16px; margin-left: 5px; margin-bottom: 16px;">
+                                <ui:Label text="TAG 5" class="mono" style="font-size: 10px; color: rgb(240,207,122);" />
+                                <ui:Label text="Mara kehrte mit einem Bericht über Rauch im Nordosten zurück." class="serif" style="font-size: 14px; color: rgb(232,227,214); white-space: normal; margin-top: 2px;" />
+                            </ui:VisualElement>
+                            <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(255,255,255,0.1); padding-left: 16px; margin-left: 5px; margin-bottom: 16px;">
+                                <ui:Label text="TAG 4" class="mono" style="font-size: 10px; color: rgb(164,157,142);" />
+                                <ui:Label text="Verlassenes Lager am Flussufer entdeckt. Keine Spuren." class="serif" style="font-size: 14px; color: rgb(201,195,180); white-space: normal; margin-top: 2px;" />
+                            </ui:VisualElement>
+                            <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(255,255,255,0.1); padding-left: 16px; margin-left: 5px;">
+                                <ui:Label text="TAG 3" class="mono" style="font-size: 10px; color: rgb(164,157,142);" />
+                                <ui:Label text="Jonas und Mara zu getrennten Aufklärungen ausgesandt." class="serif" style="font-size: 14px; color: rgb(201,195,180); white-space: normal; margin-top: 2px;" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <!-- ARCHIV -->
+                        <ui:VisualElement class="section" name="section-archive">
+                            <ui:Label text="GESICHERTES WISSEN" class="section-label" style="margin-bottom: 11px;" />
+                            <ui:VisualElement class="card" style="flex-direction: row; padding: 12px;">
+                                <ui:VisualElement class="avatar" style="width: 46px; height: 46px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Markiertes Grab" class="card__title serif" />
+                                    <ui:Label text="Besonderer Ort · Entdeckt" class="card__sub" style="font-size: 11px; margin-top: 2px;" />
+                                    <ui:Label text="2 Berichte · 1 Notiz" class="mono" style="font-size: 10px; color: rgb(111,106,95); margin-top: 4px;" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="card card--plain" style="flex-direction: row; padding: 12px;">
+                                <ui:VisualElement class="avatar" style="width: 46px; height: 46px;" />
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Grenzmarkierungen" class="card__title serif" style="color: rgb(232,227,214);" />
+                                    <ui:Label text="Warnzeichen · Gemeldet" class="card__sub" style="font-size: 11px; margin-top: 2px;" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                    </ui:ScrollView>
+                </ui:VisualElement>
+
+                <!-- RIGHT MENU RAIL -->
+                <ui:VisualElement class="rail">
+                    <ui:VisualElement class="rail-btn" name="rail-expedition" style="display: none;">
+                        <ui:VisualElement class="active-bar" />
+                        <ui:Label text="Ex" class="rail-btn__icon sans" />
+                        <ui:Label text="Trupp" class="rail-btn__label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rail-btn" name="rail-scouts">
+                        <ui:VisualElement class="active-bar" />
+                        <ui:Label text="✦" class="rail-btn__icon rail-btn__icon--scout" />
+                        <ui:Label text="Späher" class="rail-btn__label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rail-btn" name="rail-reports">
+                        <ui:VisualElement class="active-bar" />
+                        <ui:VisualElement style="position: relative;">
+                            <ui:Label text="Be" class="rail-btn__icon rail-btn__icon--gold sans" />
+                        </ui:VisualElement>
+                        <ui:Label name="report-count-rail" text="0" class="rail-badge mono" />
+                        <ui:Label text="Berichte" class="rail-btn__label rail-btn__label--gold" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rail-btn" name="rail-journal">
+                        <ui:VisualElement class="active-bar" />
+                        <ui:Label text="Jo" class="rail-btn__icon sans" />
+                        <ui:Label text="Journal" class="rail-btn__label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="rail-btn" name="rail-archive">
+                        <ui:VisualElement class="active-bar" />
+                        <ui:Label text="Ar" class="rail-btn__icon sans" />
+                        <ui:Label text="Archiv" class="rail-btn__label" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ======================= ACTION BAR ======================= -->
+        <ui:VisualElement class="action-bar">
+            <ui:Label name="action-move" text="↳ Bewegen" class="btn" />
+            <ui:Label name="action-inspect" text="⌕ Untersuchen" class="btn" />
+            <ui:Label name="action-send-scout" text="✦ Späher senden" class="btn" />
+            <ui:Label name="action-add-marker" text="△ Marker" class="btn" />
+            <ui:Label name="action-add-note" text="✎ Notiz" class="btn" />
+            <ui:Label name="action-camp" text="⛺ Lager" class="btn" />
+            <ui:VisualElement class="spacer" />
+            <ui:Label name="action-return-base" text="↩ Zurück zur Basis" class="btn btn--ghost" />
+            <ui:Label name="action-end-day" text="Tag beenden →" class="btn--primary" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

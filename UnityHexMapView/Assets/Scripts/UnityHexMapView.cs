@@ -36,6 +36,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     public bool centerCameraOnExpeditionAfterMove = true;
     public bool showDebugHexGrid = false;
     public bool showKnowledgeFog = true;
+    public bool showLegacyOnGui = false;
     public bool showSelectionPreview = true;
     public Vector2Int selectedPreviewHex = Vector2Int.zero;
     [Range(0, 8)] public int reachablePreviewRadius = 2;
@@ -54,7 +55,6 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<string, Material> featureMaterials = new();
     private Transform cameraRig;
     private Camera strategyCamera;
-    private HexMapPrefabLibrary runtimePrefabLibrary;
     private GameState coreGameState;
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly GameApplication gameApplication = new GameApplication();
@@ -68,6 +68,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Transform overlayRoot;
     private Transform playerAnnotationRoot;
     private Transform expeditionMarker;
+    private ExpeditionScreenController expeditionScreenController;
+    private bool warnedMissingPrefabLibrary;
     private Vector3 lastPanMousePosition;
     private bool isDraggingPan;
     private bool hasHoverPreview;
@@ -85,7 +87,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
     private bool sendTwoScouts = false;
-    private HexMapPrefabLibrary Prefabs => prefabLibrary != null ? prefabLibrary : runtimePrefabLibrary;
+    private HexMapPrefabLibrary Prefabs => prefabLibrary;
 #if UNITY_EDITOR
     private bool editorRebuildQueued;
 #endif
@@ -99,6 +101,171 @@ public sealed class UnityHexMapView : MonoBehaviour
         new(-1, 1),
         new(0, 1)
     };
+
+    public GameState CurrentGameState => coreGameState;
+
+    public string CurrentInteractionMessage => interactionMessage;
+
+    public bool HasInspectedHex => hasInspectedHex;
+
+    public HexCoord CurrentSelectedCoreCoord => ViewCoordToCoreCoord(hasInspectedHex ? inspectedHex : selectedPreviewHex);
+
+    public KnowledgeLevel GetKnowledgeForUi(HexCoord coord)
+    {
+        return coreGameState == null ? KnowledgeLevel.Unknown : coreGameState.Knowledge.GetTileKnowledge(coord);
+    }
+
+    public bool TryGetTileForUi(HexCoord coord, out HexTileState tile)
+    {
+        tile = null;
+        if (coreGameState == null)
+        {
+            return false;
+        }
+
+        return coreGameState.World.Map.TryGetTile(coord, out tile);
+    }
+
+    public SpecialLocationState GetLocationForUi(HexCoord coord)
+    {
+        return FindLocation(coord);
+    }
+
+    public IReadOnlyList<PlayerMapMarkerState> GetMarkersForUi(HexCoord coord)
+    {
+        var result = new List<PlayerMapMarkerState>();
+        if (coreGameState == null)
+        {
+            return result;
+        }
+
+        foreach (var marker in coreGameState.PlayerNotes.Markers)
+        {
+            if (marker.Coord == coord)
+            {
+                result.Add(marker);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<PlayerMapNoteState> GetNotesForUi(HexCoord coord)
+    {
+        var result = new List<PlayerMapNoteState>();
+        if (coreGameState == null)
+        {
+            return result;
+        }
+
+        foreach (var note in coreGameState.PlayerNotes.Notes)
+        {
+            if (note.Coord == coord)
+            {
+                result.Add(note);
+            }
+        }
+
+        return result;
+    }
+
+    public void RequestEndDayFromUi()
+    {
+        EndCurrentDay();
+        RefreshToolkitHud();
+    }
+
+    public void RequestSendScoutMissionFromUi()
+    {
+        SendScoutMissionFromHud();
+        RefreshToolkitHud();
+    }
+
+    public void RequestAddMarkerFromUi()
+    {
+        EnsureUiSelectedHex();
+        if (string.IsNullOrWhiteSpace(markerLabelDraft))
+        {
+            markerLabelDraft = DefaultMarkerLabel(selectedMarkerKind);
+        }
+
+        AddMarkerToInspectedHex();
+        RefreshToolkitHud();
+    }
+
+    public void RequestMarkerFromLatestReportFromUi()
+    {
+        EnsureUiSelectedHex();
+        if (coreGameState != null && coreGameState.Knowledge.ScoutReports.Count > 0)
+        {
+            var report = coreGameState.Knowledge.ScoutReports[coreGameState.Knowledge.ScoutReports.Count - 1];
+            if (report.RelatedCoords.Count > 0)
+            {
+                inspectedHex = CoreCoordToViewCoord(report.RelatedCoords[0]);
+                hasInspectedHex = true;
+            }
+
+            selectedMarkerKind = PlayerMapMarkerKind.Question;
+            markerLabelDraft = report.Title;
+        }
+
+        AddMarkerToInspectedHex();
+        RefreshToolkitHud();
+    }
+
+    public void RequestMarkerFromReportHintFromUi(int reportIndex, int hintIndex)
+    {
+        if (coreGameState == null || reportIndex < 0 || reportIndex >= coreGameState.Knowledge.ScoutReports.Count)
+        {
+            return;
+        }
+
+        var report = coreGameState.Knowledge.ScoutReports[reportIndex];
+        if (report.RelatedCoords.Count > 0)
+        {
+            inspectedHex = CoreCoordToViewCoord(report.RelatedCoords[0]);
+            hasInspectedHex = true;
+        }
+        else
+        {
+            EnsureUiSelectedHex();
+        }
+
+        var hint = hintIndex >= 0 && hintIndex < report.Hints.Count ? report.Hints[hintIndex] : report.Title;
+        selectedMarkerKind = MarkerKindForReportHint(hint);
+        markerLabelDraft = hint;
+        AddMarkerToInspectedHex();
+        RefreshToolkitHud();
+    }
+
+    public void RequestAddNoteFromUi()
+    {
+        EnsureUiSelectedHex();
+        if (string.IsNullOrWhiteSpace(noteDraftText))
+        {
+            noteDraftText = "Notiz aus dem Expeditionsbuch.";
+        }
+
+        AddNoteToInspectedHex();
+        RefreshToolkitHud();
+    }
+
+    public void RefreshToolkitHud()
+    {
+        expeditionScreenController?.Refresh();
+    }
+
+    private void EnsureUiSelectedHex()
+    {
+        if (hasInspectedHex)
+        {
+            return;
+        }
+
+        inspectedHex = selectedPreviewHex;
+        hasInspectedHex = true;
+        inspectedLocation = coreGameState == null ? null : FindLocation(ViewCoordToCoreCoord(inspectedHex));
+    }
 
     private void OnEnable()
     {
@@ -128,7 +295,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!Application.isPlaying || !useCoreTutorialState || coreGameState == null)
+        if (!showLegacyOnGui || !Application.isPlaying || !useCoreTutorialState || coreGameState == null)
         {
             return;
         }
@@ -192,6 +359,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         knowledgeOverlayRoot = null;
         playerAnnotationRoot = null;
         expeditionMarker = null;
+        expeditionScreenController = null;
         hasHoverPreview = false;
         hasInspectedHex = false;
         inspectedLocation = null;
@@ -1889,6 +2057,37 @@ public sealed class UnityHexMapView : MonoBehaviour
         };
     }
 
+    private static PlayerMapMarkerKind MarkerKindForReportHint(string hint)
+    {
+        if (string.IsNullOrWhiteSpace(hint))
+        {
+            return PlayerMapMarkerKind.Question;
+        }
+
+        var normalized = hint.ToLowerInvariant();
+        if (normalized.Contains("faction") || normalized.Contains("territor") || normalized.Contains("warning"))
+        {
+            return PlayerMapMarkerKind.FactionRumor;
+        }
+
+        if (normalized.Contains("resource"))
+        {
+            return PlayerMapMarkerKind.Resource;
+        }
+
+        if (normalized.Contains("route") || normalized.Contains("path"))
+        {
+            return PlayerMapMarkerKind.Destination;
+        }
+
+        if (normalized.Contains("ruin") || normalized.Contains("stone") || normalized.Contains("sealed"))
+        {
+            return PlayerMapMarkerKind.Question;
+        }
+
+        return PlayerMapMarkerKind.Warning;
+    }
+
     private void UpdateHoverPreview()
     {
         if (strategyCamera == null)
@@ -2974,15 +3173,23 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var hud = NewChild("ExpeditionHUD_OnGUI");
-        NewChild("StatusText_RuntimeOnGUI", hud.transform);
-        NewChild("EndDayButton_RuntimeOnGUI", hud.transform);
-        NewChild("InputHints_RuntimeOnGUI", hud.transform);
+        if (expeditionScreenController == null)
+        {
+            expeditionScreenController = FindObjectOfType<ExpeditionScreenController>();
+        }
+
+        if (expeditionScreenController == null)
+        {
+            Debug.LogWarning("ExpeditionScreenController is missing. Add an Expedition HUD UIDocument scene object and assign the project UI assets there.");
+            return;
+        }
+
+        expeditionScreenController.Initialize(this);
     }
 
     private void RefreshHud()
     {
-        // OnGUI reads the current GameState every frame, so no retained UI component update is needed.
+        RefreshToolkitHud();
     }
 
     private void FocusCameraOnCoord(Vector2Int coord)
@@ -3088,13 +3295,13 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void EnsurePrefabLibrary()
     {
-        if (prefabLibrary != null || runtimePrefabLibrary != null)
+        if (prefabLibrary != null || warnedMissingPrefabLibrary)
         {
             return;
         }
 
-        runtimePrefabLibrary = ScriptableObject.CreateInstance<HexMapPrefabLibrary>();
-        runtimePrefabLibrary.hideFlags = HideFlags.DontSave;
+        warnedMissingPrefabLibrary = true;
+        Debug.LogWarning("HexMapPrefabLibrary is not assigned. Assign Assets/Settings/DefaultHexMapPrefabLibrary.asset on UnityHexMapView.");
     }
 
     private static bool HasPrefab(GameObject[] prefabs)
