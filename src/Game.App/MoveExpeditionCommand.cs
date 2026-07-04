@@ -7,10 +7,17 @@ namespace Game.App
 public sealed class MoveExpeditionCommand
 {
     private readonly MovementCostService movementCostService;
+    private readonly KnowledgeService knowledgeService;
 
     public MoveExpeditionCommand(MovementCostService movementCostService)
+        : this(movementCostService, new KnowledgeService())
+    {
+    }
+
+    public MoveExpeditionCommand(MovementCostService movementCostService, KnowledgeService knowledgeService)
     {
         this.movementCostService = movementCostService ?? throw new ArgumentNullException(nameof(movementCostService));
+        this.knowledgeService = knowledgeService ?? throw new ArgumentNullException(nameof(knowledgeService));
     }
 
     public MoveExpeditionResult Execute(GameState game, HexCoord destination)
@@ -54,15 +61,7 @@ public sealed class MoveExpeditionCommand
 
         game.Expedition.SpendMovementPoints(cost.Cost);
         game.Expedition.SetPosition(destination);
-        game.Knowledge.SetTileKnowledge(destination, KnowledgeLevel.Confirmed);
-
-        foreach (var neighbor in destination.Neighbors())
-        {
-            if (game.World.Map.Contains(neighbor) && game.Knowledge.GetTileKnowledge(neighbor) == KnowledgeLevel.Unknown)
-            {
-                game.Knowledge.SetTileKnowledge(neighbor, KnowledgeLevel.Reported);
-            }
-        }
+        knowledgeService.RevealFromExpedition(game.World.Map, game.Knowledge, destination);
 
         return MoveExpeditionResult.Moved(from, destination, cost.Cost);
     }

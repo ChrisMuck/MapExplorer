@@ -12,6 +12,10 @@ public enum PlayerMapMarkerKind
     Question,
     Destination,
     Resource,
-    Danger
+    Danger,
+    FactionContact,
+    FactionWarning,
+    FactionTerritory,
+    FactionRumor
 }
 }

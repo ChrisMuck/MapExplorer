@@ -24,7 +24,7 @@ public static class TutorialGameFactory
 
         var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations());
         var knowledge = new KnowledgeState();
-        ConfirmStartArea(knowledge, baseCoord);
+        new KnowledgeService().RevealFromExpedition(map, knowledge, baseCoord);
 
         var notes = new PlayerNotesState();
         var expedition = new ExpeditionState(
@@ -234,16 +234,6 @@ public static class TutorialGameFactory
             var n = q * 374761393 + r * 668265263 + seed * 2147483647;
             n = (n ^ (n >> 13)) * 1274126177;
             return ((n ^ (n >> 16)) & 0x7fffffff) / 2147483647.0;
-        }
-    }
-
-    private static void ConfirmStartArea(KnowledgeState knowledge, HexCoord baseCoord)
-    {
-        knowledge.SetTileKnowledge(baseCoord, KnowledgeLevel.Confirmed);
-
-        foreach (var neighbor in baseCoord.Neighbors())
-        {
-            knowledge.SetTileKnowledge(neighbor, KnowledgeLevel.Confirmed);
         }
     }
 

@@ -31,7 +31,11 @@ public sealed class UnityHexMapView : MonoBehaviour
     [Range(3f, 30f)] public float zoomedInSize = 5f;
     [Range(8f, 60f)] public float zoomedOutSize = 24f;
     [Range(0.5f, 8f)] public float zoomSpeed = 3.5f;
+    [Range(2f, 40f)] public float cameraPanSpeed = 14f;
+    [Range(0.1f, 3f)] public float cameraDragPanSpeed = 1f;
+    public bool centerCameraOnExpeditionAfterMove = true;
     public bool showDebugHexGrid = false;
+    public bool showKnowledgeFog = true;
     public bool showSelectionPreview = true;
     public Vector2Int selectedPreviewHex = Vector2Int.zero;
     [Range(0, 8)] public int reachablePreviewRadius = 2;
@@ -43,6 +47,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     private const float VisualTileTopY = 0.08f;
     private const float VisualTileBottomY = -0.035f;
     private readonly Dictionary<Vector2Int, TileData> tiles = new();
+    private readonly Dictionary<Vector2Int, List<GameObject>> featureObjectsByCoord = new();
+    private readonly Dictionary<GameObject, List<Vector2Int>> featureObjectsByPath = new();
     private readonly Dictionary<TerrainKind, Material> topMaterials = new();
     private readonly Dictionary<TerrainKind, Material> sideMaterials = new();
     private readonly Dictionary<string, Material> featureMaterials = new();
@@ -51,6 +57,34 @@ public sealed class UnityHexMapView : MonoBehaviour
     private HexMapPrefabLibrary runtimePrefabLibrary;
     private GameState coreGameState;
     private readonly MovementCostService movementCostService = new MovementCostService();
+    private readonly GameApplication gameApplication = new GameApplication();
+    private Transform currentBuildRoot;
+    private Transform terrainRoot;
+    private Transform featureRoot;
+    private Transform systemsRoot;
+    private Transform lightingRoot;
+    private Transform hudRoot;
+    private Transform knowledgeOverlayRoot;
+    private Transform overlayRoot;
+    private Transform playerAnnotationRoot;
+    private Transform expeditionMarker;
+    private Vector3 lastPanMousePosition;
+    private bool isDraggingPan;
+    private bool hasHoverPreview;
+    private Vector2Int hoverPreviewHex;
+    private bool hasInspectedHex;
+    private Vector2Int inspectedHex;
+    private string interactionMessage = "Ready.";
+    private SpecialLocationState inspectedLocation;
+    private PlayerMapMarkerKind selectedMarkerKind = PlayerMapMarkerKind.Question;
+    private string markerLabelDraft = "";
+    private string markerFactionIdDraft = "border-wardens";
+    private string noteDraftText = "";
+    private HexDirection scoutDirection = HexDirection.East;
+    private int scoutDurationDays = 2;
+    private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
+    private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
+    private bool sendTwoScouts = false;
     private HexMapPrefabLibrary Prefabs => prefabLibrary != null ? prefabLibrary : runtimePrefabLibrary;
 #if UNITY_EDITOR
     private bool editorRebuildQueued;
@@ -86,7 +120,54 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        UpdateHoverPreview();
+        HandleMapInput();
+        UpdateCameraPan();
         UpdateCameraZoom();
+    }
+
+    private void OnGUI()
+    {
+        if (!Application.isPlaying || !useCoreTutorialState || coreGameState == null)
+        {
+            return;
+        }
+
+        var oldColor = GUI.color;
+        var oldBackground = GUI.backgroundColor;
+        GUI.color = ColorFromHex("f1ead5");
+        var panelColor = ColorFromHex("26302a");
+        panelColor.a = 0.88f;
+        GUI.backgroundColor = panelColor;
+
+        GUILayout.BeginArea(new Rect(16f, 16f, 720f, 326f), GUI.skin.box);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label($"World Day {coreGameState.World.WorldDay}", GUILayout.Width(105f));
+        GUILayout.Label($"Expedition Day {coreGameState.Expedition.ExpeditionDay}", GUILayout.Width(135f));
+        GUILayout.Label($"MP {coreGameState.Expedition.MovementPoints}/{coreGameState.Expedition.MaxMovementPoints}", GUILayout.Width(80f));
+        GUILayout.Label($"Supplies {coreGameState.Expedition.Supplies}", GUILayout.Width(95f));
+        GUILayout.Label($"Morale {coreGameState.Expedition.Morale}", GUILayout.Width(80f));
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(8f);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("End Day", GUILayout.Width(110f), GUILayout.Height(34f)))
+        {
+            EndCurrentDay();
+        }
+
+        GUILayout.Label("Move: left-click reachable hex   Inspect: left-click other known hex   Pan: WASD/arrows or right/middle drag   Zoom: mouse wheel");
+        GUILayout.EndHorizontal();
+        GUILayout.Space(8f);
+        GUILayout.Label(GetHudInteractionText());
+        GUILayout.Space(8f);
+        DrawAnnotationControls();
+        GUILayout.Space(8f);
+        DrawScoutControls();
+        GUILayout.EndArea();
+
+        GUI.color = oldColor;
+        GUI.backgroundColor = oldBackground;
     }
 
     [ContextMenu("Rebuild Hex Map")]
@@ -94,20 +175,68 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         ClearGeneratedChildren();
         tiles.Clear();
+        featureObjectsByCoord.Clear();
+        featureObjectsByPath.Clear();
         topMaterials.Clear();
         sideMaterials.Clear();
         featureMaterials.Clear();
         strategyCamera = null;
+        cameraRig = null;
+        currentBuildRoot = null;
+        terrainRoot = null;
+        featureRoot = null;
+        systemsRoot = null;
+        lightingRoot = null;
+        hudRoot = null;
+        overlayRoot = null;
+        knowledgeOverlayRoot = null;
+        playerAnnotationRoot = null;
+        expeditionMarker = null;
+        hasHoverPreview = false;
+        hasInspectedHex = false;
+        inspectedLocation = null;
+        interactionMessage = "Ready.";
         EnsurePrefabLibrary();
 
         CreateMaterials();
+        terrainRoot = NewRootGroup("Terrain");
+        currentBuildRoot = terrainRoot;
         BuildMap();
+
+        featureRoot = NewRootGroup("Features");
+        currentBuildRoot = featureRoot;
         BuildTerrainObjectGroups();
         BuildFeatures();
+        BuildExpeditionMarker();
+        UpdateFeatureVisibility();
+
+        knowledgeOverlayRoot = NewRootGroup("Knowledge Fog");
+        currentBuildRoot = knowledgeOverlayRoot;
+        BuildKnowledgeOverlays();
+
+        overlayRoot = NewRootGroup("Hex Overlays");
+        currentBuildRoot = overlayRoot;
         BuildHexOverlays();
+
+        playerAnnotationRoot = NewRootGroup("Player Annotations");
+        currentBuildRoot = playerAnnotationRoot;
+        BuildPlayerAnnotations();
+
+        systemsRoot = NewRootGroup("Systems");
+        currentBuildRoot = systemsRoot;
         BuildWaterPlane();
+
+        lightingRoot = NewRootGroup("Lighting");
+        currentBuildRoot = lightingRoot;
         BuildLighting();
+
+        currentBuildRoot = NewRootGroup("Camera");
         BuildCamera();
+
+        hudRoot = NewRootGroup("HUD");
+        currentBuildRoot = hudRoot;
+        BuildHud();
+        currentBuildRoot = null;
     }
 
     private void RequestRebuild()
@@ -167,6 +296,18 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
     }
 
+    private static void DestroyGeneratedObject(Object obj)
+    {
+        if (Application.isPlaying)
+        {
+            Destroy(obj);
+        }
+        else
+        {
+            DestroyImmediate(obj);
+        }
+    }
+
     private void CreateMaterials()
     {
         topMaterials[TerrainKind.Water] = Material("Water", "3f7180", "355f6c", "527f88", 11, 0.18f);
@@ -186,8 +327,17 @@ public sealed class UnityHexMapView : MonoBehaviour
         sideMaterials[TerrainKind.Snow] = Material("Snow Side", "878e87", 0.86f);
 
         featureMaterials["DebugHex"] = TransparentMaterial("Debug Hex", "101916", 0.32f);
+        featureMaterials["UnknownFog"] = TransparentMaterial("Unknown Fog", "151817", 0.74f);
+        featureMaterials["ReportedFog"] = TransparentMaterial("Reported Fog", "303432", 0.52f);
         featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "a8c884", 0.24f);
+        featureMaterials["HoverHex"] = EmissiveMaterial("Hover Hex", "d6d0a0", "f0dfa4", 0.18f);
+        featureMaterials["BlockedHoverHex"] = TransparentMaterial("Blocked Hover Hex", "b96b62", 0.34f);
+        featureMaterials["InspectedHex"] = EmissiveMaterial("Inspected Hex", "8fb8d3", "a9d8ef", 0.12f);
         featureMaterials["SelectedHex"] = EmissiveMaterial("Selected Hex", "ded69a", "f2e5a7", 0.22f);
+        featureMaterials["PlayerMarker"] = EmissiveMaterial("Player Marker", "d3b35d", "f3d67a", 0.14f);
+        featureMaterials["PlayerNote"] = EmissiveMaterial("Player Note", "7ea5c5", "a8d8f0", 0.12f);
+        featureMaterials["FactionMarker"] = EmissiveMaterial("Faction Marker", "b86458", "ef9a83", 0.16f);
+        featureMaterials["DangerMarker"] = EmissiveMaterial("Danger Marker", "9b3f35", "ee6a58", 0.18f);
         featureMaterials["RiverBank"] = Material("River Bank", "3f5d5c", 0.82f);
         featureMaterials["River"] = EmissiveMaterial("River", "57919b", "8fc8cf", 0.04f);
         featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "d8ede8", 0.11f);
@@ -214,6 +364,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["WallStone"] = Material("Ancient Wall Stone", "8d8772", 0.9f);
         featureMaterials["TowerRoof"] = Material("Tower Roof", "4e5267", 0.78f);
         featureMaterials["WaterPlane"] = Material("Distant Water", "3b5f63", 0.44f);
+        featureMaterials["ExpeditionBase"] = Material("Expedition Base", "443627", 0.82f);
+        featureMaterials["ExpeditionCloth"] = Material("Expedition Cloth", "d0a44c", 0.7f);
+        featureMaterials["ExpeditionFlag"] = EmissiveMaterial("Expedition Flag", "d95b4f", "e8a15d", 0.18f);
+        featureMaterials["ExpeditionRing"] = TransparentMaterial("Expedition Ring", "f0d889", 0.28f);
     }
 
     private Material Material(string name, string hex, float smoothness)
@@ -329,7 +483,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         if (useCoreTutorialState)
         {
-            coreGameState = new GameApplication().CreateTutorialGame();
+            coreGameState = gameApplication.CreateTutorialGame();
             BuildMapFromCoreState(coreGameState.World.Map);
             selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
             return;
@@ -479,7 +633,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         if (terrain == TerrainKind.Coast && Mathf.Abs(coord.x * 3 + coord.y * 5) % 7 == 0)
         {
-            AddFlag(parent, elevation);
+            var flag = AddFlag(parent, elevation);
+            RegisterFeatureObject(coord, flag);
         }
     }
 
@@ -513,13 +668,15 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        var group = NewChild($"ForestHex_{coord.x}_{coord.y}", parent);
+        RegisterFeatureObject(coord, group);
         var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
-        if (TryPlacePrefab(Prefabs.forestClusterPrefabs, parent, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
+        if (TryPlacePrefab(Prefabs.forestClusterPrefabs, group.transform, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
         {
             return;
         }
 
-        var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", parent);
+        var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", group.transform);
         cover.transform.localPosition = tile.World;
         AddMesh(cover, "Cover", HexTopMesh(hexSize * 0.995f, VisualTileTopY + 0.006f), featureMaterials["ForestCover"]);
 
@@ -536,7 +693,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             var neighborPull = ForestNeighborOffset(coord, i) * (interior ? 0.18f : 0.28f);
             var offset = new Vector3(Mathf.Cos(angle) * ring * hexSize, 0f, Mathf.Sin(angle) * ring * hexSize) + neighborPull;
             var position = tile.World + offset + Vector3.up * (VisualTileTopY + 0.07f);
-            AddTreeAt(parent, position, coord, seedOffset + i, interior ? 1.28f : 1.12f);
+            AddTreeAt(group.transform, position, coord, seedOffset + i, interior ? 1.28f : 1.12f);
         }
     }
 
@@ -670,6 +827,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var root = NewChild($"MountainPeak_{coord.x}_{coord.y}", parent);
+        RegisterFeatureObject(coord, root);
         root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.015f);
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
         var peakPrefabs = snowy && HasPrefab(Prefabs.snowyMountainPeakPrefabs) ? Prefabs.snowyMountainPeakPrefabs : Prefabs.mountainPeakPrefabs;
@@ -715,6 +873,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var root = NewChild($"RockyRidge_{coord.x}_{coord.y}", parent);
+        RegisterFeatureObject(coord, root);
         root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.012f);
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
         var ridgePrefabs = snowy && HasPrefab(Prefabs.snowyRockyRidgePrefabs) ? Prefabs.snowyRockyRidgePrefabs : Prefabs.rockyRidgePrefabs;
@@ -757,6 +916,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var root = NewChild($"Foothills_{coord.x}_{coord.y}", parent);
+        RegisterFeatureObject(coord, root);
         root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.025f);
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 25000) * 360f, 0f);
         if (TryPlacePrefab(Prefabs.foothillsPrefabs, root.transform, "FoothillsPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * (hillHex ? 1f : 0.82f), coord.x, coord.y, 25000 + mountainNeighbors, out _))
@@ -944,11 +1104,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
     }
 
-    private void AddFlag(Transform parent, float elevation)
+    private GameObject AddFlag(Transform parent, float elevation)
     {
-        if (TryPlacePrefab(Prefabs.coastMarkerPrefabs, parent, "CoastMarker", Vector3.up * elevation, Quaternion.identity, Vector3.one * hexSize, 0, Mathf.RoundToInt(elevation * 1000f), 8401, out _))
+        if (TryPlacePrefab(Prefabs.coastMarkerPrefabs, parent, "CoastMarker", Vector3.up * elevation, Quaternion.identity, Vector3.one * hexSize, 0, Mathf.RoundToInt(elevation * 1000f), 8401, out var instance))
         {
-            return;
+            return instance;
         }
 
         var root = NewChild("CoastMarker", parent);
@@ -965,6 +1125,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         flag.transform.localPosition = new Vector3(0.28f, elevation + 0.58f, -0.18f);
         flag.transform.localScale = new Vector3(0.34f, 0.2f, 0.035f);
         flag.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Flag"];
+        return root;
     }
 
     private void BuildFeatures()
@@ -1077,6 +1238,124 @@ public sealed class UnityHexMapView : MonoBehaviour
         return viewCoords;
     }
 
+    private void BuildKnowledgeOverlays()
+    {
+        UpdateFeatureVisibility();
+
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return;
+        }
+
+        foreach (var pair in tiles)
+        {
+            var coreCoord = ViewCoordToCoreCoord(pair.Key);
+            var knowledge = coreGameState.Knowledge.GetTileKnowledge(coreCoord);
+            if (knowledge == KnowledgeLevel.Confirmed)
+            {
+                continue;
+            }
+
+            var materialKey = knowledge == KnowledgeLevel.Reported ? "ReportedFog" : "UnknownFog";
+            AddKnowledgeOverlay(pair.Key, materialKey);
+        }
+    }
+
+    private void RefreshKnowledgeOverlays()
+    {
+        if (knowledgeOverlayRoot != null)
+        {
+            DestroyGeneratedObject(knowledgeOverlayRoot.gameObject);
+        }
+
+        knowledgeOverlayRoot = NewRootGroup("Knowledge Fog");
+        currentBuildRoot = knowledgeOverlayRoot;
+        BuildKnowledgeOverlays();
+        currentBuildRoot = null;
+    }
+
+    private void AddKnowledgeOverlay(Vector2Int coord, string materialKey)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var overlay = NewChild($"{materialKey}_{coord.x}_{coord.y}", knowledgeOverlayRoot);
+        overlay.transform.localPosition = tile.World;
+        AddMesh(overlay, materialKey, HexTopMesh(hexSize * 0.996f, VisualTileTopY + 0.115f), featureMaterials[materialKey]);
+    }
+
+    private void RegisterFeatureObject(Vector2Int coord, GameObject obj)
+    {
+        if (!featureObjectsByCoord.TryGetValue(coord, out var objects))
+        {
+            objects = new List<GameObject>();
+            featureObjectsByCoord[coord] = objects;
+        }
+
+        objects.Add(obj);
+        obj.SetActive(IsFeatureVisible(coord));
+    }
+
+    private void RegisterFeatureObject(IReadOnlyList<Vector2Int> coords, GameObject obj)
+    {
+        featureObjectsByPath[obj] = new List<Vector2Int>(coords);
+        obj.SetActive(IsFeatureVisible(coords));
+    }
+
+    private bool IsFeatureVisible(Vector2Int coord)
+    {
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return true;
+        }
+
+        var coreCoord = ViewCoordToCoreCoord(coord);
+        return coreGameState.Knowledge.GetTileKnowledge(coreCoord) == KnowledgeLevel.Confirmed;
+    }
+
+    private bool IsFeatureVisible(IReadOnlyList<Vector2Int> coords)
+    {
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return true;
+        }
+
+        foreach (var coord in coords)
+        {
+            if (coreGameState.Knowledge.GetTileKnowledge(ViewCoordToCoreCoord(coord)) == KnowledgeLevel.Confirmed)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void UpdateFeatureVisibility()
+    {
+        foreach (var pair in featureObjectsByCoord)
+        {
+            var visible = IsFeatureVisible(pair.Key);
+            foreach (var obj in pair.Value)
+            {
+                if (obj != null)
+                {
+                    obj.SetActive(visible);
+                }
+            }
+        }
+
+        foreach (var pair in featureObjectsByPath)
+        {
+            if (pair.Key != null)
+            {
+                pair.Key.SetActive(IsFeatureVisible(pair.Value));
+            }
+        }
+    }
+
     private void BuildHexOverlays()
     {
         if (showDebugHexGrid)
@@ -1105,7 +1384,643 @@ public sealed class UnityHexMapView : MonoBehaviour
             }
         }
 
+        if (hasInspectedHex && inspectedHex != selectedPreviewHex)
+        {
+            AddHexOverlay(inspectedHex, "InspectedHex", 1.0f, 0.89f, 0.082f, featureMaterials["InspectedHex"]);
+        }
+
         AddHexOverlay(selectedPreviewHex, "SelectedHex", 1.005f, 0.88f, 0.09f, featureMaterials["SelectedHex"]);
+
+        if (hasHoverPreview && tiles.ContainsKey(hoverPreviewHex))
+        {
+            var material = IsReachablePreviewCoord(hoverPreviewHex)
+                ? featureMaterials["HoverHex"]
+                : featureMaterials["BlockedHoverHex"];
+            AddHexOverlay(hoverPreviewHex, "HoverHex", 1.018f, 0.86f, 0.105f, material);
+        }
+    }
+
+    private void RefreshHexOverlays()
+    {
+        if (overlayRoot != null)
+        {
+            DestroyGeneratedObject(overlayRoot.gameObject);
+        }
+
+        overlayRoot = NewRootGroup("Hex Overlays");
+        currentBuildRoot = overlayRoot;
+        BuildHexOverlays();
+        currentBuildRoot = null;
+    }
+
+    private void BuildPlayerAnnotations()
+    {
+        if (!useCoreTutorialState || coreGameState == null)
+        {
+            return;
+        }
+
+        foreach (var marker in coreGameState.PlayerNotes.Markers)
+        {
+            if (!IsAnnotationVisible(marker.Coord))
+            {
+                continue;
+            }
+
+            AddPlayerMarker(marker);
+        }
+
+        foreach (var note in coreGameState.PlayerNotes.Notes)
+        {
+            if (!IsAnnotationVisible(note.Coord))
+            {
+                continue;
+            }
+
+            AddPlayerNoteIcon(note);
+        }
+    }
+
+    private void RefreshPlayerAnnotations()
+    {
+        if (playerAnnotationRoot != null)
+        {
+            DestroyGeneratedObject(playerAnnotationRoot.gameObject);
+        }
+
+        playerAnnotationRoot = NewRootGroup("Player Annotations");
+        currentBuildRoot = playerAnnotationRoot;
+        BuildPlayerAnnotations();
+        currentBuildRoot = null;
+    }
+
+    private void AddPlayerMarker(PlayerMapMarkerState marker)
+    {
+        var coord = CoreCoordToViewCoord(marker.Coord);
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var root = NewChild($"Marker_{marker.Kind}_{marker.Coord.Q}_{marker.Coord.R}", playerAnnotationRoot);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.16f);
+        var material = MarkerMaterial(marker.Kind);
+        AddMesh(root, "MarkerRing", HexRingMesh(hexSize * 0.25f, hexSize * 0.16f, 0f), material);
+
+        var pin = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        pin.name = "MarkerPin";
+        pin.transform.SetParent(root.transform, false);
+        pin.transform.localPosition = new Vector3(0f, 0.16f * hexSize, 0f);
+        pin.transform.localScale = new Vector3(0.1f * hexSize, 0.28f * hexSize, 0.1f * hexSize);
+        pin.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
+        pin.GetComponent<MeshRenderer>().sharedMaterial = material;
+    }
+
+    private void AddPlayerNoteIcon(PlayerMapNoteState note)
+    {
+        var coord = CoreCoordToViewCoord(note.Coord);
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var root = NewChild($"Note_{note.Coord.Q}_{note.Coord.R}", playerAnnotationRoot);
+        root.transform.localPosition = tile.World + new Vector3(0.22f * hexSize, VisualTileTopY + 0.17f, -0.16f * hexSize);
+        root.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
+
+        var noteCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        noteCube.name = "NoteCard";
+        noteCube.transform.SetParent(root.transform, false);
+        noteCube.transform.localScale = new Vector3(0.2f * hexSize, 0.035f * hexSize, 0.14f * hexSize);
+        noteCube.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["PlayerNote"];
+    }
+
+    private Material MarkerMaterial(PlayerMapMarkerKind kind)
+    {
+        switch (kind)
+        {
+            case PlayerMapMarkerKind.Danger:
+            case PlayerMapMarkerKind.Warning:
+                return featureMaterials["DangerMarker"];
+            case PlayerMapMarkerKind.FactionContact:
+            case PlayerMapMarkerKind.FactionWarning:
+            case PlayerMapMarkerKind.FactionTerritory:
+            case PlayerMapMarkerKind.FactionRumor:
+                return featureMaterials["FactionMarker"];
+            default:
+                return featureMaterials["PlayerMarker"];
+        }
+    }
+
+    private void HandleMapInput()
+    {
+        if (!useCoreTutorialState || coreGameState == null || strategyCamera == null)
+        {
+            return;
+        }
+
+        if (!Input.GetMouseButtonDown(0))
+        {
+            return;
+        }
+
+        if (!TryGetPointerHex(out var viewCoord))
+        {
+            return;
+        }
+
+        if (!IsReachablePreviewCoord(viewCoord))
+        {
+            InspectHex(viewCoord);
+            RefreshHexOverlays();
+            RefreshHud();
+            return;
+        }
+
+        var destination = ViewCoordToCoreCoord(viewCoord);
+        var result = gameApplication.MoveExpedition(coreGameState, destination);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Move rejected.";
+            RefreshHud();
+            return;
+        }
+
+        selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        hasInspectedHex = false;
+        inspectedLocation = null;
+        interactionMessage = $"Moved to {destination}. Cost {result.Cost}.";
+        UpdateExpeditionMarkerPosition();
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+
+        if (centerCameraOnExpeditionAfterMove)
+        {
+            FocusCameraOnCoord(selectedPreviewHex);
+        }
+    }
+
+    private void EndCurrentDay()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.EndDay(coreGameState);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "End day rejected.";
+            RefreshHud();
+            return;
+        }
+
+        interactionMessage = BuildEndDayMessage(result);
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+    }
+
+    private static string BuildEndDayMessage(EndDayResult result)
+    {
+        var message = $"Day advanced. Expedition day {result.ExpeditionDay}. Supplies consumed {result.SuppliesConsumed}.";
+        if (result.ScoutResolutions.Count == 0)
+        {
+            return message;
+        }
+
+        var reports = 0;
+        foreach (var resolution in result.ScoutResolutions)
+        {
+            if (resolution.Report != null)
+            {
+                reports += 1;
+            }
+        }
+
+        return $"{message} Scout updates: {result.ScoutResolutions.Count}, reports: {reports}.";
+    }
+
+    private void DrawAnnotationControls()
+    {
+        if (!hasInspectedHex)
+        {
+            GUILayout.Label("Inspect a known hex to add markers or notes.");
+            return;
+        }
+
+        var coord = ViewCoordToCoreCoord(inspectedHex);
+        GUILayout.Label(GetSelectedAnnotationSummary(coord));
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button($"Marker: {selectedMarkerKind}", GUILayout.Width(190f), GUILayout.Height(26f)))
+        {
+            CycleMarkerKind();
+        }
+
+        markerLabelDraft = GUILayout.TextField(markerLabelDraft, GUILayout.Width(220f));
+        if (IsFactionMarkerKind(selectedMarkerKind))
+        {
+            markerFactionIdDraft = GUILayout.TextField(markerFactionIdDraft, GUILayout.Width(140f));
+        }
+
+        if (GUILayout.Button("Add Marker", GUILayout.Width(100f), GUILayout.Height(26f)))
+        {
+            AddMarkerToInspectedHex();
+        }
+
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        noteDraftText = GUILayout.TextField(noteDraftText, GUILayout.Width(558f));
+        if (GUILayout.Button("Add Note", GUILayout.Width(100f), GUILayout.Height(26f)))
+        {
+            AddNoteToInspectedHex();
+        }
+
+        GUILayout.EndHorizontal();
+    }
+
+    private void AddMarkerToInspectedHex()
+    {
+        if (!hasInspectedHex || coreGameState == null)
+        {
+            return;
+        }
+
+        var coord = ViewCoordToCoreCoord(inspectedHex);
+        var label = string.IsNullOrWhiteSpace(markerLabelDraft) ? DefaultMarkerLabel(selectedMarkerKind) : markerLabelDraft;
+        var factionId = IsFactionMarkerKind(selectedMarkerKind) ? markerFactionIdDraft : null;
+        var result = gameApplication.AddMapMarker(coreGameState, coord, selectedMarkerKind, label, factionId);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Marker rejected.";
+            return;
+        }
+
+        markerLabelDraft = "";
+        interactionMessage = $"Marker added at {coord}: {label}.";
+        RefreshPlayerAnnotations();
+        RefreshHud();
+    }
+
+    private void AddNoteToInspectedHex()
+    {
+        if (!hasInspectedHex || coreGameState == null)
+        {
+            return;
+        }
+
+        var coord = ViewCoordToCoreCoord(inspectedHex);
+        var result = gameApplication.AddMapNote(coreGameState, coord, noteDraftText);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Note rejected.";
+            return;
+        }
+
+        noteDraftText = "";
+        interactionMessage = $"Note added at {coord}.";
+        RefreshPlayerAnnotations();
+        RefreshHud();
+    }
+
+    private void DrawScoutControls()
+    {
+        GUILayout.Label($"Scouts: {CountAvailableScouts()} available, {CountActiveScoutMissions()} active mission(s), {CountScoutReports()} report(s).");
+        GUILayout.BeginHorizontal();
+
+        if (GUILayout.Button($"Direction: {scoutDirection}", GUILayout.Width(150f), GUILayout.Height(26f)))
+        {
+            CycleScoutDirection();
+        }
+
+        if (GUILayout.Button($"Focus: {scoutFocus}", GUILayout.Width(160f), GUILayout.Height(26f)))
+        {
+            CycleScoutFocus();
+        }
+
+        if (GUILayout.Button($"Behavior: {scoutBehavior}", GUILayout.Width(160f), GUILayout.Height(26f)))
+        {
+            CycleScoutBehavior();
+        }
+
+        if (GUILayout.Button($"Days: {scoutDurationDays}", GUILayout.Width(86f), GUILayout.Height(26f)))
+        {
+            scoutDurationDays = scoutDurationDays >= 5 ? 1 : scoutDurationDays + 1;
+        }
+
+        sendTwoScouts = GUILayout.Toggle(sendTwoScouts, "2 scouts", GUILayout.Width(82f));
+        if (GUILayout.Button("Send", GUILayout.Width(76f), GUILayout.Height(26f)))
+        {
+            SendScoutMissionFromHud();
+        }
+
+        GUILayout.EndHorizontal();
+    }
+
+    private void SendScoutMissionFromHud()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var selectedScouts = SelectAvailableScoutIds(sendTwoScouts ? 2 : 1);
+        var result = gameApplication.SendScoutMission(coreGameState, selectedScouts, scoutDirection, scoutDurationDays, scoutFocus, scoutBehavior);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Scout mission rejected.";
+            return;
+        }
+
+        var scoutText = result.Mission!.ScoutMemberIds.Count == 1 ? "Scout" : "Scouts";
+        interactionMessage = $"{scoutText} sent {result.Mission.Direction} for {result.Mission.DurationDays} day(s). Expected return day {result.Mission.ExpectedReturnWorldDay}.";
+        RefreshHud();
+    }
+
+    private List<string> SelectAvailableScoutIds(int count)
+    {
+        var ids = new List<string>(count);
+        if (coreGameState == null)
+        {
+            return ids;
+        }
+
+        foreach (var member in coreGameState.Expedition.Members)
+        {
+            if (member.Role != ExpeditionMemberRole.Scout || member.Status != ExpeditionMemberStatus.Available)
+            {
+                continue;
+            }
+
+            ids.Add(member.Id);
+            if (ids.Count >= count)
+            {
+                break;
+            }
+        }
+
+        return ids;
+    }
+
+    private int CountAvailableScouts()
+    {
+        if (coreGameState == null)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        foreach (var member in coreGameState.Expedition.Members)
+        {
+            if (member.Role == ExpeditionMemberRole.Scout && member.Status == ExpeditionMemberStatus.Available)
+            {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountActiveScoutMissions()
+    {
+        if (coreGameState == null)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        foreach (var mission in coreGameState.Expedition.ScoutMissions)
+        {
+            if (mission.Status == ScoutMissionStatus.Active || mission.Status == ScoutMissionStatus.Overdue)
+            {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountScoutReports()
+    {
+        return coreGameState?.Knowledge.ScoutReports.Count ?? 0;
+    }
+
+    private void CycleScoutDirection()
+    {
+        scoutDirection = scoutDirection switch
+        {
+            HexDirection.East => HexDirection.NorthEast,
+            HexDirection.NorthEast => HexDirection.NorthWest,
+            HexDirection.NorthWest => HexDirection.West,
+            HexDirection.West => HexDirection.SouthWest,
+            HexDirection.SouthWest => HexDirection.SouthEast,
+            _ => HexDirection.East
+        };
+    }
+
+    private void CycleScoutFocus()
+    {
+        scoutFocus = scoutFocus switch
+        {
+            ScoutMissionFocus.Survey => ScoutMissionFocus.Route,
+            ScoutMissionFocus.Route => ScoutMissionFocus.Resources,
+            ScoutMissionFocus.Resources => ScoutMissionFocus.FactionSigns,
+            ScoutMissionFocus.FactionSigns => ScoutMissionFocus.Ruins,
+            _ => ScoutMissionFocus.Survey
+        };
+    }
+
+    private void CycleScoutBehavior()
+    {
+        scoutBehavior = scoutBehavior switch
+        {
+            ScoutMissionBehavior.Cautious => ScoutMissionBehavior.Balanced,
+            ScoutMissionBehavior.Balanced => ScoutMissionBehavior.Bold,
+            _ => ScoutMissionBehavior.Cautious
+        };
+    }
+
+    private void CycleMarkerKind()
+    {
+        selectedMarkerKind = selectedMarkerKind switch
+        {
+            PlayerMapMarkerKind.Question => PlayerMapMarkerKind.Warning,
+            PlayerMapMarkerKind.Warning => PlayerMapMarkerKind.Danger,
+            PlayerMapMarkerKind.Danger => PlayerMapMarkerKind.Destination,
+            PlayerMapMarkerKind.Destination => PlayerMapMarkerKind.Resource,
+            PlayerMapMarkerKind.Resource => PlayerMapMarkerKind.FactionContact,
+            PlayerMapMarkerKind.FactionContact => PlayerMapMarkerKind.FactionWarning,
+            PlayerMapMarkerKind.FactionWarning => PlayerMapMarkerKind.FactionTerritory,
+            PlayerMapMarkerKind.FactionTerritory => PlayerMapMarkerKind.FactionRumor,
+            PlayerMapMarkerKind.FactionRumor => PlayerMapMarkerKind.Note,
+            _ => PlayerMapMarkerKind.Question
+        };
+    }
+
+    private static bool IsFactionMarkerKind(PlayerMapMarkerKind kind)
+    {
+        return kind == PlayerMapMarkerKind.FactionContact ||
+            kind == PlayerMapMarkerKind.FactionWarning ||
+            kind == PlayerMapMarkerKind.FactionTerritory ||
+            kind == PlayerMapMarkerKind.FactionRumor;
+    }
+
+    private static string DefaultMarkerLabel(PlayerMapMarkerKind kind)
+    {
+        return kind switch
+        {
+            PlayerMapMarkerKind.FactionContact => "Faction contact",
+            PlayerMapMarkerKind.FactionWarning => "Faction warning",
+            PlayerMapMarkerKind.FactionTerritory => "Suspected territory",
+            PlayerMapMarkerKind.FactionRumor => "Faction rumor",
+            PlayerMapMarkerKind.Danger => "Danger",
+            PlayerMapMarkerKind.Warning => "Warning",
+            PlayerMapMarkerKind.Destination => "Destination",
+            PlayerMapMarkerKind.Resource => "Resource",
+            PlayerMapMarkerKind.Note => "Note",
+            _ => "Question"
+        };
+    }
+
+    private void UpdateHoverPreview()
+    {
+        if (strategyCamera == null)
+        {
+            return;
+        }
+
+        var nextHasHover = TryGetPointerHex(out var nextHover);
+        if (nextHasHover == hasHoverPreview && (!nextHasHover || nextHover == hoverPreviewHex))
+        {
+            return;
+        }
+
+        hasHoverPreview = nextHasHover;
+        hoverPreviewHex = nextHover;
+        RefreshHexOverlays();
+    }
+
+    private void InspectHex(Vector2Int viewCoord)
+    {
+        hasInspectedHex = true;
+        inspectedHex = viewCoord;
+        inspectedLocation = null;
+
+        var coreCoord = ViewCoordToCoreCoord(viewCoord);
+        var knowledge = GetKnowledgeLevel(viewCoord);
+        if (knowledge == KnowledgeLevel.Unknown)
+        {
+            interactionMessage = $"Unknown territory {coreCoord}.";
+            return;
+        }
+
+        if (!coreGameState.World.Map.TryGetTile(coreCoord, out var tile) || tile == null)
+        {
+            interactionMessage = $"Outside map {coreCoord}.";
+            return;
+        }
+
+        inspectedLocation = knowledge == KnowledgeLevel.Confirmed ? FindLocation(coreCoord) : null;
+        var movement = movementCostService.GetEntryCost(tile);
+        var movementText = movement.CanEnter ? $"Move cost {movement.Cost}" : movement.Reason ?? "Blocked";
+        if (inspectedLocation != null)
+        {
+            interactionMessage = $"{inspectedLocation.Name} ({inspectedLocation.Kind}) at {coreCoord}. {tile.Terrain}. {movementText}.";
+            return;
+        }
+
+        interactionMessage = $"{knowledge} {tile.Terrain} at {coreCoord}. {movementText}.";
+    }
+
+    private bool TryGetPointerHex(out Vector2Int coord)
+    {
+        coord = default;
+        if (strategyCamera == null)
+        {
+            return false;
+        }
+
+        var ray = strategyCamera.ScreenPointToRay(Input.mousePosition);
+        var plane = new Plane(transform.up, transform.TransformPoint(new Vector3(0f, VisualTileTopY, 0f)));
+        if (!plane.Raycast(ray, out var distance))
+        {
+            return false;
+        }
+
+        var hit = ray.GetPoint(distance);
+        var local = transform.InverseTransformPoint(hit);
+        coord = WorldToAxial(local);
+        return tiles.ContainsKey(coord);
+    }
+
+    private void UpdateCameraPan()
+    {
+        if (cameraRig == null || strategyCamera == null)
+        {
+            return;
+        }
+
+        var right = strategyCamera.transform.right;
+        right.y = 0f;
+        right.Normalize();
+
+        var forward = strategyCamera.transform.forward;
+        forward.y = 0f;
+        forward.Normalize();
+
+        var keyboard = Vector3.zero;
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+        {
+            keyboard -= right;
+        }
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+        {
+            keyboard += right;
+        }
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+        {
+            keyboard += forward;
+        }
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
+        {
+            keyboard -= forward;
+        }
+
+        if (keyboard.sqrMagnitude > 0.001f)
+        {
+            cameraRig.position += keyboard.normalized * (cameraPanSpeed * Time.deltaTime);
+        }
+
+        var panButtonDown = Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2);
+        var panButtonHeld = Input.GetMouseButton(1) || Input.GetMouseButton(2);
+        if (panButtonDown)
+        {
+            isDraggingPan = true;
+            lastPanMousePosition = Input.mousePosition;
+        }
+
+        if (!panButtonHeld)
+        {
+            isDraggingPan = false;
+            return;
+        }
+
+        if (!isDraggingPan)
+        {
+            return;
+        }
+
+        var delta = Input.mousePosition - lastPanMousePosition;
+        lastPanMousePosition = Input.mousePosition;
+        var scale = strategyCamera.orthographicSize * 0.0022f * cameraDragPanSpeed;
+        cameraRig.position += (-right * delta.x - forward * delta.y) * scale;
     }
 
     private bool IsReachablePreviewCoord(Vector2Int coord)
@@ -1123,11 +2038,121 @@ public sealed class UnityHexMapView : MonoBehaviour
                 return false;
             }
 
+            if (!IsKnownForMovement(coord))
+            {
+                return false;
+            }
+
             var cost = movementCostService.GetEntryCost(tile);
             return cost.CanEnter && cost.Cost <= coreGameState.Expedition.MovementPoints;
         }
 
         return HexDistance(coord, selectedPreviewHex) <= reachablePreviewRadius;
+    }
+
+    private bool IsKnownForMovement(Vector2Int coord)
+    {
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return true;
+        }
+
+        return GetKnowledgeLevel(coord) != KnowledgeLevel.Unknown;
+    }
+
+    private bool IsAnnotationVisible(HexCoord coord)
+    {
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return true;
+        }
+
+        return coreGameState.Knowledge.GetTileKnowledge(coord) != KnowledgeLevel.Unknown;
+    }
+
+    private KnowledgeLevel GetKnowledgeLevel(Vector2Int coord)
+    {
+        if (!useCoreTutorialState || coreGameState == null)
+        {
+            return KnowledgeLevel.Confirmed;
+        }
+
+        return coreGameState.Knowledge.GetTileKnowledge(ViewCoordToCoreCoord(coord));
+    }
+
+    private SpecialLocationState FindLocation(HexCoord coord)
+    {
+        if (coreGameState == null)
+        {
+            return null;
+        }
+
+        foreach (var location in coreGameState.World.Locations)
+        {
+            if (location.Coord == coord)
+            {
+                return location;
+            }
+        }
+
+        return null;
+    }
+
+    private string GetHudInteractionText()
+    {
+        var hoverText = hasHoverPreview
+            ? $"Hover {ViewCoordToCoreCoord(hoverPreviewHex)}: {(IsReachablePreviewCoord(hoverPreviewHex) ? "reachable" : "not reachable")}"
+            : "Hover none";
+
+        if (inspectedLocation != null)
+        {
+            return $"{hoverText} | Selected {inspectedLocation.Name}: {interactionMessage}";
+        }
+
+        return $"{hoverText} | {interactionMessage}";
+    }
+
+    private string GetSelectedAnnotationSummary(HexCoord coord)
+    {
+        if (coreGameState == null)
+        {
+            return "No game state.";
+        }
+
+        var markerCount = 0;
+        PlayerMapMarkerState lastMarker = null;
+        foreach (var marker in coreGameState.PlayerNotes.Markers)
+        {
+            if (marker.Coord == coord)
+            {
+                markerCount += 1;
+                lastMarker = marker;
+            }
+        }
+
+        var noteCount = 0;
+        PlayerMapNoteState lastNote = null;
+        foreach (var note in coreGameState.PlayerNotes.Notes)
+        {
+            if (note.Coord == coord)
+            {
+                noteCount += 1;
+                lastNote = note;
+            }
+        }
+
+        var details = $"Selected {coord}: {markerCount} marker(s), {noteCount} note(s).";
+        if (lastMarker != null)
+        {
+            details += $" Last marker: {lastMarker.Kind} \"{lastMarker.Label}\".";
+        }
+
+        if (lastNote != null)
+        {
+            details += $" Last note: \"{lastNote.Text}\".";
+        }
+
+        return details;
     }
 
     private HexCoord ViewCoordToCoreCoord(Vector2Int coord)
@@ -1138,6 +2163,96 @@ public sealed class UnityHexMapView : MonoBehaviour
         return new HexCoord(column, row);
     }
 
+    private Vector2Int WorldToAxial(Vector3 local)
+    {
+        var q = (Sqrt3 / 3f * local.x - 1f / 3f * local.z) / hexSize;
+        var r = (2f / 3f * local.z) / hexSize;
+        return RoundAxial(q, r);
+    }
+
+    private static Vector2Int RoundAxial(float q, float r)
+    {
+        var s = -q - r;
+        var rq = Mathf.Round(q);
+        var rr = Mathf.Round(r);
+        var rs = Mathf.Round(s);
+
+        var qDiff = Mathf.Abs(rq - q);
+        var rDiff = Mathf.Abs(rr - r);
+        var sDiff = Mathf.Abs(rs - s);
+
+        if (qDiff > rDiff && qDiff > sDiff)
+        {
+            rq = -rr - rs;
+        }
+        else if (rDiff > sDiff)
+        {
+            rr = -rq - rs;
+        }
+
+        return new Vector2Int(Mathf.RoundToInt(rq), Mathf.RoundToInt(rr));
+    }
+
+    private void BuildExpeditionMarker()
+    {
+        if (!useCoreTutorialState || coreGameState == null)
+        {
+            return;
+        }
+
+        var coord = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var marker = NewChild("ExpeditionMarker");
+        expeditionMarker = marker.transform;
+        expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f);
+
+        AddMesh(marker, "ExpeditionRing", HexRingMesh(hexSize * 0.42f, hexSize * 0.32f, 0f), featureMaterials["ExpeditionRing"]);
+
+        var baseBody = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        baseBody.name = "ExpeditionBase";
+        baseBody.transform.SetParent(marker.transform, false);
+        baseBody.transform.localPosition = Vector3.up * 0.08f;
+        baseBody.transform.localScale = new Vector3(0.18f * hexSize, 0.08f * hexSize, 0.18f * hexSize);
+        baseBody.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["ExpeditionBase"];
+
+        var canopy = CreateCone("ExpeditionCanopy", 0.26f * hexSize, 0.04f * hexSize, 0.28f * hexSize, featureMaterials["ExpeditionCloth"]);
+        canopy.transform.SetParent(marker.transform, false);
+        canopy.transform.localPosition = Vector3.up * (0.28f * hexSize);
+        canopy.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
+
+        var pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        pole.name = "ExpeditionFlagPole";
+        pole.transform.SetParent(marker.transform, false);
+        pole.transform.localPosition = new Vector3(0.17f * hexSize, 0.36f * hexSize, -0.1f * hexSize);
+        pole.transform.localScale = new Vector3(0.025f * hexSize, 0.32f * hexSize, 0.025f * hexSize);
+        pole.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["ExpeditionBase"];
+
+        var flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        flag.name = "ExpeditionFlag";
+        flag.transform.SetParent(marker.transform, false);
+        flag.transform.localPosition = new Vector3(0.31f * hexSize, 0.55f * hexSize, -0.1f * hexSize);
+        flag.transform.localScale = new Vector3(0.22f * hexSize, 0.13f * hexSize, 0.025f * hexSize);
+        flag.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["ExpeditionFlag"];
+    }
+
+    private void UpdateExpeditionMarkerPosition()
+    {
+        if (expeditionMarker == null || coreGameState == null)
+        {
+            return;
+        }
+
+        var coord = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        if (tiles.TryGetValue(coord, out var tile))
+        {
+            expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f);
+        }
+    }
+
     private void AddHexOverlay(Vector2Int coord, string name, float outerScale, float innerScale, float yOffset, Material material)
     {
         if (!tiles.TryGetValue(coord, out var tile))
@@ -1145,7 +2260,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var overlay = NewChild($"{name}_{coord.x}_{coord.y}");
+        var overlay = NewChild($"{name}_{coord.x}_{coord.y}", overlayRoot);
         overlay.transform.localPosition = tile.World;
         AddMesh(overlay, name, HexRingMesh(hexSize * outerScale, hexSize * innerScale, VisualTileTopY + yOffset), material);
     }
@@ -1162,9 +2277,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         var points = CoordsToPathPoints(coords, 0.06f, 0.14f, 2101);
         if (points.Count < 2) return;
 
-        AddMesh(gameObject, "RiverBank", RibbonMesh(points, 0.32f * hexSize), featureMaterials["RiverBank"]);
-        AddMesh(gameObject, "River", RibbonMesh(RaisePoints(points, 0.018f), 0.2f * hexSize), featureMaterials["River"]);
-        AddMesh(gameObject, "RiverFoam", RibbonMesh(RaisePoints(points, 0.034f), 0.035f * hexSize), featureMaterials["RiverFoam"]);
+        var river = NewChild("RiverPath");
+        RegisterFeatureObject(coords, river);
+        AddMesh(river, "RiverBank", RibbonMesh(points, 0.32f * hexSize), featureMaterials["RiverBank"]);
+        AddMesh(river, "River", RibbonMesh(RaisePoints(points, 0.018f), 0.2f * hexSize), featureMaterials["River"]);
+        AddMesh(river, "RiverFoam", RibbonMesh(RaisePoints(points, 0.034f), 0.035f * hexSize), featureMaterials["RiverFoam"]);
     }
 
     private void BuildRoad(IReadOnlyList<Vector2Int> coords)
@@ -1172,9 +2289,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         var points = CoordsToPathPoints(coords, 0.08f, 0.16f, 3307);
         if (points.Count < 2) return;
 
-        AddMesh(gameObject, "RoadBed", RibbonMesh(points, 0.24f * hexSize), featureMaterials["RoadShadow"]);
-        AddMesh(gameObject, "Road", RibbonMesh(RaisePoints(points, 0.012f), 0.14f * hexSize), featureMaterials["Road"]);
-        AddMesh(gameObject, "RoadCenter", RibbonMesh(RaisePoints(points, 0.024f), 0.035f * hexSize), featureMaterials["RoadCenter"]);
+        var road = NewChild("RoadPath");
+        RegisterFeatureObject(coords, road);
+        AddMesh(road, "RoadBed", RibbonMesh(points, 0.24f * hexSize), featureMaterials["RoadShadow"]);
+        AddMesh(road, "Road", RibbonMesh(RaisePoints(points, 0.012f), 0.14f * hexSize), featureMaterials["Road"]);
+        AddMesh(road, "RoadCenter", RibbonMesh(RaisePoints(points, 0.024f), 0.035f * hexSize), featureMaterials["RoadCenter"]);
     }
 
     private void BuildTerritoryBorder(IReadOnlyList<Vector2Int> coords)
@@ -1182,7 +2301,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         var points = CoordsToPathPoints(coords, 0.12f, 0.13f, 5297);
         if (points.Count < 2) return;
 
-        AddMesh(gameObject, "TerritoryBorder", DashedPathMesh(points, 0.07f * hexSize, 0.74f), featureMaterials["Border"]);
+        var border = NewChild("TerritoryBorderPath");
+        RegisterFeatureObject(coords, border);
+        AddMesh(border, "TerritoryBorder", DashedPathMesh(points, 0.07f * hexSize, 0.74f), featureMaterials["Border"]);
     }
 
     private void BuildSettlement(Vector2Int coord)
@@ -1193,6 +2314,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var settlement = NewChild($"Settlement_{coord.x}_{coord.y}");
+        RegisterFeatureObject(coord, settlement);
         settlement.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         var rotation = Hash01(coord.x, coord.y, 7301) * 360f;
         settlement.transform.localRotation = Quaternion.Euler(0f, rotation, 0f);
@@ -1267,6 +2389,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var tower = NewChild($"Watchtower_{coord.x}_{coord.y}");
+        RegisterFeatureObject(coord, tower);
         tower.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         tower.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 9001) * 360f, 0f);
         if (TryPlacePrefab(Prefabs.towerPrefabs, tower.transform, "WatchtowerPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, 9001, out _))
@@ -1300,6 +2423,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var mine = NewChild($"Mine_{coord.x}_{coord.y}");
+        RegisterFeatureObject(coord, mine);
         mine.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
         mine.transform.localRotation = Quaternion.Euler(0f, -25f, 0f);
         if (TryPlacePrefab(Prefabs.minePrefabs, mine.transform, "MinePrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, 9201, out _))
@@ -1359,6 +2483,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var wall = NewChild("AncientWall");
+        RegisterFeatureObject(coords, wall);
         for (var i = 0; i < points.Count - 1; i++)
         {
             AddWallSegment(wall.transform, points[i], points[i + 1], i);
@@ -1780,7 +2905,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         var plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.name = "DistantWaterPlane";
-        plane.transform.SetParent(transform, false);
+        plane.transform.SetParent(currentBuildRoot != null ? currentBuildRoot : transform, false);
         plane.transform.localPosition = new Vector3(0f, -0.42f, 0f);
         var boardSize = BoardWorldSize();
         plane.transform.localScale = new Vector3(boardSize.x * 0.14f, 1f, boardSize.y * 0.14f);
@@ -1817,8 +2942,17 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void BuildCamera()
     {
-        var rig = NewChild("SlowOrbitRig");
+        var rig = NewChild("StrategyCameraRig");
         cameraRig = rig.transform;
+        if (useCoreTutorialState && coreGameState != null)
+        {
+            var coord = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+            if (tiles.TryGetValue(coord, out var tile))
+            {
+                cameraRig.localPosition = new Vector3(tile.World.x, 0f, tile.World.z);
+            }
+        }
+
         var cameraObject = NewChild("StrategyCamera", rig.transform);
         var camera = cameraObject.AddComponent<Camera>();
         strategyCamera = camera;
@@ -1830,7 +2964,35 @@ public sealed class UnityHexMapView : MonoBehaviour
         camera.backgroundColor = ColorFromHex("30383a");
         camera.clearFlags = CameraClearFlags.SolidColor;
         cameraObject.transform.localPosition = new Vector3(10.6f, 13.8f, 13.2f);
-        cameraObject.transform.LookAt(Vector3.up * 0.35f, Vector3.up);
+        cameraObject.transform.LookAt(cameraRig.position + Vector3.up * 0.35f, Vector3.up);
+    }
+
+    private void BuildHud()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var hud = NewChild("ExpeditionHUD_OnGUI");
+        NewChild("StatusText_RuntimeOnGUI", hud.transform);
+        NewChild("EndDayButton_RuntimeOnGUI", hud.transform);
+        NewChild("InputHints_RuntimeOnGUI", hud.transform);
+    }
+
+    private void RefreshHud()
+    {
+        // OnGUI reads the current GameState every frame, so no retained UI component update is needed.
+    }
+
+    private void FocusCameraOnCoord(Vector2Int coord)
+    {
+        if (cameraRig == null || !tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        cameraRig.localPosition = new Vector3(tile.World.x, cameraRig.localPosition.y, tile.World.z);
     }
 
     private void UpdateCameraZoom()
@@ -1872,7 +3034,12 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private GameObject NewChild(string childName)
     {
-        return NewChild(childName, transform);
+        return NewChild(childName, currentBuildRoot != null ? currentBuildRoot : transform);
+    }
+
+    private Transform NewRootGroup(string groupName)
+    {
+        return NewChild(groupName, transform).transform;
     }
 
     private static GameObject NewChild(string childName, Transform parent)

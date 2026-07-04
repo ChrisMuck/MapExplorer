@@ -7,10 +7,18 @@ var mapTests = new HexMapStateTests();
 mapTests.RunAll();
 var movementTests = new MovementCostServiceTests();
 movementTests.RunAll();
+var knowledgeTests = new KnowledgeServiceTests();
+knowledgeTests.RunAll();
 var gameStateTests = new GameStateTests();
 gameStateTests.RunAll();
 var moveCommandTests = new MoveExpeditionCommandTests();
 moveCommandTests.RunAll();
+var annotationTests = new MapAnnotationCommandTests();
+annotationTests.RunAll();
+var scoutMissionTests = new SendScoutMissionCommandTests();
+scoutMissionTests.RunAll();
+var endDayCommandTests = new EndDayCommandTests();
+endDayCommandTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 
@@ -223,6 +231,84 @@ internal sealed class MovementCostServiceTests
     }
 }
 
+internal sealed class KnowledgeServiceTests
+{
+    public void RunAll()
+    {
+        RevealConfirmsOriginAndAdjacentTiles();
+        RevealReportsOuterVisibleTiles();
+        RevealDoesNotDowngradeConfirmedKnowledge();
+        MountainsBlockSightToTilesBehindThem();
+        HillsExtendReportedSightRange();
+    }
+
+    private static void RevealConfirmsOriginAndAdjacentTiles()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(5, 5), TerrainType.Grassland);
+        var knowledge = new KnowledgeState();
+        var origin = new HexCoord(2, 2);
+
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+
+        AssertEqual(KnowledgeLevel.Confirmed, knowledge.GetTileKnowledge(origin), "Origin confirmed");
+        AssertEqual(KnowledgeLevel.Confirmed, knowledge.GetTileKnowledge(new HexCoord(3, 2)), "Adjacent tile confirmed");
+    }
+
+    private static void RevealReportsOuterVisibleTiles()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(5, 5), TerrainType.Grassland);
+        var knowledge = new KnowledgeState();
+
+        new KnowledgeService().RevealFromExpedition(map, knowledge, new HexCoord(2, 2));
+
+        AssertEqual(KnowledgeLevel.Reported, knowledge.GetTileKnowledge(new HexCoord(4, 2)), "Distance two tile reported");
+    }
+
+    private static void RevealDoesNotDowngradeConfirmedKnowledge()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(5, 5), TerrainType.Grassland);
+        var knowledge = new KnowledgeState();
+        var outerTile = new HexCoord(4, 2);
+        knowledge.SetTileKnowledge(outerTile, KnowledgeLevel.Confirmed);
+
+        new KnowledgeService().RevealFromExpedition(map, knowledge, new HexCoord(2, 2));
+
+        AssertEqual(KnowledgeLevel.Confirmed, knowledge.GetTileKnowledge(outerTile), "Confirmed knowledge is not downgraded to reported");
+    }
+
+    private static void MountainsBlockSightToTilesBehindThem()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(5, 5), TerrainType.Grassland);
+        map.SetTile(new HexTileState(new HexCoord(1, 0), TerrainType.Mountain));
+        var knowledge = new KnowledgeState();
+
+        new KnowledgeService().RevealFromExpedition(map, knowledge, HexCoord.Zero);
+
+        AssertEqual(KnowledgeLevel.Confirmed, knowledge.GetTileKnowledge(new HexCoord(1, 0)), "Blocking mountain itself is visible");
+        AssertEqual(KnowledgeLevel.Unknown, knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Tile behind mountain stays unknown");
+    }
+
+    private static void HillsExtendReportedSightRange()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(6, 6), TerrainType.Grassland);
+        var origin = new HexCoord(2, 2);
+        map.SetTile(new HexTileState(origin, TerrainType.Hills));
+        var knowledge = new KnowledgeState();
+
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+
+        AssertEqual(KnowledgeLevel.Reported, knowledge.GetTileKnowledge(new HexCoord(5, 2)), "Hill origin reports distance three tile");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+}
+
 internal sealed class GameStateTests
 {
     public void RunAll()
@@ -421,8 +507,9 @@ internal sealed class MoveExpeditionCommandTests
 
         command.Execute(game, new HexCoord(1, 0));
 
-        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Neighbor reported");
-        AssertEqual(TerrainType.Mountain, game.World.Map.GetTile(new HexCoord(2, 0)).Terrain, "World truth remains separate");
+        AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Adjacent neighbor confirmed");
+        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(3, 0)), "Outer visible tile reported");
+        AssertEqual(TerrainType.Mountain, game.World.Map.GetTile(new HexCoord(3, 0)).Terrain, "World truth remains separate");
     }
 
     private static void MovementRequiresEnoughMovementPoints()
@@ -441,10 +528,10 @@ internal sealed class MoveExpeditionCommandTests
 
     private static GameState CreateMovementTestGame(TerrainType destinationTerrain)
     {
-        var bounds = new HexMapBounds(3, 3);
+        var bounds = new HexMapBounds(4, 3);
         var map = HexMapState.CreateFilled(bounds, TerrainType.Grassland);
         map.SetTile(new HexTileState(new HexCoord(1, 0), destinationTerrain));
-        map.SetTile(new HexTileState(new HexCoord(2, 0), TerrainType.Mountain));
+        map.SetTile(new HexTileState(new HexCoord(3, 0), TerrainType.Mountain));
         return CreateMovementTestGame(map, movementPoints: 3);
     }
 
@@ -482,6 +569,392 @@ internal sealed class MoveExpeditionCommandTests
         if (condition)
         {
             throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class MapAnnotationCommandTests
+{
+    public void RunAll()
+    {
+        AddNoteStoresPlayerTextWithoutChangingWorldKnowledge();
+        AddMarkerStoresFactionMarkerMetadata();
+        UnknownTilesCannotBeAnnotated();
+    }
+
+    private static void AddNoteStoresPlayerTextWithoutChangingWorldKnowledge()
+    {
+        var game = CreateAnnotationTestGame(KnowledgeLevel.Confirmed);
+        var command = new AddMapNoteCommand();
+        var coord = new HexCoord(1, 1);
+
+        var result = command.Execute(game, coord, "Possible ford near the river.");
+
+        AssertTrue(result.Success, "Note added");
+        AssertEqual(1, game.PlayerNotes.Notes.Count, "Note count");
+        AssertEqual("Possible ford near the river.", game.PlayerNotes.Notes[0].Text, "Note text");
+        AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(coord), "Note does not alter knowledge");
+    }
+
+    private static void AddMarkerStoresFactionMarkerMetadata()
+    {
+        var game = CreateAnnotationTestGame(KnowledgeLevel.Reported);
+        var command = new AddMapMarkerCommand();
+        var coord = new HexCoord(1, 1);
+
+        var result = command.Execute(game, coord, PlayerMapMarkerKind.FactionWarning, "Border Warden sign", "border-wardens");
+
+        AssertTrue(result.Success, "Faction marker added");
+        AssertEqual(1, game.PlayerNotes.Markers.Count, "Marker count");
+        AssertEqual(PlayerMapMarkerKind.FactionWarning, game.PlayerNotes.Markers[0].Kind, "Marker kind");
+        AssertEqual("border-wardens", game.PlayerNotes.Markers[0].FactionId, "Marker faction id");
+    }
+
+    private static void UnknownTilesCannotBeAnnotated()
+    {
+        var game = CreateAnnotationTestGame(KnowledgeLevel.Unknown);
+        var markerCommand = new AddMapMarkerCommand();
+        var noteCommand = new AddMapNoteCommand();
+        var coord = new HexCoord(1, 1);
+
+        var markerResult = markerCommand.Execute(game, coord, PlayerMapMarkerKind.Question, "Unknown thing?");
+        var noteResult = noteCommand.Execute(game, coord, "Unknown note");
+
+        AssertFalse(markerResult.Success, "Unknown marker rejected");
+        AssertFalse(noteResult.Success, "Unknown note rejected");
+        AssertEqual(0, game.PlayerNotes.Markers.Count, "No marker added");
+        AssertEqual(0, game.PlayerNotes.Notes.Count, "No note added");
+    }
+
+    private static GameState CreateAnnotationTestGame(KnowledgeLevel knowledgeLevel)
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(3, 3), TerrainType.Grassland);
+        var knowledge = new KnowledgeState();
+        if (knowledgeLevel != KnowledgeLevel.Unknown)
+        {
+            knowledge.SetTileKnowledge(new HexCoord(1, 1), knowledgeLevel);
+        }
+
+        var expedition = new ExpeditionState(
+            1,
+            HexCoord.Zero,
+            new[] { new ExpeditionMemberState("scout", "Scout", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            supplies: 8,
+            medicine: 1,
+            morale: 70,
+            capacity: 10);
+
+        return new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero));
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class SendScoutMissionCommandTests
+{
+    public void RunAll()
+    {
+        ValidScoutMissionAssignsScoutAndStoresMission();
+        NonScoutMemberCannotBeSent();
+        AssignedScoutCannotBeSentAgain();
+        ScoutMissionDurationMustBeAllowed();
+        GameApplicationCanSendTutorialScoutMission();
+    }
+
+    private static void ValidScoutMissionAssignsScoutAndStoresMission()
+    {
+        var game = CreateScoutTestGame();
+        var command = new SendScoutMissionCommand();
+
+        var result = command.Execute(
+            game,
+            new[] { "scout-1" },
+            HexDirection.NorthEast,
+            2,
+            ScoutMissionFocus.FactionSigns,
+            ScoutMissionBehavior.Cautious);
+
+        AssertTrue(result.Success, "Scout mission succeeds");
+        AssertEqual(1, game.Expedition.ScoutMissions.Count, "Mission count");
+        AssertEqual(ExpeditionMemberStatus.Assigned, game.Expedition.FindMember("scout-1")!.Status, "Scout is assigned");
+        AssertEqual(3, result.Mission!.ExpectedReturnWorldDay, "Expected return day");
+        AssertEqual(HexDirection.NorthEast, result.Mission.Direction, "Mission direction");
+        AssertEqual(ScoutMissionFocus.FactionSigns, result.Mission.Focus, "Mission focus");
+    }
+
+    private static void NonScoutMemberCannotBeSent()
+    {
+        var game = CreateScoutTestGame();
+        var command = new SendScoutMissionCommand();
+
+        var result = command.Execute(
+            game,
+            new[] { "guard-1" },
+            HexDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Balanced);
+
+        AssertFalse(result.Success, "Non-scout rejected");
+        AssertEqual(0, game.Expedition.ScoutMissions.Count, "No mission added");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("guard-1")!.Status, "Guard remains available");
+    }
+
+    private static void AssignedScoutCannotBeSentAgain()
+    {
+        var game = CreateScoutTestGame();
+        var command = new SendScoutMissionCommand();
+
+        command.Execute(game, new[] { "scout-1" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Balanced);
+        var result = command.Execute(game, new[] { "scout-1" }, HexDirection.West, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Bold);
+
+        AssertFalse(result.Success, "Assigned scout rejected");
+        AssertEqual(1, game.Expedition.ScoutMissions.Count, "No second mission added");
+    }
+
+    private static void ScoutMissionDurationMustBeAllowed()
+    {
+        var game = CreateScoutTestGame();
+        var command = new SendScoutMissionCommand();
+
+        var result = command.Execute(
+            game,
+            new[] { "scout-1" },
+            HexDirection.East,
+            6,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Balanced);
+
+        AssertFalse(result.Success, "Too long mission rejected");
+        AssertEqual(0, game.Expedition.ScoutMissions.Count, "No mission added");
+    }
+
+    private static void GameApplicationCanSendTutorialScoutMission()
+    {
+        var app = new GameApplication();
+        var game = app.CreateTutorialGame();
+
+        var result = app.SendScoutMission(
+            game,
+            new[] { "scout-1", "scout-2" },
+            HexDirection.NorthWest,
+            3,
+            ScoutMissionFocus.Route,
+            ScoutMissionBehavior.Cautious);
+
+        AssertTrue(result.Success, "Application scout mission succeeds");
+        AssertEqual(1, game.Expedition.ScoutMissions.Count, "Application mission count");
+        AssertEqual(ExpeditionMemberStatus.Assigned, game.Expedition.FindMember("scout-1")!.Status, "First tutorial scout assigned");
+        AssertEqual(ExpeditionMemberStatus.Assigned, game.Expedition.FindMember("scout-2")!.Status, "Second tutorial scout assigned");
+    }
+
+    private static GameState CreateScoutTestGame()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(5, 5), TerrainType.Grassland);
+        var expedition = new ExpeditionState(
+            1,
+            new HexCoord(2, 2),
+            new[]
+            {
+                new ExpeditionMemberState("scout-1", "Mira", ExpeditionMemberRole.Scout),
+                new ExpeditionMemberState("scout-2", "Tovin", ExpeditionMemberRole.Scout),
+                new ExpeditionMemberState("guard-1", "Bram", ExpeditionMemberRole.Guard)
+            },
+            movementPoints: 4,
+            supplies: 8);
+
+        return new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero));
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class EndDayCommandTests
+{
+    public void RunAll()
+    {
+        EndDayAdvancesWorldAndExpeditionDay();
+        EndDayResetsMovementPoints();
+        EndDayConsumesSuppliesWithoutGoingBelowZero();
+        GameApplicationCanEndTutorialDay();
+        CautiousScoutReturnsWithReport();
+        BalancedScoutCanBecomeOverdueThenReturn();
+        BoldScoutCanReturnInjured();
+        BoldRuinScoutCanGoMissing();
+    }
+
+    private static void EndDayAdvancesWorldAndExpeditionDay()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 1, maxMovementPoints: 4);
+        var command = new EndDayCommand(suppliesPerDay: 2);
+
+        var result = command.Execute(game);
+
+        AssertTrue(result.Success, "End day succeeds");
+        AssertEqual(2, game.World.WorldDay, "World day advanced");
+        AssertEqual(2, game.Expedition.ExpeditionDay, "Expedition day advanced");
+        AssertEqual(2, result.WorldDay, "Result world day");
+        AssertEqual(2, result.ExpeditionDay, "Result expedition day");
+    }
+
+    private static void EndDayResetsMovementPoints()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 1, maxMovementPoints: 4);
+
+        new EndDayCommand().Execute(game);
+
+        AssertEqual(4, game.Expedition.MovementPoints, "Movement points reset");
+    }
+
+    private static void EndDayConsumesSuppliesWithoutGoingBelowZero()
+    {
+        var game = CreateEndDayTestGame(supplies: 1, movementPoints: 4, maxMovementPoints: 4);
+        var result = new EndDayCommand(suppliesPerDay: 2).Execute(game);
+
+        AssertEqual(0, game.Expedition.Supplies, "Supplies do not go below zero");
+        AssertEqual(1, result.SuppliesConsumed, "Consumed available supplies only");
+    }
+
+    private static void GameApplicationCanEndTutorialDay()
+    {
+        var app = new GameApplication();
+        var game = app.CreateTutorialGame();
+        var startSupplies = game.Expedition.Supplies;
+
+        var result = app.EndDay(game);
+
+        AssertTrue(result.Success, "Application end day succeeds");
+        AssertEqual(2, game.World.WorldDay, "Application world day");
+        AssertEqual(2, game.Expedition.ExpeditionDay, "Application expedition day");
+        AssertEqual(game.Expedition.MaxMovementPoints, game.Expedition.MovementPoints, "Application movement reset");
+        AssertEqual(startSupplies - 2, game.Expedition.Supplies, "Application supplies consumed");
+    }
+
+    private static void CautiousScoutReturnsWithReport()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+
+        var result = new EndDayCommand().Execute(game);
+
+        AssertEqual(1, result.ScoutResolutions.Count, "Scout resolution count");
+        AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Cautious scout returned");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Returned scout available");
+        AssertEqual(1, game.Knowledge.ScoutReports.Count, "Scout report stored");
+        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(1, 0)), "Scout report marks related hex reported");
+    }
+
+    private static void BalancedScoutCanBecomeOverdueThenReturn()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Balanced);
+
+        var firstDay = new EndDayCommand().Execute(game);
+        var statusAfterFirstDay = game.Expedition.FindMember("scout")!.Status;
+        var secondDay = new EndDayCommand().Execute(game);
+
+        AssertEqual(ScoutMissionStatus.Overdue, firstDay.ScoutResolutions[0].Status, "Balanced scout overdue first");
+        AssertEqual(ExpeditionMemberStatus.Assigned, statusAfterFirstDay, "Scout remains unavailable while overdue");
+        AssertEqual(ScoutMissionStatus.Returned, secondDay.ScoutResolutions[0].Status, "Overdue scout returns later");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Late scout available after return");
+        AssertEqual(1, game.Knowledge.ScoutReports.Count, "Late scout report stored");
+    }
+
+    private static void BoldScoutCanReturnInjured()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Bold);
+
+        var result = new EndDayCommand().Execute(game);
+
+        AssertEqual(ScoutMissionStatus.ReturnedInjured, result.ScoutResolutions[0].Status, "Bold scout injured");
+        AssertEqual(ExpeditionMemberStatus.Injured, game.Expedition.FindMember("scout")!.Status, "Scout marked injured");
+        AssertEqual(1, game.Knowledge.ScoutReports.Count, "Injured scout report stored");
+    }
+
+    private static void BoldRuinScoutCanGoMissing()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Ruins, ScoutMissionBehavior.Bold);
+
+        var result = new EndDayCommand().Execute(game);
+
+        AssertEqual(ScoutMissionStatus.Missing, result.ScoutResolutions[0].Status, "Bold ruin scout missing");
+        AssertEqual(ExpeditionMemberStatus.Missing, game.Expedition.FindMember("scout")!.Status, "Scout marked missing");
+        AssertEqual(0, game.Knowledge.ScoutReports.Count, "Missing scout creates no report");
+    }
+
+    private static GameState CreateEndDayTestGame(int supplies, int movementPoints, int maxMovementPoints)
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(3, 3), TerrainType.Grassland);
+        var expedition = new ExpeditionState(
+            1,
+            HexCoord.Zero,
+            new[] { new ExpeditionMemberState("scout", "Scout", ExpeditionMemberRole.Scout) },
+            movementPoints: movementPoints,
+            maxMovementPoints: maxMovementPoints,
+            supplies: supplies);
+        return new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero));
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
         }
     }
 }
