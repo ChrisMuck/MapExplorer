@@ -1446,6 +1446,8 @@ internal sealed class FactionPresenceTests
         EnteringFactionTerritoryAddsKnowledgeOnce();
         EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce();
         EnteringHiddenTerritoryCreatesDangerReaction();
+        FactionReactionCanOpenRepresentativeInteraction();
+        FactionOfferCanTradeKnowledgeForSupplies();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1580,6 +1582,64 @@ internal sealed class FactionPresenceTests
         AssertTrue(faction.Anger > 0, "Hidden faction anger increases");
         AssertTrue(faction.Fear > 0, "Hidden faction fear increases");
         AssertTrue(faction.Memories.Any(memory => memory.Contains("territory-entry-expedition-1")), "Hidden faction remembers territory reaction");
+    }
+
+    private static void FactionReactionCanOpenRepresentativeInteraction()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var territoryCoord = new HexCoord(2, 1);
+        var origin = new HexCoord(1, 1);
+        map.SetTile(map.GetTile(territoryCoord).WithOwner("border-wardens"));
+        var knowledge = new KnowledgeState();
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+        var expedition = new ExpeditionState(
+            1,
+            origin,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            maxMovementPoints: 4,
+            supplies: 10,
+            medicine: 2,
+            morale: 60,
+            capacity: 10);
+        var faction = new FactionState("border-wardens", "Border Wardens", FactionContactStatus.Rumored);
+        var game = new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero), factions: new[] { faction });
+
+        var move = new MoveExpeditionCommand(new MovementCostService()).Execute(game, territoryCoord);
+        var contactOption = game.Events.Current!.Options.First(option => option.EffectKind == EventOptionEffectKind.OpenFactionInteraction);
+        var open = new ResolveEventCommand().Execute(game, game.Events.Current.Id, contactOption.Id);
+
+        AssertTrue(move.Success, "Faction territory move succeeds");
+        AssertTrue(open.Success, "Faction contact option resolves");
+        AssertTrue(game.ActiveFactionInteraction != null, "Faction interaction is active");
+        AssertEqual("border-wardens", game.ActiveFactionInteraction!.FactionId, "Active interaction faction");
+        AssertEqual(FactionRepresentativeRole.Guard, game.ActiveFactionInteraction.Representative.Role, "Border contact starts with guard");
+        AssertTrue(game.ActiveFactionInteraction.Offers.Any(offer => offer.Id == "knowledge-for-supplies"), "Supply offer is present");
+        AssertTrue(game.ActiveFactionInteraction.Offers.Any(offer => offer.LockedReason == "Requires grave token"), "Locked leverage offer is visible");
+    }
+
+    private static void FactionOfferCanTradeKnowledgeForSupplies()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("coastal-people", "Coastal People", FactionContactStatus.Open);
+        var baseState = new BaseState(HexCoord.Zero);
+        baseState.AddKnowledgePoints(10);
+        var game = new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition, baseState, factions: new[] { faction });
+        var open = new OpenFactionInteractionCommand().Execute(game, "coastal-people", coord);
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "knowledge-for-supplies");
+
+        AssertTrue(open.Success, "Open coastal interaction succeeds");
+        AssertTrue(result.Success, "Supply trade succeeds");
+        AssertEqual(20, game.Expedition.Supplies, "Supply offer adds supplies");
+        AssertEqual(4, game.Base.KnowledgePoints, "Supply offer spends knowledge");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("10 Supplies")), "Offer is archived");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

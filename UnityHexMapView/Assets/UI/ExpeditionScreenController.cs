@@ -75,6 +75,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("action-camp", () => mapView?.RequestPrepareSuppliesWithKnowledgeFromUi());
         RegisterClick("action-return-base", () => mapView?.RequestCompleteExpeditionFromUi());
         RegisterClick("action-end-day", () => mapView?.RequestEndDayFromUi());
+        RegisterClick("faction-modal-close", () => mapView?.RequestCloseFactionInteractionFromUi());
+        RegisterClick("faction-response-leave", () => mapView?.RequestCloseFactionInteractionFromUi());
 
         if (string.IsNullOrEmpty(openSection))
         {
@@ -146,6 +148,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshActionBar(state);
         BuildArchiveList(state);
         RefreshEventPopup(state);
+        RefreshFactionInteractionPopup(state);
     }
 
     private void RefreshKnowledgeStats(GameState state)
@@ -595,6 +598,125 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             });
             options.Add(button);
         }
+    }
+
+    private void RefreshFactionInteractionPopup(GameState state)
+    {
+        var popup = root?.Q<VisualElement>("faction-contact-popup");
+        var offerList = root?.Q<VisualElement>("faction-offer-list");
+        if (popup == null || offerList == null)
+        {
+            return;
+        }
+
+        var interaction = state.ActiveFactionInteraction;
+        if (interaction == null)
+        {
+            popup.style.display = DisplayStyle.None;
+            offerList.Clear();
+            return;
+        }
+
+        popup.style.display = DisplayStyle.Flex;
+        SetText("faction-modal-title", $"KONTAKT · {interaction.FactionName}");
+        SetText("faction-modal-coord", $"Feld {interaction.Coord.Q:00} / {interaction.Coord.R:00}");
+        SetText("faction-representative-name", interaction.Representative.DisplayName);
+        SetText("faction-representative-role", $"{RepresentativeRoleText(interaction.Representative.Role)} · {interaction.FactionName}");
+        SetText("faction-attitude", interaction.AttitudeText);
+        SetText("faction-representative-description", interaction.Representative.Description);
+        SetText("faction-dialogue-label", $"DIESE BEGEGNUNG · TAG {state.World.WorldDay}");
+        SetText("faction-dialogue", $"\"{interaction.DialogueText}\"");
+        SetText("faction-knowledge-value", $"Wissen: {state.Base.KnowledgePoints}");
+
+        offerList.Clear();
+        for (var i = 0; i < interaction.Offers.Count; i++)
+        {
+            var offer = interaction.Offers[i];
+            var card = new VisualElement();
+            card.AddToClassList("faction-offer-card");
+            if (!offer.IsAvailable)
+            {
+                card.AddToClassList("locked");
+            }
+
+            var title = new Label(offer.Title);
+            title.AddToClassList("faction-offer-title");
+            card.Add(title);
+
+            var description = new Label(offer.Description);
+            description.AddToClassList("faction-offer-description");
+            card.Add(description);
+
+            var footer = new VisualElement();
+            footer.AddToClassList("faction-offer-footer");
+
+            var cost = new Label(OfferCostText(offer));
+            cost.AddToClassList("faction-offer-cost");
+            footer.Add(cost);
+
+            var button = new Label(offer.IsAvailable ? "Kaufen" : "Gesperrt");
+            button.AddToClassList("faction-offer-buy");
+            if (!offer.IsAvailable)
+            {
+                button.AddToClassList("disabled");
+            }
+
+            var offerId = offer.Id;
+            button.RegisterCallback<ClickEvent>(evt =>
+            {
+                mapView?.RequestPurchaseFactionOfferFromUi(offerId);
+                evt.StopPropagation();
+            });
+            footer.Add(button);
+
+            card.Add(footer);
+            offerList.Add(card);
+        }
+    }
+
+    private static string RepresentativeRoleText(FactionRepresentativeRole role)
+    {
+        switch (role)
+        {
+            case FactionRepresentativeRole.Watcher:
+                return "Beobachter";
+            case FactionRepresentativeRole.Scout:
+                return "Spaeher";
+            case FactionRepresentativeRole.Guard:
+                return "Waechter";
+            case FactionRepresentativeRole.Messenger:
+                return "Bote";
+            case FactionRepresentativeRole.Trader:
+                return "Haendler";
+            case FactionRepresentativeRole.Guide:
+                return "Fuehrer";
+            case FactionRepresentativeRole.Leader:
+                return "Anfuehrer";
+            case FactionRepresentativeRole.MaskedSpeaker:
+                return "Maskierte Stimme";
+            default:
+                return role.ToString();
+        }
+    }
+
+    private static string OfferCostText(FactionOfferState offer)
+    {
+        if (!offer.IsAvailable)
+        {
+            return offer.LockedReason ?? "Nicht verfuegbar";
+        }
+
+        if (offer.KnowledgeCost > 0)
+        {
+            return $"{offer.KnowledgeCost} Wissen";
+        }
+
+        if (offer.MedicineCost > 0)
+        {
+            return $"{offer.MedicineCost} Medizin";
+        }
+
+        return "Kostenlos";
     }
 
     private void RegisterRail(string elementName, string section)

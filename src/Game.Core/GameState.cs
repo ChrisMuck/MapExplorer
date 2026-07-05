@@ -40,6 +40,8 @@ public sealed class GameState
 
     public EventQueueState Events { get; }
 
+    public FactionInteractionState? ActiveFactionInteraction { get; private set; }
+
     public IReadOnlyList<FactionState> Factions
     {
         get { return factions; }
@@ -61,6 +63,16 @@ public sealed class GameState
     public void SetExpedition(ExpeditionState expedition)
     {
         Expedition = expedition ?? throw new ArgumentNullException(nameof(expedition));
+    }
+
+    public void SetActiveFactionInteraction(FactionInteractionState interaction)
+    {
+        ActiveFactionInteraction = interaction ?? throw new ArgumentNullException(nameof(interaction));
+    }
+
+    public void ClearActiveFactionInteraction()
+    {
+        ActiveFactionInteraction = null;
     }
 }
 }

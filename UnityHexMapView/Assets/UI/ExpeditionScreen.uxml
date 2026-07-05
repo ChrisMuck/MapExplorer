@@ -313,6 +313,44 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- ======================= FACTION CONTACT MODAL ======================= -->
+        <ui:VisualElement name="faction-contact-popup" class="faction-popup" style="display: none;">
+            <ui:VisualElement class="faction-modal">
+                <ui:VisualElement class="faction-modal__header">
+                    <ui:Label name="faction-modal-title" text="KONTAKT" class="section-label" />
+                    <ui:Label name="faction-modal-coord" text="Feld 00 / 00" class="mono faction-modal__coord" />
+                    <ui:Label name="faction-modal-close" text="X" class="faction-modal__close" />
+                </ui:VisualElement>
+                <ui:VisualElement class="faction-modal__body">
+                    <ui:VisualElement class="faction-modal__person">
+                        <ui:VisualElement class="faction-portrait" />
+                        <ui:Label name="faction-representative-name" text="Wächter" class="faction-name serif" />
+                        <ui:Label name="faction-representative-role" text="Grenzwächter" class="faction-role" />
+                        <ui:VisualElement class="hr" />
+                        <ui:Label text="HALTUNG" class="section-label" />
+                        <ui:Label name="faction-attitude" text="Wachsam" class="faction-attitude" />
+                        <ui:Label name="faction-representative-description" text="Sie beobachtet euch genau." class="faction-description serif" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="faction-modal__conversation">
+                        <ui:Label name="faction-dialogue-label" text="DIESE BEGEGNUNG" class="section-label faction-dialogue-label" />
+                        <ui:Label name="faction-dialogue" text="Eine Fraktion wartet auf Antwort." class="faction-dialogue serif" />
+                        <ui:VisualElement class="faction-response-list">
+                            <ui:Label name="faction-response-info" text="Nach der Lage fragen" class="faction-response" />
+                            <ui:Label name="faction-response-trade" text="Etwas erwerben wollen" class="faction-response" />
+                            <ui:Label name="faction-response-leave" text="Sich verabschieden" class="faction-response faction-response--quiet" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="faction-modal__offers">
+                        <ui:VisualElement class="faction-offer-head">
+                            <ui:Label text="ANGEBOTE" class="section-label" />
+                            <ui:Label name="faction-knowledge-value" text="Wissen: 0" class="mono faction-knowledge" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="faction-offer-list" class="faction-offer-list" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- ======================= ACTION BAR ======================= -->
         <ui:VisualElement class="action-bar">
             <ui:Label name="action-move" text="↳ Bewegen" class="btn" />

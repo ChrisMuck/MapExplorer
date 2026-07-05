@@ -314,6 +314,97 @@
 .event-options { flex-direction: row; flex-wrap: wrap; margin-top: 14px; }
 .event-option { margin-right: 8px; margin-bottom: 8px; }
 
+.faction-popup {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    align-items: center; justify-content: center;
+    background-color: rgba(0, 0, 0, 0.36);
+}
+.faction-modal {
+    width: 1180px; max-width: 86%; max-height: 86%;
+    border-radius: 14px;
+    border-width: 1px; border-color: rgba(240, 207, 122, 0.28);
+    background-color: rgb(26, 31, 27);
+}
+.faction-modal__header {
+    height: 76px;
+    flex-direction: row; align-items: center;
+    padding-left: 26px; padding-right: 26px;
+    border-bottom-width: 1px; border-bottom-color: rgba(240, 207, 122, 0.16);
+}
+.faction-modal__coord { color: rgb(178, 170, 151); margin-left: auto; margin-right: 18px; font-size: 16px; }
+.faction-modal__close {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    -unity-text-align: middle-center;
+    color: rgb(201, 195, 180);
+    border-width: 1px; border-color: rgba(255, 255, 255, 0.12);
+    font-size: 18px;
+}
+.faction-modal__close:hover { background-color: rgba(255, 255, 255, 0.06); }
+.faction-modal__body { flex-direction: row; min-height: 520px; }
+.faction-modal__person {
+    width: 280px; flex-shrink: 0;
+    padding: 26px;
+    border-right-width: 1px; border-right-color: rgba(255, 255, 255, 0.08);
+}
+.faction-portrait {
+    height: 190px;
+    border-radius: 9px;
+    background-color: rgb(58, 66, 52);
+    border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
+}
+.faction-name { font-size: 27px; color: rgb(244, 237, 224); margin-top: 24px; }
+.faction-role { font-size: 16px; color: rgb(190, 184, 169); margin-top: 8px; white-space: normal; }
+.faction-attitude { font-size: 16px; color: rgb(240, 207, 122); margin-top: 9px; }
+.faction-description { font-size: 16px; color: rgb(190, 184, 169); margin-top: 14px; white-space: normal; -unity-font-style: italic; }
+.faction-modal__conversation {
+    flex-grow: 1;
+    padding: 32px 32px 24px 32px;
+    border-right-width: 1px; border-right-color: rgba(255, 255, 255, 0.08);
+}
+.faction-dialogue-label { -unity-text-align: middle-center; margin-bottom: 22px; }
+.faction-dialogue {
+    padding: 20px 24px;
+    border-radius: 9px;
+    background-color: rgb(38, 45, 36);
+    font-size: 22px;
+    line-height: 30px;
+    color: rgb(244, 237, 224);
+    white-space: normal;
+}
+.faction-response-list { margin-top: 28px; }
+.faction-response {
+    padding: 15px 18px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border-width: 1px; border-color: rgba(255, 255, 255, 0.12);
+    color: rgb(232, 227, 214);
+    font-size: 17px;
+}
+.faction-response:hover { background-color: rgba(255, 255, 255, 0.05); }
+.faction-response--quiet { color: rgb(190, 184, 169); border-color: rgba(255, 255, 255, 0.04); }
+.faction-modal__offers { width: 330px; flex-shrink: 0; padding: 26px; }
+.faction-offer-head { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.faction-knowledge { color: rgb(240, 207, 122); font-size: 16px; }
+.faction-offer-card {
+    padding: 16px;
+    margin-bottom: 14px;
+    border-radius: 9px;
+    border-width: 1px; border-color: rgba(240, 207, 122, 0.18);
+    background-color: rgb(32, 38, 31);
+}
+.faction-offer-card.locked {
+    opacity: 0.64;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+.faction-offer-title { font-size: 19px; color: rgb(244, 237, 224); -unity-font-style: bold; white-space: normal; }
+.faction-offer-description { font-size: 15px; color: rgb(190, 184, 169); margin-top: 10px; white-space: normal; }
+.faction-offer-footer { flex-direction: row; align-items: center; margin-top: 15px; }
+.faction-offer-cost { flex-grow: 1; font-size: 15px; color: rgb(240, 207, 122); }
+.faction-offer-buy { padding: 9px 14px; border-radius: 7px; background-color: rgb(240, 207, 122); color: rgb(29, 34, 30); -unity-font-style: bold; }
+.faction-offer-buy.disabled { background-color: rgba(255, 255, 255, 0.05); color: rgb(145, 139, 124); }
+
 .roster-row {
     flex-direction: row; align-items: center; padding: 11px 13px;
     background-color: rgb(32, 38, 31); border-radius: 8px; margin-bottom: 9px;

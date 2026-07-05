@@ -9,6 +9,7 @@ public enum EventOptionEffectKind
 {
     None,
     Archive,
-    AddWarningMarker
+    AddWarningMarker,
+    OpenFactionInteraction
 }
 }
