@@ -91,11 +91,17 @@ public sealed class MoveExpeditionCommand
 
         ApplyFactionKnowledge(game, faction);
 
-        if (!faction.IsWarningZone(destination))
+        if (faction.IsWarningZone(destination))
         {
+            ApplyFactionWarningZoneEntry(game, faction, destination);
             return;
         }
 
+        ApplyFactionTerritoryReaction(game, faction, destination);
+    }
+
+    private static void ApplyFactionWarningZoneEntry(GameState game, FactionState faction, HexCoord destination)
+    {
         var memoryKey = $"warning-zone-entered:{destination.Q}:{destination.R}";
         if (faction.HasMemory(memoryKey))
         {
@@ -110,6 +116,43 @@ public sealed class MoveExpeditionCommand
 
         faction.Adjust(angerDelta: 6, fearDelta: 3);
         game.Events.Enqueue(CreateFactionWarningEvent(game, faction, destination));
+    }
+
+    private static void ApplyFactionTerritoryReaction(GameState game, FactionState faction, HexCoord destination)
+    {
+        var memoryKey = $"territory-entry-expedition-{game.Expedition.ExpeditionNumber}:{faction.Id}";
+        if (faction.HasMemory(memoryKey))
+        {
+            return;
+        }
+
+        faction.AddMemory(memoryKey);
+        ApplyFactionReactionMetrics(faction);
+        game.Events.Enqueue(CreateFactionTerritoryReactionEvent(game, faction, destination));
+    }
+
+    private static void ApplyFactionReactionMetrics(FactionState faction)
+    {
+        switch (faction.Id)
+        {
+            case "coastal-people":
+                faction.Adjust(trustDelta: 2);
+                if (faction.ContactStatus == FactionContactStatus.Contacted)
+                {
+                    faction.SetContactStatus(FactionContactStatus.Open);
+                }
+
+                break;
+            case "hidden-ones":
+                faction.Adjust(angerDelta: 4, fearDelta: 6);
+                break;
+            case "border-wardens":
+                faction.Adjust(angerDelta: 2, fearDelta: 1);
+                break;
+            default:
+                faction.Adjust(fearDelta: 1);
+                break;
+        }
     }
 
     private static void ApplyFactionKnowledge(GameState game, FactionState faction)
@@ -141,6 +184,52 @@ public sealed class MoveExpeditionCommand
                 new EventOptionState("continue", "Continue carefully", "The expedition continues, aware that the crossing may be remembered.", EventOptionEffectKind.None)
             },
             coord);
+    }
+
+    private static EventState CreateFactionTerritoryReactionEvent(GameState game, FactionState faction, HexCoord coord)
+    {
+        return new EventState(
+            $"event-{game.Events.Events.Count + 1}",
+            EventKind.FactionReaction,
+            TerritoryReactionTitle(faction),
+            faction.Name,
+            TerritoryReactionBody(faction),
+            new[]
+            {
+                new EventOptionState("archive", "Archive observation", $"The expedition recorded how {faction.Name} reacted to its presence.", EventOptionEffectKind.Archive),
+                new EventOptionState("continue", "Continue carefully", "The expedition continues while watching for further signs.", EventOptionEffectKind.None)
+            },
+            coord);
+    }
+
+    private static string TerritoryReactionTitle(FactionState faction)
+    {
+        switch (faction.Id)
+        {
+            case "coastal-people":
+                return "Coastal watchers";
+            case "hidden-ones":
+                return "Hidden eyes";
+            case "border-wardens":
+                return "Watched border";
+            default:
+                return $"{faction.Name} reaction";
+        }
+    }
+
+    private static string TerritoryReactionBody(FactionState faction)
+    {
+        switch (faction.Id)
+        {
+            case "coastal-people":
+                return "People on the riverbank notice the expedition but do not flee. A cautious contact may be possible if the group behaves peacefully.";
+            case "hidden-ones":
+                return "The forest becomes too quiet. The expedition cannot see anyone clearly, but it is certain that someone has seen them first.";
+            case "border-wardens":
+                return "The expedition finds fresh bootprints and a newly turned marker stone. This land is being watched, even away from the strongest warning posts.";
+            default:
+                return "The expedition has entered another group's territory. The reaction is subtle, but the crossing will likely be remembered.";
+        }
     }
 }
 }

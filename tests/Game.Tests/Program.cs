@@ -1445,6 +1445,7 @@ internal sealed class FactionPresenceTests
         TutorialGameIncludesMvpFactions();
         EnteringFactionTerritoryAddsKnowledgeOnce();
         EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce();
+        EnteringHiddenTerritoryCreatesDangerReaction();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1540,8 +1541,45 @@ internal sealed class FactionPresenceTests
         AssertTrue(returnMove.Success, "Return from faction territory succeeds");
         AssertTrue(second.Success, "Second faction territory move succeeds");
         AssertEqual(10, game.Expedition.UnsecuredKnowledge, "Faction territory grants knowledge once");
-        AssertEqual(0, game.Events.PendingCount, "Non-warning faction territory does not queue warning event");
+        AssertEqual(1, game.Events.PendingCount, "Non-warning faction territory queues one reaction event per expedition");
+        AssertEqual(EventKind.FactionReaction, game.Events.Current!.Kind, "Faction reaction event kind");
+        AssertEqual(FactionContactStatus.Open, faction.ContactStatus, "Friendly faction opens after peaceful territory contact");
+        AssertTrue(faction.Trust > 0, "Friendly faction trust increases");
         AssertTrue(faction.Memories.Any(memory => memory.Contains("entered-territory")), "Faction remembers territory entry");
+        AssertTrue(faction.Memories.Any(memory => memory.Contains("territory-entry-expedition-1")), "Faction remembers expedition territory reaction");
+    }
+
+    private static void EnteringHiddenTerritoryCreatesDangerReaction()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Forest);
+        var territoryCoord = new HexCoord(2, 1);
+        var origin = new HexCoord(1, 1);
+        map.SetTile(map.GetTile(territoryCoord).WithOwner("hidden-ones"));
+        var knowledge = new KnowledgeState();
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+        var expedition = new ExpeditionState(
+            1,
+            origin,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            maxMovementPoints: 4,
+            supplies: 10,
+            medicine: 2,
+            morale: 60,
+            capacity: 10);
+        var faction = new FactionState("hidden-ones", "Hidden Ones", FactionContactStatus.Rumored);
+        var game = new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero), factions: new[] { faction });
+        var command = new MoveExpeditionCommand(new MovementCostService());
+
+        var result = command.Execute(game, territoryCoord);
+
+        AssertTrue(result.Success, "Hidden territory move succeeds");
+        AssertEqual(1, game.Events.PendingCount, "Hidden territory queues reaction event");
+        AssertEqual(EventKind.FactionReaction, game.Events.Current!.Kind, "Hidden territory reaction event kind");
+        AssertTrue(game.Events.Current.Body.Contains("seen them first"), "Hidden reaction communicates observation");
+        AssertTrue(faction.Anger > 0, "Hidden faction anger increases");
+        AssertTrue(faction.Fear > 0, "Hidden faction fear increases");
+        AssertTrue(faction.Memories.Any(memory => memory.Contains("territory-entry-expedition-1")), "Hidden faction remembers territory reaction");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

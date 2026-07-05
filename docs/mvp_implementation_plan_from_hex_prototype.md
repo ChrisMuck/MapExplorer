@@ -368,10 +368,11 @@ Acceptance:
 
 ### 18. Add Minimal Faction Presence
 
-Implement two factions for the slice:
+Implement three active factions for the slice:
 
 - Coastal People / River Village
 - Border Wardens
+- Hidden Ones
 
 Track:
 
@@ -379,6 +380,12 @@ Track:
 - trust
 - anger
 - fear
+- territory / influence area
+- representative roles such as watcher, guard, scout, messenger, trader and leader
+- leader access requirement
+- authored leverage objects or faction-request items
+- 5 to 10 authored faction/location offers
+- baseline Knowledge for Supplies trade where trading is available
 - warning zones
 - memories
 
@@ -386,7 +393,17 @@ Acceptance:
 
 - Coastal faction can provide a partial warning.
 - Border Warden territory is inferred through signs, not clean map borders.
-- Entering warning zones can create event/memory.
+- Hidden Ones exist far from the base and create a dangerous late-slice pressure.
+- Entering any known or hidden faction territory runs a faction reaction check.
+- Territory entry can create observation, warning, contact, memory or event outcomes.
+- First contact usually happens through guards, scouts, watchers or messengers, not leaders.
+- Leader contact is gated by faction attitude, location progress or valuable offers.
+- At least one faction can request a concrete object, proof or favor before deeper conversation opens.
+- Leverage objects can be found in graves, camps, special locations, scout reports or another faction's possession.
+- Trade/contact UI can show curated offers, including Knowledge for Supplies.
+- Offers can reveal routes, safe camps, springs, warning interpretations or map fragments.
+- Factions remember major territory violations across expeditions.
+- Debug ownership overlays can show whether generated faction territories make sense.
 
 ### 19. Implement Return To Base
 

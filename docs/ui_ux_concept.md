@@ -844,6 +844,18 @@ This may be:
 
 The player should not interact with a faceless diplomacy panel.
 
+The interaction UI should show who is speaking, not only which faction they belong to.
+
+Minimum MVP fields:
+
+- representative name or role
+- faction name
+- access level: watcher, guard, messenger, trader, leader or unknown
+- current attitude in readable language
+- whether this person can offer trade, passage, warnings or only observation
+
+The first contact with a faction should usually show guards, scouts or messengers. Leaders should appear only after trust, location progress, a successful offer, or a faction-specific access requirement.
+
 For unknown factions, the image may be partial, shadowed or symbolic.
 
 Example:
@@ -863,6 +875,25 @@ Options:
 - offer trade
 - ask about smoke
 - withdraw
+
+MVP offer panel:
+
+- show 5 to 10 authored offers across the whole slice, not a large shop
+- when trade is available, always include a simple Knowledge for Supplies offer
+- show cost, reward and whether the offer is one-time or repeatable
+- keep unavailable offers visible only when useful as a hint; otherwise hide them
+- tie offers to map discoveries such as safe camps, springs, routes, passes, warning signs or map fragments
+- support offers or dialogue options that require a leverage object, proof, favor or faction-request item
+- when useful, show why an option is locked, e.g. "requires grave token" or "requires proof from the sealed ruin"
+
+Example offer cards:
+
+- 10 Supplies: costs Knowledge
+- River route hint: reveals reported hexes
+- Safe spring location: costs Medicine or Knowledge
+- Warning sign interpretation: costs Knowledge
+- Rough map fragment: costs Knowledge
+- Border passage: requires returned grave token
 
 ### 23.4 Event Images
 

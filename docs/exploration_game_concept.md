@@ -2027,7 +2027,10 @@ For the MVP, each faction should have:
 - main value
 - main taboo
 - leader or contact person
+- contact roles / representatives
 - access requirement for meaningful conversation
+- reaction to first territory entry
+- reaction to repeated territory entry
 - reaction to border violation
 - reaction to help
 - memory of major expedition actions
@@ -2060,6 +2063,120 @@ MVP contact status values:
 This should be enough for the first playable version.
 
 Later versions can add more subtle states and internal faction politics.
+
+### 13P.2A MVP Territory Entry Reactions
+
+For the MVP, factions must react when the expedition enters their territory or warning zones.
+
+This does not need to become full diplomacy yet. The minimum required loop is:
+
+1. The expedition enters a hex owned or influenced by a faction.
+2. The game checks the faction's attitude, territory type and previous memories.
+3. The faction produces a readable reaction.
+4. The reaction may update faction memory, contact status, trust, anger or fear.
+5. The reaction may create a report, journal entry, warning marker or event popup.
+
+Possible MVP reactions:
+
+- the expedition is watched
+- warning signs are renewed
+- a scout or messenger appears
+- contact becomes possible
+- the faction refuses contact
+- anger or fear increases
+- a warning event is queued
+- a later world-phase reaction is scheduled
+
+This is important because territory should feel socially alive. Entering another people's land should not feel like crossing an empty colored region.
+
+### 13P.2B MVP Faction Representatives
+
+Faction interaction should usually happen through concrete people, not through an abstract faction panel.
+
+For the MVP, each faction should define a small set of representative roles:
+
+- watcher / observer
+- scout
+- border guard
+- messenger
+- trader
+- guide
+- elder / leader
+- masked or hidden speaker
+
+The first encounters should normally be with low-access roles:
+
+- guards at borders
+- scouts observing from a distance
+- messengers sent to warn or test the expedition
+- traders only if contact is already safe enough
+
+Leader access should be gated.
+
+Friendly factions may allow leader contact after the expedition reaches an important settlement, proves peaceful intent or helps with a concrete problem.
+
+Cautious or hostile factions may never reveal their leader during the MVP unless the expedition offers something highly valuable, solves a serious local problem, returns something important or earns enough trust.
+
+For hidden or dangerous factions, the player may only meet:
+
+- silhouettes
+- masked speakers
+- intermediaries
+- scouts
+- warnings left without direct conversation
+
+This makes faction contact feel like exploration. The player is not only discovering territory, but also discovering who has authority, who is allowed to speak, and what must happen before deeper contact becomes possible.
+
+### 13P.2C MVP Leverage Objects and Faction Desires
+
+Each MVP faction should have at least one thing it wants.
+
+This may be:
+
+- an object
+- a body or remains
+- an artifact
+- a map fragment
+- a stolen or lost tool
+- a sacred item
+- medicine
+- proof of respect
+- information about another faction
+- help at a specific location
+
+The desired thing should exist somewhere on the map or inside another system.
+
+Possible sources:
+
+- hidden in a grave
+- found in an abandoned camp
+- carried by another faction
+- discovered randomly by scouts
+- found at a special location
+- recovered from a lost expedition
+- received as a trade item from a third party
+
+When the expedition gains the desired thing, new conversation options may open.
+
+Examples:
+
+- A cautious faction says: "Bring us the stone taken from the old grave, then we will speak."
+- A friendly faction asks for medicine before they reveal a safer route.
+- A border faction offers passage if the expedition returns a body or warning token.
+- A hidden faction refuses direct contact but reacts if the expedition carries proof that it understands the sealed place.
+- A faction may ask the expedition to retrieve something held by another faction, creating a social risk.
+
+For the MVP, this should be implemented with a small number of authored leverage objects, not a large inventory system.
+
+Leverage objects should:
+
+- unlock dialogue options
+- unlock offers
+- change trust, anger or fear
+- provide access to a leader, trader, guide or hidden representative
+- create map goals that are not simply "go here"
+
+This makes faction diplomacy part of exploration. The player searches the map not only for resources, but for reasons why someone would agree to talk.
 
 ### 13P.3 MVP Internal Values
 
@@ -2383,6 +2500,50 @@ Role-based options:
 Dialogue should create consequences.
 
 It should not become a large RPG dialogue tree in the MVP.
+
+### 13P.9 MVP Faction Offers and Trade
+
+For the MVP, faction trade should be small and authored.
+
+The goal is not a full economy. The goal is to make contact with factions feel useful, risky and tied to places on the map.
+
+MVP offer rules:
+
+- use 5 to 10 curated offers total
+- every friendly or neutral trading contact may offer Knowledge Points for Supplies
+- other offers are unlocked by faction, representative role, trust, location, warning signs or previous expedition history
+- some offers require a leverage object or fulfilled faction request
+- offers should be tied to interesting map places whenever possible
+- offers may be one-time, repeatable, or delayed until the next expedition
+
+Always-available baseline offer when trade is allowed:
+
+- Knowledge for Supplies: spend Knowledge Points to gain extra Supplies
+
+Example curated MVP offers:
+
+- Coastal People: buy 10 Supplies for Knowledge
+- Coastal People: buy a river route hint that reveals two reported hexes
+- Coastal People: buy field notes about safe camps or water sources
+- Border Wardens: ask for a guarded pass through the ridge
+- Border Wardens: trade Medicine for a safe spring location
+- Border Wardens: pay Knowledge for warning sign interpretation
+- Border Wardens: return a grave token to unlock proper negotiation
+- Hidden Ones: no normal trade; possible warning exchange only after a major discovery
+- Hidden Ones: react to proof that the expedition understands the sealed place
+- Hidden Ones: receive a forbidden-zone warning if the expedition withdraws peacefully
+- Independent stranger: buy a rough map fragment
+- Abandoned camp recovery: spend time or supplies to recover old expedition notes
+
+Offers should create map pressure:
+
+- reveal or confirm important hexes
+- mark a safe camp, spring, pass or dangerous boundary
+- open or block routes
+- improve or damage faction trust
+- give supplies, medicine, knowledge or warning information
+
+This gives the MVP enough variety without requiring a large inventory, price simulation or full diplomacy economy.
 
 
 ---
@@ -5505,6 +5666,8 @@ Nothing more.
 - hidden faction borders
 - basic faction attitude system using Trust, Anger and Fear
 - basic faction territorial rules
+- faction reactions when entering known or hidden faction territory
+- observation, warning or contact events triggered by faction territory entry
 - basic faction leader/contact interaction
 - faction memory for major actions
 - expedition failure
