@@ -35,6 +35,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     [Range(0.1f, 3f)] public float cameraDragPanSpeed = 1f;
     public bool centerCameraOnExpeditionAfterMove = true;
     public bool showDebugHexGrid = false;
+    public bool showDebugFactionOwnership = false;
     public bool showKnowledgeFog = true;
     public bool showLegacyOnGui = false;
     public bool showSelectionPreview = true;
@@ -72,6 +73,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     private bool warnedMissingPrefabLibrary;
     private Vector3 lastPanMousePosition;
     private bool isDraggingPan;
+    private Vector3 rightInspectStartMousePosition;
+    private Vector2Int rightInspectStartHex;
+    private bool hasRightInspectStart;
     private bool hasHoverPreview;
     private Vector2Int hoverPreviewHex;
     private bool hasInspectedHex;
@@ -169,9 +173,38 @@ public sealed class UnityHexMapView : MonoBehaviour
         return result;
     }
 
+    public LostExpeditionRecord GetLostExpeditionForUi(HexCoord coord)
+    {
+        if (coreGameState == null)
+        {
+            return null;
+        }
+
+        foreach (var record in coreGameState.Base.LostExpeditions)
+        {
+            if (record.LastKnownPosition == coord && record.Status != LostExpeditionStatus.FullyResolved)
+            {
+                return record;
+            }
+        }
+
+        return null;
+    }
+
+    public bool IsExpeditionAtUi(HexCoord coord)
+    {
+        return coreGameState != null && coreGameState.Expedition.Position == coord;
+    }
+
     public void RequestEndDayFromUi()
     {
         EndCurrentDay();
+        RefreshToolkitHud();
+    }
+
+    public void RequestCompleteExpeditionFromUi()
+    {
+        CompleteCurrentExpedition();
         RefreshToolkitHud();
     }
 
@@ -250,6 +283,87 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public void RequestInspectSelectedLocationFromUi()
+    {
+        EnsureUiSelectedHex();
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var coord = ViewCoordToCoreCoord(inspectedHex);
+        if (GetLostExpeditionForUi(coord) != null)
+        {
+            var recovery = gameApplication.RecoverLostExpedition(coreGameState, coord);
+            if (recovery.Success)
+            {
+                var expeditionNumber = recovery.Record == null ? 0 : recovery.Record.ExpeditionNumber;
+                interactionMessage = $"Recovered traces of Expedition {expeditionNumber}. Field knowledge +{recovery.RecoveredKnowledge}.";
+                RefreshKnowledgeOverlays();
+                RefreshHexOverlays();
+                RefreshToolkitHud();
+                return;
+            }
+
+            interactionMessage = recovery.Error ?? "Recovery rejected.";
+            RefreshToolkitHud();
+            return;
+        }
+
+        var result = gameApplication.InspectLocation(coreGameState, coord);
+        if (result.Success)
+        {
+            inspectedLocation = result.Location;
+            interactionMessage = result.Message;
+            RefreshKnowledgeOverlays();
+            RefreshHexOverlays();
+            RefreshToolkitHud();
+            return;
+        }
+
+        interactionMessage = result.Error ?? "Nothing to inspect here.";
+        RefreshToolkitHud();
+    }
+
+    public void RequestPrepareSuppliesWithKnowledgeFromUi()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.PrepareSuppliesWithKnowledge(coreGameState);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Preparation rejected.";
+            RefreshToolkitHud();
+            return;
+        }
+
+        interactionMessage = $"Vorbereitung gekauft: +{result.SupplyBonus} Vorraete fuer die naechste Expedition. Wissen verbleibend: {result.RemainingKnowledgePoints}.";
+        RefreshToolkitHud();
+    }
+
+    public void RequestResolveEventFromUi(string eventId, string optionId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.ResolveEvent(coreGameState, eventId, optionId);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Event option rejected.";
+            RefreshToolkitHud();
+            return;
+        }
+
+        interactionMessage = result.Message ?? "Event resolved.";
+        RefreshPlayerAnnotations();
+        RefreshToolkitHud();
+    }
+
     public void RefreshToolkitHud()
     {
         expeditionScreenController?.Refresh();
@@ -323,7 +437,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             EndCurrentDay();
         }
 
-        GUILayout.Label("Move: left-click reachable hex   Inspect: left-click other known hex   Pan: WASD/arrows or right/middle drag   Zoom: mouse wheel");
+        GUILayout.Label("Move: left-click reachable hex   Inspect/select: right-click or left-click non-reachable known hex   Pan: WASD/arrows or right/middle drag   Zoom: mouse wheel");
         GUILayout.EndHorizontal();
         GUILayout.Space(8f);
         GUILayout.Label(GetHudInteractionText());
@@ -495,6 +609,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         sideMaterials[TerrainKind.Snow] = Material("Snow Side", "878e87", 0.86f);
 
         featureMaterials["DebugHex"] = TransparentMaterial("Debug Hex", "101916", 0.32f);
+        featureMaterials["FactionOwnerCoastal"] = TransparentMaterial("Debug Faction Coastal", "4f94a8", 0.34f);
+        featureMaterials["FactionOwnerWardens"] = TransparentMaterial("Debug Faction Wardens", "b76857", 0.34f);
+        featureMaterials["FactionOwnerHidden"] = TransparentMaterial("Debug Faction Hidden", "6f5a9d", 0.36f);
+        featureMaterials["FactionOwnerDefault"] = TransparentMaterial("Debug Faction Default", "9070a8", 0.34f);
         featureMaterials["UnknownFog"] = TransparentMaterial("Unknown Fog", "151817", 0.74f);
         featureMaterials["ReportedFog"] = TransparentMaterial("Reported Fog", "303432", 0.52f);
         featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "a8c884", 0.24f);
@@ -1391,6 +1509,12 @@ public sealed class UnityHexMapView : MonoBehaviour
                 case LocationKind.Mine:
                     BuildMine(coord);
                     break;
+                case LocationKind.MarkedGrave:
+                    BuildMine(coord);
+                    break;
+                case LocationKind.AbandonedCamp:
+                    BuildSettlement(coord);
+                    break;
             }
         }
     }
@@ -1526,6 +1650,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void BuildHexOverlays()
     {
+        if (showDebugFactionOwnership)
+        {
+            BuildDebugFactionOwnershipOverlays();
+        }
+
         if (showDebugHexGrid)
         {
             foreach (var coord in tiles.Keys)
@@ -1566,6 +1695,62 @@ public sealed class UnityHexMapView : MonoBehaviour
                 : featureMaterials["BlockedHoverHex"];
             AddHexOverlay(hoverPreviewHex, "HoverHex", 1.018f, 0.86f, 0.105f, material);
         }
+    }
+
+    private void BuildDebugFactionOwnershipOverlays()
+    {
+        if (!useCoreTutorialState || coreGameState == null)
+        {
+            return;
+        }
+
+        foreach (var pair in tiles)
+        {
+            var coreCoord = ViewCoordToCoreCoord(pair.Key);
+            if (!coreGameState.World.Map.TryGetTile(coreCoord, out var coreTile) || coreTile == null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(coreTile.OwnerId))
+            {
+                continue;
+            }
+
+            AddDebugFactionOwnershipOverlay(pair.Key, coreTile.OwnerId);
+        }
+    }
+
+    private void AddDebugFactionOwnershipOverlay(Vector2Int coord, string ownerId)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var overlay = NewChild($"FactionOwner_{ownerId}_{coord.x}_{coord.y}", overlayRoot);
+        overlay.transform.localPosition = tile.World;
+        AddMesh(overlay, "FactionOwner", HexTopMesh(hexSize * 0.965f, VisualTileTopY + 0.062f), DebugFactionOwnershipMaterial(ownerId));
+    }
+
+    private Material DebugFactionOwnershipMaterial(string ownerId)
+    {
+        if (ownerId == "coastal-people")
+        {
+            return featureMaterials["FactionOwnerCoastal"];
+        }
+
+        if (ownerId == "border-wardens")
+        {
+            return featureMaterials["FactionOwnerWardens"];
+        }
+
+        if (ownerId == "hidden-ones")
+        {
+            return featureMaterials["FactionOwnerHidden"];
+        }
+
+        return featureMaterials["FactionOwnerDefault"];
     }
 
     private void RefreshHexOverlays()
@@ -1687,6 +1872,29 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        if (Input.GetMouseButtonDown(1))
+        {
+            hasRightInspectStart = TryGetPointerHex(out rightInspectStartHex);
+            rightInspectStartMousePosition = Input.mousePosition;
+            return;
+        }
+
+        if (Input.GetMouseButtonUp(1))
+        {
+            if (hasRightInspectStart &&
+                (Input.mousePosition - rightInspectStartMousePosition).sqrMagnitude < 36f &&
+                TryGetPointerHex(out var rightClickHex) &&
+                rightClickHex == rightInspectStartHex)
+            {
+                InspectHex(rightClickHex);
+                RefreshHexOverlays();
+                RefreshHud();
+            }
+
+            hasRightInspectStart = false;
+            return;
+        }
+
         if (!Input.GetMouseButtonDown(0))
         {
             return;
@@ -1738,6 +1946,13 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        if (coreGameState.Expedition.Status == ExpeditionStatus.Returned ||
+            coreGameState.Expedition.Status == ExpeditionStatus.Lost)
+        {
+            AdvanceCurrentBaseTime();
+            return;
+        }
+
         var result = gameApplication.EndDay(coreGameState);
         if (!result.Success)
         {
@@ -1754,8 +1969,84 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHud();
     }
 
+    private void CompleteCurrentExpedition()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        if (coreGameState.Expedition.Status == ExpeditionStatus.Returned ||
+            coreGameState.Expedition.Status == ExpeditionStatus.Lost)
+        {
+            StartNextExpedition();
+            return;
+        }
+
+        var result = gameApplication.CompleteExpedition(coreGameState);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Expedition completion rejected.";
+            RefreshHud();
+            return;
+        }
+
+        interactionMessage = $"Expedition {result.ExpeditionNumber} abgeschlossen. Wissen gesichert: +{result.SecuredKnowledge}. Basiswissen: {result.BaseKnowledgePoints}. Naechste Expedition ab Welttag {result.NextExpeditionAvailableWorldDay}.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+    }
+
+    private void AdvanceCurrentBaseTime()
+    {
+        var result = gameApplication.AdvanceBaseTime(coreGameState);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Base time rejected.";
+            RefreshHud();
+            return;
+        }
+
+        interactionMessage = result.NextExpeditionReady
+            ? $"Base-Zeit vergangen. Neue Expedition ist an Welttag {result.WorldDay} bereit."
+            : $"Base-Zeit vergangen. Welttag {result.WorldDay}.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+    }
+
+    private void StartNextExpedition()
+    {
+        var result = gameApplication.StartNewExpedition(coreGameState);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "New expedition rejected.";
+            RefreshHud();
+            return;
+        }
+
+        selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        hasInspectedHex = false;
+        interactionMessage = $"Expedition {result.ExpeditionNumber} gestartet.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        UpdateExpeditionMarkerPosition();
+        RefreshHud();
+    }
+
     private static string BuildEndDayMessage(EndDayResult result)
     {
+        if (result.ExpeditionLost)
+        {
+            return $"Expedition lost on world day {result.WorldDay}. No reports returned. Recovery time required.";
+        }
+
         var message = $"Day advanced. Expedition day {result.ExpeditionDay}. Supplies consumed {result.SuppliesConsumed}.";
         if (result.ScoutResolutions.Count == 0)
         {

@@ -68,6 +68,14 @@ Knowledge is the primary progression system.
 
 The player does not become stronger mainly through weapons, armies or production chains, but through understanding the world better.
 
+Knowledge has three separate meanings:
+
+- archived knowledge: permanent information stored at the base
+- unsecured field knowledge: valuable information carried by the active expedition
+- Knowledge Points: the spendable practical value generated when an expedition returns
+
+Spending Knowledge Points does not delete archived knowledge. It represents converting discoveries into support, credibility, logistics, training, equipment, specialists, trade value and better preparation.
+
 Examples of valuable knowledge:
 
 - which biomes are dangerous
@@ -78,6 +86,10 @@ Examples of valuable knowledge:
 - which factions react aggressively to certain actions
 - which ruins are useful, dangerous or politically sensitive
 - which old information may no longer be reliable
+
+Core loop:
+
+> Explore -> gain field knowledge -> decide when to return -> secure knowledge -> spend Knowledge Points -> prepare a stronger expedition.
 
 ### 3.3 Uncertainty Creates Tension
 
@@ -176,8 +188,9 @@ The main gameplay loop consists of:
 6. Manually annotate the map with assumptions and warnings.
 7. Decide whether to investigate, avoid, split the group, return to base or push deeper.
 8. Suffer consequences from risk, misinterpretation, hostile territory or poor preparation.
-9. Bring knowledge, resources and discoveries back to the base.
-10. Use the base to support deeper future expeditions.
+9. Bring unsecured field knowledge, resources and discoveries back to the base.
+10. Secure knowledge into the archive and convert its practical value into Knowledge Points.
+11. Spend Knowledge Points and base time to prepare deeper future expeditions.
 
 The player should not receive perfect information. Exploration is based on observation, inference and risk.
 
@@ -756,6 +769,139 @@ Conflicting reports exist.
 Once known, but no longer reliable due to major world changes.
 
 These states should help represent uncertainty without overwhelming the UI.
+
+## 10A. Knowledge Economy
+
+Knowledge should not only be passive map progression. It should also be the main strategic resource of the game.
+
+The system uses three knowledge layers.
+
+### Archived Knowledge
+
+Archived Knowledge is permanent information stored at the base.
+
+Examples:
+
+- mapped hexes
+- known roads and rivers
+- scout reports
+- faction notes
+- discovered locations
+- player notes
+- warning signs
+- recovered journals
+- old expedition records
+- known symbols
+- confirmed or disproved rumors
+
+Archived Knowledge is not a spendable number.
+
+It remains available even after Knowledge Points are spent.
+
+### Unsecured Field Knowledge
+
+Unsecured Field Knowledge is knowledge currently carried by the active expedition.
+
+It has not yet reached the base.
+
+Examples:
+
+- newly confirmed map areas
+- new scout reports
+- discovered routes
+- new faction contact
+- special location discoveries
+- recovered journals
+- corrected old maps
+- confirmed dangers
+- new explanations for old mysteries
+
+This knowledge is at risk.
+
+If the expedition returns, it can be secured.
+
+If the expedition is lost, this knowledge may be lost until a future expedition recovers part of it.
+
+The active expedition UI should show the amount of unsecured knowledge currently at risk.
+
+Example:
+
+```text
+Unsecured Knowledge: 34
+```
+
+This creates push-your-luck pressure:
+
+- return now and secure it
+- continue exploring and gain more
+- risk losing everything
+
+### Knowledge Points
+
+Knowledge Points are the spendable resource stored at the base.
+
+They are created when an expedition returns with valid unsecured field knowledge.
+
+Knowledge Points may be used for:
+
+- expedition preparation
+- supplies
+- medicine
+- additional expedition members
+- specialists
+- equipment
+- base upgrades
+- analysis
+- faction trade
+- buying information
+- access agreements
+- rescue attempts
+- recovery missions
+
+Knowledge Points are the economic value of discoveries.
+
+Archived Knowledge itself is never deleted when points are spent.
+
+### Securing Knowledge
+
+The base only receives new usable knowledge when the expedition returns.
+
+During return processing:
+
+1. Unsecured Field Knowledge is reviewed.
+2. Duplicate or trivial information is filtered.
+3. New information is added to the archive.
+4. Knowledge Points are awarded.
+5. Reports, maps and notes become persistent.
+6. The expedition summary records what was secured.
+
+Recommended MVP rule:
+
+```text
+1 secured knowledge value = 1 Knowledge Point
+```
+
+The conversion can later depend on archive upgrades, report quality, surviving witnesses, damaged documents, reliability, novelty and purchased information.
+
+### MVP Knowledge Awards
+
+For the MVP, use simple authored values and avoid complex formulas.
+
+Suggested values:
+
+```text
+New confirmed hex:              1 Knowledge
+New road or river segment:      1 Knowledge
+Useful scout report:            2-5 Knowledge
+Special location discovered:    8-15 Knowledge
+First faction contact:          8-12 Knowledge
+Recovered journal or map:       5-15 Knowledge
+Major understanding:            authored reward
+```
+
+The same information should not repeatedly grant full Knowledge.
+
+Knowledge sources should have stable IDs so the game can prevent farming repeated map movement, repeated scout reports or reselling the same information.
 
 ---
 
@@ -3173,6 +3319,14 @@ The new expedition may inherit:
 
 The world advances before the next expedition begins.
 
+If the expedition returned successfully, its field knowledge is secured and converted into Knowledge Points.
+
+If the expedition is lost, its unsecured field knowledge is not automatically secured. It may become a future recovery objective: another expedition might find journals, bodies, map cases, abandoned camps, witness accounts or damaged records.
+
+Lost expeditions should create history, not only punishment.
+
+The base should always be able to launch a weak emergency expedition even if Knowledge Points reach zero.
+
 ### 15.3 Knowledge Can Become Outdated
 
 Knowledge gained by previous expeditions is valuable but not always permanently reliable.
@@ -3210,6 +3364,10 @@ The archive may include:
 - evidence found later by newer expeditions
 
 The archive is useful, but not perfectly reliable.
+
+The archive is also distinct from Knowledge Points.
+
+Spending Knowledge Points never removes reports, notes, maps or discovered facts from the archive.
 
 ---
 
@@ -3453,15 +3611,22 @@ The base should not use complex production chains.
 
 The base should not be upgraded with classic city-builder resources such as wood, stone or iron.
 
-Instead, upgrades use a meta resource such as:
+Instead, upgrades use **Knowledge Points**.
 
-- Support Points
-- Expedition Funding
-- Institutional Support
+Knowledge Points represent the practical value generated by discoveries:
 
-Support is gained by:
+- institutional trust
+- support from backers
+- logistical preparation
+- training value
+- trade value
+- improved planning
+- useful maps and reports
+- credibility gained by returning with evidence
 
-- returning successfully
+Knowledge Points are gained by:
+
+- returning successfully with unsecured field knowledge
 - completing mandates
 - achieving Failure With Knowledge
 - discovering important locations
@@ -3475,6 +3640,10 @@ Support is gained by:
 Progression should reward exploration and understanding.
 
 The player should not farm raw materials to build a base.
+
+Spending Knowledge Points does not erase the underlying archived knowledge.
+
+It represents converting that knowledge into practical support.
 
 ### 16A.8 What Persists Between Expeditions
 
@@ -3493,6 +3662,8 @@ The following should persist:
 - released dangers or resolved dangers
 - completed or partially completed mandates
 - world consequences
+- base Knowledge Points
+- lost expedition records and possible recovery leads
 
 The following should not be assumed permanently reliable:
 
@@ -3506,6 +3677,8 @@ The following should not be assumed permanently reliable:
 - assumptions made by previous expeditions
 
 Knowledge should be valuable, but not absolute.
+
+Unsecured field knowledge from an active expedition only persists if the expedition returns or if a later recovery event explicitly preserves part of it.
 
 ### 16A.9 Meta-Progression Pillars
 
@@ -3556,6 +3729,12 @@ Possible resources:
 
 Important: **Information is also a resource.**
 
+For the current MVP direction, this resource is formalized as:
+
+- archived knowledge: permanent records
+- unsecured field knowledge: expedition-carried value at risk
+- Knowledge Points: spendable base resource
+
 Resources should limit expedition range and force return decisions, but should not turn the game into a survival simulator.
 
 The player should feel logistical pressure without being forced into constant micromanagement.
@@ -3592,6 +3771,33 @@ Capacity is increased mainly by carriers.
 Capacity is used by supplies, medicine, tools, trade goods and special equipment.
 
 The MVP should avoid separate food, water, fuel and crafting resources.
+
+### Knowledge Points
+
+Knowledge Points are not an expedition survival resource.
+
+They are a base resource created when an expedition returns and secures field knowledge.
+
+Knowledge Points may be spent during base preparation on:
+
+- supplies
+- medicine
+- additional members
+- specialists
+- equipment
+- limited base upgrades
+- analysis
+- faction trade
+- bought information
+- recovery missions
+
+The MVP should keep Knowledge Points as a single currency.
+
+Do not add separate knowledge categories until the single-resource model has been playtested.
+
+The player must never become hard-locked by reaching zero Knowledge Points.
+
+At zero Knowledge Points, the base should still allow a weak emergency expedition with minimal supplies, no specialist advantage and low carrying capacity.
 
 ---
 
@@ -4930,13 +5136,9 @@ It only needs to demonstrate that previous knowledge matters.
 
 ### 24A.3 Vertical Slice Map
 
-The Vertical Slice may use a smaller map than the full MVP.
+The current MVP target map uses a rectangular 40 x 30 hex field.
 
-Suggested size:
-
-> approximately 25 x 20 hexes
-
-The full MVP may later expand toward 40 x 30 hexes.
+The playable slice should still feel dense. A 40 x 30 map is acceptable if the starting region, early faction clues, first routes and first special locations are placed close enough to avoid empty travel.
 
 The slice should be small but dense.
 
@@ -4951,6 +5153,7 @@ The Vertical Slice should include:
 - expedition day counter
 - movement points
 - supplies, medicine, morale and capacity
+- unsecured field knowledge shown during expedition
 - predefined 8-person tutorial expedition
 - named expedition members
 - fixed MVP roles
@@ -4959,11 +5162,13 @@ The Vertical Slice should include:
 - manual markers
 - free text notes
 - at least two biomes plus coast or river
-- at least two active or visible factions
+- three active MVP factions: Coastal People, Border Wardens and Hidden Ones
 - at least three special locations
 - return to base
 - base phase with time passing
 - archive update
+- Knowledge Points awarded on successful return
+- at least one basic Knowledge Point spending choice
 - inherited knowledge for second expedition
 - second expedition with at least one changed preparation option
 
@@ -6022,9 +6227,17 @@ This game is about leading expeditions into an unknown procedurally generated wo
 
 The player explores a fog-covered hex map, sends scouts, reads reports, interprets signs, marks the map manually, investigates special places and slowly learns how the world works.
 
+Knowledge is both progression and resource.
+
+The archive preserves what the player has learned. The active expedition carries unsecured field knowledge that can be lost. Returning to base secures that knowledge and creates Knowledge Points that can be spent on preparation, equipment, specialists, base upgrades, trade, information and recovery missions.
+
+Spending Knowledge Points does not erase archived knowledge.
+
 Factions control invisible territories and react to the player’s actions, team composition and previous expedition history. They have leaders or leadership structures, territorial rules, cultural values, memories and their own reasons for being friendly, cautious, hostile or desperate. Their borders, attitudes and even existence may change between expeditions.
 
 Expeditions can fail, but failure is not a simple reset. Later expeditions inherit imperfect knowledge from earlier ones. The world persists, changes and remembers.
+
+If an expedition returns, its knowledge is secured. If it is lost, its unsecured knowledge is lost at first and may later become a recovery objective through journals, remains, camps, witnesses or recovered map cases.
 
 The core fantasy is not conquest.
 

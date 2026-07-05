@@ -11,16 +11,21 @@ public static class TutorialGameFactory
     {
         var bounds = new HexMapBounds(40, 30);
         var map = GenerateTutorialMap(bounds);
-        var baseCoord = new HexCoord(3, 15);
+        var baseCoord = BaseCoord();
 
         map.SetTile(new HexTileState(baseCoord, TerrainType.Coast, locationId: "base-camp"));
-        map.SetTile(new HexTileState(new HexCoord(4, 15), TerrainType.Coast, roadId: "old-coast-road"));
+        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road"));
+        map.SetTile(new HexTileState(new HexCoord(3, 15), TerrainType.Grassland, roadId: "old-coast-road"));
+        map.SetTile(new HexTileState(new HexCoord(4, 15), TerrainType.Grassland, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(5, 15), TerrainType.Forest, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(7, 14), TerrainType.Hills));
         map.SetTile(new HexTileState(new HexCoord(8, 14), TerrainType.Mountain, elevation: 3));
         map.SetTile(new HexTileState(new HexCoord(9, 14), TerrainType.Mountain, elevation: 4, isBlocked: true));
         map.SetTile(new HexTileState(new HexCoord(6, 16), TerrainType.Swamp, riverId: "gray-river"));
         map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Hills, locationId: "broken-ravine"));
+        map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Hills, locationId: "marked-grave"));
+        map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Forest, locationId: "abandoned-camp"));
+        ApplyFactionTerritories(map);
 
         var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations());
         var knowledge = new KnowledgeState();
@@ -38,8 +43,9 @@ public static class TutorialGameFactory
             capacity: 20);
         var baseState = new BaseState(baseCoord);
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
+        baseState.MarkExpeditionDepartureArchivePoint();
 
-        return new GameState(world, knowledge, notes, expedition, baseState);
+        return new GameState(world, knowledge, notes, expedition, baseState, factions: CreateTutorialFactions());
     }
 
     private static HexMapState GenerateTutorialMap(HexMapBounds bounds)
@@ -90,7 +96,7 @@ public static class TutorialGameFactory
     {
         return new[]
         {
-            new SpecialLocationState("base-camp", LocationKind.BaseCamp, new HexCoord(3, 15), "Coastal Base"),
+            new SpecialLocationState("base-camp", LocationKind.BaseCamp, BaseCoord(), "Coastal Base"),
             new SpecialLocationState("settlement-west", LocationKind.Settlement, ViewCoord(-5, 2), "Western Camp"),
             new SpecialLocationState("settlement-crossing", LocationKind.Settlement, ViewCoord(-1, 0), "River Crossing"),
             new SpecialLocationState("settlement-east", LocationKind.Settlement, ViewCoord(3, -2), "Eastern Hamlet"),
@@ -98,8 +104,170 @@ public static class TutorialGameFactory
             new SpecialLocationState("settlement-south", LocationKind.Settlement, ViewCoord(-3, 5), "Foothill Camp"),
             new SpecialLocationState("watchtower", LocationKind.Watchtower, ViewCoord(9, 2), "Old Watchtower"),
             new SpecialLocationState("mine", LocationKind.Mine, ViewCoord(-10, -2), "Abandoned Mine"),
-            new SpecialLocationState("broken-ravine", LocationKind.BrokenRavine, new HexCoord(12, 15), "Broken Ravine")
+            new SpecialLocationState("broken-ravine", LocationKind.BrokenRavine, new HexCoord(12, 15), "Broken Ravine"),
+            new SpecialLocationState("marked-grave", LocationKind.MarkedGrave, ViewCoord(-8, 4), "Marked Grave"),
+            new SpecialLocationState("abandoned-camp", LocationKind.AbandonedCamp, ViewCoord(-2, 3), "Abandoned Camp")
         };
+    }
+
+    private static IEnumerable<FactionState> CreateTutorialFactions()
+    {
+        return new[]
+        {
+            new FactionState(
+                "coastal-people",
+                "Coastal People",
+                FactionContactStatus.Contacted,
+                trust: 18,
+                anger: 0,
+                fear: 12,
+                memories: new[] { "Coastal People warned the expedition not to camp beyond the black stones." }),
+            new FactionState(
+                "border-wardens",
+                "Border Wardens",
+                FactionContactStatus.Rumored,
+                trust: 0,
+                anger: 8,
+                fear: 20,
+                warningZones: CreateBorderWardenWarningZones(),
+                memories: new[] { "Their borders are inferred from graves, carved posts and renewed warning markers." }),
+            new FactionState(
+                "hidden-ones",
+                "Hidden Ones",
+                FactionContactStatus.Rumored,
+                trust: 0,
+                anger: 12,
+                fear: 35,
+                warningZones: CreateHiddenOnesWarningZones(),
+                memories: new[] { "Scouts speak of erased tracks and silent forest markers in the northwest." })
+        };
+    }
+
+    private static void ApplyFactionTerritories(HexMapState map)
+    {
+        foreach (var coord in CreateCoastalPeopleTerritory(map.Bounds))
+        {
+            SetOwnerIfPlayable(map, coord, "coastal-people", overwriteExisting: false);
+        }
+
+        foreach (var coord in CreateBorderWardenTerritory(map.Bounds))
+        {
+            SetOwnerIfPlayable(map, coord, "border-wardens", overwriteExisting: true);
+        }
+
+        foreach (var coord in CreateBorderWardenWarningZones())
+        {
+            SetOwnerIfPlayable(map, coord, "border-wardens", overwriteExisting: true);
+        }
+
+        foreach (var coord in CreateHiddenOnesTerritory(map.Bounds))
+        {
+            SetOwnerIfPlayable(map, coord, "hidden-ones", overwriteExisting: true);
+        }
+
+        foreach (var coord in CreateHiddenOnesWarningZones())
+        {
+            SetOwnerIfPlayable(map, coord, "hidden-ones", overwriteExisting: true);
+        }
+    }
+
+    private static IEnumerable<HexCoord> CreateCoastalPeopleTerritory(HexMapBounds bounds)
+    {
+        var coords = new HashSet<HexCoord>();
+        AddRadius(coords, ViewCoord(-12, -1), 3, bounds);
+        AddRadius(coords, ViewCoord(-10, 0), 3, bounds);
+        AddRadius(coords, ViewCoord(-8, 1), 3, bounds);
+        AddRadius(coords, ViewCoord(-15, 8), 3, bounds);
+        return coords;
+    }
+
+    private static IEnumerable<HexCoord> CreateBorderWardenTerritory(HexMapBounds bounds)
+    {
+        var coords = new HashSet<HexCoord>();
+        foreach (var center in ViewPath((-10, 5), (-8, 4), (-6, 4), (-4, 4), (-2, 3), (0, 3), (2, 2), (4, 2), (6, 1), (8, 1)))
+        {
+            AddRadius(coords, center, 3, bounds);
+        }
+
+        AddRadius(coords, new HexCoord(12, 15), 3, bounds);
+        return coords;
+    }
+
+    private static IEnumerable<HexCoord> CreateHiddenOnesTerritory(HexMapBounds bounds)
+    {
+        var coords = new HashSet<HexCoord>();
+        AddRadius(coords, ViewCoord(15, -13), 3, bounds);
+        AddRadius(coords, ViewCoord(18, -12), 3, bounds);
+        AddRadius(coords, ViewCoord(16, -10), 3, bounds);
+        AddRadius(coords, ViewCoord(19, -9), 2, bounds);
+        return coords;
+    }
+
+    private static void AddRadius(HashSet<HexCoord> coords, HexCoord center, int radius, HexMapBounds bounds)
+    {
+        for (var dq = -radius; dq <= radius; dq++)
+        {
+            var minDr = Math.Max(-radius, -dq - radius);
+            var maxDr = Math.Min(radius, -dq + radius);
+            for (var dr = minDr; dr <= maxDr; dr++)
+            {
+                var coord = new HexCoord(center.Q + dq, center.R + dr);
+                if (bounds.Contains(coord))
+                {
+                    coords.Add(coord);
+                }
+            }
+        }
+    }
+
+    private static void SetOwnerIfPlayable(HexMapState map, HexCoord coord, string ownerId, bool overwriteExisting)
+    {
+        if (!map.TryGetTile(coord, out var tile) || tile == null)
+        {
+            return;
+        }
+
+        if (tile.Terrain == TerrainType.Water)
+        {
+            return;
+        }
+
+        if (!overwriteExisting && !string.IsNullOrWhiteSpace(tile.OwnerId))
+        {
+            return;
+        }
+
+        map.SetTile(tile.WithOwner(ownerId));
+    }
+
+    private static IEnumerable<HexCoord> CreateBorderWardenWarningZones()
+    {
+        return new[]
+        {
+            ViewCoord(-8, 4),
+            ViewCoord(-7, 4),
+            ViewCoord(-7, 5),
+            ViewCoord(-6, 4),
+            ViewCoord(-6, 5),
+            ViewCoord(-5, 5),
+            new HexCoord(12, 15)
+        };
+    }
+
+    private static IEnumerable<HexCoord> CreateHiddenOnesWarningZones()
+    {
+        return new[]
+        {
+            ViewCoord(16, -13),
+            ViewCoord(17, -12),
+            ViewCoord(18, -11),
+            ViewCoord(19, -10)
+        };
+    }
+
+    private static HexCoord BaseCoord()
+    {
+        return ViewCoord(-19, 0);
     }
 
     private static IEnumerable<HexCoord> ViewPath(params (int Q, int R)[] coords)

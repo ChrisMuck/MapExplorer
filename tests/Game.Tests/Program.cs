@@ -19,6 +19,16 @@ var scoutMissionTests = new SendScoutMissionCommandTests();
 scoutMissionTests.RunAll();
 var endDayCommandTests = new EndDayCommandTests();
 endDayCommandTests.RunAll();
+var completeExpeditionTests = new CompleteExpeditionCommandTests();
+completeExpeditionTests.RunAll();
+var expeditionLifecycleTests = new ExpeditionLifecycleCommandTests();
+expeditionLifecycleTests.RunAll();
+var inspectLocationTests = new InspectLocationCommandTests();
+inspectLocationTests.RunAll();
+var eventQueueTests = new EventQueueCommandTests();
+eventQueueTests.RunAll();
+var factionTests = new FactionPresenceTests();
+factionTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 
@@ -328,7 +338,7 @@ internal sealed class GameStateTests
 
         AssertEqual(40, game.World.Map.Bounds.Width, "Tutorial map width");
         AssertEqual(30, game.World.Map.Bounds.Height, "Tutorial map height");
-        AssertEqual(new HexCoord(3, 15), game.Base.Location, "Tutorial base location");
+        AssertEqual(new HexCoord(1, 15), game.Base.Location, "Tutorial base location");
         AssertEqual(game.Base.Location, game.Expedition.Position, "Expedition starts at base");
         AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(game.Base.Location), "Base starts confirmed");
         AssertEqual(TerrainType.Coast, game.World.Map.GetTile(game.Base.Location).Terrain, "Base tile terrain");
@@ -476,6 +486,7 @@ internal sealed class MoveExpeditionCommandTests
         AssertEqual(destination, game.Expedition.Position, "Expedition position");
         AssertEqual(2, game.Expedition.MovementPoints, "Movement points spent");
         AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(destination), "Destination confirmed");
+        AssertEqual(1, game.Expedition.UnsecuredKnowledge, "New confirmed destination adds unsecured knowledge");
     }
 
     private static void NonAdjacentTileIsRejected()
@@ -821,8 +832,10 @@ internal sealed class EndDayCommandTests
         EndDayAdvancesWorldAndExpeditionDay();
         EndDayResetsMovementPoints();
         EndDayConsumesSuppliesWithoutGoingBelowZero();
+        EndDayAtBaseConsumesNoSuppliesWhileScoutsResolve();
         GameApplicationCanEndTutorialDay();
         CautiousScoutReturnsWithReport();
+        RepeatedScoutRouteDoesNotFarmUnsecuredKnowledge();
         BalancedScoutCanBecomeOverdueThenReturn();
         BoldScoutCanReturnInjured();
         BoldRuinScoutCanGoMissing();
@@ -872,7 +885,21 @@ internal sealed class EndDayCommandTests
         AssertEqual(2, game.World.WorldDay, "Application world day");
         AssertEqual(2, game.Expedition.ExpeditionDay, "Application expedition day");
         AssertEqual(game.Expedition.MaxMovementPoints, game.Expedition.MovementPoints, "Application movement reset");
-        AssertEqual(startSupplies - 2, game.Expedition.Supplies, "Application supplies consumed");
+        AssertEqual(startSupplies, game.Expedition.Supplies, "Application supplies are not consumed at base");
+        AssertEqual(0, result.SuppliesConsumed, "Application consumed no supplies at base");
+    }
+
+    private static void EndDayAtBaseConsumesNoSuppliesWhileScoutsResolve()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4, expeditionAtBase: true);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+
+        var result = new EndDayCommand(suppliesPerDay: 2).Execute(game);
+
+        AssertEqual(10, game.Expedition.Supplies, "Base day consumes no supplies");
+        AssertEqual(0, result.SuppliesConsumed, "Base day reports no consumed supplies");
+        AssertEqual(1, result.ScoutResolutions.Count, "Base day still resolves scouts");
+        AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Scout can return while expedition waits at base");
     }
 
     private static void CautiousScoutReturnsWithReport()
@@ -886,7 +913,24 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Cautious scout returned");
         AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Returned scout available");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Scout report stored");
-        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(1, 0)), "Scout report marks related hex reported");
+        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Scout report marks related hex reported");
+        AssertEqual(3, game.Expedition.UnsecuredKnowledge, "Returned scout report adds unsecured knowledge");
+    }
+
+    private static void RepeatedScoutRouteDoesNotFarmUnsecuredKnowledge()
+    {
+        var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
+        var sendFirst = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        var firstDay = new EndDayCommand().Execute(game);
+        var sendSecond = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        var secondDay = new EndDayCommand().Execute(game);
+
+        AssertTrue(sendFirst.Success, "First scout mission sent");
+        AssertTrue(firstDay.Success, "First scout mission resolves");
+        AssertTrue(sendSecond.Success, "Second scout mission sent");
+        AssertTrue(secondDay.Success, "Second scout mission resolves");
+        AssertEqual(2, game.Knowledge.ScoutReports.Count, "Repeated route can still produce a report");
+        AssertEqual(3, game.Expedition.UnsecuredKnowledge, "Repeated known route does not farm unsecured knowledge");
     }
 
     private static void BalancedScoutCanBecomeOverdueThenReturn()
@@ -927,14 +971,16 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Missing, result.ScoutResolutions[0].Status, "Bold ruin scout missing");
         AssertEqual(ExpeditionMemberStatus.Missing, game.Expedition.FindMember("scout")!.Status, "Scout marked missing");
         AssertEqual(0, game.Knowledge.ScoutReports.Count, "Missing scout creates no report");
+        AssertEqual(0, game.Expedition.UnsecuredKnowledge, "Missing scout adds no unsecured knowledge");
     }
 
-    private static GameState CreateEndDayTestGame(int supplies, int movementPoints, int maxMovementPoints)
+    private static GameState CreateEndDayTestGame(int supplies, int movementPoints, int maxMovementPoints, bool expeditionAtBase = false)
     {
         var map = HexMapState.CreateFilled(new HexMapBounds(3, 3), TerrainType.Grassland);
+        var expeditionPosition = expeditionAtBase ? HexCoord.Zero : new HexCoord(1, 0);
         var expedition = new ExpeditionState(
             1,
-            HexCoord.Zero,
+            expeditionPosition,
             new[] { new ExpeditionMemberState("scout", "Scout", ExpeditionMemberRole.Scout) },
             movementPoints: movementPoints,
             maxMovementPoints: maxMovementPoints,
@@ -956,6 +1002,605 @@ internal sealed class EndDayCommandTests
         {
             throw new InvalidOperationException($"{message}: expected true.");
         }
+    }
+}
+
+internal sealed class CompleteExpeditionCommandTests
+{
+    public void RunAll()
+    {
+        CompletingAwayFromBaseIsRejected();
+        CompletingAtBaseArchivesAndReturnsExpedition();
+        CompletingWithActiveScoutsIsRejected();
+    }
+
+    private static void CompletingAwayFromBaseIsRejected()
+    {
+        var game = TutorialGameFactory.Create();
+        game.Expedition.SetPosition(new HexCoord(2, 15));
+
+        var result = new CompleteExpeditionCommand().Execute(game);
+
+        AssertFalse(result.Success, "Completing away from base rejected");
+        AssertEqual(ExpeditionStatus.Active, game.Expedition.Status, "Expedition remains active away from base");
+    }
+
+    private static void CompletingAtBaseArchivesAndReturnsExpedition()
+    {
+        var game = TutorialGameFactory.Create();
+        var archiveCount = game.Base.ArchiveEntries.Count;
+        game.Expedition.AddUnsecuredKnowledge(12);
+
+        var result = new CompleteExpeditionCommand().Execute(game);
+        var moveAfterReturn = new MoveExpeditionCommand(new MovementCostService()).Execute(game, new HexCoord(2, 15));
+        var endDayAfterReturn = new EndDayCommand().Execute(game);
+
+        AssertTrue(result.Success, "Completing at base succeeds");
+        AssertEqual(ExpeditionStatus.Returned, game.Expedition.Status, "Expedition is returned");
+        AssertEqual(ExpeditionStatus.Returned, game.Base.LastExpeditionOutcome, "Returned outcome stored");
+        AssertEqual(game.World.WorldDay + CompleteExpeditionCommand.NormalPreparationDays, game.Base.NextExpeditionAvailableWorldDay, "Returned expedition schedules short base phase");
+        AssertEqual(12, result.SecuredKnowledge, "Result reports secured knowledge");
+        AssertEqual(12, game.Base.KnowledgePoints, "Returned expedition converts unsecured knowledge to base points");
+        AssertEqual(0, game.Expedition.UnsecuredKnowledge, "Returned expedition clears unsecured knowledge");
+        AssertEqual(archiveCount + 1, game.Base.ArchiveEntries.Count, "Completion archives a summary");
+        AssertTrue(game.Base.ArchiveEntries[game.Base.ArchiveEntries.Count - 1].Contains("returned"), "Completion archive text");
+        AssertFalse(moveAfterReturn.Success, "Returned expedition cannot move");
+        AssertFalse(endDayAfterReturn.Success, "Returned expedition cannot advance day");
+    }
+
+    private static void CompletingWithActiveScoutsIsRejected()
+    {
+        var game = TutorialGameFactory.Create();
+        var send = new SendScoutMissionCommand().Execute(
+            game,
+            new[] { "scout-1" },
+            HexDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Cautious);
+        AssertTrue(send.Success, "Scout mission sent");
+
+        var result = new CompleteExpeditionCommand().Execute(game);
+
+        AssertFalse(result.Success, "Completing with active scout rejected");
+        AssertEqual(ExpeditionStatus.Active, game.Expedition.Status, "Expedition remains active with scout away");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class ExpeditionLifecycleCommandTests
+{
+    public void RunAll()
+    {
+        ReturnedExpeditionStartsNextAfterShortBaseTimeAndKeepsKnowledge();
+        LostExpeditionClearsExpeditionKnowledgeAndNeedsLongBaseTime();
+        LaterExpeditionCanRecoverPartOfLostKnowledge();
+        EndDayWithoutFoodLosesExpedition();
+    }
+
+    private static void ReturnedExpeditionStartsNextAfterShortBaseTimeAndKeepsKnowledge()
+    {
+        var game = TutorialGameFactory.Create();
+        var location = game.World.Locations.First(locationState => locationState.Id == "abandoned-camp");
+        location.Inspect(game.World.WorldDay);
+        game.Knowledge.AddScoutReport(new ScoutReportState(
+            "report-test",
+            "mission-test",
+            "Smoke beyond the ridge",
+            "A scout returned with useful faction notes.",
+            70,
+            new[] { location.Coord },
+            new[] { "Smoke east" }));
+        game.PlayerNotes.AddNote(new PlayerMapNoteState("note-test", location.Coord, "Possible safe camp."));
+        game.Base.AddArchiveEntry("Field archive: useful faction notes secured by the returning expedition.");
+        game.Expedition.AddUnsecuredKnowledge(12);
+
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        var prepare = new PrepareSuppliesWithKnowledgeCommand().Execute(game);
+        var earlyStart = new StartNewExpeditionCommand().Execute(game);
+        var baseTime = new AdvanceBaseTimeCommand().Execute(game, CompleteExpeditionCommand.NormalPreparationDays);
+        var start = new StartNewExpeditionCommand().Execute(game);
+
+        AssertTrue(complete.Success, "Return completes");
+        AssertTrue(prepare.Success, "Knowledge can buy supply preparation after return");
+        AssertEqual(2, game.Base.KnowledgePoints, "Knowledge spending leaves remaining points");
+        AssertFalse(earlyStart.Success, "Next expedition waits for base preparation");
+        AssertTrue(baseTime.Success, "Base time advances");
+        AssertTrue(start.Success, "Next expedition starts after short base time");
+        AssertEqual(2, game.Expedition.ExpeditionNumber, "Second expedition number");
+        AssertEqual(game.Base.Location, game.Expedition.Position, "Second expedition starts at base");
+        AssertEqual(40, game.Expedition.Supplies, "Second expedition starts with prepared supplies");
+        AssertEqual(0, game.Base.PendingSupplyBonus, "Supply preparation is consumed on expedition start");
+        AssertEqual(1, game.Knowledge.ScoutReports.Count, "Returned scout reports persist");
+        AssertEqual(1, game.PlayerNotes.Notes.Count, "Returned notes persist");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("useful faction notes")), "Returned field archive entries persist");
+        AssertTrue(location.IsInspected, "Returned special location knowledge persists");
+    }
+
+    private static void LostExpeditionClearsExpeditionKnowledgeAndNeedsLongBaseTime()
+    {
+        var game = TutorialGameFactory.Create();
+        var location = game.World.Locations.First(locationState => locationState.Id == "abandoned-camp");
+        location.Inspect(game.World.WorldDay);
+        game.Knowledge.AddScoutReport(new ScoutReportState(
+            "report-test",
+            "mission-test",
+            "Treasure sign",
+            "A scout found a possible treasure location.",
+            65,
+            new[] { location.Coord },
+            new[] { "Old camp" }));
+        game.PlayerNotes.AddMarker(new PlayerMapMarkerState("marker-test", location.Coord, PlayerMapMarkerKind.Question, "Check later"));
+        game.PlayerNotes.AddNote(new PlayerMapNoteState("note-test", location.Coord, "Found by first expedition."));
+        game.Base.AddArchiveEntry("Field archive: treasure location found by first expedition.");
+        game.Expedition.AddUnsecuredKnowledge(9);
+        game.Events.Enqueue(new EventState(
+            "event-test",
+            EventKind.LocationDiscovery,
+            "Found site",
+            "Expedition",
+            "A site was found.",
+            new[] { new EventOptionState("ack", "Acknowledge", "Acknowledged.", EventOptionEffectKind.None) },
+            location.Coord));
+        game.Expedition.SetPosition(new HexCoord(8, 14));
+        var hiddenBefore = game.World.Map.Tiles.Count(tile => tile.OwnerId == "hidden-ones");
+        var wardensBefore = game.World.Map.Tiles.Count(tile => tile.OwnerId == "border-wardens");
+
+        var fail = new FailExpeditionCommand().Execute(game, "All members died.", recoveryDays: 5);
+        var earlyStart = new StartNewExpeditionCommand().Execute(game);
+        var statusBeforeRestart = game.Expedition.Status;
+        var baseTime = new AdvanceBaseTimeCommand().Execute(game, 5);
+        var start = new StartNewExpeditionCommand().Execute(game);
+
+        AssertTrue(fail.Success, "Failure succeeds");
+        AssertEqual(ExpeditionStatus.Lost, game.Base.LastExpeditionOutcome, "Lost outcome stored");
+        AssertEqual(ExpeditionStatus.Lost, statusBeforeRestart, "Expedition is lost before restart");
+        AssertEqual(9, fail.LostUnsecuredKnowledge, "Failure reports lost unsecured knowledge");
+        AssertEqual(0, game.Expedition.UnsecuredKnowledge, "Lost expedition clears unsecured knowledge");
+        AssertEqual(0, game.Base.KnowledgePoints, "Lost expedition does not secure knowledge points");
+        AssertEqual(1, game.Base.LostExpeditions.Count, "Lost expedition record is created");
+        AssertEqual("expedition-1", game.Base.LostExpeditions[0].ExpeditionId, "Lost expedition id");
+        AssertEqual(new HexCoord(8, 14), game.Base.LostExpeditions[0].LastKnownPosition, "Lost expedition last known position");
+        AssertEqual(9, game.Base.LostExpeditions[0].EstimatedLostKnowledge, "Lost expedition estimated knowledge");
+        AssertEqual(LostExpeditionStatus.Missing, game.Base.LostExpeditions[0].Status, "Lost expedition status");
+        AssertTrue(game.Base.LostExpeditions[0].PossibleRecoveryClueIds.Any(clue => clue.Contains("last-known-position")), "Lost expedition has recovery clue");
+        AssertEqual(0, game.Knowledge.ScoutReports.Count, "Lost reports are removed");
+        AssertEqual(1, game.PlayerNotes.Markers.Count, "Lost expedition creates recovery marker");
+        AssertEqual(new HexCoord(8, 14), game.PlayerNotes.Markers[0].Coord, "Recovery marker uses last known position");
+        AssertTrue(game.PlayerNotes.Markers[0].Label.Contains("Last known position"), "Recovery marker label explains clue");
+        AssertFalse(game.PlayerNotes.Markers.Any(marker => marker.Label.Contains("Check later")), "Old expedition markers are removed");
+        AssertEqual(1, game.PlayerNotes.Notes.Count, "Lost expedition creates recovery note");
+        AssertEqual(new HexCoord(8, 14), game.PlayerNotes.Notes[0].Coord, "Recovery note uses last known position");
+        AssertTrue(game.PlayerNotes.Notes[0].Text.Contains("Recovery lead"), "Recovery note explains clue");
+        AssertFalse(game.PlayerNotes.Notes.Any(note => note.Text.Contains("Found by first expedition")), "Old expedition notes are removed");
+        AssertEqual(0, game.Events.PendingCount, "Lost expedition clears pending expedition events");
+        AssertFalse(game.Base.ArchiveEntries.Any(entry => entry.Contains("treasure location")), "Lost field archive entries are discarded");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("No reports")), "Lost archive keeps only operational loss note");
+        AssertFalse(location.IsDiscovered, "Lost special location is no longer known");
+        AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(game.Base.Location), "Base remains known");
+        AssertEqual(KnowledgeLevel.OldOrDoubtful, game.Knowledge.GetTileKnowledge(new HexCoord(8, 14)), "Last known position remains a doubtful recovery clue");
+        AssertTrue(game.World.Map.Tiles.Count(tile => tile.OwnerId == "hidden-ones") >= hiddenBefore, "Hidden Ones territory remains or shifts slightly");
+        AssertTrue(game.World.Map.Tiles.Count(tile => tile.OwnerId == "border-wardens") >= wardensBefore, "Border Warden territory remains or shifts slightly");
+        AssertTrue(game.FindFaction("hidden-ones")!.Memories.Any(memory => memory.Contains("expedition-lost")), "Faction remembers world shift");
+        AssertFalse(earlyStart.Success, "Lost expedition needs longer base time");
+        AssertTrue(baseTime.Success, "Long base time advances");
+        AssertTrue(start.Success, "Replacement expedition starts after recovery");
+        AssertEqual(2, game.Expedition.ExpeditionNumber, "Replacement expedition number");
+        AssertEqual(game.Base.Location, game.Expedition.Position, "Replacement expedition starts at base");
+    }
+
+    private static void LaterExpeditionCanRecoverPartOfLostKnowledge()
+    {
+        var game = TutorialGameFactory.Create();
+        var lostPosition = new HexCoord(8, 14);
+        game.Expedition.AddUnsecuredKnowledge(9);
+        game.Expedition.SetPosition(lostPosition);
+
+        var fail = new FailExpeditionCommand().Execute(game, "No one returned.", recoveryDays: 1);
+        var baseTime = new AdvanceBaseTimeCommand().Execute(game, 1);
+        var start = new StartNewExpeditionCommand().Execute(game);
+        game.Expedition.SetPosition(lostPosition);
+
+        var recover = new RecoverLostExpeditionCommand().Execute(game, lostPosition);
+
+        AssertTrue(fail.Success, "Failure succeeds");
+        AssertTrue(baseTime.Success, "Base time advances");
+        AssertTrue(start.Success, "Replacement expedition starts");
+        AssertTrue(recover.Success, "Recovery succeeds at last known position");
+        AssertEqual(5, recover.RecoveredKnowledge, "Recovery restores part of the lost knowledge");
+        AssertEqual(5, game.Expedition.UnsecuredKnowledge, "Recovered knowledge remains unsecured field knowledge");
+        AssertEqual(0, game.Base.KnowledgePoints, "Recovered knowledge is not secured at base immediately");
+        AssertEqual(5, game.Base.LostExpeditions[0].RecoveredKnowledge, "Lost record tracks recovered knowledge");
+        AssertEqual(LostExpeditionStatus.PartiallyRecovered, game.Base.LostExpeditions[0].Status, "Lost record becomes partially recovered");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("Recovery lead")), "Recovery adds current expedition archive entry");
+    }
+
+    private static void EndDayWithoutFoodLosesExpedition()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(3, 3), TerrainType.Grassland);
+        var expedition = new ExpeditionState(
+            1,
+            new HexCoord(1, 0),
+            new[] { new ExpeditionMemberState("scout", "Scout", ExpeditionMemberRole.Scout) },
+            supplies: 1);
+        var game = new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero));
+
+        var result = new EndDayCommand(suppliesPerDay: 2).Execute(game);
+
+        AssertTrue(result.Success, "End day with last food succeeds as failure result");
+        AssertTrue(result.ExpeditionLost, "End day reports lost expedition");
+        AssertEqual(ExpeditionStatus.Lost, game.Expedition.Status, "Expedition is lost after food reaches zero");
+        AssertEqual(ExpeditionStatus.Lost, game.Base.LastExpeditionOutcome, "Lost outcome stored after supplies run out");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class InspectLocationCommandTests
+{
+    public void RunAll()
+    {
+        InspectingKnownLocationAddsArchiveEntryOnce();
+        UnknownLocationCannotBeInspected();
+        RavineInspectionWarnsWithoutEngineer();
+    }
+
+    private static void InspectingKnownLocationAddsArchiveEntryOnce()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var baseArchiveCount = game.Base.ArchiveEntries.Count;
+        var baseCoord = game.Base.Location;
+
+        var first = command.Execute(game, baseCoord);
+        var second = command.Execute(game, baseCoord);
+
+        AssertTrue(first.Success, "First base inspection succeeds");
+        AssertTrue(second.Success, "Second base inspection succeeds");
+        AssertEqual(baseArchiveCount + 1, game.Base.ArchiveEntries.Count, "Archive entry is added once");
+        AssertEqual(0, game.Expedition.UnsecuredKnowledge, "Base inspection does not add unsecured knowledge");
+        AssertTrue(first.Location != null && first.Location.IsInspected, "Location is marked inspected");
+    }
+
+    private static void UnknownLocationCannotBeInspected()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+
+        var result = command.Execute(game, new HexCoord(39, 29));
+
+        AssertFalse(result.Success, "Unknown territory inspection rejected");
+    }
+
+    private static void RavineInspectionWarnsWithoutEngineer()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var ravine = game.World.Locations.First(location => location.Kind == LocationKind.BrokenRavine);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, ravine.Coord);
+
+        var result = command.Execute(game, ravine.Coord);
+
+        AssertTrue(result.Success, "Ravine inspection succeeds");
+        AssertTrue(result.Message.Contains("Without an engineer"), "Ravine warns about missing engineer");
+        AssertEqual(8, game.Expedition.UnsecuredKnowledge, "Special location inspection adds unsecured knowledge");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class EventQueueCommandTests
+{
+    public void RunAll()
+    {
+        InspectingSpecialLocationQueuesEvent();
+        ResolvingArchiveOptionMutatesArchiveAndClosesEvent();
+        EndDayQueuesScoutOverdueEvent();
+    }
+
+    private static void InspectingSpecialLocationQueuesEvent()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var grave = game.World.Locations.First(location => location.Kind == LocationKind.MarkedGrave);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, grave.Coord);
+
+        var result = command.Execute(game, grave.Coord);
+
+        AssertTrue(result.Success, "Grave inspection succeeds");
+        AssertEqual(1, game.Events.PendingCount, "Inspection queues an event");
+        AssertEqual("Marked Grave", game.Events.Current!.Title, "Queued event title");
+    }
+
+    private static void ResolvingArchiveOptionMutatesArchiveAndClosesEvent()
+    {
+        var game = TutorialGameFactory.Create();
+        var archiveCount = game.Base.ArchiveEntries.Count;
+        game.Events.Enqueue(new EventState(
+            "event-test",
+            EventKind.FoundObject,
+            "Sealed Box",
+            "Expedition",
+            "A sealed box was found.",
+            new[]
+            {
+                new EventOptionState("archive", "Archive object", "The sealed box was archived.", EventOptionEffectKind.Archive)
+            },
+            game.Base.Location));
+
+        var result = new ResolveEventCommand().Execute(game, "event-test", "archive");
+
+        AssertTrue(result.Success, "Event resolve succeeds");
+        AssertEqual(0, game.Events.PendingCount, "Event closes after resolution");
+        AssertEqual(archiveCount + 1, game.Base.ArchiveEntries.Count, "Archive effect mutates base archive");
+    }
+
+    private static void EndDayQueuesScoutOverdueEvent()
+    {
+        var game = TutorialGameFactory.Create();
+        var send = new SendScoutMissionCommand().Execute(
+            game,
+            new[] { "scout-1" },
+            HexDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Balanced);
+        AssertTrue(send.Success, "Scout mission sent");
+
+        var result = new EndDayCommand().Execute(game);
+
+        AssertTrue(result.Success, "End day succeeds");
+        AssertEqual(1, game.Events.PendingCount, "Scout overdue queues an event");
+        AssertEqual(EventKind.ScoutOverdue, game.Events.Current!.Kind, "Current event is scout overdue");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+}
+
+internal sealed class FactionPresenceTests
+{
+    public void RunAll()
+    {
+        TutorialGameIncludesMvpFactions();
+        EnteringFactionTerritoryAddsKnowledgeOnce();
+        EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce();
+    }
+
+    private static void TutorialGameIncludesMvpFactions()
+    {
+        var game = TutorialGameFactory.Create();
+
+        var coastal = game.FindFaction("coastal-people");
+        var wardens = game.FindFaction("border-wardens");
+        var hidden = game.FindFaction("hidden-ones");
+
+        AssertTrue(coastal != null, "Coastal People exist");
+        AssertTrue(wardens != null, "Border Wardens exist");
+        AssertTrue(hidden != null, "Hidden Ones exist");
+        AssertEqual(FactionContactStatus.Contacted, coastal!.ContactStatus, "Coastal contact status");
+        AssertEqual(FactionContactStatus.Rumored, hidden!.ContactStatus, "Hidden Ones contact status");
+        AssertTrue(coastal.Memories.Any(memory => memory.Contains("warned")), "Coastal faction has partial warning memory");
+        AssertTrue(wardens!.WarningZones.Count > 0, "Border Wardens have warning zones");
+        AssertTrue(hidden.WarningZones.Count > 0, "Hidden Ones have warning zones");
+        AssertTrue(game.World.Map.Tiles.Count(tile => tile.OwnerId == "coastal-people") >= 20, "Coastal People own a visible starting territory");
+        AssertTrue(game.World.Map.Tiles.Count(tile => tile.OwnerId == "border-wardens") >= 60, "Border Wardens own a visible border territory");
+        AssertTrue(game.World.Map.Tiles.Count(tile => tile.OwnerId == "hidden-ones") >= 20, "Hidden Ones own a visible hidden territory");
+        AssertTrue(string.IsNullOrWhiteSpace(game.World.Map.GetTile(game.Base.Location).OwnerId), "Base is not inside faction territory");
+        AssertFalse(game.Base.Location.Neighbors().Any(coord => game.World.Map.Contains(coord) && game.World.Map.GetTile(coord).OwnerId == "coastal-people"), "Coastal People do not surround the base");
+        AssertFalse(OwnersTouch(game.World.Map, "border-wardens", "hidden-ones"), "Border Wardens and Hidden Ones territories do not touch");
+        AssertTrue(MinOwnerDistanceTo(game.World.Map, game.Base.Location, "hidden-ones") >= 20, "Hidden Ones are far from the base");
+    }
+
+    private static void EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var warningCoord = new HexCoord(2, 1);
+        map.SetTile(map.GetTile(warningCoord).WithOwner("border-wardens"));
+        var knowledge = new KnowledgeState();
+        var origin = new HexCoord(1, 1);
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+        var expedition = new ExpeditionState(
+            1,
+            origin,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            maxMovementPoints: 4,
+            supplies: 10,
+            medicine: 2,
+            morale: 60,
+            capacity: 10);
+        var faction = new FactionState("border-wardens", "Border Wardens", warningZones: new[] { warningCoord });
+        var game = new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero), factions: new[] { faction });
+        var command = new MoveExpeditionCommand(new MovementCostService());
+
+        var first = command.Execute(game, warningCoord);
+        var returnMove = command.Execute(game, origin);
+        game.Expedition.AdvanceExpeditionDay();
+        var second = command.Execute(game, warningCoord);
+
+        AssertTrue(first.Success, "First warning zone move succeeds");
+        AssertTrue(returnMove.Success, "Return move succeeds");
+        AssertTrue(second.Success, "Second warning zone move succeeds");
+        AssertEqual(1, game.Events.PendingCount, "Warning zone event queues once");
+        AssertEqual(EventKind.WarningSign, game.Events.Current!.Kind, "Warning event kind");
+        AssertEqual(10, game.Expedition.UnsecuredKnowledge, "Warning zone grants first faction knowledge once");
+        AssertTrue(faction.Anger > 0, "Faction anger increases");
+        AssertTrue(faction.HasMemory("warning-zone-entered:2:1"), "Faction remembers entered warning zone");
+    }
+
+    private static void EnteringFactionTerritoryAddsKnowledgeOnce()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var territoryCoord = new HexCoord(2, 1);
+        var origin = new HexCoord(1, 1);
+        map.SetTile(map.GetTile(territoryCoord).WithOwner("coastal-people"));
+        var knowledge = new KnowledgeState();
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+        var expedition = new ExpeditionState(
+            1,
+            origin,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            maxMovementPoints: 4,
+            supplies: 10,
+            medicine: 2,
+            morale: 60,
+            capacity: 10);
+        var faction = new FactionState("coastal-people", "Coastal People", FactionContactStatus.Contacted);
+        var game = new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero), factions: new[] { faction });
+        var command = new MoveExpeditionCommand(new MovementCostService());
+
+        var first = command.Execute(game, territoryCoord);
+        var returnMove = command.Execute(game, origin);
+        game.Expedition.AdvanceExpeditionDay();
+        var second = command.Execute(game, territoryCoord);
+
+        AssertTrue(first.Success, "First faction territory move succeeds");
+        AssertTrue(returnMove.Success, "Return from faction territory succeeds");
+        AssertTrue(second.Success, "Second faction territory move succeeds");
+        AssertEqual(10, game.Expedition.UnsecuredKnowledge, "Faction territory grants knowledge once");
+        AssertEqual(0, game.Events.PendingCount, "Non-warning faction territory does not queue warning event");
+        AssertTrue(faction.Memories.Any(memory => memory.Contains("entered-territory")), "Faction remembers territory entry");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+
+    private static bool OwnersTouch(HexMapState map, string firstOwnerId, string secondOwnerId)
+    {
+        foreach (var tile in map.Tiles)
+        {
+            if (tile.OwnerId != firstOwnerId)
+            {
+                continue;
+            }
+
+            foreach (var neighbor in tile.Coord.Neighbors())
+            {
+                if (map.Contains(neighbor) && map.GetTile(neighbor).OwnerId == secondOwnerId)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static int MinOwnerDistanceTo(HexMapState map, HexCoord origin, string ownerId)
+    {
+        var minDistance = int.MaxValue;
+        foreach (var tile in map.Tiles)
+        {
+            if (tile.OwnerId == ownerId)
+            {
+                minDistance = Math.Min(minDistance, origin.DistanceTo(tile.Coord));
+            }
+        }
+
+        return minDistance;
     }
 }
 

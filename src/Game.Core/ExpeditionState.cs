@@ -22,7 +22,8 @@ public sealed class ExpeditionState
         int medicine = 3,
         int morale = 70,
         int capacity = 20,
-        ExpeditionStatus status = ExpeditionStatus.Active)
+        ExpeditionStatus status = ExpeditionStatus.Active,
+        int unsecuredKnowledge = 0)
     {
         if (expeditionNumber < 1)
         {
@@ -34,7 +35,7 @@ public sealed class ExpeditionState
             throw new ArgumentOutOfRangeException(nameof(expeditionDay), expeditionDay, "Expedition day must be at least 1.");
         }
 
-        if (movementPoints < 0 || maxMovementPoints < 0 || supplies < 0 || medicine < 0 || morale < 0 || capacity < 0)
+        if (movementPoints < 0 || maxMovementPoints < 0 || supplies < 0 || medicine < 0 || morale < 0 || capacity < 0 || unsecuredKnowledge < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(movementPoints), "Expedition resources must not be negative.");
         }
@@ -54,6 +55,7 @@ public sealed class ExpeditionState
         Morale = morale;
         Capacity = capacity;
         Status = status;
+        UnsecuredKnowledge = unsecuredKnowledge;
         this.members = new List<ExpeditionMemberState>(members ?? throw new ArgumentNullException(nameof(members)));
     }
 
@@ -76,6 +78,8 @@ public sealed class ExpeditionState
     public int Capacity { get; private set; }
 
     public ExpeditionStatus Status { get; private set; }
+
+    public int UnsecuredKnowledge { get; private set; }
 
     public IReadOnlyList<ExpeditionMemberState> Members
     {
@@ -100,6 +104,11 @@ public sealed class ExpeditionState
     public void SetPosition(HexCoord position)
     {
         Position = position;
+    }
+
+    public void SetStatus(ExpeditionStatus status)
+    {
+        Status = status;
     }
 
     public void SpendMovementPoints(int cost)
@@ -131,6 +140,23 @@ public sealed class ExpeditionState
         }
 
         Supplies = Math.Max(0, Supplies - amount);
+    }
+
+    public void AddUnsecuredKnowledge(int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Knowledge amount must not be negative.");
+        }
+
+        UnsecuredKnowledge += amount;
+    }
+
+    public int ClearUnsecuredKnowledge()
+    {
+        var secured = UnsecuredKnowledge;
+        UnsecuredKnowledge = 0;
+        return secured;
     }
 }
 }

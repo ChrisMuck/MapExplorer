@@ -43,6 +43,14 @@
                     <ui:Label text="GRUPPE" class="stat__label" />
                     <ui:Label name="value-party" text="5" class="stat__value mono" />
                 </ui:VisualElement>
+                <ui:VisualElement class="stat">
+                    <ui:Label text="FELDWISSEN" class="stat__label" />
+                    <ui:Label name="value-field-knowledge" text="0" class="stat__value mono" />
+                </ui:VisualElement>
+                <ui:VisualElement class="stat">
+                    <ui:Label text="WISSEN" class="stat__label" />
+                    <ui:Label name="value-base-knowledge" text="0" class="stat__value mono" />
+                </ui:VisualElement>
                 <ui:VisualElement class="mp-box">
                     <ui:Label text="BEWEGUNG" class="stat__label" />
                     <ui:Label name="value-mp" text="2/4" class="mp-value mono" />
@@ -70,6 +78,15 @@
                     <ui:Label name="selected-reliability" text="Verlässlichkeit: Mittel" class="chip" />
                 </ui:VisualElement>
                 <ui:Label name="selected-meta" text="Letzter Bericht — Expedition 1, Tag 5" class="meta mono" />
+                <ui:VisualElement name="selected-location-card" class="location-card" style="display: none;">
+                    <ui:VisualElement class="location-card__head">
+                        <ui:Label name="selected-location-kind" text="ORT" class="section-label" />
+                        <ui:Label name="selected-location-status" text="Untersucht" class="location-card__status mono" />
+                    </ui:VisualElement>
+                    <ui:Label name="selected-location-name" text="Markiertes Grab" class="location-card__title serif" />
+                    <ui:Label name="selected-location-risk" text="Warnzeichen. Kann untersucht werden." class="location-card__body" />
+                    <ui:Label name="selected-location-action" text="Aktion: Untersuchen" class="location-card__action" />
+                </ui:VisualElement>
                 <ui:VisualElement class="hr" />
                 <ui:Label text="GEMELDETE ZEICHEN" class="section-label" />
                 <ui:VisualElement class="sign-row">
@@ -110,7 +127,7 @@
                         <ui:VisualElement class="section" name="section-reports">
                             <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 13px;">
                                 <ui:Label text="BERICHTE" class="section-label" />
-                                <ui:Label name="report-count-label" text="0" style="font-size: 11px; color: rgb(240,207,122);" />
+                                <ui:Label name="report-count-label" text="0" style="font-size: 13px; color: rgb(240,207,122);" />
                             </ui:VisualElement>
                             <ui:VisualElement name="report-list" class="report-list" />
                             <ui:VisualElement name="report-card-main" class="card" style="display: none;">
@@ -193,10 +210,10 @@
                                     <ui:Label text="Mara" class="card__title serif" style="font-size: 16px; flex-grow: 1;" />
                                     <ui:Label text="Auf Mission" class="status-pill status-pill--mission" />
                                 </ui:VisualElement>
-                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Richtung" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Nordost" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
-                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Fokus" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Fraktionsspuren" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
-                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Verhalten" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Vorsichtig" style="font-size: 12px; color: rgb(216,210,196);" /></ui:VisualElement>
-                                <ui:VisualElement style="flex-direction: row;"><ui:Label text="Zurück erwartet" style="width: 110px; color: rgb(143,137,124); font-size: 12px;" /><ui:Label text="Tag 6 · überfällig" style="font-size: 12px; color: rgb(232,182,167);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Richtung" style="width: 110px; color: rgb(190,184,169); font-size: 13px; -unity-font-style: bold;" /><ui:Label text="Nordost" style="font-size: 13px; color: rgb(232,227,214);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Fokus" style="width: 110px; color: rgb(190,184,169); font-size: 13px; -unity-font-style: bold;" /><ui:Label text="Fraktionsspuren" style="font-size: 13px; color: rgb(232,227,214);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row; margin-bottom: 6px;"><ui:Label text="Verhalten" style="width: 110px; color: rgb(190,184,169); font-size: 13px; -unity-font-style: bold;" /><ui:Label text="Vorsichtig" style="font-size: 13px; color: rgb(232,227,214);" /></ui:VisualElement>
+                                <ui:VisualElement style="flex-direction: row;"><ui:Label text="Zurück erwartet" style="width: 110px; color: rgb(190,184,169); font-size: 13px; -unity-font-style: bold;" /><ui:Label text="Tag 6 · überfällig" style="font-size: 13px; color: rgb(240,194,178);" /></ui:VisualElement>
                             </ui:VisualElement>
                             <ui:Label text="BEREIT" class="section-label" style="margin-bottom: 9px; margin-top: 4px;" />
                             <ui:VisualElement class="roster-row">
@@ -211,15 +228,15 @@
                         <ui:VisualElement class="section" name="section-journal">
                             <ui:Label text="EXPEDITIONS-TAGEBUCH" class="section-label" style="margin-bottom: 14px;" />
                             <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(240,207,122,0.25); padding-left: 16px; margin-left: 5px; margin-bottom: 16px;">
-                                <ui:Label text="TAG 5" class="mono" style="font-size: 10px; color: rgb(240,207,122);" />
+                                <ui:Label text="TAG 5" class="mono" style="font-size: 12px; color: rgb(240,207,122);" />
                                 <ui:Label text="Mara kehrte mit einem Bericht über Rauch im Nordosten zurück." class="serif" style="font-size: 14px; color: rgb(232,227,214); white-space: normal; margin-top: 2px;" />
                             </ui:VisualElement>
                             <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(255,255,255,0.1); padding-left: 16px; margin-left: 5px; margin-bottom: 16px;">
-                                <ui:Label text="TAG 4" class="mono" style="font-size: 10px; color: rgb(164,157,142);" />
+                                <ui:Label text="TAG 4" class="mono" style="font-size: 12px; color: rgb(190,184,169);" />
                                 <ui:Label text="Verlassenes Lager am Flussufer entdeckt. Keine Spuren." class="serif" style="font-size: 14px; color: rgb(201,195,180); white-space: normal; margin-top: 2px;" />
                             </ui:VisualElement>
                             <ui:VisualElement style="border-left-width: 1px; border-left-color: rgba(255,255,255,0.1); padding-left: 16px; margin-left: 5px;">
-                                <ui:Label text="TAG 3" class="mono" style="font-size: 10px; color: rgb(164,157,142);" />
+                                <ui:Label text="TAG 3" class="mono" style="font-size: 12px; color: rgb(190,184,169);" />
                                 <ui:Label text="Jonas und Mara zu getrennten Aufklärungen ausgesandt." class="serif" style="font-size: 14px; color: rgb(201,195,180); white-space: normal; margin-top: 2px;" />
                             </ui:VisualElement>
                         </ui:VisualElement>
@@ -227,19 +244,20 @@
                         <!-- ARCHIV -->
                         <ui:VisualElement class="section" name="section-archive">
                             <ui:Label text="GESICHERTES WISSEN" class="section-label" style="margin-bottom: 11px;" />
+                            <ui:VisualElement name="archive-list" />
                             <ui:VisualElement class="card" style="flex-direction: row; padding: 12px;">
                                 <ui:VisualElement class="avatar" style="width: 46px; height: 46px;" />
                                 <ui:VisualElement style="flex-grow: 1;">
                                     <ui:Label text="Markiertes Grab" class="card__title serif" />
-                                    <ui:Label text="Besonderer Ort · Entdeckt" class="card__sub" style="font-size: 11px; margin-top: 2px;" />
-                                    <ui:Label text="2 Berichte · 1 Notiz" class="mono" style="font-size: 10px; color: rgb(111,106,95); margin-top: 4px;" />
+                                    <ui:Label text="Besonderer Ort · Entdeckt" class="card__sub" style="font-size: 13px; margin-top: 2px;" />
+                                    <ui:Label text="2 Berichte · 1 Notiz" class="mono" style="font-size: 12px; color: rgb(190,184,169); margin-top: 4px;" />
                                 </ui:VisualElement>
                             </ui:VisualElement>
                             <ui:VisualElement class="card card--plain" style="flex-direction: row; padding: 12px;">
                                 <ui:VisualElement class="avatar" style="width: 46px; height: 46px;" />
                                 <ui:VisualElement style="flex-grow: 1;">
                                     <ui:Label text="Grenzmarkierungen" class="card__title serif" style="color: rgb(232,227,214);" />
-                                    <ui:Label text="Warnzeichen · Gemeldet" class="card__sub" style="font-size: 11px; margin-top: 2px;" />
+                                    <ui:Label text="Warnzeichen · Gemeldet" class="card__sub" style="font-size: 13px; margin-top: 2px;" />
                                 </ui:VisualElement>
                             </ui:VisualElement>
                         </ui:VisualElement>
@@ -282,6 +300,19 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- ======================= EVENT POPUP ======================= -->
+        <ui:VisualElement name="event-popup" class="event-popup" style="display: none;">
+            <ui:VisualElement class="event-card">
+                <ui:VisualElement class="event-image" />
+                <ui:VisualElement class="event-content">
+                    <ui:Label name="event-source" text="Expedition" class="section-label" />
+                    <ui:Label name="event-title" text="Ereignis" class="event-title serif" />
+                    <ui:Label name="event-body" text="Ein Ereignis wartet auf Entscheidung." class="event-body serif" />
+                    <ui:VisualElement name="event-options" class="event-options" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- ======================= ACTION BAR ======================= -->
         <ui:VisualElement class="action-bar">
             <ui:Label name="action-move" text="↳ Bewegen" class="btn" />
@@ -291,7 +322,7 @@
             <ui:Label name="action-add-note" text="✎ Notiz" class="btn" />
             <ui:Label name="action-camp" text="⛺ Lager" class="btn" />
             <ui:VisualElement class="spacer" />
-            <ui:Label name="action-return-base" text="↩ Zurück zur Basis" class="btn btn--ghost" />
+            <ui:Label name="action-return-base" text="Expedition abschließen" class="btn btn--ghost" />
             <ui:Label name="action-end-day" text="Tag beenden →" class="btn--primary" />
         </ui:VisualElement>
 

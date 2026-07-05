@@ -13,6 +13,14 @@ public sealed class GameApplication
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
     private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
+    private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
+    private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
+    private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
+    private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
+    private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand = new AdvanceBaseTimeCommand();
+    private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
+    private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
+    private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
 
     public GameState CreateTutorialGame()
     {
@@ -48,6 +56,46 @@ public sealed class GameApplication
         ScoutMissionBehavior behavior)
     {
         return sendScoutMissionCommand.Execute(game, scoutMemberIds, direction, durationDays, focus, behavior);
+    }
+
+    public InspectLocationResult InspectLocation(GameState game, HexCoord coord)
+    {
+        return inspectLocationCommand.Execute(game, coord);
+    }
+
+    public ResolveEventResult ResolveEvent(GameState game, string eventId, string optionId)
+    {
+        return resolveEventCommand.Execute(game, eventId, optionId);
+    }
+
+    public CompleteExpeditionResult CompleteExpedition(GameState game)
+    {
+        return completeExpeditionCommand.Execute(game);
+    }
+
+    public FailExpeditionResult FailExpedition(GameState game, string reason)
+    {
+        return failExpeditionCommand.Execute(game, reason);
+    }
+
+    public AdvanceBaseTimeResult AdvanceBaseTime(GameState game, int days = 1)
+    {
+        return advanceBaseTimeCommand.Execute(game, days);
+    }
+
+    public StartNewExpeditionResult StartNewExpedition(GameState game)
+    {
+        return startNewExpeditionCommand.Execute(game);
+    }
+
+    public PrepareSuppliesWithKnowledgeResult PrepareSuppliesWithKnowledge(GameState game)
+    {
+        return prepareSuppliesWithKnowledgeCommand.Execute(game);
+    }
+
+    public RecoverLostExpeditionResult RecoverLostExpedition(GameState game, HexCoord coord)
+    {
+        return recoverLostExpeditionCommand.Execute(game, coord);
     }
 }
 }

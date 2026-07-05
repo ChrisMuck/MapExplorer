@@ -14,6 +14,8 @@ public enum LocationKind
     Ruin,
     WallSegment,
     Landmark,
-    BrokenRavine
+    BrokenRavine,
+    MarkedGrave,
+    AbandonedCamp
 }
 }

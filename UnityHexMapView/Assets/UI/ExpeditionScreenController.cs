@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Game.App;
 using Game.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -70,6 +71,9 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("action-send-scout-panel", () => mapView?.RequestSendScoutMissionFromUi());
         RegisterClick("action-add-marker", () => mapView?.RequestAddMarkerFromUi());
         RegisterClick("action-add-note", () => mapView?.RequestAddNoteFromUi());
+        RegisterClick("action-inspect", () => mapView?.RequestInspectSelectedLocationFromUi());
+        RegisterClick("action-camp", () => mapView?.RequestPrepareSuppliesWithKnowledgeFromUi());
+        RegisterClick("action-return-base", () => mapView?.RequestCompleteExpeditionFromUi());
         RegisterClick("action-end-day", () => mapView?.RequestEndDayFromUi());
 
         if (string.IsNullOrEmpty(openSection))
@@ -130,23 +134,105 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("value-morale", MoraleText(state.Expedition.Morale));
         SetText("value-party", state.Expedition.Members.Count.ToString());
         SetText("value-mp", $"{state.Expedition.MovementPoints}/{state.Expedition.MaxMovementPoints}");
+        RefreshKnowledgeStats(state);
+        if (state.Expedition.Status == ExpeditionStatus.Returned)
+        {
+            SetText("value-expedition-day", "Expedition Â· Abgeschlossen");
+        }
 
         RefreshSelectedField(state);
         RefreshAlert(state);
         RefreshReport(state);
+        RefreshActionBar(state);
+        BuildArchiveList(state);
+        RefreshEventPopup(state);
+    }
+
+    private void RefreshKnowledgeStats(GameState state)
+    {
+        SetText("value-field-knowledge", state.Expedition.UnsecuredKnowledge.ToString());
+        SetText("value-base-knowledge", state.Base.KnowledgePoints.ToString());
+    }
+
+    private void RefreshActionBar(GameState state)
+    {
+        var atBase = state.Expedition.Position == state.Base.Location;
+        var isActive = state.Expedition.Status == ExpeditionStatus.Active;
+        var isEnded = state.Expedition.Status == ExpeditionStatus.Returned || state.Expedition.Status == ExpeditionStatus.Lost;
+        var nextReady = isEnded && state.Base.CanStartNextExpedition(state.World.WorldDay);
+        var canComplete = isActive && atBase;
+        var completeButton = root?.Q<Label>("action-return-base");
+        if (completeButton != null)
+        {
+            completeButton.text = state.Expedition.Status == ExpeditionStatus.Returned
+                ? "Expedition abgeschlossen"
+                : "Expedition abschließen";
+            completeButton.EnableInClassList("disabled", !canComplete);
+            completeButton.tooltip = canComplete
+                ? "Expedition in der Basis abschließen"
+                : "Nur auf dem Basisfeld möglich";
+        }
+
+        var endDayButton = root?.Q<Label>("action-end-day");
+        if (endDayButton != null)
+        {
+            endDayButton.EnableInClassList("disabled", !isActive);
+        }
+
+        if (completeButton != null && isEnded)
+        {
+            completeButton.text = nextReady
+                ? "Neue Expedition starten"
+                : $"Neue Expedition ab Tag {state.Base.NextExpeditionAvailableWorldDay}";
+            completeButton.EnableInClassList("disabled", !nextReady);
+            completeButton.tooltip = nextReady
+                ? "Naechste Expedition starten"
+                : "In der Basis muss noch Zeit vergehen";
+        }
+
+        if (completeButton != null && !isEnded)
+        {
+            completeButton.text = "Expedition abschliessen";
+            completeButton.tooltip = canComplete
+                ? "Expedition in der Basis abschliessen"
+                : "Nur auf dem Basisfeld moeglich";
+        }
+
+        if (endDayButton != null)
+        {
+            endDayButton.text = isEnded && !nextReady ? "Base-Zeit +1" : "Tag beenden ->";
+            endDayButton.EnableInClassList("disabled", !isActive && !isEnded);
+        }
+
+        var campButton = root?.Q<Label>("action-camp");
+        if (campButton != null)
+        {
+            var canPrepareSupplies = isEnded && state.Base.KnowledgePoints >= PrepareSuppliesWithKnowledgeCommand.KnowledgeCost;
+            campButton.text = isEnded
+                ? $"+20 Vorraete ({PrepareSuppliesWithKnowledgeCommand.KnowledgeCost} Wissen)"
+                : "Lager";
+            campButton.EnableInClassList("disabled", isActive || !canPrepareSupplies);
+            campButton.tooltip = isEnded
+                ? canPrepareSupplies
+                    ? "Wissen fuer Vorratsvorbereitung der naechsten Expedition ausgeben"
+                    : $"Benoetigt {PrepareSuppliesWithKnowledgeCommand.KnowledgeCost} Wissen"
+                : "Lager ist spaeter als Feldaktion geplant";
+        }
     }
 
     private void RefreshSelectedField(GameState state)
     {
         var coord = mapView.CurrentSelectedCoreCoord;
+        var knowledge = mapView.GetKnowledgeForUi(coord);
         SetText("coord", $"Feld {coord.Q:00} / {coord.R:00}");
-        SetText("selected-knowledge", KnowledgeText(mapView.GetKnowledgeForUi(coord)));
+        SetText("selected-knowledge", KnowledgeText(knowledge));
         SetText("selected-reliability", "Verlässlichkeit: Mittel");
 
+        SpecialLocationState location = null;
         if (mapView.TryGetTileForUi(coord, out var tile))
         {
-            var location = mapView.GetLocationForUi(coord);
-            var locationText = location == null ? "keine Landmarke" : $"{location.Name} · {location.Kind}";
+            location = mapView.GetLocationForUi(coord);
+            var locationText = location == null ? "keine Landmarke" : $"{location.Name} · {LocationKindText(location.Kind)}";
             SetText("selected-meta", $"{tile.Terrain} · Höhe {tile.Elevation} · {locationText}");
         }
         else
@@ -154,11 +240,59 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             SetText("selected-meta", "Außerhalb der Karte");
         }
 
+        var lostExpedition = mapView.GetLostExpeditionForUi(coord);
+        RefreshSelectedLocation(location, knowledge, lostExpedition, coord);
+
         var markers = mapView.GetMarkersForUi(coord);
         var notes = mapView.GetNotesForUi(coord);
         SetText("selected-sign-1", markers.Count > 0 ? markers[markers.Count - 1].Label : "Keine Marker");
         SetText("selected-sign-2", mapView.CurrentInteractionMessage);
         SetText("selected-note", notes.Count > 0 ? $"„{notes[notes.Count - 1].Text}”" : "„Noch keine Notiz für dieses Feld.”");
+    }
+
+    private void RefreshSelectedLocation(SpecialLocationState location, KnowledgeLevel knowledge, LostExpeditionRecord lostExpedition, HexCoord coord)
+    {
+        var isConfirmedLocation = location != null && knowledge == KnowledgeLevel.Confirmed;
+        SetDisplay("selected-location-card", isConfirmedLocation);
+
+        var inspectButton = root?.Q<Label>("action-inspect");
+        if (lostExpedition != null)
+        {
+            var expeditionIsHere = mapView.IsExpeditionAtUi(coord);
+            if (inspectButton != null)
+            {
+                inspectButton.text = expeditionIsHere ? "Spur untersuchen" : "Spur erreichen";
+                inspectButton.EnableInClassList("disabled", !expeditionIsHere);
+                inspectButton.tooltip = expeditionIsHere
+                    ? $"Spuren von Expedition {lostExpedition.ExpeditionNumber} untersuchen"
+                    : "Die Expedition muss zuerst dieses Feld erreichen";
+            }
+
+            return;
+        }
+
+        if (!isConfirmedLocation)
+        {
+            if (inspectButton != null)
+            {
+                inspectButton.text = "⌕ Untersuchen";
+                inspectButton.EnableInClassList("disabled", true);
+            }
+
+            return;
+        }
+
+        SetText("selected-location-kind", LocationKindText(location.Kind));
+        SetText("selected-location-status", location.IsInspected ? "Untersucht" : "Neu");
+        SetText("selected-location-name", location.Name);
+        SetText("selected-location-risk", LocationRiskText(location));
+        SetText("selected-location-action", location.IsInspected ? "Archiviert. Weitere Hinweise im Journal prüfen." : "Aktion: Ort untersuchen und Ereignis auslösen.");
+
+        if (inspectButton != null)
+        {
+            inspectButton.text = location.IsInspected ? "⌕ Ort ansehen" : "⌕ Ort untersuchen";
+            inspectButton.EnableInClassList("disabled", false);
+        }
     }
 
     private void RefreshAlert(GameState state)
@@ -321,6 +455,145 @@ public sealed class ExpeditionScreenController : MonoBehaviour
                 evt.StopPropagation();
             });
             list.Add(row);
+        }
+    }
+
+    private void BuildArchiveList(GameState state)
+    {
+        var list = root?.Q<VisualElement>("archive-list");
+        if (list == null)
+        {
+            return;
+        }
+
+        HideStaticArchiveCards(list);
+        list.Clear();
+        if (state.Base.ArchiveEntries.Count == 0 && state.Base.LostExpeditions.Count == 0)
+        {
+            var empty = new Label("Noch keine gesicherten Einträge.");
+            empty.AddToClassList("archive-empty");
+            list.Add(empty);
+            return;
+        }
+
+        for (var i = state.Base.LostExpeditions.Count - 1; i >= 0; i--)
+        {
+            var lost = state.Base.LostExpeditions[i];
+            var card = new VisualElement();
+            card.AddToClassList("card");
+            card.AddToClassList("card--plain");
+            card.AddToClassList("archive-entry");
+
+            var title = new Label($"Expedition {lost.ExpeditionNumber:00} vermisst");
+            title.AddToClassList("card__title");
+            title.AddToClassList("serif");
+            card.Add(title);
+
+            var body = new Label(
+                $"Letzte bekannte Position: Feld {lost.LastKnownPosition.Q:00} / {lost.LastKnownPosition.R:00}\n" +
+                $"Status: {LostExpeditionStatusText(lost.Status)}\n" +
+                $"Geschaetztes verlorenes Wissen: {lost.EstimatedLostKnowledge}");
+            body.AddToClassList("archive-entry__body");
+            card.Add(body);
+
+            list.Add(card);
+        }
+
+        for (var i = state.Base.ArchiveEntries.Count - 1; i >= 0; i--)
+        {
+            var card = new VisualElement();
+            card.AddToClassList("card");
+            card.AddToClassList("card--plain");
+            card.AddToClassList("archive-entry");
+
+            var title = new Label($"Archiv {i + 1:00}");
+            title.AddToClassList("card__title");
+            title.AddToClassList("serif");
+            card.Add(title);
+
+            var body = new Label(state.Base.ArchiveEntries[i]);
+            body.AddToClassList("archive-entry__body");
+            card.Add(body);
+
+            list.Add(card);
+        }
+    }
+
+    private static string LostExpeditionStatusText(LostExpeditionStatus status)
+    {
+        switch (status)
+        {
+            case LostExpeditionStatus.Missing:
+                return "Vermisst";
+            case LostExpeditionStatus.PresumedLost:
+                return "Vermutlich verloren";
+            case LostExpeditionStatus.PartiallyRecovered:
+                return "Teilweise geborgen";
+            case LostExpeditionStatus.SurvivorFound:
+                return "Ueberlebende gefunden";
+            case LostExpeditionStatus.RecordsRecovered:
+                return "Aufzeichnungen geborgen";
+            case LostExpeditionStatus.FullyResolved:
+                return "Abgeschlossen";
+            default:
+                return status.ToString();
+        }
+    }
+
+    private void HideStaticArchiveCards(VisualElement archiveList)
+    {
+        var archiveSection = root?.Q<VisualElement>("section-archive");
+        if (archiveSection == null)
+        {
+            return;
+        }
+
+        foreach (var child in archiveSection.Children())
+        {
+            if (child != archiveList && child.ClassListContains("card"))
+            {
+                child.style.display = DisplayStyle.None;
+            }
+        }
+    }
+
+    private void RefreshEventPopup(GameState state)
+    {
+        var popup = root?.Q<VisualElement>("event-popup");
+        var options = root?.Q<VisualElement>("event-options");
+        if (popup == null || options == null)
+        {
+            return;
+        }
+
+        var eventState = state.Events.Current;
+        if (eventState == null)
+        {
+            popup.style.display = DisplayStyle.None;
+            options.Clear();
+            return;
+        }
+
+        popup.style.display = DisplayStyle.Flex;
+        SetText("event-source", eventState.Source);
+        SetText("event-title", eventState.Title);
+        SetText("event-body", eventState.Body);
+
+        options.Clear();
+        for (var i = 0; i < eventState.Options.Count; i++)
+        {
+            var option = eventState.Options[i];
+            var button = new Label(option.Label);
+            button.AddToClassList(i == 0 ? "btn--primary" : "btn");
+            button.AddToClassList("event-option");
+            var eventId = eventState.Id;
+            var optionId = option.Id;
+            button.RegisterCallback<ClickEvent>(evt =>
+            {
+                mapView?.RequestResolveEventFromUi(eventId, optionId);
+                evt.StopPropagation();
+            });
+            options.Add(button);
         }
     }
 
@@ -519,6 +792,62 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         return "Niedrig";
+    }
+
+    private static string LocationKindText(LocationKind kind)
+    {
+        switch (kind)
+        {
+            case LocationKind.BaseCamp:
+                return "BASIS";
+            case LocationKind.Settlement:
+                return "SIEDLUNG";
+            case LocationKind.Watchtower:
+                return "WACHTTURM";
+            case LocationKind.Mine:
+                return "MINE";
+            case LocationKind.Ruin:
+                return "RUINE";
+            case LocationKind.WallSegment:
+                return "MAUER";
+            case LocationKind.BrokenRavine:
+                return "HINDERNIS";
+            case LocationKind.MarkedGrave:
+                return "WARNZEICHEN";
+            case LocationKind.AbandonedCamp:
+                return "LAGER";
+            default:
+                return "ORT";
+        }
+    }
+
+    private static string LocationRiskText(SpecialLocationState location)
+    {
+        switch (location.Kind)
+        {
+            case LocationKind.BrokenRavine:
+                return location.IsInspected
+                    ? "Instabile Schlucht. Ohne Engineer bleibt sie ein gefährliches Hindernis."
+                    : "Route unklar. Sollte vor Bewegung oder Planung untersucht werden.";
+            case LocationKind.MarkedGrave:
+                return location.IsInspected
+                    ? "Als mögliche Grenz- oder Drohmarkierung vermerkt."
+                    : "Deutlich gesetztes Zeichen. Möglicher Hinweis auf fremdes Gebiet.";
+            case LocationKind.AbandonedCamp:
+                return location.IsInspected
+                    ? "Spuren einer früheren Expedition wurden gesichert."
+                    : "Verlassenes Lager. Kann alte, aber unzuverlässige Hinweise enthalten.";
+            case LocationKind.Mine:
+                return "Verlassene Mine. Mögliches Ressourcen- oder Gefahrenzeichen.";
+            case LocationKind.Watchtower:
+                return "Erhöhte Landmarke. Kann Blicklinien und fremde Kontrolle anzeigen.";
+            case LocationKind.Settlement:
+                return "Kontaktpunkt. Verhalten der Expedition kann spätere Begegnungen prägen.";
+            case LocationKind.BaseCamp:
+                return "Sicherer Ausgangspunkt und Archiv der Expedition.";
+            default:
+                return "Besonderer Ort. Untersuchung kann neue Informationen erzeugen.";
+        }
     }
 
     private static string KnowledgeText(KnowledgeLevel knowledge)

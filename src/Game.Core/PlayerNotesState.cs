@@ -29,5 +29,11 @@ public sealed class PlayerNotesState
     {
         notes.Add(note ?? throw new ArgumentNullException(nameof(note)));
     }
+
+    public void Clear()
+    {
+        markers.Clear();
+        notes.Clear();
+    }
 }
 }

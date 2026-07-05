@@ -9,6 +9,7 @@ public sealed class KnowledgeState
 {
     private readonly Dictionary<HexCoord, KnowledgeLevel> tileKnowledge = new();
     private readonly List<ScoutReportState> scoutReports = new();
+    private readonly HashSet<string> claimedKnowledgeSources = new();
 
     public KnowledgeLevel GetTileKnowledge(HexCoord coord)
     {
@@ -50,9 +51,36 @@ public sealed class KnowledgeState
         get { return scoutReports; }
     }
 
+    public bool ClaimKnowledgeSource(string sourceId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId))
+        {
+            throw new ArgumentException("Knowledge source id must not be empty.", nameof(sourceId));
+        }
+
+        return claimedKnowledgeSources.Add(sourceId);
+    }
+
+    public bool HasClaimedKnowledgeSource(string sourceId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId))
+        {
+            throw new ArgumentException("Knowledge source id must not be empty.", nameof(sourceId));
+        }
+
+        return claimedKnowledgeSources.Contains(sourceId);
+    }
+
     public void AddScoutReport(ScoutReportState report)
     {
         scoutReports.Add(report ?? throw new ArgumentNullException(nameof(report)));
+    }
+
+    public void Clear()
+    {
+        tileKnowledge.Clear();
+        scoutReports.Clear();
+        claimedKnowledgeSources.Clear();
     }
 
     private static int KnowledgeRank(KnowledgeLevel knowledge)

@@ -15,6 +15,7 @@ public sealed class EndDayResult
         int worldDay,
         int expeditionDay,
         int suppliesConsumed,
+        bool expeditionLost,
         IEnumerable<ScoutMissionResolutionResult>? scoutResolutions,
         string? error)
     {
@@ -22,6 +23,7 @@ public sealed class EndDayResult
         WorldDay = worldDay;
         ExpeditionDay = expeditionDay;
         SuppliesConsumed = suppliesConsumed;
+        ExpeditionLost = expeditionLost;
         this.scoutResolutions = new List<ScoutMissionResolutionResult>(scoutResolutions ?? Enumerable.Empty<ScoutMissionResolutionResult>());
         Error = error;
     }
@@ -34,6 +36,8 @@ public sealed class EndDayResult
 
     public int SuppliesConsumed { get; }
 
+    public bool ExpeditionLost { get; }
+
     public IReadOnlyList<ScoutMissionResolutionResult> ScoutResolutions
     {
         get { return scoutResolutions; }
@@ -45,9 +49,10 @@ public sealed class EndDayResult
         int worldDay,
         int expeditionDay,
         int suppliesConsumed,
-        IEnumerable<ScoutMissionResolutionResult>? scoutResolutions = null)
+        IEnumerable<ScoutMissionResolutionResult>? scoutResolutions = null,
+        bool expeditionLost = false)
     {
-        return new EndDayResult(true, worldDay, expeditionDay, suppliesConsumed, scoutResolutions, null);
+        return new EndDayResult(true, worldDay, expeditionDay, suppliesConsumed, expeditionLost, scoutResolutions, null);
     }
 
     public static EndDayResult Rejected(string error)
@@ -57,7 +62,7 @@ public sealed class EndDayResult
             throw new ArgumentException("Rejected end-day needs an error message.", nameof(error));
         }
 
-        return new EndDayResult(false, 0, 0, 0, null, error);
+        return new EndDayResult(false, 0, 0, 0, false, null, error);
     }
 }
 }

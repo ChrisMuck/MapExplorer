@@ -36,12 +36,19 @@ public sealed class ScoutMissionResolutionService
             {
                 report = CreateReport(game, mission, outcome);
                 game.Knowledge.AddScoutReport(report);
+                var reportedNewKnowledge = false;
                 foreach (var coord in report.RelatedCoords)
                 {
                     if (game.World.Map.Contains(coord))
                     {
+                        reportedNewKnowledge = reportedNewKnowledge || game.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Unknown;
                         game.Knowledge.PromoteTileKnowledge(coord, KnowledgeLevel.Reported);
                     }
+                }
+
+                if (reportedNewKnowledge && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(report)))
+                {
+                    game.Expedition.AddUnsecuredKnowledge(outcome == ScoutMissionStatus.ReturnedInjured ? 2 : 3);
                 }
             }
 
@@ -143,6 +150,17 @@ public sealed class ScoutMissionResolutionService
         }
 
         return coords;
+    }
+
+    private static string ScoutKnowledgeSourceId(ScoutReportState report)
+    {
+        var parts = new List<string>();
+        foreach (var coord in report.RelatedCoords)
+        {
+            parts.Add($"{coord.Q}:{coord.R}");
+        }
+
+        return $"scout-report:{string.Join("|", parts)}";
     }
 
     private static int ReliabilityFor(ScoutMissionState mission, ScoutMissionStatus outcome)
