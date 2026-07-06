@@ -17,7 +17,8 @@ public sealed class GameState
         ExpeditionState expedition,
         BaseState baseState,
         EventQueueState? eventQueue = null,
-        IEnumerable<FactionState>? factions = null)
+        IEnumerable<FactionState>? factions = null,
+        LeverageInventoryState? leverageItems = null)
     {
         World = world ?? throw new ArgumentNullException(nameof(world));
         Knowledge = knowledge ?? throw new ArgumentNullException(nameof(knowledge));
@@ -26,6 +27,7 @@ public sealed class GameState
         Base = baseState ?? throw new ArgumentNullException(nameof(baseState));
         Events = eventQueue ?? new EventQueueState();
         this.factions = new List<FactionState>(factions ?? Enumerable.Empty<FactionState>());
+        LeverageItems = leverageItems ?? new LeverageInventoryState();
     }
 
     public WorldState World { get; }
@@ -39,6 +41,10 @@ public sealed class GameState
     public BaseState Base { get; }
 
     public EventQueueState Events { get; }
+
+    public LeverageInventoryState LeverageItems { get; }
+
+    public FactionInteractionState? ActiveFactionInteraction { get; private set; }
 
     public IReadOnlyList<FactionState> Factions
     {
@@ -61,6 +67,16 @@ public sealed class GameState
     public void SetExpedition(ExpeditionState expedition)
     {
         Expedition = expedition ?? throw new ArgumentNullException(nameof(expedition));
+    }
+
+    public void SetActiveFactionInteraction(FactionInteractionState interaction)
+    {
+        ActiveFactionInteraction = interaction ?? throw new ArgumentNullException(nameof(interaction));
+    }
+
+    public void ClearActiveFactionInteraction()
+    {
+        ActiveFactionInteraction = null;
     }
 }
 }

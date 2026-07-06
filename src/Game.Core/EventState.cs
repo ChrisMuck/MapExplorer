@@ -17,7 +17,8 @@ public sealed class EventState
         string source,
         string body,
         IEnumerable<EventOptionState> options,
-        HexCoord? coord = null)
+        HexCoord? coord = null,
+        string? factionId = null)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -31,6 +32,7 @@ public sealed class EventState
         }
 
         Coord = coord;
+        FactionId = string.IsNullOrWhiteSpace(factionId) ? null : factionId;
     }
 
     public string Id { get; }
@@ -44,6 +46,8 @@ public sealed class EventState
     public string Body { get; }
 
     public HexCoord? Coord { get; }
+
+    public string? FactionId { get; }
 
     public IReadOnlyList<EventOptionState> Options
     {

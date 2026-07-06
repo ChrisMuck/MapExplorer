@@ -384,6 +384,7 @@ Track:
 - representative roles such as watcher, guard, scout, messenger, trader and leader
 - leader access requirement
 - authored leverage objects or faction-request items
+- leverage item source links from map generation or tutorial map setup
 - 5 to 10 authored faction/location offers
 - baseline Knowledge for Supplies trade where trading is available
 - warning zones
@@ -400,6 +401,8 @@ Acceptance:
 - Leader contact is gated by faction attitude, location progress or valuable offers.
 - At least one faction can request a concrete object, proof or favor before deeper conversation opens.
 - Leverage objects can be found in graves, camps, special locations, scout reports or another faction's possession.
+- The tutorial map may hand-place leverage sources, but the data model must support assigning them during future map generation.
+- A leverage object definition should record item id, source location/system, interested faction, unlocked offer/dialogue and persistence behavior.
 - Trade/contact UI can show curated offers, including Knowledge for Supplies.
 - Offers can reveal routes, safe camps, springs, warning interpretations or map fragments.
 - Factions remember major territory violations across expeditions.

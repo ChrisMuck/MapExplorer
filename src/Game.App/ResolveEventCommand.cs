@@ -8,15 +8,17 @@ namespace Game.App
 public sealed class ResolveEventCommand
 {
     private readonly AddMapMarkerCommand addMapMarkerCommand;
+    private readonly OpenFactionInteractionCommand openFactionInteractionCommand;
 
     public ResolveEventCommand()
-        : this(new AddMapMarkerCommand())
+        : this(new AddMapMarkerCommand(), new OpenFactionInteractionCommand())
     {
     }
 
-    public ResolveEventCommand(AddMapMarkerCommand addMapMarkerCommand)
+    public ResolveEventCommand(AddMapMarkerCommand addMapMarkerCommand, OpenFactionInteractionCommand openFactionInteractionCommand)
     {
         this.addMapMarkerCommand = addMapMarkerCommand ?? throw new ArgumentNullException(nameof(addMapMarkerCommand));
+        this.openFactionInteractionCommand = openFactionInteractionCommand ?? throw new ArgumentNullException(nameof(openFactionInteractionCommand));
     }
 
     public ResolveEventResult Execute(GameState game, string eventId, string optionId)
@@ -70,6 +72,16 @@ public sealed class ResolveEventCommand
                 }
 
                 return option.ResultText;
+            case EventOptionEffectKind.OpenFactionInteraction:
+                if (string.IsNullOrWhiteSpace(eventState.FactionId) || !eventState.Coord.HasValue)
+                {
+                    return "No faction contact is available here.";
+                }
+
+                var interactionResult = openFactionInteractionCommand.Execute(game, eventState.FactionId, eventState.Coord.Value);
+                return interactionResult.Success
+                    ? interactionResult.Message ?? option.ResultText
+                    : interactionResult.Error ?? "Faction contact could not be opened.";
             default:
                 return option.ResultText;
         }

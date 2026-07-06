@@ -2156,6 +2156,23 @@ Possible sources:
 - recovered from a lost expedition
 - received as a trade item from a third party
 
+Important generation rule:
+
+Leverage objects should not be treated as isolated handcoded exceptions in the long term.
+
+They should be assigned during world or map generation from structured links between:
+
+- faction desires
+- faction taboos and values
+- special location types
+- region placement
+- route constraints
+- scout report hooks
+- possible trade offers
+- possible dialogue gates
+
+For example, a generated Border Warden region may request a grave token, old patrol sign, returned remains or taboo object. The generator should then place that object in a fitting special location or route context, such as a marked grave, abandoned camp, old watchpost or contested border site.
+
 When the expedition gains the desired thing, new conversation options may open.
 
 Examples:
@@ -2167,6 +2184,18 @@ Examples:
 - A faction may ask the expedition to retrieve something held by another faction, creating a social risk.
 
 For the MVP, this should be implemented with a small number of authored leverage objects, not a large inventory system.
+
+However, authored MVP leverage objects should already follow the future data shape:
+
+- stable item id
+- display name
+- source location or source system
+- owning or interested faction
+- faction offer or dialogue option unlocked
+- optional trust, anger or fear impact
+- persistence rule after return, loss or failed expedition
+
+This keeps the MVP compatible with later semi-procedural map generation.
 
 Leverage objects should:
 
@@ -3008,6 +3037,7 @@ Each special location should contain:
 - visible clues
 - hidden clues
 - faction links
+- leverage object links
 - possible actions
 - required or helpful specialists
 - action costs
@@ -3385,6 +3415,14 @@ The generator should create locations from structured components:
 - archive entries
 - possible false interpretations
 - persistence rules
+
+If a generated location contains or points toward a leverage object, the generator must also define why that object matters:
+
+- which faction wants it
+- which offer, conversation option or leader access it can unlock
+- whether taking, returning or trading it changes trust, anger or fear
+- whether the information survives a successful return to base
+- whether it is lost if the expedition dies or disappears
 
 The goal is not to generate generic “points of interest.”
 

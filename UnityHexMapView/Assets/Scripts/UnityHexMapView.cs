@@ -364,6 +364,41 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public void RequestPurchaseFactionOfferFromUi(string offerId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.PurchaseFactionOffer(coreGameState, offerId);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Faction offer rejected.";
+            RefreshToolkitHud();
+            return;
+        }
+
+        interactionMessage = result.Message ?? "Faction offer accepted.";
+        RefreshKnowledgeOverlays();
+        RefreshPlayerAnnotations();
+        RefreshToolkitHud();
+    }
+
+    public void RequestCloseFactionInteractionFromUi()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.CloseFactionInteraction(coreGameState);
+        interactionMessage = result.Success
+            ? result.Message ?? "Faction contact closed."
+            : result.Error ?? "No faction contact open.";
+        RefreshToolkitHud();
+    }
+
     public void RefreshToolkitHud()
     {
         expeditionScreenController?.Refresh();

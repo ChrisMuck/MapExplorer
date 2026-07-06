@@ -142,6 +142,16 @@ public sealed class ExpeditionState
         Supplies = Math.Max(0, Supplies - amount);
     }
 
+    public void AddSupplies(int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Supply amount must not be negative.");
+        }
+
+        Supplies += amount;
+    }
+
     public void AddUnsecuredKnowledge(int amount)
     {
         if (amount < 0)

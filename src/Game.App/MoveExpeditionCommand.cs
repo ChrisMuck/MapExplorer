@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.Core;
 
 namespace Game.App
@@ -188,18 +189,33 @@ public sealed class MoveExpeditionCommand
 
     private static EventState CreateFactionTerritoryReactionEvent(GameState game, FactionState faction, HexCoord coord)
     {
+        var options = new List<EventOptionState>();
+        if (CanOpenFactionInteraction(faction))
+        {
+            options.Add(new EventOptionState(
+                "contact",
+                "Open contact",
+                $"The expedition approaches the {faction.Name} representative.",
+                EventOptionEffectKind.OpenFactionInteraction));
+        }
+
+        options.Add(new EventOptionState("archive", "Archive observation", $"The expedition recorded how {faction.Name} reacted to its presence.", EventOptionEffectKind.Archive));
+        options.Add(new EventOptionState("continue", "Continue carefully", "The expedition continues while watching for further signs.", EventOptionEffectKind.None));
+
         return new EventState(
             $"event-{game.Events.Events.Count + 1}",
             EventKind.FactionReaction,
             TerritoryReactionTitle(faction),
             faction.Name,
             TerritoryReactionBody(faction),
-            new[]
-            {
-                new EventOptionState("archive", "Archive observation", $"The expedition recorded how {faction.Name} reacted to its presence.", EventOptionEffectKind.Archive),
-                new EventOptionState("continue", "Continue carefully", "The expedition continues while watching for further signs.", EventOptionEffectKind.None)
-            },
-            coord);
+            options,
+            coord,
+            faction.Id);
+    }
+
+    private static bool CanOpenFactionInteraction(FactionState faction)
+    {
+        return faction.Id == "coastal-people" || faction.Id == "border-wardens" || faction.ContactStatus == FactionContactStatus.Open;
     }
 
     private static string TerritoryReactionTitle(FactionState faction)

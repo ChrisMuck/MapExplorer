@@ -1288,6 +1288,9 @@ internal sealed class InspectLocationCommandTests
         InspectingKnownLocationAddsArchiveEntryOnce();
         UnknownLocationCannotBeInspected();
         RavineInspectionWarnsWithoutEngineer();
+        MarkedGraveInspectionAddsLeverageItemOnce();
+        AbandonedCampInspectionAddsDefinedLeverageItem();
+        WatchtowerInspectionAddsHiddenLeverageItem();
     }
 
     private static void InspectingKnownLocationAddsArchiveEntryOnce()
@@ -1329,6 +1332,52 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(result.Success, "Ravine inspection succeeds");
         AssertTrue(result.Message.Contains("Without an engineer"), "Ravine warns about missing engineer");
         AssertEqual(8, game.Expedition.UnsecuredKnowledge, "Special location inspection adds unsecured knowledge");
+    }
+
+    private static void MarkedGraveInspectionAddsLeverageItemOnce()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var grave = game.World.Locations.First(location => location.Kind == LocationKind.MarkedGrave);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, grave.Coord);
+
+        var first = command.Execute(game, grave.Coord);
+        var second = command.Execute(game, grave.Coord);
+
+        AssertTrue(first.Success, "First grave inspection succeeds");
+        AssertTrue(second.Success, "Second grave inspection succeeds");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.BorderWardenGraveTokenId), "Grave token leverage is recorded");
+        AssertEqual(1, game.LeverageItems.ItemIds.Count, "Grave token leverage is added once");
+    }
+
+    private static void AbandonedCampInspectionAddsDefinedLeverageItem()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var camp = game.World.Locations.First(location => location.Kind == LocationKind.AbandonedCamp);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, camp.Coord);
+
+        var result = command.Execute(game, camp.Coord);
+        var definition = FactionInteractionDefinitions.LeverageDefinitions.First(item => item.ItemId == FactionInteractionDefinitions.CoastalRiverChartFragmentId);
+
+        AssertTrue(result.Success, "Abandoned camp inspection succeeds");
+        AssertEqual(camp.Id, definition.Source, "River chart source points to abandoned camp");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "River chart leverage is recorded");
+    }
+
+    private static void WatchtowerInspectionAddsHiddenLeverageItem()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var watchtower = game.World.Locations.First(location => location.Kind == LocationKind.Watchtower);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, watchtower.Coord);
+
+        var result = command.Execute(game, watchtower.Coord);
+        var definition = FactionInteractionDefinitions.LeverageDefinitions.First(item => item.ItemId == FactionInteractionDefinitions.HiddenSealedSymbolId);
+
+        AssertTrue(result.Success, "Watchtower inspection succeeds");
+        AssertEqual(watchtower.Id, definition.Source, "Hidden symbol source points to watchtower");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol leverage is recorded");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
@@ -1446,6 +1495,12 @@ internal sealed class FactionPresenceTests
         EnteringFactionTerritoryAddsKnowledgeOnce();
         EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce();
         EnteringHiddenTerritoryCreatesDangerReaction();
+        FactionDefinitionsProvideMvpOfferSet();
+        FactionReactionCanOpenRepresentativeInteraction();
+        FactionOfferCanTradeKnowledgeForSupplies();
+        GraveTokenUnlocksBorderWardenNegotiation();
+        CoastalChartUnlocksGuidanceOffer();
+        HiddenOpenContactCanRecordForbiddenWarning();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1580,6 +1635,177 @@ internal sealed class FactionPresenceTests
         AssertTrue(faction.Anger > 0, "Hidden faction anger increases");
         AssertTrue(faction.Fear > 0, "Hidden faction fear increases");
         AssertTrue(faction.Memories.Any(memory => memory.Contains("territory-entry-expedition-1")), "Hidden faction remembers territory reaction");
+    }
+
+    private static void FactionDefinitionsProvideMvpOfferSet()
+    {
+        var offers = FactionInteractionDefinitions.OfferDefinitions;
+
+        AssertTrue(offers.Count >= 5 && offers.Count <= 10, "MVP offer set has curated scope");
+        AssertTrue(offers.Any(offer => offer.FactionId == "coastal-people"), "Coastal offers exist");
+        AssertTrue(offers.Any(offer => offer.FactionId == "border-wardens"), "Border Warden offers exist");
+        AssertTrue(offers.Any(offer => offer.FactionId == "hidden-ones"), "Hidden Ones offers exist");
+        AssertFalse(offers.Any(offer => offer.FactionId == "hidden-ones" && offer.EffectKind == FactionOfferEffectKind.SuppliesForKnowledge), "Hidden Ones do not provide normal trade");
+        AssertTrue(offers.Any(offer => offer.RequiredLeverageItemId == FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden leverage offer exists");
+    }
+
+    private static void FactionReactionCanOpenRepresentativeInteraction()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var territoryCoord = new HexCoord(2, 1);
+        var origin = new HexCoord(1, 1);
+        map.SetTile(map.GetTile(territoryCoord).WithOwner("border-wardens"));
+        var knowledge = new KnowledgeState();
+        new KnowledgeService().RevealFromExpedition(map, knowledge, origin);
+        var expedition = new ExpeditionState(
+            1,
+            origin,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            movementPoints: 4,
+            maxMovementPoints: 4,
+            supplies: 10,
+            medicine: 2,
+            morale: 60,
+            capacity: 10);
+        var faction = new FactionState("border-wardens", "Border Wardens", FactionContactStatus.Rumored);
+        var game = new GameState(new WorldState(map), knowledge, new PlayerNotesState(), expedition, new BaseState(HexCoord.Zero), factions: new[] { faction });
+
+        var move = new MoveExpeditionCommand(new MovementCostService()).Execute(game, territoryCoord);
+        var contactOption = game.Events.Current!.Options.First(option => option.EffectKind == EventOptionEffectKind.OpenFactionInteraction);
+        var open = new ResolveEventCommand().Execute(game, game.Events.Current.Id, contactOption.Id);
+
+        AssertTrue(move.Success, "Faction territory move succeeds");
+        AssertTrue(open.Success, "Faction contact option resolves");
+        AssertTrue(game.ActiveFactionInteraction != null, "Faction interaction is active");
+        AssertEqual("border-wardens", game.ActiveFactionInteraction!.FactionId, "Active interaction faction");
+        AssertEqual(FactionRepresentativeRole.Guard, game.ActiveFactionInteraction.Representative.Role, "Border contact starts with guard");
+        AssertTrue(game.ActiveFactionInteraction.Offers.Any(offer => offer.Id == "knowledge-for-supplies"), "Supply offer is present");
+        AssertTrue(game.ActiveFactionInteraction.Offers.Any(offer => offer.LockedReason == "Requires grave token"), "Locked leverage offer is visible");
+    }
+
+    private static void FactionOfferCanTradeKnowledgeForSupplies()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("coastal-people", "Coastal People", FactionContactStatus.Open);
+        var baseState = new BaseState(HexCoord.Zero);
+        baseState.AddKnowledgePoints(10);
+        var game = new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition, baseState, factions: new[] { faction });
+        var open = new OpenFactionInteractionCommand().Execute(game, "coastal-people", coord);
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "knowledge-for-supplies");
+
+        AssertTrue(open.Success, "Open coastal interaction succeeds");
+        AssertTrue(result.Success, "Supply trade succeeds");
+        AssertEqual(20, game.Expedition.Supplies, "Supply offer adds supplies");
+        AssertEqual(4, game.Base.KnowledgePoints, "Supply offer spends knowledge");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("10 Supplies")), "Offer is archived");
+    }
+
+    private static void GraveTokenUnlocksBorderWardenNegotiation()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("border-wardens", "Border Wardens", FactionContactStatus.Rumored, anger: 10);
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.BorderWardenGraveTokenId });
+        var leverageDefinition = FactionInteractionDefinitions.LeverageDefinitions.First(definition => definition.ItemId == FactionInteractionDefinitions.BorderWardenGraveTokenId);
+        var offerDefinition = FactionInteractionDefinitions.OfferDefinitions.First(definition => definition.Id == leverageDefinition.UnlocksOfferId);
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "border-wardens", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("grave-token-passage");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "grave-token-passage");
+
+        AssertEqual("border-wardens", leverageDefinition.InterestedFactionId, "Leverage definition targets Border Wardens");
+        AssertEqual(FactionInteractionDefinitions.BorderWardenGraveTokenId, offerDefinition.RequiredLeverageItemId, "Offer definition requires grave token");
+        AssertTrue(open.Success, "Open border warden interaction succeeds");
+        AssertTrue(offer != null && offer.IsAvailable, "Grave token offer is unlocked");
+        AssertTrue(result.Success, "Grave token negotiation succeeds");
+        AssertFalse(game.LeverageItems.Contains(FactionInteractionDefinitions.BorderWardenGraveTokenId), "Grave token is consumed");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.BorderWardenGraveTokenReturnedMemory), "Border Wardens remember returned grave token");
+        AssertTrue(faction.Trust > 0, "Border Warden trust improves");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionContact && marker.FactionId == "border-wardens"), "Passage marker is created");
+    }
+
+    private static void CoastalChartUnlocksGuidanceOffer()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(1, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("coastal-people", "Coastal People", FactionContactStatus.Open);
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.CoastalRiverChartFragmentId });
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "coastal-people", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("coastal-chart-guidance");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "coastal-chart-guidance");
+
+        AssertTrue(open.Success, "Open coastal interaction succeeds");
+        AssertTrue(offer != null && offer.IsAvailable, "Coastal chart offer is unlocked");
+        AssertTrue(result.Success, "Coastal chart guidance succeeds");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "Coastal chart is kept as evidence");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.CoastalRiverChartSharedMemory), "Coastal faction remembers shared chart");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionRumor && marker.FactionId == "coastal-people"), "Route marker is created");
+    }
+
+    private static void HiddenOpenContactCanRecordForbiddenWarning()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Forest);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("hidden-ones", "Hidden Ones", FactionContactStatus.Open);
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.HiddenSealedSymbolId });
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "hidden-ones", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("hidden-sealed-symbol-reading");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "hidden-sealed-symbol-reading");
+
+        AssertTrue(open.Success, "Open hidden interaction succeeds when contact is open");
+        AssertTrue(offer != null && offer.IsAvailable, "Hidden sealed symbol offer is unlocked");
+        AssertTrue(result.Success, "Hidden warning offer succeeds");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol is kept as evidence");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.HiddenSealedSymbolUnderstoodMemory), "Hidden faction remembers sealed symbol exchange");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.Danger && marker.FactionId == "hidden-ones"), "Forbidden zone marker is created");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

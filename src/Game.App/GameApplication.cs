@@ -21,6 +21,9 @@ public sealed class GameApplication
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
     private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
+    private readonly OpenFactionInteractionCommand openFactionInteractionCommand = new OpenFactionInteractionCommand();
+    private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
+    private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
 
     public GameState CreateTutorialGame()
     {
@@ -96,6 +99,21 @@ public sealed class GameApplication
     public RecoverLostExpeditionResult RecoverLostExpedition(GameState game, HexCoord coord)
     {
         return recoverLostExpeditionCommand.Execute(game, coord);
+    }
+
+    public FactionInteractionResult OpenFactionInteraction(GameState game, string factionId, HexCoord coord)
+    {
+        return openFactionInteractionCommand.Execute(game, factionId, coord);
+    }
+
+    public FactionOfferResult PurchaseFactionOffer(GameState game, string offerId)
+    {
+        return purchaseFactionOfferCommand.Execute(game, offerId);
+    }
+
+    public FactionInteractionResult CloseFactionInteraction(GameState game)
+    {
+        return closeFactionInteractionCommand.Execute(game);
     }
 }
 }
