@@ -11,6 +11,8 @@ public static class FactionInteractionDefinitions
     public const string BorderWardenGraveTokenReturnedMemory = "grave-token-returned";
     public const string CoastalRiverChartFragmentId = "coastal-river-chart-fragment";
     public const string CoastalRiverChartSharedMemory = "coastal-river-chart-shared";
+    public const string HiddenSealedSymbolId = "hidden-sealed-symbol";
+    public const string HiddenSealedSymbolUnderstoodMemory = "hidden-sealed-symbol-understood";
 
     private static readonly FactionOfferDefinition[] offerDefinitions =
     {
@@ -51,12 +53,26 @@ public static class FactionInteractionDefinitions
             lockedReasonWhenMissing: "Requires river chart",
             lockedReasonWhenResolved: "Already shared"),
         new FactionOfferDefinition(
+            "coastal-safe-camp",
+            "coastal-people",
+            "Safe reed camp",
+            "The messenger points out a dry camp above the wet ground where fires are hard to see.",
+            FactionOfferEffectKind.SafeCampHint,
+            knowledgeCost: 5),
+        new FactionOfferDefinition(
             "warning-interpretation",
             "border-wardens",
             "Warning sign interpretation",
             "The scout explains which carved posts mark watched land and which mark forbidden land.",
             FactionOfferEffectKind.WarningInterpretation,
             knowledgeCost: 5),
+        new FactionOfferDefinition(
+            "border-spring-location",
+            "border-wardens",
+            "Guarded spring",
+            "The scout names a spring near the ridge that patrols tolerate if visitors do not camp there.",
+            FactionOfferEffectKind.SpringLocation,
+            knowledgeCost: 6),
         new FactionOfferDefinition(
             "grave-token-passage",
             "border-wardens",
@@ -68,7 +84,26 @@ public static class FactionInteractionDefinitions
             resolvedMemoryId: BorderWardenGraveTokenReturnedMemory,
             lockedDescription: "The patrol will not discuss passage until a grave token or equivalent proof is returned.",
             lockedReasonWhenMissing: "Requires grave token",
-            lockedReasonWhenResolved: "Already resolved")
+            lockedReasonWhenResolved: "Already resolved"),
+        new FactionOfferDefinition(
+            "hidden-boundary-warning",
+            "hidden-ones",
+            "Forbidden boundary warning",
+            "A masked watcher marks where the expedition must not cross if it wants to leave alive.",
+            FactionOfferEffectKind.ForbiddenZoneWarning,
+            resolvedMemoryId: "hidden-boundary-warning-given",
+            lockedReasonWhenResolved: "Already warned"),
+        new FactionOfferDefinition(
+            "hidden-sealed-symbol-reading",
+            "hidden-ones",
+            "Meaning of the sealed mark",
+            "Show the symbol copied from the old watchtower. The watcher gives one warning about the sealed place.",
+            FactionOfferEffectKind.ForbiddenZoneWarning,
+            requiredLeverageItemId: HiddenSealedSymbolId,
+            resolvedMemoryId: HiddenSealedSymbolUnderstoodMemory,
+            lockedDescription: "The watcher refuses to explain the sealed place without proof that the expedition has seen its mark.",
+            lockedReasonWhenMissing: "Requires sealed symbol",
+            lockedReasonWhenResolved: "Already interpreted")
     };
 
     private static readonly LeverageObjectDefinition[] leverageDefinitions =
@@ -86,6 +121,13 @@ public static class FactionInteractionDefinitions
             "abandoned-camp",
             "coastal-people",
             "coastal-chart-guidance",
+            "Can be used as evidence in conversation; lost if the expedition fails before archival return."),
+        new LeverageObjectDefinition(
+            HiddenSealedSymbolId,
+            "Copied sealed symbol",
+            "watchtower",
+            "hidden-ones",
+            "hidden-sealed-symbol-reading",
             "Can be used as evidence in conversation; lost if the expedition fails before archival return.")
     };
 

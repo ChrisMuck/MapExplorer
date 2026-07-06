@@ -1290,6 +1290,7 @@ internal sealed class InspectLocationCommandTests
         RavineInspectionWarnsWithoutEngineer();
         MarkedGraveInspectionAddsLeverageItemOnce();
         AbandonedCampInspectionAddsDefinedLeverageItem();
+        WatchtowerInspectionAddsHiddenLeverageItem();
     }
 
     private static void InspectingKnownLocationAddsArchiveEntryOnce()
@@ -1362,6 +1363,21 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(result.Success, "Abandoned camp inspection succeeds");
         AssertEqual(camp.Id, definition.Source, "River chart source points to abandoned camp");
         AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "River chart leverage is recorded");
+    }
+
+    private static void WatchtowerInspectionAddsHiddenLeverageItem()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var watchtower = game.World.Locations.First(location => location.Kind == LocationKind.Watchtower);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, watchtower.Coord);
+
+        var result = command.Execute(game, watchtower.Coord);
+        var definition = FactionInteractionDefinitions.LeverageDefinitions.First(item => item.ItemId == FactionInteractionDefinitions.HiddenSealedSymbolId);
+
+        AssertTrue(result.Success, "Watchtower inspection succeeds");
+        AssertEqual(watchtower.Id, definition.Source, "Hidden symbol source points to watchtower");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol leverage is recorded");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
@@ -1479,10 +1495,12 @@ internal sealed class FactionPresenceTests
         EnteringFactionTerritoryAddsKnowledgeOnce();
         EnteringBorderWardenWarningZoneQueuesEventAndMemoryOnce();
         EnteringHiddenTerritoryCreatesDangerReaction();
+        FactionDefinitionsProvideMvpOfferSet();
         FactionReactionCanOpenRepresentativeInteraction();
         FactionOfferCanTradeKnowledgeForSupplies();
         GraveTokenUnlocksBorderWardenNegotiation();
         CoastalChartUnlocksGuidanceOffer();
+        HiddenOpenContactCanRecordForbiddenWarning();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1619,6 +1637,18 @@ internal sealed class FactionPresenceTests
         AssertTrue(faction.Memories.Any(memory => memory.Contains("territory-entry-expedition-1")), "Hidden faction remembers territory reaction");
     }
 
+    private static void FactionDefinitionsProvideMvpOfferSet()
+    {
+        var offers = FactionInteractionDefinitions.OfferDefinitions;
+
+        AssertTrue(offers.Count >= 5 && offers.Count <= 10, "MVP offer set has curated scope");
+        AssertTrue(offers.Any(offer => offer.FactionId == "coastal-people"), "Coastal offers exist");
+        AssertTrue(offers.Any(offer => offer.FactionId == "border-wardens"), "Border Warden offers exist");
+        AssertTrue(offers.Any(offer => offer.FactionId == "hidden-ones"), "Hidden Ones offers exist");
+        AssertFalse(offers.Any(offer => offer.FactionId == "hidden-ones" && offer.EffectKind == FactionOfferEffectKind.SuppliesForKnowledge), "Hidden Ones do not provide normal trade");
+        AssertTrue(offers.Any(offer => offer.RequiredLeverageItemId == FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden leverage offer exists");
+    }
+
     private static void FactionReactionCanOpenRepresentativeInteraction()
     {
         var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
@@ -1744,6 +1774,38 @@ internal sealed class FactionPresenceTests
         AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "Coastal chart is kept as evidence");
         AssertTrue(faction.HasMemory(FactionInteractionDefinitions.CoastalRiverChartSharedMemory), "Coastal faction remembers shared chart");
         AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionRumor && marker.FactionId == "coastal-people"), "Route marker is created");
+    }
+
+    private static void HiddenOpenContactCanRecordForbiddenWarning()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Forest);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("hidden-ones", "Hidden Ones", FactionContactStatus.Open);
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.HiddenSealedSymbolId });
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "hidden-ones", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("hidden-sealed-symbol-reading");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "hidden-sealed-symbol-reading");
+
+        AssertTrue(open.Success, "Open hidden interaction succeeds when contact is open");
+        AssertTrue(offer != null && offer.IsAvailable, "Hidden sealed symbol offer is unlocked");
+        AssertTrue(result.Success, "Hidden warning offer succeeds");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol is kept as evidence");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.HiddenSealedSymbolUnderstoodMemory), "Hidden faction remembers sealed symbol exchange");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.Danger && marker.FactionId == "hidden-ones"), "Forbidden zone marker is created");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

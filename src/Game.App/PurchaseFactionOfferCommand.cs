@@ -82,6 +82,22 @@ public sealed class PurchaseFactionOfferCommand
                     $"{interaction.FactionName} route hint",
                     interaction.FactionId));
                 break;
+            case FactionOfferEffectKind.SafeCampHint:
+                AddFactionMarker(
+                    game,
+                    interaction,
+                    PlayerMapMarkerKind.Resource,
+                    "safe-camp",
+                    $"{interaction.FactionName} safe camp");
+                break;
+            case FactionOfferEffectKind.SpringLocation:
+                AddFactionMarker(
+                    game,
+                    interaction,
+                    PlayerMapMarkerKind.Resource,
+                    "spring",
+                    $"{interaction.FactionName} guarded spring");
+                break;
             case FactionOfferEffectKind.WarningInterpretation:
                 game.PlayerNotes.AddMarker(new PlayerMapMarkerState(
                     $"warning-interpretation-{interaction.FactionId}-{game.World.WorldDay}",
@@ -93,7 +109,30 @@ public sealed class PurchaseFactionOfferCommand
             case FactionOfferEffectKind.PassageNegotiation:
                 ApplyPassageNegotiation(game, interaction, offer);
                 break;
+            case FactionOfferEffectKind.ForbiddenZoneWarning:
+                AddFactionMarker(
+                    game,
+                    interaction,
+                    PlayerMapMarkerKind.Danger,
+                    "forbidden-zone",
+                    $"{interaction.FactionName} forbidden boundary");
+                break;
         }
+    }
+
+    private static void AddFactionMarker(
+        GameState game,
+        FactionInteractionState interaction,
+        PlayerMapMarkerKind kind,
+        string markerPrefix,
+        string label)
+    {
+        game.PlayerNotes.AddMarker(new PlayerMapMarkerState(
+            $"{markerPrefix}-{interaction.FactionId}-{game.World.WorldDay}",
+            interaction.Coord,
+            kind,
+            label,
+            interaction.FactionId));
     }
 
     private static void ApplyPassageNegotiation(GameState game, FactionInteractionState interaction, FactionOfferState offer)
@@ -151,10 +190,16 @@ public sealed class PurchaseFactionOfferCommand
                 return $"Supplies gained: +{offer.SupplyReward}.";
             case FactionOfferEffectKind.RouteHint:
                 return "Route hint recorded on the map.";
+            case FactionOfferEffectKind.SafeCampHint:
+                return "Safe camp hint recorded on the map.";
+            case FactionOfferEffectKind.SpringLocation:
+                return "Spring location recorded on the map.";
             case FactionOfferEffectKind.WarningInterpretation:
                 return "Warning signs recorded as faction notes.";
             case FactionOfferEffectKind.PassageNegotiation:
                 return "The grave token was returned. A limited passage contact was marked.";
+            case FactionOfferEffectKind.ForbiddenZoneWarning:
+                return "Forbidden boundary warning recorded on the map.";
             default:
                 return "Offer accepted.";
         }

@@ -9,8 +9,11 @@ public enum FactionOfferEffectKind
 {
     SuppliesForKnowledge,
     RouteHint,
+    SafeCampHint,
+    SpringLocation,
     WarningInterpretation,
     PassageNegotiation,
+    ForbiddenZoneWarning,
     None
 }
 }
