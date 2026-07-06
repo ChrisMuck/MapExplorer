@@ -34,13 +34,21 @@ MonoBehaviour:
   broadleafTreePrefabs:
   - {fileID: 9102853492202625742, guid: b84b57cf257b9f44e962e6640bf38b40, type: 3}
   mountainPeakPrefabs:
-  - {fileID: 100000, guid: a1000000000000000000000000000006, type: 3}
+  - {fileID: 727767559400281984, guid: e6893c98a5142d049b989b66fa49fd8b, type: 3}
+  - {fileID: 3613474978968536818, guid: 6e46128177f6ad54497de61615c9b56b, type: 3}
+  - {fileID: 3242189383419490064, guid: bd327967b4e52bb4fb2745c4649bca94, type: 3}
   snowyMountainPeakPrefabs:
-  - {fileID: 100000, guid: a1000000000000000000000000000007, type: 3}
+  - {fileID: 7781368882484800252, guid: 159bfb98c864bc442a2305b3363c374c, type: 3}
+  - {fileID: 134937142062863145, guid: 66ecd25ba6b0b324d9f30746acf5d944, type: 3}
+  - {fileID: 5914899476796296176, guid: 4bcaaf73b446f9745ac732a48492b682, type: 3}
   rockyRidgePrefabs:
-  - {fileID: 100000, guid: a1000000000000000000000000000008, type: 3}
+  - {fileID: 6435319557921838645, guid: 2b37ac175c5c6924eb9ed9c51dc9cc9d, type: 3}
+  - {fileID: 5559718885873125785, guid: 70f5079e3ef4a5940a96ffd8b03c4805, type: 3}
+  - {fileID: 9133669174860183275, guid: 3f1f7066cd9186048811d60646672c5e, type: 3}
   snowyRockyRidgePrefabs:
-  - {fileID: 100000, guid: a1000000000000000000000000000009, type: 3}
+  - {fileID: 5471960194390066554, guid: 426f6d360673e08479a5ef51cd156dcf, type: 3}
+  - {fileID: 3535893870961750814, guid: e1c220a013d5d2140914a1b8448d4f7a, type: 3}
+  - {fileID: 9164270413825362098, guid: 7d837b356b7625141b3de7e291697484, type: 3}
   foothillsPrefabs:
   - {fileID: 100000, guid: a100000000000000000000000000000a, type: 3}
   foothillRockPrefabs:

@@ -1409,15 +1409,22 @@ public sealed class UnityHexMapView : MonoBehaviour
                 }
 
                 var mountainNeighbors = CountMatchingNeighbors(coord, IsMountainTerrain);
-                var snowy = tile.Terrain == TerrainKind.Snow;
-                var strength = Mathf.Max(MountainRangeStrength(coord), mountainNeighbors / 6f);
-                if (mountainNeighbors >= 4)
+                // Snow only in the core of a range (a hex ringed by other mountains), so the
+                // centre is snow-capped while the surrounding peaks stay bare and smaller.
+                var core = mountainNeighbors >= 5;
+                var peakSnowy = core || tile.Terrain == TerrainKind.Snow;
+                var ridgeSnowy = tile.Terrain == TerrainKind.Snow;
+                // Size driven by centrality (core biggest, edge smallest) with a little jitter.
+                var strength = Mathf.Clamp01(mountainNeighbors / 6f + (Hash01(coord.x, coord.y, 7777) - 0.5f) * 0.12f);
+                // Almost every mountain hex becomes a (small) peak so the massif reads as a
+                // continuous ridge; only truly peripheral hexes stay as loose rock blocks.
+                if (mountainNeighbors >= 2)
                 {
-                    AddMountainPeakAsset(root.transform, coord, snowy, strength, regionIndex * 1000 + i);
+                    AddMountainPeakAsset(root.transform, coord, peakSnowy, strength, regionIndex * 1000 + i);
                 }
                 else
                 {
-                    AddRockyRidgeAsset(root.transform, coord, snowy, strength, regionIndex * 1000 + i);
+                    AddRockyRidgeAsset(root.transform, coord, ridgeSnowy, strength, regionIndex * 1000 + i);
                 }
             }
         }
@@ -1509,7 +1516,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.015f);
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
         var peakPrefabs = snowy && HasPrefab(Prefabs.snowyMountainPeakPrefabs) ? Prefabs.snowyMountainPeakPrefabs : Prefabs.mountainPeakPrefabs;
-        if (TryPlacePrefab(peakPrefabs, root.transform, "MountainPeakPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.92f, 1.18f, strength), coord.x, coord.y, seedOffset, out _))
+        if (TryPlacePrefab(peakPrefabs, root.transform, "MountainPeakPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.62f, 1.32f, strength), coord.x, coord.y, seedOffset, out _))
         {
             return;
         }

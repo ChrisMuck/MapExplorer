@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -40,6 +41,10 @@ public static class HexMapPrefabGenerator
         DeleteObsoletePrefab($"{GeneratedRoot}/Forest/Tree_Round.prefab");
         DeleteObsoletePrefab($"{GeneratedRoot}/Forest/ForestCluster_Dense.prefab");
         DeleteObsoletePrefab($"{GeneratedRoot}/Forest/ForestCluster_Edge.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/MountainPeak.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/MountainPeak_Snowy.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/RockyRidge.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/RockyRidge_Snowy.prefab");
 
         var materials = CreateMaterials();
 
@@ -54,13 +59,24 @@ public static class HexMapPrefabGenerator
         var mixedDense = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Mixed_Dense.prefab", CreateForestCluster("ForestCluster_Mixed_Dense", materials, 9, ForestMode.Mixed));
         var mixedEdge = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Mixed_Edge.prefab", CreateForestCluster("ForestCluster_Mixed_Edge", materials, 6, ForestMode.Mixed));
 
-        var mountainPeak = SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak.prefab", CreateMountainPeak("MountainPeak", materials, false, 1f));
-        var snowyPeak = SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak_Snowy.prefab", CreateMountainPeak("MountainPeak_Snowy", materials, true, 1.05f));
-        var ridge = SavePrefab($"{GeneratedRoot}/Mountains/RockyRidge.prefab", CreateRockyRidge("RockyRidge", materials, false));
-        var snowyRidge = SavePrefab($"{GeneratedRoot}/Mountains/RockyRidge_Snowy.prefab", CreateRockyRidge("RockyRidge_Snowy", materials, true));
-        var foothills = SavePrefab($"{GeneratedRoot}/Mountains/Foothills.prefab", CreateFoothills("Foothills", materials));
-        var foothillRock = SavePrefab($"{GeneratedRoot}/Mountains/FoothillRock.prefab", CreateRock("FoothillRock", materials, 0.28f));
-        var rock = SavePrefab($"{GeneratedRoot}/Mountains/Rock.prefab", CreateRock("Rock", materials, 0.36f));
+        // Several faceted variants per mountain type so a range does not read as repeated cones;
+        // the view picks among them per hex via its prefab hash.
+        var peakVariants = new List<GameObject>();
+        var snowyPeakVariants = new List<GameObject>();
+        var ridgeVariants = new List<GameObject>();
+        var snowyRidgeVariants = new List<GameObject>();
+        for (var i = 0; i < 3; i++)
+        {
+            var suffix = (char)('A' + i);
+            peakVariants.Add(SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak_{suffix}.prefab", CreateMountainPeak($"MountainPeak_{suffix}", materials, false, 1f, 700 + i)));
+            snowyPeakVariants.Add(SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak_Snowy_{suffix}.prefab", CreateMountainPeak($"MountainPeak_Snowy_{suffix}", materials, true, 1.05f, 720 + i)));
+            ridgeVariants.Add(SavePrefab($"{GeneratedRoot}/Mountains/RockyRidge_{suffix}.prefab", CreateRockyRidge($"RockyRidge_{suffix}", materials, false, 740 + i)));
+            snowyRidgeVariants.Add(SavePrefab($"{GeneratedRoot}/Mountains/RockyRidge_Snowy_{suffix}.prefab", CreateRockyRidge($"RockyRidge_Snowy_{suffix}", materials, true, 760 + i)));
+        }
+
+        var foothills = SavePrefab($"{GeneratedRoot}/Mountains/Foothills.prefab", CreateFoothills("Foothills", materials, 780));
+        var foothillRock = SavePrefab($"{GeneratedRoot}/Mountains/FoothillRock.prefab", CreateRock("FoothillRock", materials, 0.28f, 790));
+        var rock = SavePrefab($"{GeneratedRoot}/Mountains/Rock.prefab", CreateRock("Rock", materials, 0.36f, 800));
 
         var settlement = SavePrefab($"{GeneratedRoot}/Settlements/SettlementCluster.prefab", CreateSettlementCluster("SettlementCluster", materials));
         var houseA = SavePrefab($"{GeneratedRoot}/Settlements/House_A.prefab", CreateHouse("House_A", materials, 1f));
@@ -88,10 +104,10 @@ public static class HexMapPrefabGenerator
         library.mixedForestClusterPrefabs = new[] { mixedDense, mixedEdge };
         library.pineTreePrefabs = new[] { treePine, treeTall };
         library.broadleafTreePrefabs = new[] { treeBroadleaf };
-        library.mountainPeakPrefabs = new[] { mountainPeak };
-        library.snowyMountainPeakPrefabs = new[] { snowyPeak };
-        library.rockyRidgePrefabs = new[] { ridge };
-        library.snowyRockyRidgePrefabs = new[] { snowyRidge };
+        library.mountainPeakPrefabs = peakVariants.ToArray();
+        library.snowyMountainPeakPrefabs = snowyPeakVariants.ToArray();
+        library.rockyRidgePrefabs = ridgeVariants.ToArray();
+        library.snowyRockyRidgePrefabs = snowyRidgeVariants.ToArray();
         library.foothillsPrefabs = new[] { foothills };
         library.foothillRockPrefabs = new[] { foothillRock };
         library.rockPrefabs = new[] { rock, foothillRock };
@@ -117,9 +133,12 @@ public static class HexMapPrefabGenerator
             Bark = Material("Bark", "4b3326", 0.72f),
             Leaf = Material("Leaf", "2f6a42", 0.82f),
             LeafDark = Material("LeafDark", "1e432f", 0.88f),
-            Rock = Material("Rock", "777b71", 0.86f),
-            RockDark = Material("RockDark", "3e413a", 0.9f),
-            Snow = Material("Snow", "d9dfdc", 0.62f),
+            Rock = Material("Rock", "606359", 0.88f),
+            RockDark = Material("RockDark", "34362f", 0.9f),
+            RockLight = Material("RockLight", "7c8076", 0.86f),
+            RockWarm = Material("RockWarm", "635a4c", 0.88f),
+            Snow = Material("Snow", "dbe1de", 0.6f),
+            SnowShadow = Material("SnowShadow", "b3bec4", 0.66f),
             GroundDark = Material("ForestGround", "233f2d", 0.86f),
             Wall = Material("WallStone", "847e6b", 0.82f),
             Roof = Material("RoofRose", "86506a", 0.76f),
@@ -188,54 +207,104 @@ public static class HexMapPrefabGenerator
         return root;
     }
 
-    private static GameObject CreateMountainPeak(string name, MaterialSet materials, bool snowy, float scale)
+    // Faceted rock massif: flared talus base, an irregular off-centre main peak with a lighter
+    // sunlit face, lower secondary spurs for a ridge silhouette, snow that follows the summit
+    // facets, and a few boulders spilling from the base.
+    private static GameObject CreateMountainPeak(string name, MaterialSet materials, bool snowy, float scale, int seed)
     {
         var root = NewRoot(name);
-        AddCone(root.transform, "Base", materials.RockDark, 0.68f * scale, 0.42f * scale, 0.22f * scale, new Vector3(0f, 0.11f * scale, 0f), Quaternion.Euler(0f, 24f, 0f), 8);
-        AddCone(root.transform, "MainPeak", materials.Rock, 0.5f * scale, 0.035f * scale, 1.05f * scale, new Vector3(-0.05f * scale, 0.63f * scale, 0.02f * scale), Quaternion.Euler(0f, 18f, 0f), 7);
-        AddCone(root.transform, "SidePeakA", materials.RockDark, 0.32f * scale, 0.03f * scale, 0.62f * scale, new Vector3(0.28f * scale, 0.42f * scale, 0.22f * scale), Quaternion.Euler(0f, 75f, 0f), 7);
-        AddCone(root.transform, "SidePeakB", materials.Rock, 0.24f * scale, 0.025f * scale, 0.48f * scale, new Vector3(-0.32f * scale, 0.34f * scale, -0.22f * scale), Quaternion.Euler(0f, -35f, 0f), 7);
+
+        AddFacetedMound(root.transform, "Talus", materials.RockDark, 0.94f * scale, 0.62f * scale, 0.24f * scale, Vector3.zero, YRot(seed, 1), seed + 1);
+
+        // Stockier proportions: wider base, gentler taper, less needle-like.
+        var mainHeight = 1.0f * scale;
+        var mainBaseY = 0.18f * scale;
+        var mainPos = new Vector3(-0.04f * scale, mainBaseY, 0.02f * scale);
+        var mainRot = YRot(seed, 2);
+        AddFacetedPeak(root.transform, "MainPeak", materials.Rock, 0.72f * scale, 0.46f * scale, 0.06f * scale, mainHeight, mainPos, mainRot, seed + 2);
+        // Small sunlit highlight, low on the front face (not a dominating light stripe).
+        AddFacetedPeak(root.transform, "MainFace", materials.RockLight, 0.3f * scale, 0.2f * scale, 0.05f * scale, mainHeight * 0.5f, new Vector3(-0.2f * scale, mainBaseY + 0.04f * scale, 0.2f * scale), mainRot, seed + 3);
+
+        for (var i = 0; i < 2; i++)
+        {
+            var a = Hash01(seed, i, 30) * Mathf.PI * 2f;
+            var dist = Mathf.Lerp(0.34f, 0.48f, Hash01(seed, i, 31)) * scale;
+            var h = mainHeight * Mathf.Lerp(0.46f, 0.7f, Hash01(seed, i, 32));
+            AddFacetedPeak(root.transform, $"Spur_{i}", i == 0 ? materials.RockDark : materials.RockWarm, 0.4f * scale, 0.26f * scale, 0.05f * scale, h, new Vector3(Mathf.Cos(a) * dist, mainBaseY + 0.02f * scale, Mathf.Sin(a) * dist), Quaternion.Euler(0f, a * Mathf.Rad2Deg, 0f), seed + 40 + i);
+        }
+
+        // Snow only on snowy peaks; the view reserves those for the core of a range.
         if (snowy)
         {
-            AddCone(root.transform, "SnowCap", materials.Snow, 0.18f * scale, 0.012f * scale, 0.25f * scale, new Vector3(-0.05f * scale, 1.16f * scale, 0.02f * scale), Quaternion.Euler(0f, 18f, 0f), 7);
-            AddCone(root.transform, "SideSnowCap", materials.Snow, 0.11f * scale, 0.01f * scale, 0.13f * scale, new Vector3(0.28f * scale, 0.74f * scale, 0.22f * scale), Quaternion.Euler(0f, 75f, 0f), 7);
+            var snowHeight = mainHeight * 0.52f;
+            var snowRadius = 0.44f * scale;
+            var snowBaseY = mainBaseY + mainHeight * 0.5f;
+            AddFacetedPeak(root.transform, "SnowShade", materials.SnowShadow, snowRadius * 1.06f, snowRadius * 0.62f, 0.05f * scale, snowHeight, new Vector3(-0.04f * scale, snowBaseY - 0.02f * scale, 0.02f * scale), mainRot, seed + 2);
+            AddFacetedPeak(root.transform, "SnowCap", materials.Snow, snowRadius, snowRadius * 0.58f, 0.045f * scale, snowHeight, new Vector3(-0.05f * scale, snowBaseY, 0.03f * scale), mainRot, seed + 2);
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            var a = Hash01(seed, i, 50) * Mathf.PI * 2f;
+            var dist = Mathf.Lerp(0.55f, 0.8f, Hash01(seed, i, 51)) * scale;
+            var s = Mathf.Lerp(0.1f, 0.18f, Hash01(seed, i, 52)) * scale;
+            AddFacetedMound(root.transform, $"Boulder_{i}", i % 2 == 0 ? materials.Rock : materials.RockDark, s, s * 0.6f, s * 0.9f, new Vector3(Mathf.Cos(a) * dist, 0.03f * scale, Mathf.Sin(a) * dist), Quaternion.Euler(0f, a * 57f, 0f), seed + 60 + i);
         }
 
         return root;
     }
 
-    private static GameObject CreateRockyRidge(string name, MaterialSet materials, bool snowy)
+    // Lower faceted ridge with three summits along a wobbling line.
+    private static GameObject CreateRockyRidge(string name, MaterialSet materials, bool snowy, int seed)
     {
         var root = NewRoot(name);
-        AddCone(root.transform, "RidgeBase", materials.RockDark, 0.52f, 0.34f, 0.13f, new Vector3(0f, 0.065f, 0f), Quaternion.Euler(0f, 25f, 0f), 8);
-        AddCone(root.transform, "PeakA", materials.Rock, 0.28f, 0.025f, 0.52f, new Vector3(-0.18f, 0.33f, 0.02f), Quaternion.Euler(0f, -20f, 0f), 7);
-        AddCone(root.transform, "PeakB", materials.RockDark, 0.24f, 0.02f, 0.42f, new Vector3(0.22f, 0.27f, 0.13f), Quaternion.Euler(0f, 55f, 0f), 7);
-        AddCone(root.transform, "PeakC", materials.Rock, 0.2f, 0.018f, 0.32f, new Vector3(0.14f, 0.22f, -0.22f), Quaternion.Euler(0f, 120f, 0f), 7);
-        if (snowy)
+        AddFacetedMound(root.transform, "RidgeBase", materials.RockDark, 0.64f, 0.44f, 0.14f, Vector3.zero, YRot(seed, 1), seed + 1);
+
+        var axis = Hash01(seed, 2, 8) * Mathf.PI;
+        for (var i = 0; i < 3; i++)
         {
-            AddCone(root.transform, "SnowCapA", materials.Snow, 0.1f, 0.01f, 0.13f, new Vector3(-0.18f, 0.59f, 0.02f), Quaternion.Euler(0f, -20f, 0f), 7);
+            var along = (i - 1) * 0.32f;
+            var lateral = (Hash01(seed, i, 9) - 0.5f) * 0.18f;
+            var px = Mathf.Cos(axis) * along + Mathf.Cos(axis + Mathf.PI * 0.5f) * lateral;
+            var pz = Mathf.Sin(axis) * along + Mathf.Sin(axis + Mathf.PI * 0.5f) * lateral;
+            var h = Mathf.Lerp(0.34f, 0.6f, Hash01(seed, i, 10));
+            var mat = i == 1 ? materials.Rock : (i == 0 ? materials.RockDark : materials.RockWarm);
+            var summitRot = YRot(seed, 11 + i);
+            AddFacetedPeak(root.transform, $"Summit_{i}", mat, 0.3f, 0.19f, 0.04f, h, new Vector3(px, 0.06f, pz), summitRot, seed + 20 + i);
+            if (snowy && i == 1)
+            {
+                AddFacetedPeak(root.transform, "RidgeSnow", materials.Snow, 0.22f, 0.13f, 0.03f, h * 0.46f, new Vector3(px, 0.06f + h * 0.5f, pz), summitRot, seed + 20 + i);
+            }
         }
 
         return root;
     }
 
-    private static GameObject CreateFoothills(string name, MaterialSet materials)
+    private static GameObject CreateFoothills(string name, MaterialSet materials, int seed)
     {
         var root = NewRoot(name);
         for (var i = 0; i < 5; i++)
         {
-            var angle = Mathf.PI * 2f * i / 5f;
-            AddRock(root.transform, $"Rock_{i}", materials, 0.22f + i * 0.02f, new Vector3(Mathf.Cos(angle) * 0.34f, 0.08f, Mathf.Sin(angle) * 0.26f), Quaternion.Euler(8f, angle * Mathf.Rad2Deg, -4f));
+            var angle = Mathf.PI * 2f * i / 5f + Hash01(seed, i, 3);
+            var dist = Mathf.Lerp(0.2f, 0.42f, Hash01(seed, i, 4));
+            var s = 0.18f + Hash01(seed, i, 5) * 0.12f;
+            AddFacetedMound(root.transform, $"Rock_{i}", i % 2 == 0 ? materials.Rock : materials.RockDark, s, s * 0.5f, s * 0.8f, new Vector3(Mathf.Cos(angle) * dist, 0.04f, Mathf.Sin(angle) * dist), Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 0f), seed + 10 + i);
         }
 
         return root;
     }
 
-    private static GameObject CreateRock(string name, MaterialSet materials, float size)
+    private static GameObject CreateRock(string name, MaterialSet materials, float size, int seed)
     {
         var root = NewRoot(name);
-        AddRock(root.transform, "Rock", materials, size, Vector3.up * size * 0.22f, Quaternion.Euler(8f, 32f, -5f));
+        AddFacetedMound(root.transform, "Rock", materials.Rock, size, size * 0.55f, size * 0.85f, Vector3.up * 0.02f, YRot(seed, 1), seed);
+        AddFacetedMound(root.transform, "RockB", materials.RockDark, size * 0.55f, size * 0.3f, size * 0.5f, new Vector3(size * 0.5f, 0.01f, -size * 0.3f), YRot(seed, 2), seed + 1);
         return root;
+    }
+
+    private static Quaternion YRot(int seed, int salt)
+    {
+        return Quaternion.Euler(0f, Hash01(seed, salt, 999) * 360f, 0f);
     }
 
     private static GameObject CreateSettlementCluster(string name, MaterialSet materials)
@@ -360,6 +429,126 @@ public static class HexMapPrefabGenerator
         var renderer = cone.AddComponent<MeshRenderer>();
         filter.sharedMesh = PersistMesh(CylinderMesh(bottomRadius, topRadius, height, sides));
         renderer.sharedMaterial = material;
+    }
+
+    private static void AddFacetedPeak(Transform parent, string name, Material material, float baseRadius, float shoulderRadius, float tipRadius, float height, Vector3 localPosition, Quaternion localRotation, int seed)
+    {
+        var go = NewChild(parent, name, localPosition, localRotation, Vector3.one);
+        var filter = go.AddComponent<MeshFilter>();
+        var renderer = go.AddComponent<MeshRenderer>();
+        filter.sharedMesh = PersistMesh(FacetedPeakMesh(baseRadius, shoulderRadius, tipRadius, height, seed));
+        renderer.sharedMaterial = material;
+    }
+
+    private static void AddFacetedMound(Transform parent, string name, Material material, float baseRadius, float topRadius, float height, Vector3 localPosition, Quaternion localRotation, int seed)
+    {
+        var go = NewChild(parent, name, localPosition, localRotation, Vector3.one);
+        var filter = go.AddComponent<MeshFilter>();
+        var renderer = go.AddComponent<MeshRenderer>();
+        filter.sharedMesh = PersistMesh(FacetedMoundMesh(baseRadius, topRadius, height, seed));
+        renderer.sharedMaterial = material;
+    }
+
+    // Irregular faceted peak: wobbled base ring, offset shoulder ring, and an off-centre apex.
+    // Built flat-shaded (unshared vertices) for crisp low-poly rock facets.
+    private static Mesh FacetedPeakMesh(float baseRadius, float shoulderRadius, float tipRadius, float height, int seed)
+    {
+        const int segments = 7;
+        var positions = new List<Vector3>();
+        var indices = new List<int>();
+
+        var shoulderY = height * 0.44f;
+        var apexAngle = Hash01(seed, 17, 26097) * Mathf.PI * 2f;
+        var apexOffset = tipRadius * Mathf.Lerp(0.15f, 0.55f, Hash01(seed, 19, 26099));
+        positions.Add(new Vector3(Mathf.Cos(apexAngle) * apexOffset, height, Mathf.Sin(apexAngle) * apexOffset));
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.84f, 1.14f, Hash01(seed, i, 26000));
+            var shoulderWobble = Mathf.Lerp(0.82f, 1.12f, Hash01(seed, i, 26031));
+            positions.Add(new Vector3(Mathf.Cos(angle) * baseRadius * wobble, 0f, Mathf.Sin(angle) * baseRadius * wobble));
+            positions.Add(new Vector3(Mathf.Cos(angle + 0.08f) * shoulderRadius * shoulderWobble, shoulderY, Mathf.Sin(angle + 0.08f) * shoulderRadius * shoulderWobble));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            var next = (i + 1) % segments;
+            var baseA = 1 + i * 2;
+            var shoulderA = baseA + 1;
+            var baseB = 1 + next * 2;
+            var shoulderB = baseB + 1;
+
+            indices.Add(baseA); indices.Add(shoulderA); indices.Add(shoulderB);
+            indices.Add(baseA); indices.Add(shoulderB); indices.Add(baseB);
+            indices.Add(shoulderA); indices.Add(0); indices.Add(shoulderB);
+        }
+
+        return FlatMesh(positions, indices, "FacetedPeak");
+    }
+
+    // Faceted, flat-topped mound (truncated cone with wobble) for talus bases and boulders.
+    private static Mesh FacetedMoundMesh(float baseRadius, float topRadius, float height, int seed)
+    {
+        const int segments = 8;
+        var positions = new List<Vector3>();
+        var indices = new List<int>();
+
+        positions.Add(Vector3.up * height);
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.82f, 1.18f, Hash01(seed, i, 27000));
+            var topWobble = Mathf.Lerp(0.8f, 1.13f, Hash01(seed, i, 27041));
+            positions.Add(new Vector3(Mathf.Cos(angle) * baseRadius * wobble, 0f, Mathf.Sin(angle) * baseRadius * wobble));
+            positions.Add(new Vector3(Mathf.Cos(angle + 0.12f) * topRadius * topWobble, height, Mathf.Sin(angle + 0.12f) * topRadius * topWobble));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            var next = (i + 1) % segments;
+            var baseA = 1 + i * 2;
+            var topA = baseA + 1;
+            var baseB = 1 + next * 2;
+            var topB = baseB + 1;
+
+            indices.Add(baseA); indices.Add(topA); indices.Add(topB);
+            indices.Add(baseA); indices.Add(topB); indices.Add(baseB);
+            indices.Add(0); indices.Add(topB); indices.Add(topA);
+        }
+
+        return FlatMesh(positions, indices, "FacetedMound");
+    }
+
+    private static Mesh FlatMesh(List<Vector3> positions, List<int> indices, string meshName)
+    {
+        var vertices = new Vector3[indices.Count];
+        var triangles = new int[indices.Count];
+        for (var i = 0; i < indices.Count; i++)
+        {
+            vertices[i] = positions[indices[i]];
+            triangles[i] = i;
+        }
+
+        var mesh = new Mesh { name = meshName };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    private static float Hash01(int a, int b, int c)
+    {
+        unchecked
+        {
+            var h = 2166136261u;
+            h = (h ^ (uint)a) * 16777619u;
+            h = (h ^ (uint)b) * 16777619u;
+            h = (h ^ (uint)c) * 16777619u;
+            return (h & 0x7fffffffu) / (float)0x7fffffff;
+        }
     }
 
     private static void DeleteObsoletePrefab(string path)
@@ -568,7 +757,10 @@ public static class HexMapPrefabGenerator
         public Material LeafDark;
         public Material Rock;
         public Material RockDark;
+        public Material RockLight;
+        public Material RockWarm;
         public Material Snow;
+        public Material SnowShadow;
         public Material GroundDark;
         public Material Wall;
         public Material Roof;
