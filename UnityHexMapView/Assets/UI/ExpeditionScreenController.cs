@@ -23,7 +23,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private int selectedReportIndex = -1;
     private int selectedHintIndex = -1;
     private readonly HashSet<string> selectedScoutIds = new HashSet<string>();
-    private HexDirection scoutDirection = HexDirection.East;
+    private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
     private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
@@ -216,12 +216,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
     private void RegisterScoutMissionOptions()
     {
-        RegisterScoutDirection("scout-direction-east", HexDirection.East);
-        RegisterScoutDirection("scout-direction-north-east", HexDirection.NorthEast);
-        RegisterScoutDirection("scout-direction-north-west", HexDirection.NorthWest);
-        RegisterScoutDirection("scout-direction-west", HexDirection.West);
-        RegisterScoutDirection("scout-direction-south-west", HexDirection.SouthWest);
-        RegisterScoutDirection("scout-direction-south-east", HexDirection.SouthEast);
+        RegisterScoutDirection("scout-direction-north", ScoutDirection.North);
+        RegisterScoutDirection("scout-direction-north-east", ScoutDirection.NorthEast);
+        RegisterScoutDirection("scout-direction-east", ScoutDirection.East);
+        RegisterScoutDirection("scout-direction-south-east", ScoutDirection.SouthEast);
+        RegisterScoutDirection("scout-direction-south", ScoutDirection.South);
+        RegisterScoutDirection("scout-direction-south-west", ScoutDirection.SouthWest);
+        RegisterScoutDirection("scout-direction-west", ScoutDirection.West);
+        RegisterScoutDirection("scout-direction-north-west", ScoutDirection.NorthWest);
 
         for (var duration = 1; duration <= 5; duration++)
         {
@@ -244,7 +246,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterScoutBehavior("scout-behavior-bold", ScoutMissionBehavior.Bold);
     }
 
-    private void RegisterScoutDirection(string elementName, HexDirection direction)
+    private void RegisterScoutDirection(string elementName, ScoutDirection direction)
     {
         RegisterClick(elementName, () =>
         {
@@ -642,12 +644,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             }
         }
 
-        ToggleChoice("scout-direction-east", scoutDirection == HexDirection.East);
-        ToggleChoice("scout-direction-north-east", scoutDirection == HexDirection.NorthEast);
-        ToggleChoice("scout-direction-north-west", scoutDirection == HexDirection.NorthWest);
-        ToggleChoice("scout-direction-west", scoutDirection == HexDirection.West);
-        ToggleChoice("scout-direction-south-west", scoutDirection == HexDirection.SouthWest);
-        ToggleChoice("scout-direction-south-east", scoutDirection == HexDirection.SouthEast);
+        ToggleChoice("scout-direction-north", scoutDirection == ScoutDirection.North);
+        ToggleChoice("scout-direction-north-east", scoutDirection == ScoutDirection.NorthEast);
+        ToggleChoice("scout-direction-east", scoutDirection == ScoutDirection.East);
+        ToggleChoice("scout-direction-south-east", scoutDirection == ScoutDirection.SouthEast);
+        ToggleChoice("scout-direction-south", scoutDirection == ScoutDirection.South);
+        ToggleChoice("scout-direction-south-west", scoutDirection == ScoutDirection.SouthWest);
+        ToggleChoice("scout-direction-west", scoutDirection == ScoutDirection.West);
+        ToggleChoice("scout-direction-north-west", scoutDirection == ScoutDirection.NorthWest);
 
         for (var duration = 1; duration <= 5; duration++)
         {
@@ -722,22 +726,26 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
     }
 
-    private static string DirectionText(HexDirection direction)
+    private static string DirectionText(ScoutDirection direction)
     {
         switch (direction)
         {
-            case HexDirection.East:
-                return "Ost";
-            case HexDirection.NorthEast:
+            case ScoutDirection.North:
+                return "Nord";
+            case ScoutDirection.NorthEast:
                 return "Nordost";
-            case HexDirection.NorthWest:
-                return "Nordwest";
-            case HexDirection.West:
-                return "West";
-            case HexDirection.SouthWest:
-                return "Suedwest";
-            case HexDirection.SouthEast:
+            case ScoutDirection.East:
+                return "Ost";
+            case ScoutDirection.SouthEast:
                 return "Suedost";
+            case ScoutDirection.South:
+                return "Sued";
+            case ScoutDirection.SouthWest:
+                return "Suedwest";
+            case ScoutDirection.West:
+                return "West";
+            case ScoutDirection.NorthWest:
+                return "Nordwest";
             default:
                 return direction.ToString();
         }

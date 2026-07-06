@@ -53,7 +53,7 @@ public sealed class GameApplication
     public SendScoutMissionResult SendScoutMission(
         GameState game,
         IReadOnlyList<string> scoutMemberIds,
-        HexDirection direction,
+        ScoutDirection direction,
         int durationDays,
         ScoutMissionFocus focus,
         ScoutMissionBehavior behavior)

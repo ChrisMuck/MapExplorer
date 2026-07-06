@@ -37,6 +37,7 @@ internal sealed class HexCoordTests
     public void RunAll()
     {
         NeighborOffsetsMatchAxialDirections();
+        ScoutDirectionsCoverCompassOffsets();
         OppositeDirectionsReturnToOrigin();
         DistanceUsesCubeCoordinateLength();
         HexCoordsCanBeDictionaryKeys();
@@ -54,6 +55,18 @@ internal sealed class HexCoordTests
         AssertEqual(new HexCoord(-1, 1), origin.Neighbor(HexDirection.SouthWest), "SouthWest neighbor");
         AssertEqual(new HexCoord(0, 1), origin.Neighbor(HexDirection.SouthEast), "SouthEast neighbor");
         AssertEqual(6, origin.Neighbors().Count, "Neighbor count");
+    }
+
+    private static void ScoutDirectionsCoverCompassOffsets()
+    {
+        AssertEqual(new HexCoord(0, -1), ScoutDirection.North.ToScoutOffset(), "Scout north offset");
+        AssertEqual(new HexCoord(1, -1), ScoutDirection.NorthEast.ToScoutOffset(), "Scout northeast offset");
+        AssertEqual(new HexCoord(1, 0), ScoutDirection.East.ToScoutOffset(), "Scout east offset");
+        AssertEqual(new HexCoord(1, 1), ScoutDirection.SouthEast.ToScoutOffset(), "Scout southeast offset");
+        AssertEqual(new HexCoord(0, 1), ScoutDirection.South.ToScoutOffset(), "Scout south offset");
+        AssertEqual(new HexCoord(-1, 1), ScoutDirection.SouthWest.ToScoutOffset(), "Scout southwest offset");
+        AssertEqual(new HexCoord(-1, 0), ScoutDirection.West.ToScoutOffset(), "Scout west offset");
+        AssertEqual(new HexCoord(-1, -1), ScoutDirection.NorthWest.ToScoutOffset(), "Scout northwest offset");
     }
 
     private static void OppositeDirectionsReturnToOrigin()
@@ -704,7 +717,7 @@ internal sealed class SendScoutMissionCommandTests
         var result = command.Execute(
             game,
             new[] { "scout-1" },
-            HexDirection.NorthEast,
+            ScoutDirection.NorthEast,
             2,
             ScoutMissionFocus.FactionSigns,
             ScoutMissionBehavior.Cautious);
@@ -713,7 +726,7 @@ internal sealed class SendScoutMissionCommandTests
         AssertEqual(1, game.Expedition.ScoutMissions.Count, "Mission count");
         AssertEqual(ExpeditionMemberStatus.Assigned, game.Expedition.FindMember("scout-1")!.Status, "Scout is assigned");
         AssertEqual(3, result.Mission!.ExpectedReturnWorldDay, "Expected return day");
-        AssertEqual(HexDirection.NorthEast, result.Mission.Direction, "Mission direction");
+        AssertEqual(ScoutDirection.NorthEast, result.Mission.Direction, "Mission direction");
         AssertEqual(ScoutMissionFocus.FactionSigns, result.Mission.Focus, "Mission focus");
     }
 
@@ -725,7 +738,7 @@ internal sealed class SendScoutMissionCommandTests
         var result = command.Execute(
             game,
             new[] { "guard-1" },
-            HexDirection.East,
+            ScoutDirection.East,
             1,
             ScoutMissionFocus.Survey,
             ScoutMissionBehavior.Balanced);
@@ -740,8 +753,8 @@ internal sealed class SendScoutMissionCommandTests
         var game = CreateScoutTestGame();
         var command = new SendScoutMissionCommand();
 
-        command.Execute(game, new[] { "scout-1" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Balanced);
-        var result = command.Execute(game, new[] { "scout-1" }, HexDirection.West, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Bold);
+        command.Execute(game, new[] { "scout-1" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Balanced);
+        var result = command.Execute(game, new[] { "scout-1" }, ScoutDirection.West, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Bold);
 
         AssertFalse(result.Success, "Assigned scout rejected");
         AssertEqual(1, game.Expedition.ScoutMissions.Count, "No second mission added");
@@ -755,7 +768,7 @@ internal sealed class SendScoutMissionCommandTests
         var result = command.Execute(
             game,
             new[] { "scout-1" },
-            HexDirection.East,
+            ScoutDirection.East,
             6,
             ScoutMissionFocus.Survey,
             ScoutMissionBehavior.Balanced);
@@ -773,7 +786,7 @@ internal sealed class SendScoutMissionCommandTests
         var result = command.Execute(
             game,
             new[] { "scout-1" },
-            HexDirection.East,
+            ScoutDirection.East,
             1,
             ScoutMissionFocus.Survey,
             ScoutMissionBehavior.Balanced);
@@ -791,7 +804,7 @@ internal sealed class SendScoutMissionCommandTests
         var result = app.SendScoutMission(
             game,
             new[] { "scout-1", "scout-2" },
-            HexDirection.NorthWest,
+            ScoutDirection.NorthWest,
             3,
             ScoutMissionFocus.Route,
             ScoutMissionBehavior.Cautious);
@@ -912,7 +925,7 @@ internal sealed class EndDayCommandTests
     private static void EndDayAtBaseConsumesNoSuppliesWhileScoutsResolve()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4, expeditionAtBase: true);
-        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
 
         var result = new EndDayCommand(suppliesPerDay: 2).Execute(game);
 
@@ -925,7 +938,7 @@ internal sealed class EndDayCommandTests
     private static void CautiousScoutReturnsWithReport()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
-        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
 
         var result = new EndDayCommand().Execute(game);
 
@@ -940,9 +953,9 @@ internal sealed class EndDayCommandTests
     private static void RepeatedScoutRouteDoesNotFarmUnsecuredKnowledge()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
-        var sendFirst = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        var sendFirst = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
         var firstDay = new EndDayCommand().Execute(game);
-        var sendSecond = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        var sendSecond = new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
         var secondDay = new EndDayCommand().Execute(game);
 
         AssertTrue(sendFirst.Success, "First scout mission sent");
@@ -956,7 +969,7 @@ internal sealed class EndDayCommandTests
     private static void BalancedScoutCanBecomeOverdueThenReturn()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
-        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Balanced);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Route, ScoutMissionBehavior.Balanced);
 
         var firstDay = new EndDayCommand().Execute(game);
         var statusAfterFirstDay = game.Expedition.FindMember("scout")!.Status;
@@ -972,7 +985,7 @@ internal sealed class EndDayCommandTests
     private static void BoldScoutCanReturnInjured()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
-        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Bold);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Bold);
 
         var result = new EndDayCommand().Execute(game);
 
@@ -984,7 +997,7 @@ internal sealed class EndDayCommandTests
     private static void BoldRuinScoutCanGoMissing()
     {
         var game = CreateEndDayTestGame(supplies: 10, movementPoints: 4, maxMovementPoints: 4);
-        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, HexDirection.East, 1, ScoutMissionFocus.Ruins, ScoutMissionBehavior.Bold);
+        new SendScoutMissionCommand().Execute(game, new[] { "scout" }, ScoutDirection.East, 1, ScoutMissionFocus.Ruins, ScoutMissionBehavior.Bold);
 
         var result = new EndDayCommand().Execute(game);
 
@@ -1074,7 +1087,7 @@ internal sealed class CompleteExpeditionCommandTests
         var send = new SendScoutMissionCommand().Execute(
             game,
             new[] { "scout-1" },
-            HexDirection.East,
+            ScoutDirection.East,
             1,
             ScoutMissionFocus.Survey,
             ScoutMissionBehavior.Cautious);
@@ -1477,7 +1490,7 @@ internal sealed class EventQueueCommandTests
         var send = new SendScoutMissionCommand().Execute(
             game,
             new[] { "scout-1" },
-            HexDirection.East,
+            ScoutDirection.East,
             1,
             ScoutMissionFocus.Survey,
             ScoutMissionBehavior.Balanced);

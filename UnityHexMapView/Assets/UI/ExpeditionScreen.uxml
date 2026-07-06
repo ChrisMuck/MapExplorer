@@ -329,12 +329,14 @@
                     <ui:VisualElement class="scout-modal__column scout-modal__column--orders">
                         <ui:Label text="RICHTUNG" class="section-label" />
                         <ui:VisualElement class="scout-option-row">
-                            <ui:Label name="scout-direction-east" text="Ost" class="scout-choice" />
+                            <ui:Label name="scout-direction-north" text="Nord" class="scout-choice" />
                             <ui:Label name="scout-direction-north-east" text="Nordost" class="scout-choice" />
-                            <ui:Label name="scout-direction-north-west" text="Nordwest" class="scout-choice" />
-                            <ui:Label name="scout-direction-west" text="West" class="scout-choice" />
-                            <ui:Label name="scout-direction-south-west" text="Suedwest" class="scout-choice" />
+                            <ui:Label name="scout-direction-east" text="Ost" class="scout-choice" />
                             <ui:Label name="scout-direction-south-east" text="Suedost" class="scout-choice" />
+                            <ui:Label name="scout-direction-south" text="Sued" class="scout-choice" />
+                            <ui:Label name="scout-direction-south-west" text="Suedwest" class="scout-choice" />
+                            <ui:Label name="scout-direction-west" text="West" class="scout-choice" />
+                            <ui:Label name="scout-direction-north-west" text="Nordwest" class="scout-choice" />
                         </ui:VisualElement>
                         <ui:Label text="DAUER" class="section-label scout-modal__section" />
                         <ui:VisualElement class="scout-option-row">

@@ -138,7 +138,7 @@ public sealed class ScoutMissionResolutionService
     private static IReadOnlyList<HexCoord> BuildRelatedCoords(GameState game, ScoutMissionState mission)
     {
         var coords = new List<HexCoord>();
-        var offset = mission.Direction.ToOffset();
+        var offset = mission.Direction.ToScoutOffset();
         var current = mission.Origin;
         for (var i = 0; i < mission.DurationDays + 1; i++)
         {

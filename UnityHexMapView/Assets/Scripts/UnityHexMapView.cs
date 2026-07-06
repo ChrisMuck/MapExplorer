@@ -86,7 +86,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private string markerLabelDraft = "";
     private string markerFactionIdDraft = "border-wardens";
     private string noteDraftText = "";
-    private HexDirection scoutDirection = HexDirection.East;
+    private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
     private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
@@ -216,7 +216,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public bool RequestSendScoutMissionFromUi(
         IReadOnlyList<string> scoutMemberIds,
-        HexDirection direction,
+        ScoutDirection direction,
         int durationDays,
         ScoutMissionFocus focus,
         ScoutMissionBehavior behavior)
@@ -2371,12 +2371,14 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         scoutDirection = scoutDirection switch
         {
-            HexDirection.East => HexDirection.NorthEast,
-            HexDirection.NorthEast => HexDirection.NorthWest,
-            HexDirection.NorthWest => HexDirection.West,
-            HexDirection.West => HexDirection.SouthWest,
-            HexDirection.SouthWest => HexDirection.SouthEast,
-            _ => HexDirection.East
+            ScoutDirection.North => ScoutDirection.NorthEast,
+            ScoutDirection.NorthEast => ScoutDirection.East,
+            ScoutDirection.East => ScoutDirection.SouthEast,
+            ScoutDirection.SouthEast => ScoutDirection.South,
+            ScoutDirection.South => ScoutDirection.SouthWest,
+            ScoutDirection.SouthWest => ScoutDirection.West,
+            ScoutDirection.West => ScoutDirection.NorthWest,
+            _ => ScoutDirection.North
         };
     }
 
