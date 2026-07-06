@@ -1288,6 +1288,7 @@ internal sealed class InspectLocationCommandTests
         InspectingKnownLocationAddsArchiveEntryOnce();
         UnknownLocationCannotBeInspected();
         RavineInspectionWarnsWithoutEngineer();
+        MarkedGraveInspectionAddsLeverageItemOnce();
     }
 
     private static void InspectingKnownLocationAddsArchiveEntryOnce()
@@ -1329,6 +1330,22 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(result.Success, "Ravine inspection succeeds");
         AssertTrue(result.Message.Contains("Without an engineer"), "Ravine warns about missing engineer");
         AssertEqual(8, game.Expedition.UnsecuredKnowledge, "Special location inspection adds unsecured knowledge");
+    }
+
+    private static void MarkedGraveInspectionAddsLeverageItemOnce()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var grave = game.World.Locations.First(location => location.Kind == LocationKind.MarkedGrave);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, grave.Coord);
+
+        var first = command.Execute(game, grave.Coord);
+        var second = command.Execute(game, grave.Coord);
+
+        AssertTrue(first.Success, "First grave inspection succeeds");
+        AssertTrue(second.Success, "Second grave inspection succeeds");
+        AssertTrue(game.LeverageItems.Contains(InspectLocationCommand.BorderWardenGraveTokenId), "Grave token leverage is recorded");
+        AssertEqual(1, game.LeverageItems.ItemIds.Count, "Grave token leverage is added once");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
@@ -1448,6 +1465,7 @@ internal sealed class FactionPresenceTests
         EnteringHiddenTerritoryCreatesDangerReaction();
         FactionReactionCanOpenRepresentativeInteraction();
         FactionOfferCanTradeKnowledgeForSupplies();
+        GraveTokenUnlocksBorderWardenNegotiation();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1640,6 +1658,39 @@ internal sealed class FactionPresenceTests
         AssertEqual(20, game.Expedition.Supplies, "Supply offer adds supplies");
         AssertEqual(4, game.Base.KnowledgePoints, "Supply offer spends knowledge");
         AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("10 Supplies")), "Offer is archived");
+    }
+
+    private static void GraveTokenUnlocksBorderWardenNegotiation()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(2, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("border-wardens", "Border Wardens", FactionContactStatus.Rumored, anger: 10);
+        var leverage = new LeverageInventoryState(new[] { InspectLocationCommand.BorderWardenGraveTokenId });
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "border-wardens", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("grave-token-passage");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "grave-token-passage");
+
+        AssertTrue(open.Success, "Open border warden interaction succeeds");
+        AssertTrue(offer != null && offer.IsAvailable, "Grave token offer is unlocked");
+        AssertTrue(result.Success, "Grave token negotiation succeeds");
+        AssertFalse(game.LeverageItems.Contains(InspectLocationCommand.BorderWardenGraveTokenId), "Grave token is consumed");
+        AssertTrue(faction.HasMemory("grave-token-returned"), "Border Wardens remember returned grave token");
+        AssertTrue(faction.Trust > 0, "Border Warden trust improves");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionContact && marker.FactionId == "border-wardens"), "Passage marker is created");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

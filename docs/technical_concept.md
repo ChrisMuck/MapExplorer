@@ -134,7 +134,7 @@ If the game exposes objective truth too easily, the exploration and interpretati
 
 The game should become data-driven.
 
-Factions, events, roles, biomes, locations, goals, visual assets and scout report templates should not be hardcoded long term.
+Factions, events, roles, biomes, locations, goals, leverage objects, visual assets and scout report templates should not be hardcoded long term.
 
 For the MVP, some content may be created directly in code if needed, but the architecture should support file-based definitions.
 
@@ -145,6 +145,8 @@ Recommended MVP format:
 Unity ScriptableObjects may be added later for editor-friendly authoring.
 
 For AI coding agents and version control, JSON is usually easier to generate, diff and review.
+
+Leverage objects should use data definitions rather than hardcoded special cases once the map generator exists. A generated map should be able to assign an object, proof, favor or clue to a special location, faction territory, scout report or trade chain and then link it to faction dialogue, offers or leader access.
 
 ---
 

@@ -7,6 +7,8 @@ namespace Game.App
 
 public sealed class InspectLocationCommand
 {
+    public const string BorderWardenGraveTokenId = "border-warden-grave-token";
+
     public InspectLocationResult Execute(GameState game, HexCoord coord)
     {
         if (game == null)
@@ -33,6 +35,7 @@ public sealed class InspectLocationCommand
         {
             archiveEntry = $"Day {game.World.WorldDay}: {location.Name} inspected. {message}";
             game.Base.AddArchiveEntry(archiveEntry);
+            AddLocationLeverage(game, location);
             game.Events.Enqueue(CreateLocationEvent(game, location, message));
             if (location.Kind != LocationKind.BaseCamp)
             {
@@ -41,6 +44,19 @@ public sealed class InspectLocationCommand
         }
 
         return InspectLocationResult.Inspected(location, message, archiveEntry);
+    }
+
+    private static void AddLocationLeverage(GameState game, SpecialLocationState location)
+    {
+        if (location.Kind != LocationKind.MarkedGrave)
+        {
+            return;
+        }
+
+        if (game.LeverageItems.Add(BorderWardenGraveTokenId))
+        {
+            game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: recovered a border grave token as negotiation leverage.");
+        }
     }
 
     private static SpecialLocationState? FindLocation(GameState game, HexCoord coord)

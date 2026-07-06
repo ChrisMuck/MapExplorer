@@ -79,7 +79,32 @@ public sealed class PurchaseFactionOfferCommand
                     $"{interaction.FactionName} warning signs interpreted",
                     interaction.FactionId));
                 break;
+            case FactionOfferEffectKind.PassageNegotiation:
+                ApplyPassageNegotiation(game, interaction);
+                break;
         }
+    }
+
+    private static void ApplyPassageNegotiation(GameState game, FactionInteractionState interaction)
+    {
+        if (!game.LeverageItems.Consume(InspectLocationCommand.BorderWardenGraveTokenId))
+        {
+            return;
+        }
+
+        var faction = game.FindFaction(interaction.FactionId);
+        if (faction != null)
+        {
+            faction.Adjust(trustDelta: 8, angerDelta: -4);
+            faction.AddMemory("grave-token-returned");
+        }
+
+        game.PlayerNotes.AddMarker(new PlayerMapMarkerState(
+            $"passage-negotiation-{interaction.FactionId}-{game.World.WorldDay}",
+            interaction.Coord,
+            PlayerMapMarkerKind.FactionContact,
+            $"{interaction.FactionName} limited passage",
+            interaction.FactionId));
     }
 
     private static void RevealNearbyReportedHexes(GameState game, HexCoord origin, int maxCount)
@@ -112,6 +137,8 @@ public sealed class PurchaseFactionOfferCommand
                 return "Route hint recorded on the map.";
             case FactionOfferEffectKind.WarningInterpretation:
                 return "Warning signs recorded as faction notes.";
+            case FactionOfferEffectKind.PassageNegotiation:
+                return "The grave token was returned. A limited passage contact was marked.";
             default:
                 return "Offer accepted.";
         }

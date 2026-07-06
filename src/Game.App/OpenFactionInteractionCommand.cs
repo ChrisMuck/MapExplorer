@@ -49,7 +49,7 @@ public sealed class OpenFactionInteractionCommand
             representative,
             AttitudeFor(faction),
             DialogueFor(faction),
-            OffersFor(faction));
+            OffersFor(game, faction));
     }
 
     private static FactionRepresentativeState RepresentativeFor(FactionState faction)
@@ -108,7 +108,7 @@ public sealed class OpenFactionInteractionCommand
         }
     }
 
-    private static IEnumerable<FactionOfferState> OffersFor(FactionState faction)
+    private static IEnumerable<FactionOfferState> OffersFor(GameState game, FactionState faction)
     {
         var offers = new List<FactionOfferState>();
         var canTrade = faction.Id != "hidden-ones";
@@ -141,13 +141,34 @@ public sealed class OpenFactionInteractionCommand
                 "The scout explains which carved posts mark watched land and which mark forbidden land.",
                 FactionOfferEffectKind.WarningInterpretation,
                 knowledgeCost: 5));
-            offers.Add(new FactionOfferState(
-                "grave-token-passage",
-                "Proper negotiation",
-                "The patrol will not discuss passage until a grave token or equivalent proof is returned.",
-                FactionOfferEffectKind.None,
-                isAvailable: false,
-                lockedReason: "Requires grave token"));
+            if (faction.HasMemory("grave-token-returned"))
+            {
+                offers.Add(new FactionOfferState(
+                    "grave-token-passage",
+                    "Proper negotiation",
+                    "The grave token has already been returned. The patrol now remembers that respect.",
+                    FactionOfferEffectKind.PassageNegotiation,
+                    isAvailable: false,
+                    lockedReason: "Already resolved"));
+            }
+            else if (game.LeverageItems.Contains(InspectLocationCommand.BorderWardenGraveTokenId))
+            {
+                offers.Add(new FactionOfferState(
+                    "grave-token-passage",
+                    "Proper negotiation",
+                    "Return the grave token as proof of respect. The patrol marks a limited pass through watched land.",
+                    FactionOfferEffectKind.PassageNegotiation));
+            }
+            else
+            {
+                offers.Add(new FactionOfferState(
+                    "grave-token-passage",
+                    "Proper negotiation",
+                    "The patrol will not discuss passage until a grave token or equivalent proof is returned.",
+                    FactionOfferEffectKind.PassageNegotiation,
+                    isAvailable: false,
+                    lockedReason: "Requires grave token"));
+            }
         }
 
         return offers;

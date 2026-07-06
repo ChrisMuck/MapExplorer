@@ -10,6 +10,7 @@ public enum FactionOfferEffectKind
     SuppliesForKnowledge,
     RouteHint,
     WarningInterpretation,
+    PassageNegotiation,
     None
 }
 }
