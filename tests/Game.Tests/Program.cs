@@ -1344,7 +1344,7 @@ internal sealed class InspectLocationCommandTests
 
         AssertTrue(first.Success, "First grave inspection succeeds");
         AssertTrue(second.Success, "Second grave inspection succeeds");
-        AssertTrue(game.LeverageItems.Contains(InspectLocationCommand.BorderWardenGraveTokenId), "Grave token leverage is recorded");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.BorderWardenGraveTokenId), "Grave token leverage is recorded");
         AssertEqual(1, game.LeverageItems.ItemIds.Count, "Grave token leverage is added once");
     }
 
@@ -1670,7 +1670,9 @@ internal sealed class FactionPresenceTests
             new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
             supplies: 10);
         var faction = new FactionState("border-wardens", "Border Wardens", FactionContactStatus.Rumored, anger: 10);
-        var leverage = new LeverageInventoryState(new[] { InspectLocationCommand.BorderWardenGraveTokenId });
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.BorderWardenGraveTokenId });
+        var leverageDefinition = FactionInteractionDefinitions.LeverageDefinitions.First(definition => definition.ItemId == FactionInteractionDefinitions.BorderWardenGraveTokenId);
+        var offerDefinition = FactionInteractionDefinitions.OfferDefinitions.First(definition => definition.Id == leverageDefinition.UnlocksOfferId);
         var game = new GameState(
             new WorldState(map),
             new KnowledgeState(),
@@ -1684,11 +1686,13 @@ internal sealed class FactionPresenceTests
 
         var result = new PurchaseFactionOfferCommand().Execute(game, "grave-token-passage");
 
+        AssertEqual("border-wardens", leverageDefinition.InterestedFactionId, "Leverage definition targets Border Wardens");
+        AssertEqual(FactionInteractionDefinitions.BorderWardenGraveTokenId, offerDefinition.RequiredLeverageItemId, "Offer definition requires grave token");
         AssertTrue(open.Success, "Open border warden interaction succeeds");
         AssertTrue(offer != null && offer.IsAvailable, "Grave token offer is unlocked");
         AssertTrue(result.Success, "Grave token negotiation succeeds");
-        AssertFalse(game.LeverageItems.Contains(InspectLocationCommand.BorderWardenGraveTokenId), "Grave token is consumed");
-        AssertTrue(faction.HasMemory("grave-token-returned"), "Border Wardens remember returned grave token");
+        AssertFalse(game.LeverageItems.Contains(FactionInteractionDefinitions.BorderWardenGraveTokenId), "Grave token is consumed");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.BorderWardenGraveTokenReturnedMemory), "Border Wardens remember returned grave token");
         AssertTrue(faction.Trust > 0, "Border Warden trust improves");
         AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionContact && marker.FactionId == "border-wardens"), "Passage marker is created");
     }

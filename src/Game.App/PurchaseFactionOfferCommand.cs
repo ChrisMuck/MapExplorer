@@ -80,14 +80,19 @@ public sealed class PurchaseFactionOfferCommand
                     interaction.FactionId));
                 break;
             case FactionOfferEffectKind.PassageNegotiation:
-                ApplyPassageNegotiation(game, interaction);
+                ApplyPassageNegotiation(game, interaction, offer);
                 break;
         }
     }
 
-    private static void ApplyPassageNegotiation(GameState game, FactionInteractionState interaction)
+    private static void ApplyPassageNegotiation(GameState game, FactionInteractionState interaction, FactionOfferState offer)
     {
-        if (!game.LeverageItems.Consume(InspectLocationCommand.BorderWardenGraveTokenId))
+        if (string.IsNullOrWhiteSpace(offer.RequiredLeverageItemId))
+        {
+            return;
+        }
+
+        if (!game.LeverageItems.Consume(offer.RequiredLeverageItemId))
         {
             return;
         }
@@ -96,7 +101,10 @@ public sealed class PurchaseFactionOfferCommand
         if (faction != null)
         {
             faction.Adjust(trustDelta: 8, angerDelta: -4);
-            faction.AddMemory("grave-token-returned");
+            if (!string.IsNullOrWhiteSpace(offer.ResolvedMemoryId))
+            {
+                faction.AddMemory(offer.ResolvedMemoryId);
+            }
         }
 
         game.PlayerNotes.AddMarker(new PlayerMapMarkerState(

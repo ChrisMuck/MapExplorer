@@ -7,8 +7,6 @@ namespace Game.App
 
 public sealed class InspectLocationCommand
 {
-    public const string BorderWardenGraveTokenId = "border-warden-grave-token";
-
     public InspectLocationResult Execute(GameState game, HexCoord coord)
     {
         if (game == null)
@@ -53,7 +51,7 @@ public sealed class InspectLocationCommand
             return;
         }
 
-        if (game.LeverageItems.Add(BorderWardenGraveTokenId))
+        if (game.LeverageItems.Add(FactionInteractionDefinitions.BorderWardenGraveTokenId))
         {
             game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: recovered a border grave token as negotiation leverage.");
         }

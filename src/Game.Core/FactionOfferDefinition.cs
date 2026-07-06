@@ -1,15 +1,14 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Game.Core
 {
 
-public sealed class FactionOfferState
+public sealed class FactionOfferDefinition
 {
-    public FactionOfferState(
+    public FactionOfferDefinition(
         string id,
+        string factionId,
         string title,
         string description,
         FactionOfferEffectKind effectKind,
@@ -17,10 +16,11 @@ public sealed class FactionOfferState
         int medicineCost = 0,
         int supplyReward = 0,
         bool repeatable = false,
-        bool isAvailable = true,
-        string? lockedReason = null,
         string? requiredLeverageItemId = null,
-        string? resolvedMemoryId = null)
+        string? resolvedMemoryId = null,
+        string? lockedDescription = null,
+        string? lockedReasonWhenMissing = null,
+        string? lockedReasonWhenResolved = null)
     {
         if (knowledgeCost < 0 || medicineCost < 0 || supplyReward < 0)
         {
@@ -28,6 +28,7 @@ public sealed class FactionOfferState
         }
 
         Id = RequireText(id, nameof(id));
+        FactionId = RequireText(factionId, nameof(factionId));
         Title = RequireText(title, nameof(title));
         Description = RequireText(description, nameof(description));
         EffectKind = effectKind;
@@ -35,13 +36,16 @@ public sealed class FactionOfferState
         MedicineCost = medicineCost;
         SupplyReward = supplyReward;
         Repeatable = repeatable;
-        IsAvailable = isAvailable;
-        LockedReason = string.IsNullOrWhiteSpace(lockedReason) ? null : lockedReason;
         RequiredLeverageItemId = string.IsNullOrWhiteSpace(requiredLeverageItemId) ? null : requiredLeverageItemId;
         ResolvedMemoryId = string.IsNullOrWhiteSpace(resolvedMemoryId) ? null : resolvedMemoryId;
+        LockedDescription = string.IsNullOrWhiteSpace(lockedDescription) ? null : lockedDescription;
+        LockedReasonWhenMissing = string.IsNullOrWhiteSpace(lockedReasonWhenMissing) ? null : lockedReasonWhenMissing;
+        LockedReasonWhenResolved = string.IsNullOrWhiteSpace(lockedReasonWhenResolved) ? null : lockedReasonWhenResolved;
     }
 
     public string Id { get; }
+
+    public string FactionId { get; }
 
     public string Title { get; }
 
@@ -57,13 +61,15 @@ public sealed class FactionOfferState
 
     public bool Repeatable { get; }
 
-    public bool IsAvailable { get; }
-
-    public string? LockedReason { get; }
-
     public string? RequiredLeverageItemId { get; }
 
     public string? ResolvedMemoryId { get; }
+
+    public string? LockedDescription { get; }
+
+    public string? LockedReasonWhenMissing { get; }
+
+    public string? LockedReasonWhenResolved { get; }
 
     private static string RequireText(string value, string name)
     {
