@@ -110,6 +110,22 @@
 
             <!-- MAP AREA (transparent overlay über der Weltkarte) -->
             <ui:VisualElement class="map-area">
+                <ui:VisualElement name="compass-rose" class="compass-rose">
+                    <ui:VisualElement class="compass-ring" />
+                    <ui:VisualElement class="compass-spoke compass-spoke--vertical" />
+                    <ui:VisualElement class="compass-spoke compass-spoke--horizontal" />
+                    <ui:VisualElement class="compass-spoke compass-spoke--diagonal-a" />
+                    <ui:VisualElement class="compass-spoke compass-spoke--diagonal-b" />
+                    <ui:VisualElement class="compass-center" />
+                    <ui:Label name="compass-label-north" text="N" class="compass-label compass-label--n mono" />
+                    <ui:Label name="compass-label-north-east" text="NO" class="compass-label compass-label--ne mono" />
+                    <ui:Label name="compass-label-east" text="O" class="compass-label compass-label--e mono" />
+                    <ui:Label name="compass-label-south-east" text="SO" class="compass-label compass-label--se mono" />
+                    <ui:Label name="compass-label-south" text="S" class="compass-label compass-label--s mono" />
+                    <ui:Label name="compass-label-south-west" text="SW" class="compass-label compass-label--sw mono" />
+                    <ui:Label name="compass-label-west" text="W" class="compass-label compass-label--w mono" />
+                    <ui:Label name="compass-label-north-west" text="NW" class="compass-label compass-label--nw mono" />
+                </ui:VisualElement>
 
                 <!-- DOCKED SIDE PANEL (3a) -->
                 <ui:VisualElement class="side-panel" name="side-panel">

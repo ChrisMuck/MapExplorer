@@ -161,6 +161,79 @@
 /* ---------- Map area (transparent — Weltkarte scheint durch) ---------- */
 .map-area { flex-grow: 1; position: relative; }
 
+.compass-rose {
+    position: absolute;
+    right: 112px;
+    top: 18px;
+    width: 118px;
+    height: 118px;
+    border-radius: 59px;
+    background-color: rgba(18, 22, 19, 0.74);
+    border-width: 1px;
+    border-color: rgba(240, 207, 122, 0.26);
+    opacity: 0.92;
+}
+.compass-ring {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    width: 88px;
+    height: 88px;
+    border-radius: 44px;
+    border-width: 1px;
+    border-color: rgba(232, 227, 214, 0.16);
+}
+.compass-spoke {
+    position: absolute;
+    left: 58px;
+    top: 18px;
+    width: 1px;
+    height: 82px;
+    background-color: rgba(232, 227, 214, 0.16);
+}
+.compass-spoke--horizontal {
+    rotate: 90deg;
+}
+.compass-spoke--diagonal-a {
+    rotate: 45deg;
+    background-color: rgba(240, 207, 122, 0.12);
+}
+.compass-spoke--diagonal-b {
+    rotate: -45deg;
+    background-color: rgba(240, 207, 122, 0.12);
+}
+.compass-center {
+    position: absolute;
+    left: 55px;
+    top: 55px;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: rgb(240, 207, 122);
+}
+.compass-label {
+    position: absolute;
+    width: 30px;
+    height: 18px;
+    -unity-text-align: middle-center;
+    font-size: 12px;
+    color: rgb(232, 227, 214);
+    -unity-font-style: bold;
+}
+.compass-label--n {
+    left: 44px;
+    top: 5px;
+    color: rgb(240, 207, 122);
+    font-size: 15px;
+}
+.compass-label--ne { left: 75px; top: 20px; }
+.compass-label--e { left: 86px; top: 50px; }
+.compass-label--se { left: 75px; top: 80px; }
+.compass-label--s { left: 44px; top: 95px; }
+.compass-label--sw { left: 13px; top: 80px; }
+.compass-label--w { left: 2px; top: 50px; }
+.compass-label--nw { left: 13px; top: 20px; }
+
 /* Docked side panel (3a) */
 .side-panel {
     display: none;
