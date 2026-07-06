@@ -709,9 +709,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         topMaterials[TerrainKind.Water] = Material("Water", "3f7180", "355f6c", "527f88", 11, 0.18f);
         topMaterials[TerrainKind.Coast] = Material("Coast", "b49463", "9a7c50", "c0a472", 12, 0.18f);
-        topMaterials[TerrainKind.Grass] = Material("Grass", "6d8350", "576f42", "819466", 13, 0.2f);
-        topMaterials[TerrainKind.Forest] = Material("Forest", "36583f", "263f31", "49654a", 14, 0.18f);
-        topMaterials[TerrainKind.Hills] = Material("Hills", "7a7456", "67614a", "898365", 15, 0.18f);
+        topMaterials[TerrainKind.Grass] = Material("Grass", "70864d", "586f3c", "97a860", 13, 0.34f);
+        topMaterials[TerrainKind.Forest] = Material("Forest", "355741", "233d2e", "4c6d4d", 14, 0.22f);
+        topMaterials[TerrainKind.Hills] = Material("Hills", "827a52", "685f3f", "9c9268", 15, 0.24f);
         topMaterials[TerrainKind.Mountain] = Material("Mountain", "777972", "62655f", "888a83", 16, 0.14f);
         topMaterials[TerrainKind.Snow] = Material("Snow", "c9cec6", "b8beb6", "d9ddd4", 17, 0.1f);
 
@@ -750,6 +750,12 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["SettlementRoof"] = Material("Settlement Roof", "79425f", 0.82f);
         featureMaterials["SettlementRoofWarm"] = Material("Settlement Roof Warm", "9b6240", 0.82f);
         featureMaterials["Smoke"] = TransparentMaterial("Smoke", "c2b9a8", 0.18f);
+        featureMaterials["GrassTuftLight"] = Material("Grass Tuft Light", "8ba95a", 0.86f);
+        featureMaterials["GrassTuftDark"] = Material("Grass Tuft Dark", "5f7c42", 0.88f);
+        featureMaterials["FlowerWhite"] = Material("Flower White", "e9e7d6", 0.7f);
+        featureMaterials["FlowerYellow"] = Material("Flower Yellow", "e6c64f", 0.66f);
+        featureMaterials["FlowerRed"] = Material("Flower Red", "c25b4c", 0.66f);
+        featureMaterials["Pebble"] = Material("Pebble", "8b8a7c", 0.9f);
         featureMaterials["TreeTrunk"] = Material("Tree Trunk", "4c3327", 0.82f);
         featureMaterials["TreeCrown"] = Material("Tree Crown", "2a613f", 0.86f);
         featureMaterials["TreeCrownDark"] = Material("Tree Crown Dark", "1b3f2d", 0.9f);
@@ -1044,6 +1050,133 @@ public sealed class UnityHexMapView : MonoBehaviour
         BuildForestRegions();
         BuildMountainRanges();
         BuildMountainTransitionDetails();
+        BuildGroundScatter();
+    }
+
+    private void BuildGroundScatter()
+    {
+        var root = NewChild("GroundScatter");
+        foreach (var pair in tiles)
+        {
+            var coord = pair.Key;
+            var terrain = pair.Value.Terrain;
+            if (terrain != TerrainKind.Grass && terrain != TerrainKind.Hills)
+            {
+                continue;
+            }
+
+            // Deterministic, sparse: only decorate a fraction of open tiles so plains stay readable.
+            var density = Hash01(coord.x, coord.y, 30011);
+            if (density > 0.62f)
+            {
+                continue;
+            }
+
+            var group = NewChild($"Scatter_{coord.x}_{coord.y}", root.transform);
+            RegisterFeatureObject(coord, group);
+            AddGroundScatterCluster(group.transform, coord, terrain);
+        }
+    }
+
+    private void AddGroundScatterCluster(Transform parent, Vector2Int coord, TerrainKind terrain)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var baseY = VisualTileTopY + 0.01f;
+        var tuftCount = terrain == TerrainKind.Hills ? 2 : 3;
+        for (var i = 0; i < tuftCount; i++)
+        {
+            var angle = Hash01(coord.x, coord.y, 30100 + i) * Mathf.PI * 2f;
+            var radius = Mathf.Lerp(0.12f, 0.62f, Hash01(coord.y, coord.x, 30200 + i)) * hexSize;
+            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
+            AddGrassTuft(parent, pos, coord, 30300 + i);
+        }
+
+        // Occasional flower patch, mostly on grassy meadows.
+        if (terrain == TerrainKind.Grass && Hash01(coord.x, coord.y, 31000) < 0.34f)
+        {
+            var angle = Hash01(coord.x, coord.y, 31100) * Mathf.PI * 2f;
+            var radius = Mathf.Lerp(0.1f, 0.5f, Hash01(coord.y, coord.x, 31200)) * hexSize;
+            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
+            AddFlowerPatch(parent, pos, coord, 31300);
+        }
+
+        // Occasional small pebble to break up the ground plane.
+        if (Hash01(coord.x, coord.y, 32000) < 0.28f)
+        {
+            var angle = Hash01(coord.x, coord.y, 32100) * Mathf.PI * 2f;
+            var radius = Mathf.Lerp(0.14f, 0.58f, Hash01(coord.y, coord.x, 32200)) * hexSize;
+            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
+            AddPebble(parent, pos, coord, 32300);
+        }
+    }
+
+    private void AddGrassTuft(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
+    {
+        var root = NewChild("GrassTuft", parent);
+        root.transform.localPosition = localPosition;
+        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
+        var scale = Mathf.Lerp(0.8f, 1.25f, Hash01(coord.y, coord.x, seedOffset + 3)) * hexSize;
+
+        var blades = 3;
+        for (var i = 0; i < blades; i++)
+        {
+            var bladeAngle = i * Mathf.PI * 2f / blades + Hash01(coord.x, coord.y, seedOffset + 10 + i);
+            var lean = Mathf.Lerp(6f, 20f, Hash01(coord.y, coord.x, seedOffset + 20 + i));
+            var height = Mathf.Lerp(0.08f, 0.15f, Hash01(coord.x, coord.y, seedOffset + 30 + i)) * scale;
+            var material = i == 1 ? featureMaterials["GrassTuftDark"] : featureMaterials["GrassTuftLight"];
+            var blade = CreateCone("Blade", 0.02f * scale, 0.004f * scale, height, material);
+            blade.transform.SetParent(root.transform, false);
+            blade.transform.localPosition = new Vector3(Mathf.Cos(bladeAngle) * 0.02f * scale, height * 0.5f, Mathf.Sin(bladeAngle) * 0.02f * scale);
+            blade.transform.localRotation = Quaternion.Euler(lean * Mathf.Cos(bladeAngle), bladeAngle * Mathf.Rad2Deg, lean * Mathf.Sin(bladeAngle));
+        }
+    }
+
+    private void AddFlowerPatch(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
+    {
+        var root = NewChild("FlowerPatch", parent);
+        root.transform.localPosition = localPosition;
+        var scale = Mathf.Lerp(0.85f, 1.2f, Hash01(coord.x, coord.y, seedOffset + 1)) * hexSize;
+        var colorRoll = Hash01(coord.x, coord.y, seedOffset + 2);
+        var headMaterial = colorRoll < 0.4f
+            ? featureMaterials["FlowerWhite"]
+            : colorRoll < 0.75f ? featureMaterials["FlowerYellow"] : featureMaterials["FlowerRed"];
+
+        var flowers = 2 + Mathf.FloorToInt(Hash01(coord.y, coord.x, seedOffset + 3) * 2f);
+        for (var i = 0; i < flowers; i++)
+        {
+            var angle = Hash01(coord.x, coord.y, seedOffset + 10 + i) * Mathf.PI * 2f;
+            var dist = Hash01(coord.y, coord.x, seedOffset + 20 + i) * 0.08f * scale;
+            var stemHeight = Mathf.Lerp(0.08f, 0.13f, Hash01(coord.x, coord.y, seedOffset + 30 + i)) * scale;
+            var offset = new Vector3(Mathf.Cos(angle) * dist, 0f, Mathf.Sin(angle) * dist);
+
+            var stem = CreateCone("Stem", 0.008f * scale, 0.004f * scale, stemHeight, featureMaterials["GrassTuftDark"]);
+            stem.transform.SetParent(root.transform, false);
+            stem.transform.localPosition = offset + Vector3.up * (stemHeight * 0.5f);
+
+            var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            head.name = "Bloom";
+            head.transform.SetParent(root.transform, false);
+            head.transform.localPosition = offset + Vector3.up * (stemHeight + 0.015f * scale);
+            head.transform.localScale = Vector3.one * 0.045f * scale;
+            head.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 45f);
+            head.GetComponent<MeshRenderer>().sharedMaterial = headMaterial;
+        }
+    }
+
+    private void AddPebble(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
+    {
+        var pebble = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        pebble.name = "Pebble";
+        pebble.transform.SetParent(parent, false);
+        var size = Mathf.Lerp(0.05f, 0.1f, Hash01(coord.x, coord.y, seedOffset)) * hexSize;
+        pebble.transform.localPosition = localPosition + Vector3.up * (size * 0.3f);
+        pebble.transform.localScale = new Vector3(size, size * 0.55f, size * 1.2f);
+        pebble.transform.localRotation = Quaternion.Euler(6f, Hash01(coord.y, coord.x, seedOffset + 1) * 360f, -4f);
+        pebble.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Pebble"];
     }
 
     private void BuildForestRegions()
@@ -3551,26 +3684,36 @@ public sealed class UnityHexMapView : MonoBehaviour
         RenderSettings.fogColor = ColorFromHex("738083");
         RenderSettings.fogDensity = 0.006f;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = ColorFromHex("8d9386");
-        RenderSettings.ambientEquatorColor = ColorFromHex("5f665a");
-        RenderSettings.ambientGroundColor = ColorFromHex("30382f");
-        RenderSettings.ambientIntensity = 0.68f;
+        RenderSettings.ambientSkyColor = ColorFromHex("9aa091");
+        RenderSettings.ambientEquatorColor = ColorFromHex("5c6356");
+        RenderSettings.ambientGroundColor = ColorFromHex("2a3128");
+        RenderSettings.ambientIntensity = 0.55f;
 
+        // Warm key light at a lower angle for longer, more sculpted shadows.
         var sun = NewChild("LateAfternoonSun");
         var light = sun.AddComponent<Light>();
         light.type = LightType.Directional;
-        light.color = ColorFromHex("ffe2a3");
-        light.intensity = 1.05f;
+        light.color = ColorFromHex("ffd98f");
+        light.intensity = 1.25f;
         light.shadows = LightShadows.Soft;
-        sun.transform.localRotation = Quaternion.Euler(48f, -38f, 0f);
+        light.shadowStrength = 0.72f;
+        sun.transform.localRotation = Quaternion.Euler(42f, -46f, 0f);
 
+        // Cool sky fill from the opposite side keeps shadows from going flat-black.
         var fill = NewChild("SoftBlueFill");
         var fillLight = fill.AddComponent<Light>();
-        fillLight.type = LightType.Point;
-        fillLight.color = ColorFromHex("8ba6a8");
-        fillLight.intensity = 0.2f;
-        fillLight.range = 28f;
-        fill.transform.localPosition = new Vector3(-8f, 9f, 6f);
+        fillLight.type = LightType.Directional;
+        fillLight.color = ColorFromHex("94b0c0");
+        fillLight.intensity = 0.32f;
+        fill.transform.localRotation = Quaternion.Euler(38f, 150f, 0f);
+
+        // Subtle cool rim/back light to separate raised features from the ground.
+        var rim = NewChild("CoolRimLight");
+        var rimLight = rim.AddComponent<Light>();
+        rimLight.type = LightType.Directional;
+        rimLight.color = ColorFromHex("bcd0d6");
+        rimLight.intensity = 0.22f;
+        rim.transform.localRotation = Quaternion.Euler(18f, 96f, 0f);
     }
 
     private void BuildCamera()
