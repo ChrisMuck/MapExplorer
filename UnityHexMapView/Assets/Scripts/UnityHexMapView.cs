@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Game.App;
 using Game.Core;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 [ExecuteAlways]
 public sealed class UnityHexMapView : MonoBehaviour
@@ -770,7 +772,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["MineWood"] = Material("Mine Wood", "5d422d", 0.86f);
         featureMaterials["WallStone"] = Material("Ancient Wall Stone", "8d8772", 0.9f);
         featureMaterials["TowerRoof"] = Material("Tower Roof", "4e5267", 0.78f);
-        featureMaterials["WaterPlane"] = Material("Distant Water", "3b5f63", 0.44f);
+        featureMaterials["WaterPlane"] = Material("Distant Water", "36585c", 0.44f);
+        featureMaterials["BoardShelf"] = Material("Island Shelf", "46502e", 0.92f);
+        featureMaterials["ShallowWater"] = TransparentMaterial("Coastal Shallows", "4d838d", 0.5f);
         featureMaterials["ExpeditionBase"] = Material("Expedition Base", "443627", 0.82f);
         featureMaterials["ExpeditionCloth"] = Material("Expedition Cloth", "d0a44c", 0.7f);
         featureMaterials["ExpeditionFlag"] = EmissiveMaterial("Expedition Flag", "d95b4f", "e8a15d", 0.18f);
@@ -3669,13 +3673,55 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void BuildWaterPlane()
     {
+        var boardSize = BoardWorldSize();
+        var center = BoardWorldCenter();
+        var parent = currentBuildRoot != null ? currentBuildRoot : transform;
+
+        // Earthy shelf just under the tiles: the board reads as a landmass instead of
+        // floating hexes over a hard cliff, and it hides the jagged outer silhouette.
+        var shelf = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        shelf.name = "IslandShelf";
+        shelf.transform.SetParent(parent, false);
+        shelf.transform.localPosition = new Vector3(center.x, VisualTileBottomY - 0.012f, center.z);
+        shelf.transform.localScale = new Vector3(boardSize.x * 0.108f, 1f, boardSize.y * 0.108f);
+        shelf.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["BoardShelf"];
+
+        // Translucent shallows ring fades the coastline from land into deeper water.
+        var shallows = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        shallows.name = "CoastalShallows";
+        shallows.transform.SetParent(parent, false);
+        shallows.transform.localPosition = new Vector3(center.x, VisualTileBottomY - 0.14f, center.z);
+        shallows.transform.localScale = new Vector3(boardSize.x * 0.123f, 1f, boardSize.y * 0.123f);
+        shallows.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["ShallowWater"];
+
         var plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.name = "DistantWaterPlane";
-        plane.transform.SetParent(currentBuildRoot != null ? currentBuildRoot : transform, false);
-        plane.transform.localPosition = new Vector3(0f, -0.42f, 0f);
-        var boardSize = BoardWorldSize();
-        plane.transform.localScale = new Vector3(boardSize.x * 0.14f, 1f, boardSize.y * 0.14f);
+        plane.transform.SetParent(parent, false);
+        plane.transform.localPosition = new Vector3(center.x, -0.42f, center.z);
+        plane.transform.localScale = new Vector3(boardSize.x * 0.16f, 1f, boardSize.y * 0.16f);
         plane.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["WaterPlane"];
+    }
+
+    private Vector3 BoardWorldCenter()
+    {
+        if (tiles.Count == 0)
+        {
+            return Vector3.zero;
+        }
+
+        var minX = float.MaxValue;
+        var minZ = float.MaxValue;
+        var maxX = float.MinValue;
+        var maxZ = float.MinValue;
+        foreach (var tile in tiles.Values)
+        {
+            minX = Mathf.Min(minX, tile.World.x);
+            minZ = Mathf.Min(minZ, tile.World.z);
+            maxX = Mathf.Max(maxX, tile.World.x);
+            maxZ = Mathf.Max(maxZ, tile.World.z);
+        }
+
+        return new Vector3((minX + maxX) * 0.5f, 0f, (minZ + maxZ) * 0.5f);
     }
 
     private void BuildLighting()
@@ -3714,6 +3760,43 @@ public sealed class UnityHexMapView : MonoBehaviour
         rimLight.color = ColorFromHex("bcd0d6");
         rimLight.intensity = 0.22f;
         rim.transform.localRotation = Quaternion.Euler(18f, 96f, 0f);
+
+        BuildPostProcessing();
+    }
+
+    private void BuildPostProcessing()
+    {
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        profile.hideFlags = HideFlags.DontSave;
+
+        var tonemapping = profile.Add<Tonemapping>(true);
+        tonemapping.mode.Override(TonemappingMode.Neutral);
+
+        var colorAdjustments = profile.Add<ColorAdjustments>(true);
+        colorAdjustments.postExposure.Override(0.04f);
+        colorAdjustments.contrast.Override(7f);
+        colorAdjustments.saturation.Override(5f);
+        colorAdjustments.colorFilter.Override(ColorFromHex("fff2df"));
+
+        var whiteBalance = profile.Add<WhiteBalance>(true);
+        whiteBalance.temperature.Override(6f);
+
+        var bloom = profile.Add<Bloom>(true);
+        bloom.threshold.Override(0.92f);
+        bloom.intensity.Override(0.4f);
+        bloom.scatter.Override(0.62f);
+        bloom.tint.Override(ColorFromHex("f4ead2"));
+
+        var vignette = profile.Add<Vignette>(true);
+        vignette.color.Override(ColorFromHex("161b18"));
+        vignette.intensity.Override(0.3f);
+        vignette.smoothness.Override(0.45f);
+
+        var volumeObject = NewChild("Global Post Processing");
+        var volume = volumeObject.AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.priority = 10f;
+        volume.sharedProfile = profile;
     }
 
     private void BuildCamera()
@@ -3739,6 +3822,15 @@ public sealed class UnityHexMapView : MonoBehaviour
         camera.farClipPlane = 180f;
         camera.backgroundColor = ColorFromHex("30383a");
         camera.clearFlags = CameraClearFlags.SolidColor;
+
+        var cameraData = camera.GetUniversalAdditionalCameraData();
+        if (cameraData != null)
+        {
+            cameraData.renderPostProcessing = true;
+            cameraData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            cameraData.antialiasingQuality = AntialiasingQuality.High;
+        }
+
         cameraObject.transform.localPosition = new Vector3(10.6f, 13.8f, 13.2f);
         cameraObject.transform.LookAt(cameraRig.position + Vector3.up * 0.35f, Vector3.up);
     }
