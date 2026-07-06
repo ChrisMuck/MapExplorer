@@ -22,9 +22,20 @@ public static class TutorialGameFactory
         map.SetTile(new HexTileState(new HexCoord(8, 14), TerrainType.Mountain, elevation: 3));
         map.SetTile(new HexTileState(new HexCoord(9, 14), TerrainType.Mountain, elevation: 4, isBlocked: true));
         map.SetTile(new HexTileState(new HexCoord(6, 16), TerrainType.Swamp, riverId: "gray-river"));
-        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Hills, locationId: "broken-ravine"));
-        map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Hills, locationId: "marked-grave"));
-        map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Forest, locationId: "abandoned-camp"));
+        // Landmarks sit on open ground so they are not hidden under forest canopy or mountains.
+        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland, locationId: "broken-ravine"));
+        map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Grassland, locationId: "marked-grave"));
+        map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Grassland, locationId: "abandoned-camp"));
+
+        // Keep the ancient wall on open plains so it reads clearly instead of vanishing in the range.
+        foreach (var coord in ViewPath(AncientWallRoute))
+        {
+            if (map.TryGetTile(coord, out var tile) && tile != null)
+            {
+                map.SetTile(new HexTileState(coord, TerrainType.Grassland));
+            }
+        }
+
         ApplyFactionTerritories(map);
 
         var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations());
@@ -87,10 +98,15 @@ public static class TutorialGameFactory
             new WorldPathState("border-wardens", WorldPathKind.TerritoryBorder, ViewPath(
                 (-6, 3), (-5, 2), (-4, 2), (-3, 1), (-2, 1), (-1, 0), (0, 0), (1, -1),
                 (2, -1), (3, -2), (4, -2))),
-            new WorldPathState("ancient-wall", WorldPathKind.Wall, ViewPath(
-                (-12, 10), (-11, 9), (-10, 9), (-9, 8), (-8, 8), (-7, 7), (-6, 7), (-5, 6)))
+            new WorldPathState("ancient-wall", WorldPathKind.Wall, ViewPath(AncientWallRoute))
         };
     }
+
+    // Ancient wall route across the eastern plains — deliberately clear of the mountain range.
+    private static readonly (int Q, int R)[] AncientWallRoute =
+    {
+        (5, 3), (6, 3), (7, 3), (8, 3), (9, 3), (10, 3), (11, 2), (12, 2)
+    };
 
     private static IEnumerable<SpecialLocationState> CreateTutorialLocations()
     {

@@ -39,4 +39,11 @@ public sealed class HexMapPrefabLibrary : ScriptableObject
     public GameObject[] wallSegmentPrefabs;
     public GameObject[] wallTowerPrefabs;
     public GameObject[] coastMarkerPrefabs;
+
+    [Header("Landmarks / Discoveries")]
+    public GameObject[] gravePrefabs;
+    public GameObject[] abandonedCampPrefabs;
+    public GameObject[] ravinePrefabs;
+    public GameObject[] ruinPrefabs;
+    public GameObject[] landmarkPrefabs;
 }
