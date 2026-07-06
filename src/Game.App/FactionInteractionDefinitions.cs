@@ -9,6 +9,8 @@ public static class FactionInteractionDefinitions
 {
     public const string BorderWardenGraveTokenId = "border-warden-grave-token";
     public const string BorderWardenGraveTokenReturnedMemory = "grave-token-returned";
+    public const string CoastalRiverChartFragmentId = "coastal-river-chart-fragment";
+    public const string CoastalRiverChartSharedMemory = "coastal-river-chart-shared";
 
     private static readonly FactionOfferDefinition[] offerDefinitions =
     {
@@ -38,6 +40,17 @@ public static class FactionInteractionDefinitions
             FactionOfferEffectKind.RouteHint,
             knowledgeCost: 4),
         new FactionOfferDefinition(
+            "coastal-chart-guidance",
+            "coastal-people",
+            "Read the old river chart",
+            "Share the old river chart fragment from the abandoned camp. The messenger marks a safer crossing.",
+            FactionOfferEffectKind.RouteHint,
+            requiredLeverageItemId: CoastalRiverChartFragmentId,
+            resolvedMemoryId: CoastalRiverChartSharedMemory,
+            lockedDescription: "The messenger could compare routes if the expedition found an old river chart or similar trace.",
+            lockedReasonWhenMissing: "Requires river chart",
+            lockedReasonWhenResolved: "Already shared"),
+        new FactionOfferDefinition(
             "warning-interpretation",
             "border-wardens",
             "Warning sign interpretation",
@@ -51,6 +64,7 @@ public static class FactionInteractionDefinitions
             "Return the grave token as proof of respect. The patrol marks a limited pass through watched land.",
             FactionOfferEffectKind.PassageNegotiation,
             requiredLeverageItemId: BorderWardenGraveTokenId,
+            consumesRequiredLeverage: true,
             resolvedMemoryId: BorderWardenGraveTokenReturnedMemory,
             lockedDescription: "The patrol will not discuss passage until a grave token or equivalent proof is returned.",
             lockedReasonWhenMissing: "Requires grave token",
@@ -65,7 +79,14 @@ public static class FactionInteractionDefinitions
             "marked-grave",
             "border-wardens",
             "grave-token-passage",
-            "Consumed when returned through negotiation; lost if the expedition fails before archival return.")
+            "Consumed when returned through negotiation; lost if the expedition fails before archival return."),
+        new LeverageObjectDefinition(
+            CoastalRiverChartFragmentId,
+            "Old river chart fragment",
+            "abandoned-camp",
+            "coastal-people",
+            "coastal-chart-guidance",
+            "Can be used as evidence in conversation; lost if the expedition fails before archival return.")
     };
 
     public static IReadOnlyList<FactionOfferDefinition> OfferDefinitions
@@ -121,7 +142,19 @@ public static class FactionInteractionDefinitions
             isAvailable,
             lockedReason,
             definition.RequiredLeverageItemId,
+            definition.ConsumesRequiredLeverage,
             definition.ResolvedMemoryId);
+    }
+
+    public static IEnumerable<LeverageObjectDefinition> LeverageForLocation(SpecialLocationState location)
+    {
+        foreach (var definition in leverageDefinitions)
+        {
+            if (definition.Source == location.Id)
+            {
+                yield return definition;
+            }
+        }
     }
 }
 }

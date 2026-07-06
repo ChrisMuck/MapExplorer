@@ -1289,6 +1289,7 @@ internal sealed class InspectLocationCommandTests
         UnknownLocationCannotBeInspected();
         RavineInspectionWarnsWithoutEngineer();
         MarkedGraveInspectionAddsLeverageItemOnce();
+        AbandonedCampInspectionAddsDefinedLeverageItem();
     }
 
     private static void InspectingKnownLocationAddsArchiveEntryOnce()
@@ -1346,6 +1347,21 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(second.Success, "Second grave inspection succeeds");
         AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.BorderWardenGraveTokenId), "Grave token leverage is recorded");
         AssertEqual(1, game.LeverageItems.ItemIds.Count, "Grave token leverage is added once");
+    }
+
+    private static void AbandonedCampInspectionAddsDefinedLeverageItem()
+    {
+        var game = TutorialGameFactory.Create();
+        var command = new InspectLocationCommand();
+        var camp = game.World.Locations.First(location => location.Kind == LocationKind.AbandonedCamp);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, camp.Coord);
+
+        var result = command.Execute(game, camp.Coord);
+        var definition = FactionInteractionDefinitions.LeverageDefinitions.First(item => item.ItemId == FactionInteractionDefinitions.CoastalRiverChartFragmentId);
+
+        AssertTrue(result.Success, "Abandoned camp inspection succeeds");
+        AssertEqual(camp.Id, definition.Source, "River chart source points to abandoned camp");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "River chart leverage is recorded");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
@@ -1466,6 +1482,7 @@ internal sealed class FactionPresenceTests
         FactionReactionCanOpenRepresentativeInteraction();
         FactionOfferCanTradeKnowledgeForSupplies();
         GraveTokenUnlocksBorderWardenNegotiation();
+        CoastalChartUnlocksGuidanceOffer();
     }
 
     private static void TutorialGameIncludesMvpFactions()
@@ -1695,6 +1712,38 @@ internal sealed class FactionPresenceTests
         AssertTrue(faction.HasMemory(FactionInteractionDefinitions.BorderWardenGraveTokenReturnedMemory), "Border Wardens remember returned grave token");
         AssertTrue(faction.Trust > 0, "Border Warden trust improves");
         AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionContact && marker.FactionId == "border-wardens"), "Passage marker is created");
+    }
+
+    private static void CoastalChartUnlocksGuidanceOffer()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(4, 3), TerrainType.Grassland);
+        var coord = new HexCoord(1, 1);
+        var expedition = new ExpeditionState(
+            1,
+            coord,
+            new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) },
+            supplies: 10);
+        var faction = new FactionState("coastal-people", "Coastal People", FactionContactStatus.Open);
+        var leverage = new LeverageInventoryState(new[] { FactionInteractionDefinitions.CoastalRiverChartFragmentId });
+        var game = new GameState(
+            new WorldState(map),
+            new KnowledgeState(),
+            new PlayerNotesState(),
+            expedition,
+            new BaseState(HexCoord.Zero),
+            factions: new[] { faction },
+            leverageItems: leverage);
+        var open = new OpenFactionInteractionCommand().Execute(game, "coastal-people", coord);
+        var offer = game.ActiveFactionInteraction!.FindOffer("coastal-chart-guidance");
+
+        var result = new PurchaseFactionOfferCommand().Execute(game, "coastal-chart-guidance");
+
+        AssertTrue(open.Success, "Open coastal interaction succeeds");
+        AssertTrue(offer != null && offer.IsAvailable, "Coastal chart offer is unlocked");
+        AssertTrue(result.Success, "Coastal chart guidance succeeds");
+        AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.CoastalRiverChartFragmentId), "Coastal chart is kept as evidence");
+        AssertTrue(faction.HasMemory(FactionInteractionDefinitions.CoastalRiverChartSharedMemory), "Coastal faction remembers shared chart");
+        AssertTrue(game.PlayerNotes.Markers.Any(marker => marker.Kind == PlayerMapMarkerKind.FactionRumor && marker.FactionId == "coastal-people"), "Route marker is created");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

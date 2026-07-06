@@ -46,14 +46,12 @@ public sealed class InspectLocationCommand
 
     private static void AddLocationLeverage(GameState game, SpecialLocationState location)
     {
-        if (location.Kind != LocationKind.MarkedGrave)
+        foreach (var leverage in FactionInteractionDefinitions.LeverageForLocation(location))
         {
-            return;
-        }
-
-        if (game.LeverageItems.Add(FactionInteractionDefinitions.BorderWardenGraveTokenId))
-        {
-            game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: recovered a border grave token as negotiation leverage.");
+            if (game.LeverageItems.Add(leverage.ItemId))
+            {
+                game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: recovered {leverage.DisplayName} as negotiation leverage.");
+            }
         }
     }
 

@@ -41,13 +41,24 @@ public sealed class PurchaseFactionOfferCommand
             return FactionOfferResult.Rejected("Offer already accepted.");
         }
 
+        if (!string.IsNullOrWhiteSpace(offer.RequiredLeverageItemId) && !game.LeverageItems.Contains(offer.RequiredLeverageItemId))
+        {
+            return FactionOfferResult.Rejected(offer.LockedReason ?? "Required leverage is missing.");
+        }
+
         if (offer.KnowledgeCost > 0 && !game.Base.SpendKnowledgePoints(offer.KnowledgeCost))
         {
             return FactionOfferResult.Rejected($"Not enough Knowledge Points. Need {offer.KnowledgeCost}.");
         }
 
+        if (offer.ConsumesRequiredLeverage && !string.IsNullOrWhiteSpace(offer.RequiredLeverageItemId))
+        {
+            game.LeverageItems.Consume(offer.RequiredLeverageItemId);
+        }
+
         ApplyOffer(game, interaction, offer);
         interaction.MarkOfferAccepted(offer.Id);
+        MarkOfferResolved(game, interaction, offer);
 
         var archiveEntry = $"Day {game.World.WorldDay}: accepted faction offer '{offer.Title}' from {interaction.FactionName}.";
         game.Base.AddArchiveEntry(archiveEntry);
@@ -87,24 +98,10 @@ public sealed class PurchaseFactionOfferCommand
 
     private static void ApplyPassageNegotiation(GameState game, FactionInteractionState interaction, FactionOfferState offer)
     {
-        if (string.IsNullOrWhiteSpace(offer.RequiredLeverageItemId))
-        {
-            return;
-        }
-
-        if (!game.LeverageItems.Consume(offer.RequiredLeverageItemId))
-        {
-            return;
-        }
-
         var faction = game.FindFaction(interaction.FactionId);
         if (faction != null)
         {
             faction.Adjust(trustDelta: 8, angerDelta: -4);
-            if (!string.IsNullOrWhiteSpace(offer.ResolvedMemoryId))
-            {
-                faction.AddMemory(offer.ResolvedMemoryId);
-            }
         }
 
         game.PlayerNotes.AddMarker(new PlayerMapMarkerState(
@@ -113,6 +110,17 @@ public sealed class PurchaseFactionOfferCommand
             PlayerMapMarkerKind.FactionContact,
             $"{interaction.FactionName} limited passage",
             interaction.FactionId));
+    }
+
+    private static void MarkOfferResolved(GameState game, FactionInteractionState interaction, FactionOfferState offer)
+    {
+        if (string.IsNullOrWhiteSpace(offer.ResolvedMemoryId))
+        {
+            return;
+        }
+
+        var faction = game.FindFaction(interaction.FactionId);
+        faction?.AddMemory(offer.ResolvedMemoryId);
     }
 
     private static void RevealNearbyReportedHexes(GameState game, HexCoord origin, int maxCount)

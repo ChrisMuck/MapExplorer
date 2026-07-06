@@ -20,6 +20,7 @@ public sealed class FactionOfferState
         bool isAvailable = true,
         string? lockedReason = null,
         string? requiredLeverageItemId = null,
+        bool consumesRequiredLeverage = false,
         string? resolvedMemoryId = null)
     {
         if (knowledgeCost < 0 || medicineCost < 0 || supplyReward < 0)
@@ -38,6 +39,7 @@ public sealed class FactionOfferState
         IsAvailable = isAvailable;
         LockedReason = string.IsNullOrWhiteSpace(lockedReason) ? null : lockedReason;
         RequiredLeverageItemId = string.IsNullOrWhiteSpace(requiredLeverageItemId) ? null : requiredLeverageItemId;
+        ConsumesRequiredLeverage = consumesRequiredLeverage;
         ResolvedMemoryId = string.IsNullOrWhiteSpace(resolvedMemoryId) ? null : resolvedMemoryId;
     }
 
@@ -62,6 +64,8 @@ public sealed class FactionOfferState
     public string? LockedReason { get; }
 
     public string? RequiredLeverageItemId { get; }
+
+    public bool ConsumesRequiredLeverage { get; }
 
     public string? ResolvedMemoryId { get; }
 

@@ -17,6 +17,7 @@ public sealed class FactionOfferDefinition
         int supplyReward = 0,
         bool repeatable = false,
         string? requiredLeverageItemId = null,
+        bool consumesRequiredLeverage = false,
         string? resolvedMemoryId = null,
         string? lockedDescription = null,
         string? lockedReasonWhenMissing = null,
@@ -37,6 +38,7 @@ public sealed class FactionOfferDefinition
         SupplyReward = supplyReward;
         Repeatable = repeatable;
         RequiredLeverageItemId = string.IsNullOrWhiteSpace(requiredLeverageItemId) ? null : requiredLeverageItemId;
+        ConsumesRequiredLeverage = consumesRequiredLeverage;
         ResolvedMemoryId = string.IsNullOrWhiteSpace(resolvedMemoryId) ? null : resolvedMemoryId;
         LockedDescription = string.IsNullOrWhiteSpace(lockedDescription) ? null : lockedDescription;
         LockedReasonWhenMissing = string.IsNullOrWhiteSpace(lockedReasonWhenMissing) ? null : lockedReasonWhenMissing;
@@ -62,6 +64,8 @@ public sealed class FactionOfferDefinition
     public bool Repeatable { get; }
 
     public string? RequiredLeverageItemId { get; }
+
+    public bool ConsumesRequiredLeverage { get; }
 
     public string? ResolvedMemoryId { get; }
 
