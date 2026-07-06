@@ -54,6 +54,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<Vector2Int, List<GameObject>> featureObjectsByCoord = new();
     private readonly Dictionary<GameObject, List<Vector2Int>> featureObjectsByPath = new();
     private readonly Dictionary<TerrainKind, Material> topMaterials = new();
+    private readonly Dictionary<TerrainKind, Material[]> topMaterialVariants = new();
     private readonly Dictionary<TerrainKind, Material> sideMaterials = new();
     private readonly Dictionary<string, Material> featureMaterials = new();
     private Transform cameraRig;
@@ -576,6 +577,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureObjectsByCoord.Clear();
         featureObjectsByPath.Clear();
         topMaterials.Clear();
+        topMaterialVariants.Clear();
         sideMaterials.Clear();
         featureMaterials.Clear();
         strategyCamera = null;
@@ -744,6 +746,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["RiverBank"] = Material("River Bank", "3f5d5c", 0.82f);
         featureMaterials["River"] = EmissiveMaterial("River", "57919b", "8fc8cf", 0.04f);
         featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "d8ede8", 0.11f);
+        featureMaterials["WornGround"] = TransparentMaterial("Worn Ground", "5a4a30", 0.42f);
         featureMaterials["RoadShadow"] = TransparentMaterial("Road Bed", "4c3c2a", 0.2f);
         featureMaterials["Road"] = Material("Road", "8b6d48", "6f5438", "9c815b", 41, 0.12f);
         featureMaterials["RoadCenter"] = TransparentMaterial("Road Center", "c3aa78", 0.11f);
@@ -779,6 +782,55 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["ExpeditionCloth"] = Material("Expedition Cloth", "d0a44c", 0.7f);
         featureMaterials["ExpeditionFlag"] = EmissiveMaterial("Expedition Flag", "d95b4f", "e8a15d", 0.18f);
         featureMaterials["ExpeditionRing"] = TransparentMaterial("Expedition Ring", "f0d889", 0.28f);
+
+        BuildTopVariants(TerrainKind.Grass);
+        BuildTopVariants(TerrainKind.Hills);
+        BuildTopVariants(TerrainKind.Forest);
+    }
+
+    // Pre-bake a handful of subtly tinted variants per open terrain so neighbouring
+    // tiles are not identical, without breaking material batching (fixed set of shared
+    // materials, deterministically assigned per tile).
+    private void BuildTopVariants(TerrainKind terrain)
+    {
+        if (!topMaterials.TryGetValue(terrain, out var baseMat))
+        {
+            return;
+        }
+
+        const int count = 6;
+        var variants = new Material[count];
+        Color.RGBToHSV(baseMat.color, out var baseH, out var baseS, out var baseV);
+        for (var i = 0; i < count; i++)
+        {
+            var t = i / (float)(count - 1) - 0.5f; // -0.5 .. 0.5
+            var h = Mathf.Repeat(baseH + t * 0.02f, 1f);
+            var s = Mathf.Clamp01(baseS + t * 0.06f);
+            var v = Mathf.Clamp01(baseV + t * 0.13f);
+            var tint = Color.HSVToRGB(h, s, v);
+            tint.a = baseMat.color.a;
+
+            var variant = new Material(baseMat)
+            {
+                name = baseMat.name + "_v" + i,
+                hideFlags = HideFlags.DontSave,
+                color = tint
+            };
+            variants[i] = variant;
+        }
+
+        topMaterialVariants[terrain] = variants;
+    }
+
+    private Material TileTopMaterial(TerrainKind terrain, Vector2Int coord)
+    {
+        if (topMaterialVariants.TryGetValue(terrain, out var variants) && variants.Length > 0)
+        {
+            var index = Mathf.Clamp(Mathf.FloorToInt(Hash01(coord.x, coord.y, 40011) * variants.Length), 0, variants.Length - 1);
+            return variants[index];
+        }
+
+        return topMaterials[terrain];
     }
 
     private Material Material(string name, string hex, float smoothness)
@@ -936,7 +988,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
                 var tile = NewChild($"Hex_{column}_{row}_{terrain}");
                 tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
-                AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), topMaterials[terrain]);
+                AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), TileTopMaterial(terrain, coord));
                 AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
             }
         }
@@ -960,7 +1012,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
             var tile = NewChild($"Hex_{coreTile.Coord.Q}_{coreTile.Coord.R}_{terrain}");
             tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
-            AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), topMaterials[terrain]);
+            AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), TileTopMaterial(terrain, coord));
             AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
         }
     }
@@ -1664,6 +1716,50 @@ public sealed class UnityHexMapView : MonoBehaviour
         flag.transform.localScale = new Vector3(0.34f, 0.2f, 0.035f);
         flag.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Flag"];
         return root;
+    }
+
+    // Flat, slightly irregular worn-earth patch that grounds a structure to the land
+    // instead of leaving it stamped on top of clean grass.
+    private GameObject AddGroundApron(Vector2Int coord, float radius, int seed)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return null;
+        }
+
+        var apron = NewChild($"GroundApron_{coord.x}_{coord.y}");
+        RegisterFeatureObject(coord, apron);
+        apron.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.006f);
+        apron.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seed) * 360f, 0f);
+        AddMesh(apron, "Apron", DiscMesh(radius, 12, seed), featureMaterials["WornGround"]);
+        return apron;
+    }
+
+    private Mesh DiscMesh(float radius, int segments, int seed)
+    {
+        var vertices = new List<Vector3> { Vector3.zero };
+        var uvs = new List<Vector2> { new(0.5f, 0.5f) };
+        var triangles = new List<int>();
+
+        for (var i = 0; i < segments; i++)
+        {
+            var angle = Mathf.PI * 2f * i / segments;
+            var wobble = Mathf.Lerp(0.82f, 1.08f, Hash01(i, seed, 40501));
+            var r = radius * wobble;
+            vertices.Add(new Vector3(Mathf.Cos(angle) * r, 0f, Mathf.Sin(angle) * r));
+            uvs.Add(new Vector2(Mathf.Cos(angle) * 0.5f + 0.5f, Mathf.Sin(angle) * 0.5f + 0.5f));
+        }
+
+        for (var i = 0; i < segments; i++)
+        {
+            var current = i + 1;
+            var next = (i + 1) % segments + 1;
+            triangles.Add(0);
+            triangles.Add(next);
+            triangles.Add(current);
+        }
+
+        return MeshFrom(vertices, uvs, triangles, "GroundApron");
     }
 
     private void BuildFeatures()
@@ -3061,6 +3157,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         var road = NewChild("RoadPath");
         RegisterFeatureObject(coords, road);
+        AddMesh(road, "RoadWear", RibbonMesh(RaisePoints(points, -0.058f), 0.36f * hexSize), featureMaterials["WornGround"]);
         AddMesh(road, "RoadBed", RibbonMesh(points, 0.24f * hexSize), featureMaterials["RoadShadow"]);
         AddMesh(road, "Road", RibbonMesh(RaisePoints(points, 0.012f), 0.14f * hexSize), featureMaterials["Road"]);
         AddMesh(road, "RoadCenter", RibbonMesh(RaisePoints(points, 0.024f), 0.035f * hexSize), featureMaterials["RoadCenter"]);
@@ -3082,6 +3179,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             return;
         }
+
+        AddGroundApron(coord, 0.6f * hexSize, 7250);
 
         var settlement = NewChild($"Settlement_{coord.x}_{coord.y}");
         RegisterFeatureObject(coord, settlement);
@@ -3158,6 +3257,8 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        AddGroundApron(coord, 0.42f * hexSize, 9050);
+
         var tower = NewChild($"Watchtower_{coord.x}_{coord.y}");
         RegisterFeatureObject(coord, tower);
         tower.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.045f);
@@ -3191,6 +3292,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             return;
         }
+
+        AddGroundApron(coord, 0.52f * hexSize, 9250);
 
         var mine = NewChild($"Mine_{coord.x}_{coord.y}");
         RegisterFeatureObject(coord, mine);
