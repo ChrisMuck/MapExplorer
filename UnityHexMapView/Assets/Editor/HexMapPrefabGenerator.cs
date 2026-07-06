@@ -7,13 +7,19 @@ public static class HexMapPrefabGenerator
     private const string GeneratedRoot = "Assets/Prefabs/Generated";
     private const string MaterialRoot = "Assets/Materials/Generated";
     private const string LibraryPath = "Assets/Settings/DefaultHexMapPrefabLibrary.asset";
+    private const string MeshLibraryPath = "Assets/Prefabs/Generated/GeneratedMeshes.asset";
+
+    // SaveAsPrefabAsset does not persist procedurally generated meshes (the MeshFilter's
+    // m_Mesh becomes null). We collect every generated mesh into this shared asset so the
+    // prefabs reference real, saved meshes instead of empty shells.
+    private static Mesh s_meshLibrary;
 
     [InitializeOnLoadMethod]
     private static void GenerateAfterImport()
     {
         EditorApplication.delayCall += () =>
         {
-            if (!AssetDatabase.LoadAssetAtPath<GameObject>($"{GeneratedRoot}/Forest/ForestCluster_Dense.prefab"))
+            if (!AssetDatabase.LoadAssetAtPath<GameObject>($"{GeneratedRoot}/Forest/ForestCluster_Mixed_Dense.prefab"))
             {
                 GenerateDefaultPrefabs();
             }
@@ -28,13 +34,25 @@ public static class HexMapPrefabGenerator
         EnsureFolder("Assets", "Materials");
         EnsureFolder("Assets/Materials", "Generated");
 
+        PrepareMeshLibrary();
+
+        // Remove prefabs from the previous naming scheme so they do not linger as broken assets.
+        DeleteObsoletePrefab($"{GeneratedRoot}/Forest/Tree_Round.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Forest/ForestCluster_Dense.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Forest/ForestCluster_Edge.prefab");
+
         var materials = CreateMaterials();
 
         var treePine = SavePrefab($"{GeneratedRoot}/Forest/Tree_Pine.prefab", CreatePineTree("Tree_Pine", materials, 1f));
-        var treeRound = SavePrefab($"{GeneratedRoot}/Forest/Tree_Round.prefab", CreateRoundTree("Tree_Round", materials, 1f));
+        var treeBroadleaf = SavePrefab($"{GeneratedRoot}/Forest/Tree_Broadleaf.prefab", CreateBroadleafTree("Tree_Broadleaf", materials, 1f));
         var treeTall = SavePrefab($"{GeneratedRoot}/Forest/Tree_Tall.prefab", CreatePineTree("Tree_Tall", materials, 1.22f));
-        var forestDense = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Dense.prefab", CreateForestCluster("ForestCluster_Dense", materials, 9));
-        var forestEdge = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Edge.prefab", CreateForestCluster("ForestCluster_Edge", materials, 6));
+
+        var coniferDense = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Conifer_Dense.prefab", CreateForestCluster("ForestCluster_Conifer_Dense", materials, 9, ForestMode.Conifer));
+        var coniferEdge = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Conifer_Edge.prefab", CreateForestCluster("ForestCluster_Conifer_Edge", materials, 6, ForestMode.Conifer));
+        var deciduousDense = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Deciduous_Dense.prefab", CreateForestCluster("ForestCluster_Deciduous_Dense", materials, 9, ForestMode.Deciduous));
+        var deciduousEdge = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Deciduous_Edge.prefab", CreateForestCluster("ForestCluster_Deciduous_Edge", materials, 6, ForestMode.Deciduous));
+        var mixedDense = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Mixed_Dense.prefab", CreateForestCluster("ForestCluster_Mixed_Dense", materials, 9, ForestMode.Mixed));
+        var mixedEdge = SavePrefab($"{GeneratedRoot}/Forest/ForestCluster_Mixed_Edge.prefab", CreateForestCluster("ForestCluster_Mixed_Edge", materials, 6, ForestMode.Mixed));
 
         var mountainPeak = SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak.prefab", CreateMountainPeak("MountainPeak", materials, false, 1f));
         var snowyPeak = SavePrefab($"{GeneratedRoot}/Mountains/MountainPeak_Snowy.prefab", CreateMountainPeak("MountainPeak_Snowy", materials, true, 1.05f));
@@ -63,8 +81,13 @@ public static class HexMapPrefabGenerator
             AssetDatabase.CreateAsset(library, LibraryPath);
         }
 
-        library.forestClusterPrefabs = new[] { forestDense, forestEdge };
-        library.treePrefabs = new[] { treePine, treeRound, treeTall };
+        library.forestClusterPrefabs = new[] { mixedDense, mixedEdge };
+        library.treePrefabs = new[] { treePine, treeBroadleaf, treeTall };
+        library.coniferousForestClusterPrefabs = new[] { coniferDense, coniferEdge };
+        library.deciduousForestClusterPrefabs = new[] { deciduousDense, deciduousEdge };
+        library.mixedForestClusterPrefabs = new[] { mixedDense, mixedEdge };
+        library.pineTreePrefabs = new[] { treePine, treeTall };
+        library.broadleafTreePrefabs = new[] { treeBroadleaf };
         library.mountainPeakPrefabs = new[] { mountainPeak };
         library.snowyMountainPeakPrefabs = new[] { snowyPeak };
         library.rockyRidgePrefabs = new[] { ridge };
@@ -108,33 +131,55 @@ public static class HexMapPrefabGenerator
         };
     }
 
+    private enum ForestMode
+    {
+        Conifer,
+        Deciduous,
+        Mixed
+    }
+
+    // Pines now taper to real points (topRadius ~0.01) so no flat cap catches the light as a ring.
     private static GameObject CreatePineTree(string name, MaterialSet materials, float heightScale)
     {
         var root = NewRoot(name);
         AddCylinder(root.transform, "Trunk", materials.Bark, new Vector3(0f, 0.13f * heightScale, 0f), new Vector3(0.07f, 0.13f * heightScale, 0.07f), Quaternion.identity);
-        AddCone(root.transform, "LowerCrown", materials.LeafDark, 0.32f, 0.04f, 0.38f * heightScale, new Vector3(0f, 0.38f * heightScale, 0f), Quaternion.Euler(-3f, 30f, 3f));
-        AddCone(root.transform, "UpperCrown", materials.Leaf, 0.22f, 0.03f, 0.32f * heightScale, new Vector3(0f, 0.62f * heightScale, 0f), Quaternion.Euler(2f, 10f, -2f));
+        AddCone(root.transform, "LowerCrown", materials.LeafDark, 0.32f, 0.012f, 0.40f * heightScale, new Vector3(0f, 0.40f * heightScale, 0f), Quaternion.Euler(-3f, 30f, 3f));
+        AddCone(root.transform, "MidCrown", materials.Leaf, 0.22f, 0.01f, 0.34f * heightScale, new Vector3(0f, 0.62f * heightScale, 0f), Quaternion.Euler(2f, 10f, -2f));
+        AddCone(root.transform, "TopCrown", materials.LeafDark, 0.14f, 0.008f, 0.26f * heightScale, new Vector3(0f, 0.82f * heightScale, 0f), Quaternion.Euler(-2f, -18f, 2f));
         return root;
     }
 
-    private static GameObject CreateRoundTree(string name, MaterialSet materials, float heightScale)
+    // Broadleaf crown = faceted bipyramids (apex up + apex down), so it reads round with no flat top.
+    private static GameObject CreateBroadleafTree(string name, MaterialSet materials, float heightScale)
     {
         var root = NewRoot(name);
-        AddCylinder(root.transform, "Trunk", materials.Bark, new Vector3(0f, 0.14f, 0f), new Vector3(0.075f, 0.14f, 0.075f), Quaternion.identity);
-        AddCone(root.transform, "RoundCrown", materials.Leaf, 0.34f, 0.2f, 0.34f * heightScale, new Vector3(0f, 0.43f * heightScale, 0f), Quaternion.Euler(0f, 30f, 0f));
-        AddCone(root.transform, "TopCrown", materials.LeafDark, 0.2f, 0.08f, 0.22f * heightScale, new Vector3(0f, 0.62f * heightScale, 0f), Quaternion.Euler(0f, 12f, 0f));
+        AddCylinder(root.transform, "Trunk", materials.Bark, new Vector3(0f, 0.12f, 0f), new Vector3(0.085f, 0.12f, 0.085f), Quaternion.identity);
+        AddBipyramidCrown(root.transform, "Crown", materials.Leaf, 0.32f, 0.42f * heightScale, 0.30f * heightScale, new Vector3(0f, 0.42f, 0f));
+        AddBipyramidCrown(root.transform, "CrownPuff", materials.LeafDark, 0.2f, 0.26f * heightScale, 0.2f * heightScale, new Vector3(0.1f, 0.56f, -0.05f));
         return root;
     }
 
-    private static GameObject CreateForestCluster(string name, MaterialSet materials, int treeCount)
+    private static void AddBipyramidCrown(Transform parent, string name, Material material, float radius, float upperHeight, float lowerHeight, Vector3 center)
+    {
+        var holder = NewChild(parent, name, center, Quaternion.Euler(0f, 20f, 0f), Vector3.one);
+        AddCone(holder.transform, "Upper", material, radius, 0.02f, upperHeight, new Vector3(0f, upperHeight * 0.5f, 0f), Quaternion.identity, 7);
+        AddCone(holder.transform, "Lower", material, radius, 0.02f, lowerHeight, new Vector3(0f, -lowerHeight * 0.5f, 0f), Quaternion.Euler(180f, 0f, 0f), 7);
+    }
+
+    private static GameObject CreateForestCluster(string name, MaterialSet materials, int treeCount, ForestMode mode)
     {
         var root = NewRoot(name);
-        AddCylinder(root.transform, "ForestGround", materials.GroundDark, Vector3.zero, new Vector3(0.92f, 0.025f, 0.92f), Quaternion.Euler(0f, 30f, 0f), 6);
+        // No ground hex here: the cluster prefab is placed with a random Y rotation for variety,
+        // and a hex plate would visibly rotate against the grid. The forest terrain tile beneath
+        // already provides the grid-aligned forest floor.
         for (var i = 0; i < treeCount; i++)
         {
             var angle = Mathf.PI * 2f * i / treeCount;
             var ring = i == 0 ? 0.05f : Mathf.Lerp(0.22f, 0.66f, (i % 5) / 4f);
-            var tree = i % 3 == 1 ? CreateRoundTree("Tree", materials, 0.82f + (i % 4) * 0.08f) : CreatePineTree("Tree", materials, 0.86f + (i % 5) * 0.07f);
+            var pine = mode == ForestMode.Conifer || (mode == ForestMode.Mixed && i % 2 == 0);
+            var tree = pine
+                ? CreatePineTree("Tree", materials, 0.86f + (i % 5) * 0.07f)
+                : CreateBroadleafTree("Tree", materials, 0.82f + (i % 4) * 0.08f);
             tree.transform.SetParent(root.transform, false);
             tree.transform.localPosition = new Vector3(Mathf.Cos(angle) * ring, 0.02f, Mathf.Sin(angle) * ring);
             tree.transform.localRotation = Quaternion.Euler(0f, i * 37f, 0f);
@@ -299,7 +344,7 @@ public static class HexMapPrefabGenerator
             cylinder = NewChild(parent, name, localPosition, localRotation, localScale);
             var filter = cylinder.AddComponent<MeshFilter>();
             var renderer = cylinder.AddComponent<MeshRenderer>();
-            filter.sharedMesh = CylinderMesh(1f, 1f, 1f, sides);
+            filter.sharedMesh = PersistMesh(CylinderMesh(1f, 1f, 1f, sides));
             renderer.sharedMaterial = material;
             return;
         }
@@ -313,8 +358,39 @@ public static class HexMapPrefabGenerator
         var cone = NewChild(parent, name, localPosition, localRotation, Vector3.one);
         var filter = cone.AddComponent<MeshFilter>();
         var renderer = cone.AddComponent<MeshRenderer>();
-        filter.sharedMesh = CylinderMesh(bottomRadius, topRadius, height, sides);
+        filter.sharedMesh = PersistMesh(CylinderMesh(bottomRadius, topRadius, height, sides));
         renderer.sharedMaterial = material;
+    }
+
+    private static void DeleteObsoletePrefab(string path)
+    {
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+        {
+            AssetDatabase.DeleteAsset(path);
+        }
+    }
+
+    private static void PrepareMeshLibrary()
+    {
+        if (AssetDatabase.LoadAssetAtPath<Mesh>(MeshLibraryPath) != null)
+        {
+            AssetDatabase.DeleteAsset(MeshLibraryPath);
+        }
+
+        s_meshLibrary = new Mesh { name = "GeneratedMeshLibrary" };
+        AssetDatabase.CreateAsset(s_meshLibrary, MeshLibraryPath);
+    }
+
+    // Registers a generated mesh as a sub-asset of the shared mesh library so prefabs that
+    // reference it keep a valid, persisted mesh after SaveAsPrefabAsset.
+    private static Mesh PersistMesh(Mesh mesh)
+    {
+        if (s_meshLibrary != null && !AssetDatabase.Contains(mesh))
+        {
+            AssetDatabase.AddObjectToAsset(mesh, s_meshLibrary);
+        }
+
+        return mesh;
     }
 
     private static GameObject NewRoot(string name)

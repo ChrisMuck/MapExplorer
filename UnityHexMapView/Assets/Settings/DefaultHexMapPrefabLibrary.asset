@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -13,12 +13,26 @@ MonoBehaviour:
   m_Name: DefaultHexMapPrefabLibrary
   m_EditorClassIdentifier: 
   forestClusterPrefabs:
-  - {fileID: 100000, guid: a1000000000000000000000000000004, type: 3}
-  - {fileID: 100000, guid: a1000000000000000000000000000005, type: 3}
+  - {fileID: 936725721358429375, guid: 5818a2277deb51749ad35e7ae340b695, type: 3}
+  - {fileID: 2410284249533282041, guid: 103843fb98b87dc4fa5b5a15442545d0, type: 3}
   treePrefabs:
   - {fileID: 100000, guid: a1000000000000000000000000000001, type: 3}
-  - {fileID: 100000, guid: a1000000000000000000000000000002, type: 3}
+  - {fileID: 9102853492202625742, guid: b84b57cf257b9f44e962e6640bf38b40, type: 3}
   - {fileID: 100000, guid: a1000000000000000000000000000003, type: 3}
+  coniferousForestClusterPrefabs:
+  - {fileID: 3672819171246142057, guid: c850047fa2d9fb44bb7ad31eb88489ca, type: 3}
+  - {fileID: 6565462507656089133, guid: 5f9d327ca024e734e9578f7aff8c6c24, type: 3}
+  deciduousForestClusterPrefabs:
+  - {fileID: 3814396850036889055, guid: 894489de2eba95542ac28b61e16a0037, type: 3}
+  - {fileID: 3045185573048654821, guid: 11ff472c965328a47bd80d4467468602, type: 3}
+  mixedForestClusterPrefabs:
+  - {fileID: 936725721358429375, guid: 5818a2277deb51749ad35e7ae340b695, type: 3}
+  - {fileID: 2410284249533282041, guid: 103843fb98b87dc4fa5b5a15442545d0, type: 3}
+  pineTreePrefabs:
+  - {fileID: 100000, guid: a1000000000000000000000000000001, type: 3}
+  - {fileID: 100000, guid: a1000000000000000000000000000003, type: 3}
+  broadleafTreePrefabs:
+  - {fileID: 9102853492202625742, guid: b84b57cf257b9f44e962e6640bf38b40, type: 3}
   mountainPeakPrefabs:
   - {fileID: 100000, guid: a1000000000000000000000000000006, type: 3}
   snowyMountainPeakPrefabs:

@@ -8,9 +8,13 @@ public sealed class HexMapPlaceholderPrefab : MonoBehaviour
     {
         TreePine,
         TreeRound,
+        TreeBroadleaf,
         TreeTall,
         ForestDense,
         ForestEdge,
+        ForestConifer,
+        ForestDeciduous,
+        ForestMixed,
         MountainPeak,
         MountainPeakSnowy,
         RockyRidge,
@@ -106,16 +110,24 @@ public sealed class HexMapPlaceholderPrefab : MonoBehaviour
                 PineTree(root.transform, 1f);
                 break;
             case VisualKind.TreeRound:
-                RoundTree(root.transform, 1f);
+            case VisualKind.TreeBroadleaf:
+                BroadleafTree(root.transform, 1f);
                 break;
             case VisualKind.TreeTall:
                 PineTree(root.transform, 1.25f);
                 break;
             case VisualKind.ForestDense:
-                Forest(root.transform, 9);
+            case VisualKind.ForestMixed:
+                Forest(root.transform, 9, ForestMode.Mixed);
                 break;
             case VisualKind.ForestEdge:
-                Forest(root.transform, 6);
+                Forest(root.transform, 6, ForestMode.Mixed);
+                break;
+            case VisualKind.ForestConifer:
+                Forest(root.transform, 9, ForestMode.Conifer);
+                break;
+            case VisualKind.ForestDeciduous:
+                Forest(root.transform, 9, ForestMode.Deciduous);
                 break;
             case VisualKind.MountainPeak:
                 MountainPeak(root.transform, false, 1f);
@@ -165,36 +177,51 @@ public sealed class HexMapPlaceholderPrefab : MonoBehaviour
         }
     }
 
+    private enum ForestMode
+    {
+        Conifer,
+        Deciduous,
+        Mixed
+    }
+
     private void PineTree(Transform parent, float scale)
     {
         Cylinder(parent, "Trunk", Mat("Bark", "4b3326"), new Vector3(0f, 0.13f * scale, 0f), new Vector3(0.07f, 0.13f * scale, 0.07f), Quaternion.identity);
-        Cone(parent, "LowerCrown", Mat("LeafDark", "1e432f"), 0.32f, 0.04f, 0.38f * scale, new Vector3(0f, 0.38f * scale, 0f), Quaternion.Euler(-3f, 30f, 3f), 7);
-        Cone(parent, "UpperCrown", Mat("Leaf", "2f6a42"), 0.22f, 0.03f, 0.32f * scale, new Vector3(0f, 0.62f * scale, 0f), Quaternion.Euler(2f, 10f, -2f), 7);
+        Cone(parent, "LowerCrown", Mat("LeafDark", "1e432f"), 0.32f, 0.012f, 0.40f * scale, new Vector3(0f, 0.40f * scale, 0f), Quaternion.Euler(-3f, 30f, 3f), 7);
+        Cone(parent, "MidCrown", Mat("Leaf", "2f6a42"), 0.22f, 0.01f, 0.34f * scale, new Vector3(0f, 0.62f * scale, 0f), Quaternion.Euler(2f, 10f, -2f), 7);
+        Cone(parent, "TopCrown", Mat("LeafDark", "1e432f"), 0.14f, 0.008f, 0.26f * scale, new Vector3(0f, 0.82f * scale, 0f), Quaternion.Euler(-2f, -18f, 2f), 7);
     }
 
-    private void RoundTree(Transform parent, float scale)
+    private void BroadleafTree(Transform parent, float scale)
     {
-        Cylinder(parent, "Trunk", Mat("Bark", "4b3326"), new Vector3(0f, 0.14f, 0f), new Vector3(0.075f, 0.14f, 0.075f), Quaternion.identity);
-        Cone(parent, "RoundCrown", Mat("Leaf", "2f6a42"), 0.34f, 0.2f, 0.34f * scale, new Vector3(0f, 0.43f * scale, 0f), Quaternion.Euler(0f, 30f, 0f), 8);
-        Cone(parent, "TopCrown", Mat("LeafDark", "1e432f"), 0.2f, 0.08f, 0.22f * scale, new Vector3(0f, 0.62f * scale, 0f), Quaternion.identity, 8);
+        Cylinder(parent, "Trunk", Mat("Bark", "4b3326"), new Vector3(0f, 0.12f, 0f), new Vector3(0.085f, 0.12f, 0.085f), Quaternion.identity);
+        BipyramidCrown(parent, "Crown", Mat("Leaf", "2f6a42"), 0.32f, 0.42f * scale, 0.30f * scale, new Vector3(0f, 0.42f, 0f));
+        BipyramidCrown(parent, "CrownPuff", Mat("LeafDark", "1e432f"), 0.2f, 0.26f * scale, 0.2f * scale, new Vector3(0.1f, 0.56f, -0.05f));
     }
 
-    private void Forest(Transform parent, int count)
+    private void BipyramidCrown(Transform parent, string objectName, Material material, float radius, float upperHeight, float lowerHeight, Vector3 center)
     {
-        Cylinder(parent, "ForestGround", Mat("ForestGround", "233f2d"), Vector3.zero, new Vector3(0.92f, 0.025f, 0.92f), Quaternion.Euler(0f, 30f, 0f), 6);
+        var holder = Child(parent, objectName, center, Quaternion.Euler(0f, 20f, 0f), Vector3.one);
+        Cone(holder.transform, "Upper", material, radius, 0.02f, upperHeight, new Vector3(0f, upperHeight * 0.5f, 0f), Quaternion.identity, 7);
+        Cone(holder.transform, "Lower", material, radius, 0.02f, lowerHeight, new Vector3(0f, -lowerHeight * 0.5f, 0f), Quaternion.Euler(180f, 0f, 0f), 7);
+    }
+
+    private void Forest(Transform parent, int count, ForestMode mode)
+    {
         for (var i = 0; i < count; i++)
         {
             var holder = Child(parent, "Tree", Vector3.zero, Quaternion.Euler(0f, i * 37f, 0f), Vector3.one);
             var angle = Mathf.PI * 2f * i / count;
             var ring = i == 0 ? 0.05f : Mathf.Lerp(0.22f, 0.66f, (i % 5) / 4f);
             holder.transform.localPosition = new Vector3(Mathf.Cos(angle) * ring, 0.02f, Mathf.Sin(angle) * ring);
-            if (i % 3 == 1)
+            var pine = mode == ForestMode.Conifer || (mode == ForestMode.Mixed && i % 2 == 0);
+            if (pine)
             {
-                RoundTree(holder.transform, 0.82f + (i % 4) * 0.08f);
+                PineTree(holder.transform, 0.86f + (i % 5) * 0.07f);
             }
             else
             {
-                PineTree(holder.transform, 0.86f + (i % 5) * 0.07f);
+                BroadleafTree(holder.transform, 0.82f + (i % 4) * 0.08f);
             }
         }
     }
