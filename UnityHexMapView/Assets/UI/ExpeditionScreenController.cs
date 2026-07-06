@@ -70,7 +70,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
         RegisterClick("link-reports", () => Open(Reports));
         RegisterClick("side-panel-close", CloseSide);
-        RegisterClick("action-open-report", () => Open(Reports));
+        RegisterClick("action-open-report", OpenSelectedReport);
         RegisterClick("action-marker-from-report", () => mapView?.RequestMarkerFromReportHintFromUi(selectedReportIndex, selectedHintIndex));
         RegisterClick("action-send-scout", OpenScoutMissionPopup);
         RegisterClick("action-send-scout-panel", OpenScoutMissionPopup);
@@ -164,6 +164,13 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     {
         SetText("value-field-knowledge", state.Expedition.UnsecuredKnowledge.ToString());
         SetText("value-base-knowledge", state.Base.KnowledgePoints.ToString());
+    }
+
+    private void OpenSelectedReport()
+    {
+        Open(Reports);
+        mapView?.RequestOpenScoutReportFromUi(selectedReportIndex);
+        Refresh();
     }
 
     private void OpenScoutMissionPopup()

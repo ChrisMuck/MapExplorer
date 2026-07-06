@@ -208,6 +208,35 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public void RequestOpenScoutReportFromUi(int reportIndex)
+    {
+        if (coreGameState == null ||
+            reportIndex < 0 ||
+            reportIndex >= coreGameState.Knowledge.ScoutReports.Count)
+        {
+            return;
+        }
+
+        var report = coreGameState.Knowledge.ScoutReports[reportIndex];
+        if (report.RelatedCoords.Count == 0)
+        {
+            interactionMessage = $"Scout report selected: {report.Title}. No map coordinates were reported.";
+            RefreshHud();
+            return;
+        }
+
+        var coord = report.RelatedCoords[0];
+        var viewCoord = CoreCoordToViewCoord(coord);
+        inspectedHex = viewCoord;
+        selectedPreviewHex = viewCoord;
+        hasInspectedHex = true;
+        inspectedLocation = coreGameState.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Confirmed ? FindLocation(coord) : null;
+        interactionMessage = $"Scout report selected: {report.Title}. Reported field {coord}.";
+        FocusCameraOnCoord(viewCoord);
+        RefreshHexOverlays();
+        RefreshHud();
+    }
+
     public void RequestSendScoutMissionFromUi()
     {
         SendScoutMissionFromHud();
@@ -2653,6 +2682,22 @@ public sealed class UnityHexMapView : MonoBehaviour
         if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
         {
             return true;
+        }
+
+        foreach (var marker in coreGameState.PlayerNotes.Markers)
+        {
+            if (marker.Coord == coord)
+            {
+                return true;
+            }
+        }
+
+        foreach (var note in coreGameState.PlayerNotes.Notes)
+        {
+            if (note.Coord == coord)
+            {
+                return true;
+            }
         }
 
         return coreGameState.Knowledge.GetTileKnowledge(coord) != KnowledgeLevel.Unknown;

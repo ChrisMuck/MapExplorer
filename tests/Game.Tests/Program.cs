@@ -946,7 +946,9 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Cautious scout returned");
         AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Returned scout available");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Scout report stored");
-        AssertEqual(KnowledgeLevel.Reported, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Scout report marks related hex reported");
+        AssertTrue(game.Knowledge.ScoutReports[0].RelatedCoords.Count > 1, "Scout report covers a route corridor");
+        AssertEqual(KnowledgeLevel.Unknown, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Scout report does not reveal objective map knowledge");
+        AssertTrue(game.PlayerNotes.Notes.Any(note => note.Coord == new HexCoord(2, 0)), "Scout report adds a note to reported fields");
         AssertEqual(3, game.Expedition.UnsecuredKnowledge, "Returned scout report adds unsecured knowledge");
     }
 
