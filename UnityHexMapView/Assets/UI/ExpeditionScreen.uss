@@ -314,6 +314,73 @@
 .event-options { flex-direction: row; flex-wrap: wrap; margin-top: 14px; }
 .event-option { margin-right: 8px; margin-bottom: 8px; }
 
+.scout-popup {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    align-items: center; justify-content: center;
+    background-color: rgba(0, 0, 0, 0.34);
+}
+.scout-modal {
+    width: 920px; max-width: 82%; max-height: 84%;
+    border-radius: 14px;
+    border-width: 1px; border-color: rgba(127, 160, 196, 0.34);
+    background-color: rgb(26, 31, 27);
+}
+.scout-modal__header {
+    height: 70px;
+    flex-direction: row; align-items: center;
+    padding-left: 26px; padding-right: 26px;
+    border-bottom-width: 1px; border-bottom-color: rgba(127, 160, 196, 0.18);
+}
+.scout-modal__summary { color: rgb(190, 184, 169); margin-left: auto; margin-right: 18px; font-size: 15px; }
+.scout-modal__body { flex-direction: row; min-height: 430px; }
+.scout-modal__column { padding: 24px; }
+.scout-modal__column--list {
+    width: 300px; flex-shrink: 0;
+    border-right-width: 1px; border-right-color: rgba(255, 255, 255, 0.08);
+}
+.scout-modal__column--orders { flex-grow: 1; }
+.scout-modal__section { margin-top: 22px; }
+.scout-candidate-list { margin-top: 14px; }
+.scout-candidate {
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgb(32, 38, 31);
+}
+.scout-candidate.selected {
+    border-color: rgba(127, 160, 196, 0.74);
+    background-color: rgba(127, 160, 196, 0.16);
+}
+.scout-candidate.disabled {
+    opacity: 0.52;
+}
+.scout-candidate__name { font-size: 17px; color: rgb(244, 237, 224); -unity-font-style: bold; }
+.scout-candidate__status { font-size: 13px; color: rgb(190, 184, 169); margin-top: 4px; }
+.scout-option-row { flex-direction: row; flex-wrap: wrap; margin-top: 10px; }
+.scout-choice {
+    padding: 10px 13px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border-width: 1px; border-color: rgba(255, 255, 255, 0.12);
+    color: rgb(222, 216, 201);
+    font-size: 15px;
+}
+.scout-choice:hover { background-color: rgba(255, 255, 255, 0.05); }
+.scout-choice.selected {
+    border-color: rgba(127, 160, 196, 0.78);
+    background-color: rgba(127, 160, 196, 0.18);
+    color: rgb(238, 243, 248);
+}
+.scout-modal__footer {
+    flex-direction: row; align-items: center;
+    padding: 18px 24px;
+    border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.08);
+}
+.scout-preview { flex-grow: 1; color: rgb(201, 195, 180); font-size: 15px; white-space: normal; margin-right: 18px; }
+
 .faction-popup {
     position: absolute;
     left: 0; right: 0; top: 0; bottom: 0;

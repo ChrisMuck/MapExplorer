@@ -692,6 +692,7 @@ internal sealed class SendScoutMissionCommandTests
         NonScoutMemberCannotBeSent();
         AssignedScoutCannotBeSentAgain();
         ScoutMissionDurationMustBeAllowed();
+        InactiveExpeditionCannotSendScouts();
         GameApplicationCanSendTutorialScoutMission();
     }
 
@@ -760,6 +761,25 @@ internal sealed class SendScoutMissionCommandTests
             ScoutMissionBehavior.Balanced);
 
         AssertFalse(result.Success, "Too long mission rejected");
+        AssertEqual(0, game.Expedition.ScoutMissions.Count, "No mission added");
+    }
+
+    private static void InactiveExpeditionCannotSendScouts()
+    {
+        var game = CreateScoutTestGame();
+        game.Expedition.SetStatus(ExpeditionStatus.Returned);
+        var command = new SendScoutMissionCommand();
+
+        var result = command.Execute(
+            game,
+            new[] { "scout-1" },
+            HexDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Balanced);
+
+        AssertFalse(result.Success, "Inactive expedition scout mission rejected");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout-1")!.Status, "Scout remains available in base");
         AssertEqual(0, game.Expedition.ScoutMissions.Count, "No mission added");
     }
 

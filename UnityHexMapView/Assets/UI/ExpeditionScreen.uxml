@@ -313,6 +313,60 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- ======================= SCOUT MISSION MODAL ======================= -->
+        <ui:VisualElement name="scout-mission-popup" class="scout-popup" style="display: none;">
+            <ui:VisualElement class="scout-modal">
+                <ui:VisualElement class="scout-modal__header">
+                    <ui:Label text="SPAEHER AUSSENDEN" class="section-label" />
+                    <ui:Label name="scout-modal-summary" text="Mission vorbereiten" class="mono scout-modal__summary" />
+                    <ui:Label name="scout-modal-close" text="X" class="faction-modal__close" />
+                </ui:VisualElement>
+                <ui:VisualElement class="scout-modal__body">
+                    <ui:VisualElement class="scout-modal__column scout-modal__column--list">
+                        <ui:Label text="VERFUEGBARE SPAEHER" class="section-label" />
+                        <ui:VisualElement name="scout-candidate-list" class="scout-candidate-list" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="scout-modal__column scout-modal__column--orders">
+                        <ui:Label text="RICHTUNG" class="section-label" />
+                        <ui:VisualElement class="scout-option-row">
+                            <ui:Label name="scout-direction-east" text="Ost" class="scout-choice" />
+                            <ui:Label name="scout-direction-north-east" text="Nordost" class="scout-choice" />
+                            <ui:Label name="scout-direction-north-west" text="Nordwest" class="scout-choice" />
+                            <ui:Label name="scout-direction-west" text="West" class="scout-choice" />
+                            <ui:Label name="scout-direction-south-west" text="Suedwest" class="scout-choice" />
+                            <ui:Label name="scout-direction-south-east" text="Suedost" class="scout-choice" />
+                        </ui:VisualElement>
+                        <ui:Label text="DAUER" class="section-label scout-modal__section" />
+                        <ui:VisualElement class="scout-option-row">
+                            <ui:Label name="scout-duration-1" text="1 Tag" class="scout-choice" />
+                            <ui:Label name="scout-duration-2" text="2 Tage" class="scout-choice" />
+                            <ui:Label name="scout-duration-3" text="3 Tage" class="scout-choice" />
+                            <ui:Label name="scout-duration-4" text="4 Tage" class="scout-choice" />
+                            <ui:Label name="scout-duration-5" text="5 Tage" class="scout-choice" />
+                        </ui:VisualElement>
+                        <ui:Label text="FOKUS" class="section-label scout-modal__section" />
+                        <ui:VisualElement class="scout-option-row">
+                            <ui:Label name="scout-focus-survey" text="Erkunden" class="scout-choice" />
+                            <ui:Label name="scout-focus-route" text="Route" class="scout-choice" />
+                            <ui:Label name="scout-focus-resources" text="Ressourcen" class="scout-choice" />
+                            <ui:Label name="scout-focus-faction" text="Zeichen" class="scout-choice" />
+                            <ui:Label name="scout-focus-ruins" text="Ruinen" class="scout-choice" />
+                        </ui:VisualElement>
+                        <ui:Label text="VERHALTEN" class="section-label scout-modal__section" />
+                        <ui:VisualElement class="scout-option-row">
+                            <ui:Label name="scout-behavior-cautious" text="Vorsichtig" class="scout-choice" />
+                            <ui:Label name="scout-behavior-balanced" text="Ausgewogen" class="scout-choice" />
+                            <ui:Label name="scout-behavior-bold" text="Riskant" class="scout-choice" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="scout-modal__footer">
+                    <ui:Label name="scout-mission-preview" text="Waehle mindestens einen verfuegbaren Spaeher." class="scout-preview" />
+                    <ui:Label name="scout-mission-send" text="Mission starten" class="btn--primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- ======================= FACTION CONTACT MODAL ======================= -->
         <ui:VisualElement name="faction-contact-popup" class="faction-popup" style="display: none;">
             <ui:VisualElement class="faction-modal">

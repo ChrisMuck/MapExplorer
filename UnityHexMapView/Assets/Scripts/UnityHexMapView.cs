@@ -214,6 +214,57 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public bool RequestSendScoutMissionFromUi(
+        IReadOnlyList<string> scoutMemberIds,
+        HexDirection direction,
+        int durationDays,
+        ScoutMissionFocus focus,
+        ScoutMissionBehavior behavior)
+    {
+        if (coreGameState == null)
+        {
+            return false;
+        }
+
+        var result = gameApplication.SendScoutMission(coreGameState, scoutMemberIds, direction, durationDays, focus, behavior);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Scout mission rejected.";
+            RefreshToolkitHud();
+            return false;
+        }
+
+        var scoutText = result.Mission!.ScoutMemberIds.Count == 1 ? "Scout" : "Scouts";
+        interactionMessage = $"{scoutText} sent {result.Mission.Direction} for {result.Mission.DurationDays} day(s). Expected return day {result.Mission.ExpectedReturnWorldDay}.";
+        RefreshHud();
+        RefreshToolkitHud();
+        return true;
+    }
+
+    public IReadOnlyList<ExpeditionMemberState> GetAvailableScoutsForUi()
+    {
+        var scouts = new List<ExpeditionMemberState>();
+        if (coreGameState == null)
+        {
+            return scouts;
+        }
+
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
+        {
+            return scouts;
+        }
+
+        foreach (var member in coreGameState.Expedition.Members)
+        {
+            if (member.Role == ExpeditionMemberRole.Scout && member.Status == ExpeditionMemberStatus.Available)
+            {
+                scouts.Add(member);
+            }
+        }
+
+        return scouts;
+    }
+
     public void RequestAddMarkerFromUi()
     {
         EnsureUiSelectedHex();
@@ -2246,6 +2297,11 @@ public sealed class UnityHexMapView : MonoBehaviour
             return ids;
         }
 
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
+        {
+            return ids;
+        }
+
         foreach (var member in coreGameState.Expedition.Members)
         {
             if (member.Role != ExpeditionMemberRole.Scout || member.Status != ExpeditionMemberStatus.Available)
@@ -2266,6 +2322,11 @@ public sealed class UnityHexMapView : MonoBehaviour
     private int CountAvailableScouts()
     {
         if (coreGameState == null)
+        {
+            return 0;
+        }
+
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
         {
             return 0;
         }
