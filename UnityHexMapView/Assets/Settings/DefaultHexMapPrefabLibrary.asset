@@ -57,7 +57,10 @@ MonoBehaviour:
   - {fileID: 100000, guid: a100000000000000000000000000000b, type: 3}
   - {fileID: 100000, guid: a100000000000000000000000000000c, type: 3}
   settlementPrefabs:
-  - {fileID: 100000, guid: a100000000000000000000000000000d, type: 3}
+  - {fileID: 5126549834485257462, guid: f7ad17dcb0e0be749913006520a13e96, type: 3}
+  - {fileID: 6954136738370611767, guid: 561878cdfcb3fbe4dabd8a700fe86bb8, type: 3}
+  - {fileID: 5085514752957007824, guid: 9f8557bebe72fcc4bb0e86e1dd6ed390, type: 3}
+  - {fileID: 4284716945962707138, guid: d29604a0876bf36479dfba3f5c6e3077, type: 3}
   settlementHousePrefabs:
   - {fileID: 100000, guid: a100000000000000000000000000000e, type: 3}
   - {fileID: 100000, guid: a100000000000000000000000000000f, type: 3}
@@ -73,3 +76,15 @@ MonoBehaviour:
   - {fileID: 100000, guid: a1000000000000000000000000000014, type: 3}
   coastMarkerPrefabs:
   - {fileID: 100000, guid: a1000000000000000000000000000015, type: 3}
+  gravePrefabs:
+  - {fileID: 4509854666076096735, guid: 37286e7b1881f034d9ad57a94f634728, type: 3}
+  abandonedCampPrefabs:
+  - {fileID: 7804105684714345019, guid: e1ddabec20db838458b0be7f693aab63, type: 3}
+  ravinePrefabs:
+  - {fileID: 1942124349687054250, guid: b6b0f38358a34954f91e9ebd9bb61f89, type: 3}
+  ruinPrefabs:
+  - {fileID: 33720551240579307, guid: 6295ffa40622605499b4c3b915d3729e, type: 3}
+  - {fileID: 1174160196759410191, guid: ba20d451c63d74248a8dad24358fcf45, type: 3}
+  landmarkPrefabs:
+  - {fileID: 5513253671041420429, guid: 1b99f341abb6f9a45abd32026c1aee3e, type: 3}
+  - {fileID: 811221830741906361, guid: f0c5e9cdac595b444b74e594e3bdac99, type: 3}

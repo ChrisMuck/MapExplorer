@@ -45,6 +45,7 @@ public static class HexMapPrefabGenerator
         DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/MountainPeak_Snowy.prefab");
         DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/RockyRidge.prefab");
         DeleteObsoletePrefab($"{GeneratedRoot}/Mountains/RockyRidge_Snowy.prefab");
+        DeleteObsoletePrefab($"{GeneratedRoot}/Settlements/SettlementCluster.prefab");
 
         var materials = CreateMaterials();
 
@@ -78,9 +79,12 @@ public static class HexMapPrefabGenerator
         var foothillRock = SavePrefab($"{GeneratedRoot}/Mountains/FoothillRock.prefab", CreateRock("FoothillRock", materials, 0.28f, 790));
         var rock = SavePrefab($"{GeneratedRoot}/Mountains/Rock.prefab", CreateRock("Rock", materials, 0.36f, 800));
 
-        var settlement = SavePrefab($"{GeneratedRoot}/Settlements/SettlementCluster.prefab", CreateSettlementCluster("SettlementCluster", materials));
-        var houseA = SavePrefab($"{GeneratedRoot}/Settlements/House_A.prefab", CreateHouse("House_A", materials, 1f));
-        var houseB = SavePrefab($"{GeneratedRoot}/Settlements/House_B.prefab", CreateHouse("House_B", materials, 0.78f));
+        var hamlet = SavePrefab($"{GeneratedRoot}/Settlements/Village_Small.prefab", CreateSettlement("Village_Small", materials, 3, 0.32f, false, false, 810));
+        var villageA = SavePrefab($"{GeneratedRoot}/Settlements/Village_A.prefab", CreateSettlement("Village_A", materials, 5, 0.4f, true, false, 811));
+        var villageB = SavePrefab($"{GeneratedRoot}/Settlements/Village_B.prefab", CreateSettlement("Village_B", materials, 6, 0.42f, true, false, 812));
+        var town = SavePrefab($"{GeneratedRoot}/Settlements/Town.prefab", CreateSettlement("Town", materials, 9, 0.5f, false, true, 813));
+        var houseA = SavePrefab($"{GeneratedRoot}/Settlements/House_A.prefab", CreateHouse("House_A", materials, 1f, 820));
+        var houseB = SavePrefab($"{GeneratedRoot}/Settlements/House_B.prefab", CreateHouse("House_B", materials, 0.78f, 821));
         var fence = SavePrefab($"{GeneratedRoot}/Settlements/Fence.prefab", CreateFence("Fence", materials));
 
         var tower = SavePrefab($"{GeneratedRoot}/Landmarks/Watchtower.prefab", CreateWatchtower("Watchtower", materials));
@@ -88,6 +92,14 @@ public static class HexMapPrefabGenerator
         var wallSegment = SavePrefab($"{GeneratedRoot}/Landmarks/WallSegment.prefab", CreateWallSegment("WallSegment", materials));
         var wallTower = SavePrefab($"{GeneratedRoot}/Landmarks/WallTower.prefab", CreateWallTower("WallTower", materials));
         var coastMarker = SavePrefab($"{GeneratedRoot}/Landmarks/CoastMarker.prefab", CreateCoastMarker("CoastMarker", materials));
+
+        var grave = SavePrefab($"{GeneratedRoot}/Landmarks/MarkedGrave.prefab", CreateGrave("MarkedGrave", materials, 830));
+        var abandonedCamp = SavePrefab($"{GeneratedRoot}/Landmarks/AbandonedCamp.prefab", CreateAbandonedCamp("AbandonedCamp", materials, 831));
+        var ravine = SavePrefab($"{GeneratedRoot}/Landmarks/BrokenRavine.prefab", CreateBrokenRavine("BrokenRavine", materials, 832));
+        var ruinA = SavePrefab($"{GeneratedRoot}/Landmarks/Ruin_A.prefab", CreateRuin("Ruin_A", materials, 833));
+        var ruinB = SavePrefab($"{GeneratedRoot}/Landmarks/Ruin_B.prefab", CreateRuin("Ruin_B", materials, 834));
+        var standingStonesA = SavePrefab($"{GeneratedRoot}/Landmarks/StandingStones_A.prefab", CreateLandmark("StandingStones_A", materials, 835));
+        var standingStonesB = SavePrefab($"{GeneratedRoot}/Landmarks/StandingStones_B.prefab", CreateLandmark("StandingStones_B", materials, 836));
 
         var library = AssetDatabase.LoadAssetAtPath<HexMapPrefabLibrary>(LibraryPath);
         if (library == null)
@@ -111,7 +123,7 @@ public static class HexMapPrefabGenerator
         library.foothillsPrefabs = new[] { foothills };
         library.foothillRockPrefabs = new[] { foothillRock };
         library.rockPrefabs = new[] { rock, foothillRock };
-        library.settlementPrefabs = new[] { settlement };
+        library.settlementPrefabs = new[] { hamlet, villageA, villageB, town };
         library.settlementHousePrefabs = new[] { houseA, houseB };
         library.settlementFencePrefabs = new[] { fence };
         library.towerPrefabs = new[] { tower };
@@ -119,6 +131,11 @@ public static class HexMapPrefabGenerator
         library.wallSegmentPrefabs = new[] { wallSegment };
         library.wallTowerPrefabs = new[] { wallTower };
         library.coastMarkerPrefabs = new[] { coastMarker };
+        library.gravePrefabs = new[] { grave };
+        library.abandonedCampPrefabs = new[] { abandonedCamp };
+        library.ravinePrefabs = new[] { ravine };
+        library.ruinPrefabs = new[] { ruinA, ruinB };
+        library.landmarkPrefabs = new[] { standingStonesA, standingStonesB };
 
         EditorUtility.SetDirty(library);
         AssetDatabase.SaveAssets();
@@ -146,6 +163,8 @@ public static class HexMapPrefabGenerator
             Wood = Material("Wood", "5a3d29", 0.82f),
             Flag = Material("FlagRed", "bb5148", 0.55f),
             Gold = Material("GoldOre", "c09a38", 0.45f),
+            Cloth = Material("Cloth", "b3a37c", 0.6f),
+            Charred = Material("Charred", "292420", 0.9f),
             Smoke = TransparentMaterial("Smoke", "c1b8aa", 0.24f)
         };
     }
@@ -307,29 +326,47 @@ public static class HexMapPrefabGenerator
         return Quaternion.Euler(0f, Hash01(seed, salt, 999) * 360f, 0f);
     }
 
-    private static GameObject CreateSettlementCluster(string name, MaterialSet materials)
+    // Parameterised settlement so hamlets, villages and towns can be generated from one builder:
+    // a plaza, a ring of jittered houses (varied scale/rotation/roof), an optional well and fences.
+    private static GameObject CreateSettlement(string name, MaterialSet materials, int houseCount, float radius, bool addFence, bool addWell, int seed)
     {
         var root = NewRoot(name);
-        AddCylinder(root.transform, "Plaza", materials.Wall, Vector3.zero, new Vector3(0.48f, 0.025f, 0.42f), Quaternion.identity, 6);
-        for (var i = 0; i < 5; i++)
+        AddCylinder(root.transform, "Plaza", materials.Wall, Vector3.zero, new Vector3(radius * 1.05f, 0.025f, radius * 0.95f), Quaternion.Euler(0f, Hash01(seed, 0, 1) * 60f, 0f), 6);
+
+        if (addWell)
         {
-            var angle = Mathf.PI * 2f * i / 5f;
-            var house = CreateHouse("House", materials, 0.78f + i * 0.07f);
-            house.transform.SetParent(root.transform, false);
-            house.transform.localPosition = new Vector3(Mathf.Cos(angle) * 0.32f, 0.04f, Mathf.Sin(angle) * 0.32f);
-            house.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 30f, 0f);
+            AddCylinder(root.transform, "WellRim", materials.Wall, new Vector3(0f, 0.05f, 0f), new Vector3(0.11f, 0.05f, 0.11f), Quaternion.identity, 6);
+            AddCylinder(root.transform, "WellShaft", materials.RockDark, new Vector3(0f, 0.055f, 0f), new Vector3(0.07f, 0.05f, 0.07f), Quaternion.identity, 6);
         }
 
-        AddFence(root.transform, "FenceA", materials, new Vector3(-0.32f, 0.08f, -0.44f), Quaternion.Euler(0f, -8f, 0f));
-        AddCylinder(root.transform, "Smoke", materials.Smoke, new Vector3(0.1f, 0.48f, -0.08f), new Vector3(0.06f, 0.22f, 0.06f), Quaternion.identity);
+        for (var i = 0; i < houseCount; i++)
+        {
+            var angle = Mathf.PI * 2f * i / houseCount + (Hash01(seed, i, 2) - 0.5f) * 0.6f;
+            var ring = radius * Mathf.Lerp(addWell ? 0.42f : 0.5f, 0.98f, Hash01(seed, i, 3));
+            var houseScale = 0.72f + Hash01(seed, i, 4) * 0.42f;
+            var house = CreateHouse("House", materials, houseScale, seed * 31 + i);
+            house.transform.SetParent(root.transform, false);
+            house.transform.localPosition = new Vector3(Mathf.Cos(angle) * ring, 0.04f, Mathf.Sin(angle) * ring);
+            house.transform.localRotation = Quaternion.Euler(0f, Hash01(seed, i, 5) * 360f, 0f);
+        }
+
+        if (addFence)
+        {
+            AddFence(root.transform, "FenceA", materials, new Vector3(-radius * 0.8f, 0.08f, -radius * 1.05f), Quaternion.Euler(0f, -8f, 0f));
+            AddFence(root.transform, "FenceB", materials, new Vector3(radius * 0.5f, 0.08f, radius * 0.95f), Quaternion.Euler(0f, 168f, 0f));
+        }
+
+        AddCylinder(root.transform, "Smoke", materials.Smoke, new Vector3(radius * 0.2f, 0.48f, -0.06f), new Vector3(0.06f, 0.22f, 0.06f), Quaternion.identity);
         return root;
     }
 
-    private static GameObject CreateHouse(string name, MaterialSet materials, float scale)
+    private static GameObject CreateHouse(string name, MaterialSet materials, float scale, int seed)
     {
         var root = NewRoot(name);
-        AddCube(root.transform, "Body", materials.Wall, new Vector3(0f, 0.11f * scale, 0f), new Vector3(0.24f * scale, 0.22f * scale, 0.28f * scale), Quaternion.identity);
-        AddCone(root.transform, "Roof", scale > 0.9f ? materials.RoofWarm : materials.Roof, 0.22f * scale, 0.02f * scale, 0.2f * scale, new Vector3(0f, 0.32f * scale, 0f), Quaternion.Euler(0f, 45f, 0f), 4);
+        var depth = 0.28f * scale * Mathf.Lerp(0.85f, 1.2f, Hash01(seed, 1, 3));
+        AddCube(root.transform, "Body", materials.Wall, new Vector3(0f, 0.11f * scale, 0f), new Vector3(0.24f * scale, 0.22f * scale, depth), Quaternion.identity);
+        var roofMaterial = Hash01(seed, 2, 4) < 0.5f ? materials.RoofWarm : materials.Roof;
+        AddCone(root.transform, "Roof", roofMaterial, 0.22f * scale, 0.02f * scale, 0.2f * scale, new Vector3(0f, 0.32f * scale, 0f), Quaternion.Euler(0f, 45f, 0f), 4);
         return root;
     }
 
@@ -382,6 +419,91 @@ public static class HexMapPrefabGenerator
         var root = NewRoot(name);
         AddCylinder(root.transform, "Pole", materials.Bark, new Vector3(0.12f, 0.36f, -0.18f), new Vector3(0.035f, 0.36f, 0.035f), Quaternion.identity);
         AddCube(root.transform, "Flag", materials.Flag, new Vector3(0.28f, 0.58f, -0.18f), new Vector3(0.34f, 0.2f, 0.035f), Quaternion.identity);
+        return root;
+    }
+
+    private static GameObject CreateGrave(string name, MaterialSet materials, int seed)
+    {
+        var root = NewRoot(name);
+        AddFacetedMound(root.transform, "Mound", materials.RockDark, 0.3f, 0.2f, 0.08f, Vector3.zero, YRot(seed, 1), seed);
+        AddCube(root.transform, "Headstone", materials.Wall, new Vector3(0f, 0.13f, -0.22f), new Vector3(0.2f, 0.26f, 0.05f), Quaternion.Euler(-8f, Hash01(seed, 2, 3) * 20f - 10f, 0f));
+        for (var i = 0; i < 4; i++)
+        {
+            var a = Mathf.PI * 2f * i / 4f + 0.4f;
+            AddRock(root.transform, $"Border_{i}", materials, 0.08f, new Vector3(Mathf.Cos(a) * 0.26f, 0.03f, Mathf.Sin(a) * 0.2f), Quaternion.Euler(0f, a * 57f, 0f));
+        }
+
+        return root;
+    }
+
+    private static GameObject CreateAbandonedCamp(string name, MaterialSet materials, int seed)
+    {
+        var root = NewRoot(name);
+        var tents = 2 + Mathf.FloorToInt(Hash01(seed, 0, 1) * 2f);
+        for (var i = 0; i < tents; i++)
+        {
+            var a = Mathf.PI * 2f * i / tents + Hash01(seed, i, 2);
+            AddCone(root.transform, $"Tent_{i}", materials.Cloth, 0.2f, 0.02f, 0.26f, new Vector3(Mathf.Cos(a) * 0.28f, 0.13f, Mathf.Sin(a) * 0.24f), Quaternion.Euler(0f, Hash01(seed, i, 3) * 360f, 0f), 4);
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            var a = Mathf.PI * 2f * i / 5f;
+            AddRock(root.transform, $"FireRing_{i}", materials, 0.05f, new Vector3(Mathf.Cos(a) * 0.1f, 0.02f, Mathf.Sin(a) * 0.1f), Quaternion.identity);
+        }
+
+        AddCube(root.transform, "LogA", materials.Charred, new Vector3(0f, 0.03f, 0f), new Vector3(0.14f, 0.03f, 0.03f), Quaternion.Euler(0f, 20f, 0f));
+        AddCube(root.transform, "LogB", materials.Charred, new Vector3(0f, 0.03f, 0f), new Vector3(0.14f, 0.03f, 0.03f), Quaternion.Euler(0f, 110f, 0f));
+        AddCube(root.transform, "Crate", materials.Wood, new Vector3(0.34f, 0.06f, 0.28f), new Vector3(0.12f, 0.12f, 0.12f), Quaternion.Euler(0f, 25f, 0f));
+        return root;
+    }
+
+    private static GameObject CreateBrokenRavine(string name, MaterialSet materials, int seed)
+    {
+        var root = NewRoot(name);
+        AddCube(root.transform, "Crack", materials.Charred, new Vector3(0f, -0.02f, 0f), new Vector3(0.92f, 0.08f, 0.28f), Quaternion.Euler(0f, Hash01(seed, 0, 1) * 40f - 20f, 0f));
+        AddFacetedMound(root.transform, "EdgeA", materials.RockDark, 0.42f, 0.28f, 0.12f, new Vector3(0f, 0f, 0.28f), YRot(seed, 2), seed + 1);
+        AddFacetedMound(root.transform, "EdgeB", materials.RockDark, 0.42f, 0.28f, 0.12f, new Vector3(0f, 0f, -0.28f), YRot(seed, 3), seed + 2);
+        AddCube(root.transform, "PlankA", materials.Wood, new Vector3(-0.18f, 0.14f, 0.02f), new Vector3(0.34f, 0.03f, 0.12f), Quaternion.Euler(-6f, 8f, 0f));
+        AddCube(root.transform, "PlankB", materials.Wood, new Vector3(0.2f, 0.13f, -0.02f), new Vector3(0.28f, 0.03f, 0.12f), Quaternion.Euler(7f, -6f, 0f));
+        AddCylinder(root.transform, "PostA", materials.Wood, new Vector3(-0.32f, 0.1f, 0.14f), new Vector3(0.03f, 0.12f, 0.03f), Quaternion.identity);
+        AddCylinder(root.transform, "PostB", materials.Wood, new Vector3(0.32f, 0.1f, -0.14f), new Vector3(0.03f, 0.12f, 0.03f), Quaternion.identity);
+        return root;
+    }
+
+    private static GameObject CreateRuin(string name, MaterialSet materials, int seed)
+    {
+        var root = NewRoot(name);
+        for (var i = 0; i < 5; i++)
+        {
+            var a = Mathf.PI * 0.5f + i * 0.5f;
+            var h = Mathf.Lerp(0.12f, 0.34f, Hash01(seed, i, 1));
+            AddCube(root.transform, $"Wall_{i}", materials.Wall, new Vector3(Mathf.Cos(a) * 0.3f, h * 0.5f, Mathf.Sin(a) * 0.3f), new Vector3(0.16f, h, 0.1f), Quaternion.Euler(Hash01(seed, i, 2) * 8f - 4f, a * 57f, Hash01(seed, i, 3) * 8f - 4f));
+        }
+
+        AddCone(root.transform, "Column", materials.Wall, 0.07f, 0.06f, 0.4f, new Vector3(-0.24f, 0.2f, 0.12f), Quaternion.Euler(12f, 0f, 8f), 8);
+        for (var i = 0; i < 4; i++)
+        {
+            var a = Hash01(seed, i, 5) * Mathf.PI * 2f;
+            AddRock(root.transform, $"Rubble_{i}", materials, 0.08f, new Vector3(Mathf.Cos(a) * 0.34f, 0.03f, Mathf.Sin(a) * 0.3f), Quaternion.Euler(0f, a * 57f, 0f));
+        }
+
+        return root;
+    }
+
+    private static GameObject CreateLandmark(string name, MaterialSet materials, int seed)
+    {
+        var root = NewRoot(name);
+        const int stones = 5;
+        for (var i = 0; i < stones; i++)
+        {
+            var a = Mathf.PI * 2f * i / stones;
+            var h = Mathf.Lerp(0.3f, 0.5f, Hash01(seed, i, 1));
+            var tilt = Hash01(seed, i, 2) * 10f - 5f;
+            AddFacetedMound(root.transform, $"Stone_{i}", i % 2 == 0 ? materials.RockDark : materials.Rock, 0.09f, 0.07f, h, new Vector3(Mathf.Cos(a) * 0.3f, h * 0.5f, Mathf.Sin(a) * 0.3f), Quaternion.Euler(tilt, Hash01(seed, i, 3) * 360f, tilt * 0.5f), seed + i);
+        }
+
+        AddCube(root.transform, "Altar", materials.Rock, new Vector3(0f, 0.05f, 0f), new Vector3(0.18f, 0.08f, 0.14f), YRot(seed, 9));
         return root;
     }
 
@@ -768,6 +890,8 @@ public static class HexMapPrefabGenerator
         public Material Wood;
         public Material Flag;
         public Material Gold;
+        public Material Cloth;
+        public Material Charred;
         public Material Smoke;
     }
 }

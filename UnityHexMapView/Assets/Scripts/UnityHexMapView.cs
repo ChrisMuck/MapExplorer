@@ -759,13 +759,12 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["PlayerNote"] = EmissiveMaterial("Player Note", "7ea5c5", "a8d8f0", 0.12f);
         featureMaterials["FactionMarker"] = EmissiveMaterial("Faction Marker", "b86458", "ef9a83", 0.16f);
         featureMaterials["DangerMarker"] = EmissiveMaterial("Danger Marker", "9b3f35", "ee6a58", 0.18f);
-        featureMaterials["RiverBank"] = Material("River Bank", "3f5d5c", 0.82f);
-        featureMaterials["River"] = EmissiveMaterial("River", "57919b", "8fc8cf", 0.04f);
-        featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "d8ede8", 0.11f);
+        featureMaterials["RiverBank"] = Material("River Bank", "355653", 0.82f);
+        featureMaterials["River"] = EmissiveMaterial("River", "2f7391", "5aa7c2", 0.06f);
+        featureMaterials["RiverFoam"] = TransparentMaterial("River Foam", "b4dbe2", 0.08f);
         featureMaterials["WornGround"] = TransparentMaterial("Worn Ground", "5a4a30", 0.42f);
-        featureMaterials["RoadShadow"] = TransparentMaterial("Road Bed", "4c3c2a", 0.2f);
-        featureMaterials["Road"] = Material("Road", "8b6d48", "6f5438", "9c815b", 41, 0.12f);
-        featureMaterials["RoadCenter"] = TransparentMaterial("Road Center", "c3aa78", 0.11f);
+        featureMaterials["RoadShadow"] = TransparentMaterial("Road Bed", "463526", 0.22f);
+        featureMaterials["Road"] = Material("Road", "6f5638", "574230", "7d6144", 41, 0.12f);
         featureMaterials["Border"] = EmissiveMaterial("Territory Border", "4b9aaa", "88c8d1", 0.08f);
         featureMaterials["SettlementWall"] = Material("Settlement Wall", "766f5e", 0.9f);
         featureMaterials["SettlementRoof"] = Material("Settlement Roof", "79425f", 0.82f);
@@ -804,6 +803,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["ExpeditionCloth"] = Material("Expedition Cloth", "d0a44c", 0.7f);
         featureMaterials["ExpeditionFlag"] = EmissiveMaterial("Expedition Flag", "d95b4f", "e8a15d", 0.18f);
         featureMaterials["ExpeditionRing"] = TransparentMaterial("Expedition Ring", "f0d889", 0.28f);
+
+        // Give water a subtle tiling ripple so the atmosphere manager can scroll it into flow.
+        var ripple = WaterRippleTexture();
+        AssignWaterRipple("River", ripple, new Vector2(3f, 1f));
+        AssignWaterRipple("ShallowWater", ripple, new Vector2(6f, 6f));
+        AssignWaterRipple("WaterPlane", ripple, new Vector2(8f, 8f));
+        AssignWaterRipple("DeepWater", ripple, new Vector2(10f, 10f));
 
         BuildTopVariants(TerrainKind.Grass);
         BuildTopVariants(TerrainKind.Hills);
@@ -962,6 +968,88 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         texture.Apply(true, false);
         return texture;
+    }
+
+    // Tileable subtle ripple used as the base map on water so scrolling its UVs reads as flow.
+    private Texture2D WaterRippleTexture()
+    {
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+        {
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.DontSave
+        };
+
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
+            {
+                var n = Mathf.PerlinNoise(x * 0.09f, y * 0.09f);
+                var streak = Mathf.Sin(x * 0.28f + n * 4f) * 0.5f + 0.5f;
+                var v = Mathf.Lerp(0.86f, 1f, streak * 0.6f + n * 0.4f);
+                texture.SetPixel(x, y, new Color(v, v, v, 1f));
+            }
+        }
+
+        texture.Apply(true, false);
+        return texture;
+    }
+
+    // Soft, seamlessly tiling cloud mask for the sun's cookie: open sky = 1, cloud = darker.
+    // Low base frequency = big blobs; a detail octave breaks up the edges; a high threshold
+    // keeps the sky mostly open with occasional large, irregular clouds.
+    private Texture2D CloudCookieTexture()
+    {
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+        {
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.DontSave
+        };
+
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
+            {
+                var big = TileableNoise(x, y, size, 2.2f, 31.7f);
+                var detail = TileableNoise(x, y, size, 5.5f, 88.3f);
+                var raw = big * 0.76f + detail * 0.24f;
+                var cloud = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.52f, 0.8f, raw));
+                var v = Mathf.Lerp(1f, 0.55f, cloud);
+                texture.SetPixel(x, y, new Color(v, v, v, v));
+            }
+        }
+
+        texture.Apply(true, false);
+        return texture;
+    }
+
+    // Periodic value noise: blends Perlin with its wrapped copies so the result tiles seamlessly.
+    private static float TileableNoise(int x, int y, int size, float frequency, float seed)
+    {
+        var fx = x / (float)size;
+        var fy = y / (float)size;
+
+        float Sample(float px, float py)
+        {
+            return Mathf.PerlinNoise(px * frequency / size + seed, py * frequency / size + seed);
+        }
+
+        return Sample(x, y) * (1f - fx) * (1f - fy)
+             + Sample(x - size, y) * fx * (1f - fy)
+             + Sample(x, y - size) * (1f - fx) * fy
+             + Sample(x - size, y - size) * fx * fy;
+    }
+
+    private void AssignWaterRipple(string key, Texture2D texture, Vector2 scale)
+    {
+        if (featureMaterials.TryGetValue(key, out var material))
+        {
+            material.mainTexture = texture;
+            material.mainTextureScale = scale;
+        }
     }
 
     private void BuildMap()
@@ -2010,13 +2098,52 @@ public sealed class UnityHexMapView : MonoBehaviour
                     BuildMine(coord);
                     break;
                 case LocationKind.MarkedGrave:
-                    BuildMine(coord);
+                    BuildLandmarkObject(coord, Prefabs.gravePrefabs, "MarkedGrave", 9301, featureMaterials["WallStone"]);
                     break;
                 case LocationKind.AbandonedCamp:
-                    BuildSettlement(coord);
+                    BuildLandmarkObject(coord, Prefabs.abandonedCampPrefabs, "AbandonedCamp", 9302, featureMaterials["ExpeditionCloth"]);
+                    break;
+                case LocationKind.BrokenRavine:
+                    BuildLandmarkObject(coord, Prefabs.ravinePrefabs, "BrokenRavine", 9303, featureMaterials["DarkRock"]);
+                    break;
+                case LocationKind.Ruin:
+                    BuildLandmarkObject(coord, Prefabs.ruinPrefabs, "Ruin", 9304, featureMaterials["WallStone"]);
+                    break;
+                case LocationKind.Landmark:
+                    BuildLandmarkObject(coord, Prefabs.landmarkPrefabs, "Landmark", 9305, featureMaterials["Rock"]);
+                    break;
+                case LocationKind.WallSegment:
+                    BuildTower(coord);
                     break;
             }
         }
+    }
+
+    // Places a discovery/landmark prefab (grave, abandoned camp, ravine, ruin, standing stones)
+    // with a simple fallback marker if no prefab is assigned. Registered as a feature so it
+    // obeys fog/knowledge like every other placed object.
+    private void BuildLandmarkObject(Vector2Int coord, GameObject[] prefabs, string label, int seed, Material fallbackMaterial)
+    {
+        if (!tiles.TryGetValue(coord, out var tile))
+        {
+            return;
+        }
+
+        var root = NewChild($"{label}_{coord.x}_{coord.y}");
+        RegisterFeatureObject(coord, root);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.02f);
+        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seed) * 360f, 0f);
+        if (TryPlacePrefab(prefabs, root.transform, $"{label}Prefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, seed, out _))
+        {
+            return;
+        }
+
+        var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        marker.name = label;
+        marker.transform.SetParent(root.transform, false);
+        marker.transform.localPosition = new Vector3(0f, 0.12f, 0f);
+        marker.transform.localScale = new Vector3(0.24f, 0.24f, 0.24f);
+        marker.GetComponent<MeshRenderer>().sharedMaterial = fallbackMaterial;
     }
 
     private IReadOnlyList<Vector2Int> CorePathToViewPath(IReadOnlyList<HexCoord> coords)
@@ -3309,10 +3436,9 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         var road = NewChild("RoadPath");
         RegisterFeatureObject(coords, road);
-        AddMesh(road, "RoadWear", RibbonMesh(RaisePoints(points, -0.058f), 0.36f * hexSize), featureMaterials["WornGround"]);
-        AddMesh(road, "RoadBed", RibbonMesh(points, 0.24f * hexSize), featureMaterials["RoadShadow"]);
-        AddMesh(road, "Road", RibbonMesh(RaisePoints(points, 0.012f), 0.14f * hexSize), featureMaterials["Road"]);
-        AddMesh(road, "RoadCenter", RibbonMesh(RaisePoints(points, 0.024f), 0.035f * hexSize), featureMaterials["RoadCenter"]);
+        AddMesh(road, "RoadWear", RibbonMesh(RaisePoints(points, -0.058f), 0.4f * hexSize), featureMaterials["WornGround"]);
+        AddMesh(road, "RoadBed", RibbonMesh(points, 0.26f * hexSize), featureMaterials["RoadShadow"]);
+        AddMesh(road, "Road", RibbonMesh(RaisePoints(points, 0.012f), 0.15f * hexSize), featureMaterials["Road"]);
     }
 
     private void BuildTerritoryBorder(IReadOnlyList<Vector2Int> coords)
@@ -4014,6 +4140,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         light.intensity = 1.25f;
         light.shadows = LightShadows.Soft;
         light.shadowStrength = 0.72f;
+        // Cloud-shadow cookie disabled for now (CloudCookieTexture / SetClouds kept for a later rework).
         sun.transform.localRotation = Quaternion.Euler(42f, -46f, 0f);
 
         // Cool sky fill from the opposite side keeps shadows from going flat-black.
@@ -4031,6 +4158,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         rimLight.color = ColorFromHex("bcd0d6");
         rimLight.intensity = 0.22f;
         rim.transform.localRotation = Quaternion.Euler(18f, 96f, 0f);
+
+        // Ambient animation: flowing water + drifting cloud shadows (play mode only).
+        var atmosphere = NewChild("Atmosphere").AddComponent<HexMapAtmosphere>();
+        atmosphere.AddWater(featureMaterials["River"], new Vector2(0.14f, 0f));
+        atmosphere.AddWater(featureMaterials["ShallowWater"], new Vector2(0.015f, 0.01f));
+        atmosphere.AddWater(featureMaterials["WaterPlane"], new Vector2(0.01f, 0.008f));
+        atmosphere.AddWater(featureMaterials["DeepWater"], new Vector2(0.008f, 0.006f));
 
         BuildPostProcessing();
     }
