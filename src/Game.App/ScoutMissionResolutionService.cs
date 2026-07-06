@@ -42,7 +42,7 @@ public sealed class ScoutMissionResolutionService
                     if (game.World.Map.Contains(coord))
                     {
                         reportedNewKnowledge = reportedNewKnowledge || game.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Unknown;
-                        game.Knowledge.PromoteTileKnowledge(coord, KnowledgeLevel.Reported);
+                        AddScoutReportNote(game, report, coord);
                     }
                 }
 
@@ -138,18 +138,42 @@ public sealed class ScoutMissionResolutionService
     private static IReadOnlyList<HexCoord> BuildRelatedCoords(GameState game, ScoutMissionState mission)
     {
         var coords = new List<HexCoord>();
-        var offset = mission.Direction.ToOffset();
-        var current = mission.Origin;
-        for (var i = 0; i < mission.DurationDays + 1; i++)
+        var seen = new HashSet<HexCoord>();
+        var offset = mission.Direction.ToScoutOffset();
+        for (var step = 1; step <= mission.DurationDays; step++)
         {
-            current += offset;
-            if (game.World.Map.Contains(current))
+            var routeCenter = OffsetFromOrigin(mission.Origin, offset, step);
+            AddReportedCoord(game, coords, seen, routeCenter);
+
+            foreach (var neighbor in routeCenter.Neighbors())
             {
-                coords.Add(current);
+                AddReportedCoord(game, coords, seen, neighbor);
             }
         }
 
         return coords;
+    }
+
+    private static HexCoord OffsetFromOrigin(HexCoord origin, HexCoord offset, int steps)
+    {
+        return new HexCoord(origin.Q + offset.Q * steps, origin.R + offset.R * steps);
+    }
+
+    private static void AddReportedCoord(GameState game, List<HexCoord> coords, HashSet<HexCoord> seen, HexCoord coord)
+    {
+        if (!game.World.Map.Contains(coord) || !seen.Add(coord))
+        {
+            return;
+        }
+
+        coords.Add(coord);
+    }
+
+    private static void AddScoutReportNote(GameState game, ScoutReportState report, HexCoord coord)
+    {
+        var id = $"note-scout-report-{game.PlayerNotes.Notes.Count + 1}";
+        var text = $"{report.Title}: reported scout trace. Not confirmed by the expedition.";
+        game.PlayerNotes.AddNote(new PlayerMapNoteState(id, coord, text));
     }
 
     private static string ScoutKnowledgeSourceId(ScoutReportState report)

@@ -14,7 +14,7 @@ public sealed class ScoutMissionState
         string id,
         IReadOnlyList<string> scoutMemberIds,
         HexCoord origin,
-        HexDirection direction,
+        ScoutDirection direction,
         int durationDays,
         int expectedReturnWorldDay,
         ScoutMissionFocus focus,
@@ -56,7 +56,7 @@ public sealed class ScoutMissionState
 
     public HexCoord Origin { get; }
 
-    public HexDirection Direction { get; }
+    public ScoutDirection Direction { get; }
 
     public int DurationDays { get; }
 

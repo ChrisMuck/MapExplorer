@@ -528,9 +528,11 @@ Possible directions:
 
 - north
 - northeast
+- east
 - southeast
 - south
 - southwest
+- west
 - northwest
 
 ### Duration

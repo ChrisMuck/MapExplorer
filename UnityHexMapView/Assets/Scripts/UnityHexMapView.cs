@@ -86,7 +86,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private string markerLabelDraft = "";
     private string markerFactionIdDraft = "border-wardens";
     private string noteDraftText = "";
-    private HexDirection scoutDirection = HexDirection.East;
+    private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
     private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
@@ -208,10 +208,90 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public void RequestOpenScoutReportFromUi(int reportIndex)
+    {
+        if (coreGameState == null ||
+            reportIndex < 0 ||
+            reportIndex >= coreGameState.Knowledge.ScoutReports.Count)
+        {
+            return;
+        }
+
+        var report = coreGameState.Knowledge.ScoutReports[reportIndex];
+        if (report.RelatedCoords.Count == 0)
+        {
+            interactionMessage = $"Scout report selected: {report.Title}. No map coordinates were reported.";
+            RefreshHud();
+            return;
+        }
+
+        var coord = report.RelatedCoords[0];
+        var viewCoord = CoreCoordToViewCoord(coord);
+        inspectedHex = viewCoord;
+        selectedPreviewHex = viewCoord;
+        hasInspectedHex = true;
+        inspectedLocation = coreGameState.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Confirmed ? FindLocation(coord) : null;
+        interactionMessage = $"Scout report selected: {report.Title}. Reported field {coord}.";
+        FocusCameraOnCoord(viewCoord);
+        RefreshHexOverlays();
+        RefreshHud();
+    }
+
     public void RequestSendScoutMissionFromUi()
     {
         SendScoutMissionFromHud();
         RefreshToolkitHud();
+    }
+
+    public bool RequestSendScoutMissionFromUi(
+        IReadOnlyList<string> scoutMemberIds,
+        ScoutDirection direction,
+        int durationDays,
+        ScoutMissionFocus focus,
+        ScoutMissionBehavior behavior)
+    {
+        if (coreGameState == null)
+        {
+            return false;
+        }
+
+        var result = gameApplication.SendScoutMission(coreGameState, scoutMemberIds, direction, durationDays, focus, behavior);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Scout mission rejected.";
+            RefreshToolkitHud();
+            return false;
+        }
+
+        var scoutText = result.Mission!.ScoutMemberIds.Count == 1 ? "Scout" : "Scouts";
+        interactionMessage = $"{scoutText} sent {result.Mission.Direction} for {result.Mission.DurationDays} day(s). Expected return day {result.Mission.ExpectedReturnWorldDay}.";
+        RefreshHud();
+        RefreshToolkitHud();
+        return true;
+    }
+
+    public IReadOnlyList<ExpeditionMemberState> GetAvailableScoutsForUi()
+    {
+        var scouts = new List<ExpeditionMemberState>();
+        if (coreGameState == null)
+        {
+            return scouts;
+        }
+
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
+        {
+            return scouts;
+        }
+
+        foreach (var member in coreGameState.Expedition.Members)
+        {
+            if (member.Role == ExpeditionMemberRole.Scout && member.Status == ExpeditionMemberStatus.Available)
+            {
+                scouts.Add(member);
+            }
+        }
+
+        return scouts;
     }
 
     public void RequestAddMarkerFromUi()
@@ -2246,6 +2326,11 @@ public sealed class UnityHexMapView : MonoBehaviour
             return ids;
         }
 
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
+        {
+            return ids;
+        }
+
         foreach (var member in coreGameState.Expedition.Members)
         {
             if (member.Role != ExpeditionMemberRole.Scout || member.Status != ExpeditionMemberStatus.Available)
@@ -2266,6 +2351,11 @@ public sealed class UnityHexMapView : MonoBehaviour
     private int CountAvailableScouts()
     {
         if (coreGameState == null)
+        {
+            return 0;
+        }
+
+        if (coreGameState.Expedition.Status != ExpeditionStatus.Active)
         {
             return 0;
         }
@@ -2310,12 +2400,14 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         scoutDirection = scoutDirection switch
         {
-            HexDirection.East => HexDirection.NorthEast,
-            HexDirection.NorthEast => HexDirection.NorthWest,
-            HexDirection.NorthWest => HexDirection.West,
-            HexDirection.West => HexDirection.SouthWest,
-            HexDirection.SouthWest => HexDirection.SouthEast,
-            _ => HexDirection.East
+            ScoutDirection.North => ScoutDirection.NorthEast,
+            ScoutDirection.NorthEast => ScoutDirection.East,
+            ScoutDirection.East => ScoutDirection.SouthEast,
+            ScoutDirection.SouthEast => ScoutDirection.South,
+            ScoutDirection.South => ScoutDirection.SouthWest,
+            ScoutDirection.SouthWest => ScoutDirection.West,
+            ScoutDirection.West => ScoutDirection.NorthWest,
+            _ => ScoutDirection.North
         };
     }
 
@@ -2590,6 +2682,22 @@ public sealed class UnityHexMapView : MonoBehaviour
         if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
         {
             return true;
+        }
+
+        foreach (var marker in coreGameState.PlayerNotes.Markers)
+        {
+            if (marker.Coord == coord)
+            {
+                return true;
+            }
+        }
+
+        foreach (var note in coreGameState.PlayerNotes.Notes)
+        {
+            if (note.Coord == coord)
+            {
+                return true;
+            }
         }
 
         return coreGameState.Knowledge.GetTileKnowledge(coord) != KnowledgeLevel.Unknown;

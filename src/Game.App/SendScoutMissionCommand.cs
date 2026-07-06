@@ -15,7 +15,7 @@ public sealed class SendScoutMissionCommand
     public SendScoutMissionResult Execute(
         GameState game,
         IReadOnlyList<string> scoutMemberIds,
-        HexDirection direction,
+        ScoutDirection direction,
         int durationDays,
         ScoutMissionFocus focus,
         ScoutMissionBehavior behavior)

@@ -22,6 +22,11 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private Vector2 lastResponsiveSize;
     private int selectedReportIndex = -1;
     private int selectedHintIndex = -1;
+    private readonly HashSet<string> selectedScoutIds = new HashSet<string>();
+    private ScoutDirection scoutDirection = ScoutDirection.East;
+    private int scoutDurationDays = 2;
+    private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
+    private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
 
     public void Initialize(UnityHexMapView view)
     {
@@ -65,10 +70,10 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
         RegisterClick("link-reports", () => Open(Reports));
         RegisterClick("side-panel-close", CloseSide);
-        RegisterClick("action-open-report", () => Open(Reports));
+        RegisterClick("action-open-report", OpenSelectedReport);
         RegisterClick("action-marker-from-report", () => mapView?.RequestMarkerFromReportHintFromUi(selectedReportIndex, selectedHintIndex));
-        RegisterClick("action-send-scout", () => mapView?.RequestSendScoutMissionFromUi());
-        RegisterClick("action-send-scout-panel", () => mapView?.RequestSendScoutMissionFromUi());
+        RegisterClick("action-send-scout", OpenScoutMissionPopup);
+        RegisterClick("action-send-scout-panel", OpenScoutMissionPopup);
         RegisterClick("action-add-marker", () => mapView?.RequestAddMarkerFromUi());
         RegisterClick("action-add-note", () => mapView?.RequestAddNoteFromUi());
         RegisterClick("action-inspect", () => mapView?.RequestInspectSelectedLocationFromUi());
@@ -77,6 +82,9 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("action-end-day", () => mapView?.RequestEndDayFromUi());
         RegisterClick("faction-modal-close", () => mapView?.RequestCloseFactionInteractionFromUi());
         RegisterClick("faction-response-leave", () => mapView?.RequestCloseFactionInteractionFromUi());
+        RegisterClick("scout-modal-close", CloseScoutMissionPopup);
+        RegisterClick("scout-mission-send", SendSelectedScoutMission);
+        RegisterScoutMissionOptions();
 
         if (string.IsNullOrEmpty(openSection))
         {
@@ -149,12 +157,127 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         BuildArchiveList(state);
         RefreshEventPopup(state);
         RefreshFactionInteractionPopup(state);
+        RefreshScoutMissionPopup(state);
     }
 
     private void RefreshKnowledgeStats(GameState state)
     {
         SetText("value-field-knowledge", state.Expedition.UnsecuredKnowledge.ToString());
         SetText("value-base-knowledge", state.Base.KnowledgePoints.ToString());
+    }
+
+    private void OpenSelectedReport()
+    {
+        Open(Reports);
+        mapView?.RequestOpenScoutReportFromUi(selectedReportIndex);
+        Refresh();
+    }
+
+    private void OpenScoutMissionPopup()
+    {
+        if (mapView == null)
+        {
+            return;
+        }
+
+        selectedScoutIds.Clear();
+        foreach (var scout in mapView.GetAvailableScoutsForUi())
+        {
+            selectedScoutIds.Add(scout.Id);
+            break;
+        }
+
+        SetDisplay("scout-mission-popup", true);
+        RefreshScoutMissionPopup(mapView.CurrentGameState);
+    }
+
+    private void CloseScoutMissionPopup()
+    {
+        SetDisplay("scout-mission-popup", false);
+    }
+
+    private void SendSelectedScoutMission()
+    {
+        if (mapView == null || selectedScoutIds.Count == 0)
+        {
+            SetText("scout-mission-preview", "Waehle mindestens einen verfuegbaren Spaeher aus der aktuellen Expedition.");
+            return;
+        }
+
+        var sent = mapView.RequestSendScoutMissionFromUi(
+            new List<string>(selectedScoutIds),
+            scoutDirection,
+            scoutDurationDays,
+            scoutFocus,
+            scoutBehavior);
+
+        if (sent)
+        {
+            CloseScoutMissionPopup();
+            Refresh();
+            return;
+        }
+
+        SetText("scout-mission-preview", mapView.CurrentInteractionMessage);
+    }
+
+    private void RegisterScoutMissionOptions()
+    {
+        RegisterScoutDirection("scout-direction-north", ScoutDirection.North);
+        RegisterScoutDirection("scout-direction-north-east", ScoutDirection.NorthEast);
+        RegisterScoutDirection("scout-direction-east", ScoutDirection.East);
+        RegisterScoutDirection("scout-direction-south-east", ScoutDirection.SouthEast);
+        RegisterScoutDirection("scout-direction-south", ScoutDirection.South);
+        RegisterScoutDirection("scout-direction-south-west", ScoutDirection.SouthWest);
+        RegisterScoutDirection("scout-direction-west", ScoutDirection.West);
+        RegisterScoutDirection("scout-direction-north-west", ScoutDirection.NorthWest);
+
+        for (var duration = 1; duration <= 5; duration++)
+        {
+            var capturedDuration = duration;
+            RegisterClick($"scout-duration-{duration}", () =>
+            {
+                scoutDurationDays = capturedDuration;
+                RefreshScoutMissionPopup(mapView?.CurrentGameState);
+            });
+        }
+
+        RegisterScoutFocus("scout-focus-survey", ScoutMissionFocus.Survey);
+        RegisterScoutFocus("scout-focus-route", ScoutMissionFocus.Route);
+        RegisterScoutFocus("scout-focus-resources", ScoutMissionFocus.Resources);
+        RegisterScoutFocus("scout-focus-faction", ScoutMissionFocus.FactionSigns);
+        RegisterScoutFocus("scout-focus-ruins", ScoutMissionFocus.Ruins);
+
+        RegisterScoutBehavior("scout-behavior-cautious", ScoutMissionBehavior.Cautious);
+        RegisterScoutBehavior("scout-behavior-balanced", ScoutMissionBehavior.Balanced);
+        RegisterScoutBehavior("scout-behavior-bold", ScoutMissionBehavior.Bold);
+    }
+
+    private void RegisterScoutDirection(string elementName, ScoutDirection direction)
+    {
+        RegisterClick(elementName, () =>
+        {
+            scoutDirection = direction;
+            RefreshScoutMissionPopup(mapView?.CurrentGameState);
+        });
+    }
+
+    private void RegisterScoutFocus(string elementName, ScoutMissionFocus focus)
+    {
+        RegisterClick(elementName, () =>
+        {
+            scoutFocus = focus;
+            RefreshScoutMissionPopup(mapView?.CurrentGameState);
+        });
+    }
+
+    private void RegisterScoutBehavior(string elementName, ScoutMissionBehavior behavior)
+    {
+        RegisterClick(elementName, () =>
+        {
+            scoutBehavior = behavior;
+            RefreshScoutMissionPopup(mapView?.CurrentGameState);
+        });
     }
 
     private void RefreshActionBar(GameState state)
@@ -459,6 +582,214 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             });
             list.Add(row);
         }
+    }
+
+    private void RefreshScoutMissionPopup(GameState state)
+    {
+        var popup = root?.Q<VisualElement>("scout-mission-popup");
+        if (popup == null)
+        {
+            return;
+        }
+
+        var availableScoutIds = new HashSet<string>();
+        if (state != null && state.Expedition.Status == ExpeditionStatus.Active)
+        {
+            foreach (var member in state.Expedition.Members)
+            {
+                if (member.Role == ExpeditionMemberRole.Scout && member.Status == ExpeditionMemberStatus.Available)
+                {
+                    availableScoutIds.Add(member.Id);
+                }
+            }
+        }
+
+        selectedScoutIds.RemoveWhere(id => !availableScoutIds.Contains(id));
+
+        var candidates = root?.Q<VisualElement>("scout-candidate-list");
+        if (candidates != null)
+        {
+            candidates.Clear();
+            if (state != null)
+            {
+                foreach (var member in state.Expedition.Members)
+                {
+                    if (member.Role != ExpeditionMemberRole.Scout)
+                    {
+                        continue;
+                    }
+
+                    var row = new VisualElement();
+                    row.AddToClassList("scout-candidate");
+                    var available = state.Expedition.Status == ExpeditionStatus.Active && member.Status == ExpeditionMemberStatus.Available;
+                    row.EnableInClassList("disabled", !available);
+                    row.EnableInClassList("selected", selectedScoutIds.Contains(member.Id));
+
+                    var name = new Label(member.Name);
+                    name.AddToClassList("scout-candidate__name");
+                    row.Add(name);
+
+                    var status = new Label(ScoutStatusText(member.Status));
+                    status.AddToClassList("scout-candidate__status");
+                    row.Add(status);
+
+                    var memberId = member.Id;
+                    row.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        ToggleScoutSelection(memberId, available);
+                        evt.StopPropagation();
+                    });
+                    candidates.Add(row);
+                }
+            }
+
+            if (candidates.childCount == 0)
+            {
+                var empty = new Label("Keine verfuegbaren Spaeher in der aktuellen Expedition.");
+                empty.AddToClassList("archive-empty");
+                candidates.Add(empty);
+            }
+        }
+
+        ToggleChoice("scout-direction-north", scoutDirection == ScoutDirection.North);
+        ToggleChoice("scout-direction-north-east", scoutDirection == ScoutDirection.NorthEast);
+        ToggleChoice("scout-direction-east", scoutDirection == ScoutDirection.East);
+        ToggleChoice("scout-direction-south-east", scoutDirection == ScoutDirection.SouthEast);
+        ToggleChoice("scout-direction-south", scoutDirection == ScoutDirection.South);
+        ToggleChoice("scout-direction-south-west", scoutDirection == ScoutDirection.SouthWest);
+        ToggleChoice("scout-direction-west", scoutDirection == ScoutDirection.West);
+        ToggleChoice("scout-direction-north-west", scoutDirection == ScoutDirection.NorthWest);
+
+        for (var duration = 1; duration <= 5; duration++)
+        {
+            ToggleChoice($"scout-duration-{duration}", scoutDurationDays == duration);
+        }
+
+        ToggleChoice("scout-focus-survey", scoutFocus == ScoutMissionFocus.Survey);
+        ToggleChoice("scout-focus-route", scoutFocus == ScoutMissionFocus.Route);
+        ToggleChoice("scout-focus-resources", scoutFocus == ScoutMissionFocus.Resources);
+        ToggleChoice("scout-focus-faction", scoutFocus == ScoutMissionFocus.FactionSigns);
+        ToggleChoice("scout-focus-ruins", scoutFocus == ScoutMissionFocus.Ruins);
+
+        ToggleChoice("scout-behavior-cautious", scoutBehavior == ScoutMissionBehavior.Cautious);
+        ToggleChoice("scout-behavior-balanced", scoutBehavior == ScoutMissionBehavior.Balanced);
+        ToggleChoice("scout-behavior-bold", scoutBehavior == ScoutMissionBehavior.Bold);
+
+        var expectedReturn = state == null ? 0 : state.World.WorldDay + scoutDurationDays;
+        var selectedCount = selectedScoutIds.Count;
+        var risk = ScoutRiskText(scoutBehavior, scoutFocus, scoutDurationDays);
+        SetText("scout-modal-summary", $"{selectedCount}/2 Spaeher · Rueckkehr Tag {expectedReturn}");
+        SetText("scout-mission-preview", state == null || state.Expedition.Status != ExpeditionStatus.Active
+            ? "Es ist keine aktive Expedition unterwegs."
+            : selectedCount == 0
+            ? "Waehle mindestens einen verfuegbaren Spaeher aus der aktuellen Expedition."
+            : $"{selectedCount} Spaeher nach {DirectionText(scoutDirection)} · {scoutDurationDays} Tag(e) · Fokus {FocusText(scoutFocus)} · {risk}");
+
+        var sendButton = root?.Q<Label>("scout-mission-send");
+        sendButton?.EnableInClassList("disabled", selectedCount == 0 || state == null || state.Expedition.Status != ExpeditionStatus.Active);
+    }
+
+    private void ToggleScoutSelection(string memberId, bool available)
+    {
+        if (!available)
+        {
+            return;
+        }
+
+        if (selectedScoutIds.Contains(memberId))
+        {
+            selectedScoutIds.Remove(memberId);
+        }
+        else if (selectedScoutIds.Count < 2)
+        {
+            selectedScoutIds.Add(memberId);
+        }
+
+        RefreshScoutMissionPopup(mapView?.CurrentGameState);
+    }
+
+    private void ToggleChoice(string elementName, bool selected)
+    {
+        var element = root?.Q<VisualElement>(elementName);
+        element?.EnableInClassList("selected", selected);
+    }
+
+    private static string ScoutStatusText(ExpeditionMemberStatus status)
+    {
+        switch (status)
+        {
+            case ExpeditionMemberStatus.Available:
+                return "bereit";
+            case ExpeditionMemberStatus.Assigned:
+                return "auf Mission";
+            case ExpeditionMemberStatus.Injured:
+                return "verletzt";
+            case ExpeditionMemberStatus.Missing:
+                return "vermisst";
+            case ExpeditionMemberStatus.Dead:
+                return "tot";
+            default:
+                return status.ToString();
+        }
+    }
+
+    private static string DirectionText(ScoutDirection direction)
+    {
+        switch (direction)
+        {
+            case ScoutDirection.North:
+                return "Nord";
+            case ScoutDirection.NorthEast:
+                return "Nordost";
+            case ScoutDirection.East:
+                return "Ost";
+            case ScoutDirection.SouthEast:
+                return "Suedost";
+            case ScoutDirection.South:
+                return "Sued";
+            case ScoutDirection.SouthWest:
+                return "Suedwest";
+            case ScoutDirection.West:
+                return "West";
+            case ScoutDirection.NorthWest:
+                return "Nordwest";
+            default:
+                return direction.ToString();
+        }
+    }
+
+    private static string FocusText(ScoutMissionFocus focus)
+    {
+        switch (focus)
+        {
+            case ScoutMissionFocus.Survey:
+                return "Erkunden";
+            case ScoutMissionFocus.Route:
+                return "Route";
+            case ScoutMissionFocus.Resources:
+                return "Ressourcen";
+            case ScoutMissionFocus.FactionSigns:
+                return "Zeichen";
+            case ScoutMissionFocus.Ruins:
+                return "Ruinen";
+            default:
+                return focus.ToString();
+        }
+    }
+
+    private static string ScoutRiskText(ScoutMissionBehavior behavior, ScoutMissionFocus focus, int durationDays)
+    {
+        if (behavior == ScoutMissionBehavior.Bold || focus == ScoutMissionFocus.Ruins || durationDays >= 4)
+        {
+            return "Risiko hoch";
+        }
+
+        if (behavior == ScoutMissionBehavior.Cautious && durationDays <= 2)
+        {
+            return "Risiko niedrig";
+        }
+
+        return "Risiko mittel";
     }
 
     private void BuildArchiveList(GameState state)
