@@ -19,6 +19,19 @@ public sealed class UnityHexMapView : MonoBehaviour
         Snow
     }
 
+    private enum ForestType
+    {
+        Coniferous,
+        Deciduous,
+        Mixed
+    }
+
+    private enum TreeKind
+    {
+        Pine,
+        Broadleaf
+    }
+
     private struct TileData
     {
         public TerrainKind Terrain;
@@ -63,6 +76,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly GameApplication gameApplication = new GameApplication();
     private Transform currentBuildRoot;
+    private HexMapWindSway windSway;
     private Transform terrainRoot;
     private Transform featureRoot;
     private Transform systemsRoot;
@@ -583,6 +597,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         strategyCamera = null;
         cameraRig = null;
         currentBuildRoot = null;
+        windSway = null;
         terrainRoot = null;
         featureRoot = null;
         systemsRoot = null;
@@ -606,6 +621,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         featureRoot = NewRootGroup("Features");
         currentBuildRoot = featureRoot;
+        windSway = NewChild("Wind").AddComponent<HexMapWindSway>();
         BuildTerrainObjectGroups();
         BuildFeatures();
         BuildExpeditionMarker();
@@ -764,7 +780,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["TreeTrunk"] = Material("Tree Trunk", "4c3327", 0.82f);
         featureMaterials["TreeCrown"] = Material("Tree Crown", "2a613f", 0.86f);
         featureMaterials["TreeCrownDark"] = Material("Tree Crown Dark", "1b3f2d", 0.9f);
-        featureMaterials["ForestCover"] = Material("Forest Cover", "203d2d", 0.88f);
+        featureMaterials["TreeCrownMid"] = Material("Tree Crown Mid", "356e46", 0.86f);
+        featureMaterials["TreeCrownLight"] = Material("Tree Crown Light", "4c7f4a", 0.84f);
+        featureMaterials["TreeCrownGold"] = Material("Tree Crown Gold", "8f8a3a", 0.8f);
+        featureMaterials["TreeCrownAutumn"] = Material("Tree Crown Autumn", "a76a2f", 0.78f);
+        featureMaterials["ForestCover"] = Material("Forest Cover", "4a6a40", 0.88f);
         featureMaterials["Rock"] = DoubleSidedMaterial(Material("Rock", "777b71", 0.9f));
         featureMaterials["DarkRock"] = DoubleSidedMaterial(Material("Dark Rock", "383c36", 0.92f));
         featureMaterials["MountainBase"] = DoubleSidedMaterial(Material("Mountain Base", "666356", 0.92f));
@@ -776,8 +796,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         featureMaterials["WallStone"] = Material("Ancient Wall Stone", "8d8772", 0.9f);
         featureMaterials["TowerRoof"] = Material("Tower Roof", "4e5267", 0.78f);
         featureMaterials["WaterPlane"] = Material("Distant Water", "36585c", 0.44f);
+        featureMaterials["DeepWater"] = Material("Deep Water", "22444a", 0.4f);
         featureMaterials["BoardShelf"] = Material("Island Shelf", "46502e", 0.92f);
         featureMaterials["ShallowWater"] = TransparentMaterial("Coastal Shallows", "4d838d", 0.5f);
+        featureMaterials["CoastFoam"] = TransparentMaterial("Coast Foam", "cfe6e0", 0.2f);
         featureMaterials["ExpeditionBase"] = Material("Expedition Base", "443627", 0.82f);
         featureMaterials["ExpeditionCloth"] = Material("Expedition Cloth", "d0a44c", 0.7f);
         featureMaterials["ExpeditionFlag"] = EmissiveMaterial("Expedition Flag", "d95b4f", "e8a15d", 0.18f);
@@ -1176,6 +1198,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         root.transform.localPosition = localPosition;
         root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
         var scale = Mathf.Lerp(0.8f, 1.25f, Hash01(coord.y, coord.x, seedOffset + 3)) * hexSize;
+        if (windSway != null)
+        {
+            var amplitude = Mathf.Lerp(4f, 8f, Hash01(coord.y, coord.x, seedOffset + 5));
+            var speed = Mathf.Lerp(1.4f, 2.4f, Hash01(coord.x, coord.y, seedOffset + 7));
+            var phase = Hash01(coord.x, coord.y, seedOffset + 9) * Mathf.PI * 2f;
+            windSway.Register(root.transform, amplitude, speed, phase);
+        }
 
         var blades = 3;
         for (var i = 0; i < blades; i++)
@@ -1241,17 +1270,72 @@ public sealed class UnityHexMapView : MonoBehaviour
         for (var regionIndex = 0; regionIndex < regions.Count; regionIndex++)
         {
             var region = regions[regionIndex];
-            var root = NewChild($"ForestRegion_{regionIndex:D2}");
+            var forestType = ClassifyForest(region);
+            var root = NewChild($"ForestRegion_{regionIndex:D2}_{forestType}");
 
             for (var i = 0; i < region.Count; i++)
             {
                 var coord = region[i];
-                AddForestHexCluster(root.transform, coord, regionIndex * 1000 + i);
+                AddForestHexCluster(root.transform, coord, regionIndex * 1000 + i, forestType);
             }
         }
     }
 
-    private void AddForestHexCluster(Transform parent, Vector2Int coord, int seedOffset)
+    // Deterministic forest type per region. Keyed off a region-stable coordinate (not the
+    // BFS/enumeration order) so the fixed playtest map always classifies the same way.
+    // Higher / mountain-adjacent stands lean coniferous; open lowland stands lean deciduous.
+    private ForestType ClassifyForest(IReadOnlyList<Vector2Int> region)
+    {
+        var rep = region[0];
+        var mountainTouch = 0;
+        foreach (var coord in region)
+        {
+            if (coord.x < rep.x || (coord.x == rep.x && coord.y < rep.y))
+            {
+                rep = coord;
+            }
+
+            if (CountMatchingNeighbors(coord, IsMountainTerrain) > 0)
+            {
+                mountainTouch++;
+            }
+        }
+
+        var roll = Hash01(rep.x, rep.y, 52000);
+        var mountainBias = region.Count > 0 ? mountainTouch / (float)region.Count : 0f;
+        roll -= mountainBias * 0.35f; // mountain-adjacent forests skew coniferous
+
+        if (roll < 0.42f) return ForestType.Coniferous;
+        if (roll < 0.74f) return ForestType.Deciduous;
+        return ForestType.Mixed;
+    }
+
+    private GameObject[] ForestClusterPrefabsFor(ForestType forestType)
+    {
+        var typed = forestType switch
+        {
+            ForestType.Coniferous => Prefabs.coniferousForestClusterPrefabs,
+            ForestType.Deciduous => Prefabs.deciduousForestClusterPrefabs,
+            _ => Prefabs.mixedForestClusterPrefabs
+        };
+
+        return HasPrefab(typed) ? typed : Prefabs.forestClusterPrefabs;
+    }
+
+    private TreeKind TreeKindForForest(ForestType forestType, Vector2Int coord, int seedOffset)
+    {
+        switch (forestType)
+        {
+            case ForestType.Coniferous:
+                return TreeKind.Pine;
+            case ForestType.Deciduous:
+                return TreeKind.Broadleaf;
+            default:
+                return Hash01(coord.x, coord.y, seedOffset + 431) < 0.5f ? TreeKind.Pine : TreeKind.Broadleaf;
+        }
+    }
+
+    private void AddForestHexCluster(Transform parent, Vector2Int coord, int seedOffset, ForestType forestType)
     {
         if (!tiles.TryGetValue(coord, out var tile))
         {
@@ -1261,14 +1345,17 @@ public sealed class UnityHexMapView : MonoBehaviour
         var group = NewChild($"ForestHex_{coord.x}_{coord.y}", parent);
         RegisterFeatureObject(coord, group);
         var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
-        if (TryPlacePrefab(Prefabs.forestClusterPrefabs, group.transform, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
-        {
-            return;
-        }
 
+        // Grid-aligned forest floor under the trees. Added for both the prefab and the
+        // procedural path so the ground reads as a lit forest floor rather than deep shadow.
         var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", group.transform);
         cover.transform.localPosition = tile.World;
         AddMesh(cover, "Cover", HexTopMesh(hexSize * 0.995f, VisualTileTopY + 0.006f), featureMaterials["ForestCover"]);
+
+        if (TryPlacePrefab(ForestClusterPrefabsFor(forestType), group.transform, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
+        {
+            return;
+        }
 
         var treeCount = interior ? 8 : 6;
         for (var i = 0; i < treeCount; i++)
@@ -1283,7 +1370,8 @@ public sealed class UnityHexMapView : MonoBehaviour
             var neighborPull = ForestNeighborOffset(coord, i) * (interior ? 0.18f : 0.28f);
             var offset = new Vector3(Mathf.Cos(angle) * ring * hexSize, 0f, Mathf.Sin(angle) * ring * hexSize) + neighborPull;
             var position = tile.World + offset + Vector3.up * (VisualTileTopY + 0.07f);
-            AddTreeAt(group.transform, position, coord, seedOffset + i, interior ? 1.28f : 1.12f);
+            var treeKind = TreeKindForForest(forestType, coord, seedOffset + i);
+            AddTreeAt(group.transform, position, coord, seedOffset + i, interior ? 1.28f : 1.12f, treeKind);
         }
     }
 
@@ -1547,6 +1635,32 @@ public sealed class UnityHexMapView : MonoBehaviour
         return terrain == TerrainKind.Mountain || terrain == TerrainKind.Snow;
     }
 
+    // Per-tree crown tint: mostly greens with a few gold/autumn accents so forests
+    // read as varied stands rather than cloned trees.
+    private Material PickCrownMaterial(Vector2Int coord, int index)
+    {
+        var roll = Hash01(coord.x, coord.y, index + 211);
+        if (roll < 0.05f) return featureMaterials["TreeCrownAutumn"];
+        if (roll < 0.11f) return featureMaterials["TreeCrownGold"];
+        if (roll < 0.42f) return featureMaterials["TreeCrownDark"];
+        if (roll < 0.68f) return featureMaterials["TreeCrownMid"];
+        if (roll < 0.86f) return featureMaterials["TreeCrown"];
+        return featureMaterials["TreeCrownLight"];
+    }
+
+    private void RegisterTreeSway(Transform treeTransform, Vector2Int coord, int index)
+    {
+        if (windSway == null || treeTransform == null)
+        {
+            return;
+        }
+
+        var amplitude = Mathf.Lerp(1.8f, 3.6f, Hash01(coord.x, coord.y, index + 611));
+        var speed = Mathf.Lerp(0.8f, 1.6f, Hash01(coord.y, coord.x, index + 613));
+        var phase = Hash01(coord.x, coord.y, index + 617) * Mathf.PI * 2f;
+        windSway.Register(treeTransform, amplitude, speed, phase);
+    }
+
     private void AddTree(Transform parent, float elevation, Vector2Int coord, int index)
     {
         var angle = index * 2.1f + (Hash01(coord.x, coord.y, index) - 0.5f) * 0.7f;
@@ -1554,12 +1668,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         AddTreeAt(parent, new Vector3(Mathf.Cos(angle) * distance, elevation + 0.04f, Mathf.Sin(angle) * distance), coord, index);
     }
 
-    private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index, float scaleMultiplier = 1f)
+    private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index, float scaleMultiplier = 1f, TreeKind kind = TreeKind.Pine)
     {
         var rotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, index + 91) * 360f, 0f);
         var scale = Mathf.Lerp(0.78f, 1.28f, Hash01(coord.x, coord.y, index + 151));
-        if (TryPlacePrefab(Prefabs.treePrefabs, parent, "Tree", localPosition, rotation, Vector3.one * scale * scaleMultiplier, coord.x, coord.y, index, out _))
+        if (TryPlacePrefab(TreePrefabsFor(kind), parent, "Tree", localPosition, rotation, Vector3.one * scale * scaleMultiplier, coord.x, coord.y, index, out var treeInstance))
         {
+            RegisterTreeSway(treeInstance.transform, coord, index);
             return;
         }
 
@@ -1567,53 +1682,83 @@ public sealed class UnityHexMapView : MonoBehaviour
         root.transform.localPosition = localPosition;
         root.transform.localRotation = rotation;
         root.transform.localScale = Vector3.one * scale * scaleMultiplier;
+        RegisterTreeSway(root.transform, coord, index);
 
-        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        trunk.name = "Trunk";
-        trunk.transform.SetParent(root.transform, false);
-        trunk.transform.localPosition = new Vector3(0f, 0.13f, 0f);
-        trunk.transform.localScale = new Vector3(0.07f, 0.13f, 0.07f);
-        trunk.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["TreeTrunk"];
-
-        var style = Mathf.Abs(coord.x * 11 + coord.y * 7 + index) % 4;
-        var crownMaterial = style == 0 || style == 3 ? featureMaterials["TreeCrownDark"] : featureMaterials["TreeCrown"];
-        if (style == 0)
+        var crownMaterial = PickCrownMaterial(coord, index);
+        if (kind == TreeKind.Broadleaf)
         {
-            var lower = CreateCone("LowerCrown", 0.32f, 0.04f, 0.34f, crownMaterial);
-            lower.transform.SetParent(root.transform, false);
-            lower.transform.localPosition = new Vector3(0f, 0.36f, 0f);
-            lower.transform.localRotation = Quaternion.Euler(-3f, 30f + index * 17f, 3f);
-
-            var upper = CreateCone("UpperCrown", 0.22f, 0.03f, 0.28f, crownMaterial);
-            upper.transform.SetParent(root.transform, false);
-            upper.transform.localPosition = new Vector3(0f, 0.55f, 0f);
-            upper.transform.localRotation = Quaternion.Euler(2f, 10f + index * 29f, -2f);
-        }
-        else if (style == 1)
-        {
-            var crown = CreateCone("RoundCrown", 0.27f, 0.2f, 0.32f, crownMaterial);
-            crown.transform.SetParent(root.transform, false);
-            crown.transform.localPosition = new Vector3(0f, 0.43f, 0f);
-            crown.transform.localRotation = Quaternion.Euler(0f, 30f + index * 17f, 0f);
-        }
-        else if (style == 2)
-        {
-            var crown = CreateCone("TallCrown", 0.24f, 0.02f, 0.62f, crownMaterial);
-            crown.transform.SetParent(root.transform, false);
-            crown.transform.localPosition = new Vector3(0f, 0.5f, 0f);
-            crown.transform.localRotation = Quaternion.Euler(-2f, 30f + index * 17f, 2f);
+            BuildBroadleafTree(root.transform, coord, index, crownMaterial);
         }
         else
         {
-            for (var lobe = 0; lobe < 3; lobe++)
-            {
-                var lobeAngle = lobe * Mathf.PI * 2f / 3f + index * 0.3f;
-                var crown = CreateCone("ClusterCrown", 0.17f, 0.12f, 0.24f, crownMaterial);
-                crown.transform.SetParent(root.transform, false);
-                crown.transform.localPosition = new Vector3(Mathf.Cos(lobeAngle) * 0.1f, 0.42f + lobe * 0.035f, Mathf.Sin(lobeAngle) * 0.1f);
-                crown.transform.localRotation = Quaternion.Euler(0f, lobeAngle * Mathf.Rad2Deg, 0f);
-            }
+            BuildPineTree(root.transform, index, crownMaterial);
         }
+    }
+
+    private GameObject[] TreePrefabsFor(TreeKind kind)
+    {
+        var typed = kind == TreeKind.Broadleaf ? Prefabs.broadleafTreePrefabs : Prefabs.pineTreePrefabs;
+        return HasPrefab(typed) ? typed : Prefabs.treePrefabs;
+    }
+
+    // Pine: stacked cones tapering to real points (topRadius ~0.01) so there is no flat cap
+    // catching the light as a ring.
+    private void BuildPineTree(Transform root, int index, Material crownMaterial)
+    {
+        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        trunk.name = "Trunk";
+        trunk.transform.SetParent(root, false);
+        trunk.transform.localPosition = new Vector3(0f, 0.12f, 0f);
+        trunk.transform.localScale = new Vector3(0.065f, 0.12f, 0.065f);
+        trunk.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["TreeTrunk"];
+
+        var dark = featureMaterials["TreeCrownDark"];
+        var lower = CreateCone("LowerCrown", 0.32f, 0.012f, 0.4f, dark);
+        lower.transform.SetParent(root, false);
+        lower.transform.localPosition = new Vector3(0f, 0.36f, 0f);
+        lower.transform.localRotation = Quaternion.Euler(-3f, 30f + index * 17f, 3f);
+
+        var mid = CreateCone("MidCrown", 0.22f, 0.01f, 0.34f, crownMaterial);
+        mid.transform.SetParent(root, false);
+        mid.transform.localPosition = new Vector3(0f, 0.58f, 0f);
+        mid.transform.localRotation = Quaternion.Euler(2f, 10f + index * 29f, -2f);
+
+        var top = CreateCone("TopCrown", 0.14f, 0.008f, 0.26f, dark);
+        top.transform.SetParent(root, false);
+        top.transform.localPosition = new Vector3(0f, 0.78f, 0f);
+        top.transform.localRotation = Quaternion.Euler(-2f, -18f + index * 13f, 2f);
+    }
+
+    // Broadleaf: faceted bipyramid crowns (apex up + apex down), so the silhouette reads round
+    // with no flat top.
+    private void BuildBroadleafTree(Transform root, Vector2Int coord, int index, Material crownMaterial)
+    {
+        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        trunk.name = "Trunk";
+        trunk.transform.SetParent(root, false);
+        trunk.transform.localPosition = new Vector3(0f, 0.11f, 0f);
+        trunk.transform.localScale = new Vector3(0.08f, 0.11f, 0.08f);
+        trunk.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["TreeTrunk"];
+
+        var puffOffset = Mathf.Lerp(-0.08f, 0.12f, Hash01(coord.x, coord.y, index + 321));
+        AddBipyramidCrown(root, "Crown", crownMaterial, 0.32f, 0.42f, 0.3f, new Vector3(0f, 0.42f, 0f), index);
+        AddBipyramidCrown(root, "CrownPuff", featureMaterials["TreeCrownDark"], 0.2f, 0.26f, 0.2f, new Vector3(puffOffset, 0.54f, -0.05f), index + 7);
+    }
+
+    private void AddBipyramidCrown(Transform parent, string objectName, Material material, float radius, float upperHeight, float lowerHeight, Vector3 center, int index)
+    {
+        var holder = NewChild(objectName, parent);
+        holder.transform.localPosition = center;
+        holder.transform.localRotation = Quaternion.Euler(0f, 20f + index * 11f, 0f);
+
+        var upper = CreateCone("Upper", radius, 0.02f, upperHeight, material);
+        upper.transform.SetParent(holder.transform, false);
+        upper.transform.localPosition = new Vector3(0f, upperHeight * 0.5f, 0f);
+
+        var lower = CreateCone("Lower", radius, 0.02f, lowerHeight, material);
+        lower.transform.SetParent(holder.transform, false);
+        lower.transform.localPosition = new Vector3(0f, -lowerHeight * 0.5f, 0f);
+        lower.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);
     }
 
     private void AddRock(Transform parent, float elevation, float x, float z, int index)
@@ -3789,6 +3934,14 @@ public sealed class UnityHexMapView : MonoBehaviour
         shelf.transform.localScale = new Vector3(boardSize.x * 0.108f, 1f, boardSize.y * 0.108f);
         shelf.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["BoardShelf"];
 
+        // Pale surf ring hugging the shoreline, just outside the shelf.
+        var foam = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        foam.name = "CoastFoam";
+        foam.transform.SetParent(parent, false);
+        foam.transform.localPosition = new Vector3(center.x, VisualTileBottomY - 0.055f, center.z);
+        foam.transform.localScale = new Vector3(boardSize.x * 0.114f, 1f, boardSize.y * 0.114f);
+        foam.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["CoastFoam"];
+
         // Translucent shallows ring fades the coastline from land into deeper water.
         var shallows = GameObject.CreatePrimitive(PrimitiveType.Plane);
         shallows.name = "CoastalShallows";
@@ -3803,6 +3956,14 @@ public sealed class UnityHexMapView : MonoBehaviour
         plane.transform.localPosition = new Vector3(center.x, -0.42f, center.z);
         plane.transform.localScale = new Vector3(boardSize.x * 0.16f, 1f, boardSize.y * 0.16f);
         plane.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["WaterPlane"];
+
+        // Larger, darker layer underneath for a sense of depth toward the horizon.
+        var deep = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        deep.name = "DeepWaterPlane";
+        deep.transform.SetParent(parent, false);
+        deep.transform.localPosition = new Vector3(center.x, -0.72f, center.z);
+        deep.transform.localScale = new Vector3(boardSize.x * 0.3f, 1f, boardSize.y * 0.3f);
+        deep.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["DeepWater"];
     }
 
     private Vector3 BoardWorldCenter()
