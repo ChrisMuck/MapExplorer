@@ -51,10 +51,25 @@ public sealed class StartUpgradeCommand
         }
 
         upgrade.MarkBuilt();
+        ApplyStockGrowth(game, upgrade);
         var entry = $"Base upgrade built: {upgrade.Name} ({upgrade.Cost} Knowledge).";
         game.Base.AddArchiveEntry(entry);
 
         return StartUpgradeResult.Built(upgrade.Id, upgrade.Name, upgrade.Cost, game.Base.KnowledgePoints, entry);
+    }
+
+    // Some upgrades immediately grow the base unit stock so the effect is observable in the loadout.
+    private static void ApplyStockGrowth(GameState game, BaseUpgradeState upgrade)
+    {
+        switch (upgrade.Effect)
+        {
+            case BaseUpgradeEffect.GrowPorterStock:
+                game.Base.UnitStock.Add(BaseUnitKind.Porter, 2);
+                break;
+            case BaseUpgradeEffect.GrowSoldierStock:
+                game.Base.UnitStock.Add(BaseUnitKind.Soldier, 2);
+                break;
+        }
     }
 }
 }

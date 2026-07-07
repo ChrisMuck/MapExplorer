@@ -361,6 +361,49 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public BaseUnitStockState GetUnitStockForUi()
+    {
+        return coreGameState == null ? new BaseUnitStockState() : coreGameState.Base.UnitStock;
+    }
+
+    public ExpeditionReadiness ComputeReadinessForUi(int memberCount, IReadOnlyList<string> unitIds, int rations, int medicine)
+    {
+        if (coreGameState == null)
+        {
+            return ExpeditionReadiness.Compute(memberCount, System.Array.Empty<BaseUnitState>(), rations, medicine);
+        }
+
+        return gameApplication.ComputeReadiness(coreGameState, memberCount, unitIds, rations, medicine);
+    }
+
+    public void RequestStartLoadoutExpeditionFromUi(IReadOnlyList<string> memberIds, IReadOnlyList<string> unitIds, int rations, int medicine)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartNewExpedition(coreGameState, memberIds, unitIds, rations, medicine);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "New expedition rejected.";
+            RefreshHud();
+            RefreshToolkitHud();
+            return;
+        }
+
+        selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        hasInspectedHex = false;
+        interactionMessage = $"Expedition {result.ExpeditionNumber} gestartet.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        UpdateExpeditionMarkerPosition();
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
     public void RequestOpenScoutReportFromUi(int reportIndex)
     {
         if (coreGameState == null ||

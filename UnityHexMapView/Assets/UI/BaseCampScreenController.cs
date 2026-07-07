@@ -10,9 +10,9 @@ using UnityEngine.UIElements;
 /// real simulation via <see cref="UnityHexMapView"/> (roster, knowledge, factions, archive) and
 /// only sends commands through the existing Request*FromUi seam — it never mutates world state.
 ///
-/// First increment wires: Team (compose), base actions (heal/recruit/engineer/supplies/time),
-/// Aufbruch (start), Fraktionen and Archiv (read-only). "Basis ausbauen" and "Wissen auswerten"
-/// keep the mockup layout as non-functional placeholders (roadmap).
+/// Wires: Team (compose), base actions (heal/recruit/engineer/supplies/time), Aufbruch (unit
+/// stock + resource loadout with live readiness → start), Basis ausbauen (upgrade tree), Wissen
+/// auswerten (evaluation queue), Fraktionen and Archiv (read-only).
 ///
 /// Setup: own GameObject with a UI Document (Source = BaseCampScreen.uxml) + Panel Settings whose
 /// sort order renders above the expedition screen. Starts hidden; opened via
@@ -35,11 +35,18 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
     private const int TeamCap = 6;
 
+    // Mirror of StartNewExpeditionCommand's base budgets so the UI preview matches the command's clamping.
+    private const int RationBudget = 40;
+    private const int MedicineBudget = 4;
+
     private UnityHexMapView mapView;
     private VisualElement root;
     private string openTab = "team";
     private string selectedPersonId;
     private readonly HashSet<string> selectedTeam = new HashSet<string>();
+    private readonly HashSet<string> selectedUnits = new HashSet<string>();
+    private int rations = 20;
+    private int medicine = 2;
     private bool isOpen;
     private bool bound;
 
@@ -91,6 +98,10 @@ public sealed class BaseCampScreenController : MonoBehaviour
         Click("btn-prepare-supplies", PrepareSupplies);
         Click("btn-advance-time", AdvanceTime);
         Click("btn-ready", StartExpedition);
+        Click("rations-dec", () => StepRations(-1));
+        Click("rations-inc", () => StepRations(1));
+        Click("medicine-dec", () => StepMedicine(-1));
+        Click("medicine-inc", () => StepMedicine(1));
 
         if (!isOpen)
         {
@@ -135,6 +146,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
     private void SeedTeamSelection()
     {
         selectedTeam.Clear();
+        selectedUnits.Clear();
         if (mapView == null)
         {
             return;
@@ -147,6 +159,20 @@ public sealed class BaseCampScreenController : MonoBehaviour
                 selectedTeam.Add(member.Id);
             }
         }
+
+        // Pre-select rested units so the first departure has support by default.
+        var stock = mapView.GetUnitStockForUi();
+        foreach (var unit in stock.Units)
+        {
+            if (!unit.IsExhausted)
+            {
+                selectedUnits.Add(unit.Id);
+            }
+        }
+
+        var supplyBonus = mapView.CurrentGameState?.Base.PendingSupplyBonus ?? 0;
+        rations = System.Math.Min(20 + supplyBonus, RationBudget);
+        medicine = System.Math.Min(2, MedicineBudget);
 
         var first = mapView.GetRosterForUi().FirstOrDefault();
         selectedPersonId = first?.Id;
@@ -479,22 +505,27 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
         SetText("auf-core-count", $"aus Reiter »Team« · {teamMembers.Count} Personen");
 
-        // Träger/Soldaten stock is a roadmap system — show a hint instead of a live grid.
-        ShowGridHint("porter-grid", "Bestand wächst mit Basisausbau (Roadmap).");
-        ShowGridHint("soldier-grid", "Bestand wächst mit Basisausbau (Roadmap).");
-        SetText("porter-count", "—");
-        SetText("soldier-count", "—");
+        // Live Träger/Soldaten stock drawn from the base; each unit is a selectable chip.
+        var stock = mapView.GetUnitStockForUi();
+        BuildUnitGrid("porter-grid", stock.Porters);
+        BuildUnitGrid("soldier-grid", stock.Soldiers);
+        SetText("porter-count", $"{stock.Porters.Count(p => selectedUnits.Contains(p.Id))} / {stock.Porters.Count}");
+        SetText("soldier-count", $"{stock.Soldiers.Count(s => selectedUnits.Contains(s.Id))} / {stock.Soldiers.Count}");
 
-        SetText("rations-value", (20 + state.Base.PendingSupplyBonus).ToString());
-        SetText("medicine-value", "3");
+        // Clamp resources to the base budgets (defensive; steppers already clamp).
+        rations = Clamp(rations, 0, RationBudget + state.Base.PendingSupplyBonus);
+        medicine = Clamp(medicine, 0, MedicineBudget);
+        SetText("rations-value", rations.ToString());
+        SetText("medicine-value", medicine.ToString());
 
         var isEnded = state.Expedition.Status == ExpeditionStatus.Returned || state.Expedition.Status == ExpeditionStatus.Lost;
         var nextReady = isEnded && state.Base.CanStartNextExpedition(state.World.WorldDay);
 
-        SetStat("stat-traglast", $"{teamMembers.Count} Personen", teamMembers.Count > 0 ? Green : Muted);
-        SetStat("stat-verpflegung", $"≈ {(teamMembers.Count > 0 ? (20 + state.Base.PendingSupplyBonus) / teamMembers.Count : 0)} Tage", Gold);
-        SetStat("stat-verteidigung", teamMembers.Count(m => m.Role == ExpeditionMemberRole.Guard).ToString(), Neutral);
-        SetStat("stat-tempo", nextReady ? "Bereit" : "Wartet", nextReady ? Green : Gold);
+        var readiness = mapView.ComputeReadinessForUi(teamMembers.Count, selectedUnits.ToList(), rations, medicine);
+        SetStat("stat-traglast", $"{readiness.Load} / {readiness.CarryCapacity}", readiness.Overload ? Danger : Green);
+        SetStat("stat-verpflegung", $"≈ {readiness.FoodDays} Tage", readiness.FoodDays >= 3 ? Green : Gold);
+        SetStat("stat-verteidigung", readiness.Defense.ToString(), readiness.Defense > 0 ? Neutral : Muted);
+        SetStat("stat-tempo", readiness.SlowMarch ? "Langsam" : "Normal", readiness.SlowMarch ? Gold : Green);
 
         var advance = root.Q<Label>("btn-advance-time");
         if (advance != null)
@@ -505,7 +536,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         var ready = root.Q<Label>("btn-ready");
         if (ready != null)
         {
-            var canStart = nextReady && teamMembers.Count > 0;
+            var canStart = nextReady && teamMembers.Count > 0 && !readiness.Overload;
             ready.RemoveFromClassList("ready-btn--go");
             ready.RemoveFromClassList("ready-btn--off");
             ready.AddToClassList(canStart ? "ready-btn--go" : "ready-btn--off");
@@ -515,8 +546,78 @@ public sealed class BaseCampScreenController : MonoBehaviour
                     ? $"Bereit ab Tag {state.Base.NextExpeditionAvailableWorldDay}"
                     : teamMembers.Count == 0
                         ? "Kein Team gewählt"
-                        : "Expedition aufbrechen →";
+                        : readiness.Overload
+                            ? "Überladen – weniger mitnehmen"
+                            : "Expedition aufbrechen →";
         }
+    }
+
+    private void BuildUnitGrid(string gridName, IReadOnlyList<BaseUnitState> units)
+    {
+        var grid = root?.Q<VisualElement>(gridName);
+        if (grid == null)
+        {
+            return;
+        }
+
+        grid.Clear();
+        if (units.Count == 0)
+        {
+            grid.Add(Lbl("Kein Bestand", "hint", "mono"));
+            return;
+        }
+
+        foreach (var unit in units)
+        {
+            var selected = selectedUnits.Contains(unit.Id);
+            var chip = Div("unit");
+            if (selected) chip.AddToClassList("sel");
+            if (unit.IsExhausted) chip.AddToClassList("tired");
+
+            var tile = Div("unit-tile", unit.Kind == BaseUnitKind.Porter ? "unit-tile--porter" : "unit-tile--soldier");
+            var dot = Div("unit-dot");
+            dot.style.backgroundColor = unit.IsExhausted ? Gold : Green;
+            tile.Add(dot);
+            chip.Add(tile);
+            chip.Add(Lbl(unit.IsExhausted ? "Müde" : "Fit", "unit-cond", "mono"));
+
+            var id = unit.Id;
+            chip.RegisterCallback<ClickEvent>(_ => ToggleUnit(id));
+            grid.Add(chip);
+        }
+    }
+
+    private void ToggleUnit(string unitId)
+    {
+        if (selectedUnits.Contains(unitId))
+        {
+            selectedUnits.Remove(unitId);
+        }
+        else
+        {
+            selectedUnits.Add(unitId);
+        }
+
+        Refresh();
+    }
+
+    private void StepRations(int delta)
+    {
+        var max = RationBudget + (mapView?.CurrentGameState?.Base.PendingSupplyBonus ?? 0);
+        rations = Clamp(rations + delta, 0, max);
+        Refresh();
+    }
+
+    private void StepMedicine(int delta)
+    {
+        medicine = Clamp(medicine + delta, 0, MedicineBudget);
+        Refresh();
+    }
+
+    private static int Clamp(int value, int min, int max)
+    {
+        if (value < min) return min;
+        return value > max ? max : value;
     }
 
     // ---------------------------------------------------------------- basis ausbauen
@@ -866,7 +967,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
             return;
         }
 
-        mapView.RequestStartNewExpeditionFromUi(selectedTeam.ToList());
+        mapView.RequestStartLoadoutExpeditionFromUi(selectedTeam.ToList(), selectedUnits.ToList(), rations, medicine);
         if (mapView.CurrentGameState != null && mapView.CurrentGameState.Expedition.Status == ExpeditionStatus.Active)
         {
             Close();
@@ -928,14 +1029,6 @@ public sealed class BaseCampScreenController : MonoBehaviour
         var button = root?.Q<Label>(name);
         if (button == null) return;
         button.EnableInClassList("up-btn--locked", !enabled);
-    }
-
-    private void ShowGridHint(string name, string hint)
-    {
-        var grid = root?.Q<VisualElement>(name);
-        if (grid == null) return;
-        grid.Clear();
-        grid.Add(Lbl(hint, "hint", "mono"));
     }
 
     private static VisualElement Div(params string[] classes)

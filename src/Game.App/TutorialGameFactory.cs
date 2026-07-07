@@ -57,7 +57,8 @@ public static class TutorialGameFactory
         var baseState = new BaseState(
             baseCoord,
             new BaseUpgradesState(CreateTutorialUpgrades()),
-            new EvaluationQueueState(CreateTutorialEvaluationItems()));
+            new EvaluationQueueState(CreateTutorialEvaluationItems()),
+            CreateTutorialUnitStock());
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
 
@@ -443,6 +444,17 @@ public static class TutorialGameFactory
             new ExpeditionMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic),
             new ExpeditionMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar)
         };
+    }
+
+    private static BaseUnitStockState CreateTutorialUnitStock()
+    {
+        // Porter stock reflects the pre-built Trägerunterkünfte; Soldaten grow when Baracken is built.
+        var stock = new BaseUnitStockState();
+        stock.Add(BaseUnitKind.Porter, 4);
+        stock.Add(BaseUnitKind.Porter, 2, exhausted: true);
+        stock.Add(BaseUnitKind.Soldier, 1);
+        stock.Add(BaseUnitKind.Soldier, 1, exhausted: true);
+        return stock;
     }
 
     private static IEnumerable<EvaluationItemState> CreateTutorialEvaluationItems()

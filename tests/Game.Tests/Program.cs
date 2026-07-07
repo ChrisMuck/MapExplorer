@@ -29,6 +29,8 @@ var baseUpgradeTests = new BaseUpgradeCommandTests();
 baseUpgradeTests.RunAll();
 var evaluationQueueTests = new EvaluationQueueCommandTests();
 evaluationQueueTests.RunAll();
+var baseLoadoutTests = new BaseLoadoutCommandTests();
+baseLoadoutTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2242,6 +2244,116 @@ internal sealed class BaseUpgradeCommandTests
         var cheaper = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "carrier-2");
         AssertTrue(cheaper.Success, "Heal with herbalism succeeds");
         AssertEqual(StartBaseActionCommand.HealCostWithHerbalism, cheaper.KnowledgeSpent, "Heal costs less with herbalism");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class BaseLoadoutCommandTests
+{
+    public void RunAll()
+    {
+        LoadoutStartUsesSelectedUnitsAndResources();
+        OverloadedLoadoutIsRejected();
+        RationsAreClampedToBudget();
+        ComputeReadinessReflectsPortersAndExhaustion();
+        BaracksUpgradeGrowsSoldierStock();
+    }
+
+    private static GameState ReturnedGameAtBase(int knowledgePoints = 50)
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(knowledgePoints);
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        new AdvanceBaseTimeCommand().Execute(game, CompleteExpeditionCommand.NormalPreparationDays);
+        return game;
+    }
+
+    private static void LoadoutStartUsesSelectedUnitsAndResources()
+    {
+        var game = ReturnedGameAtBase();
+        var porter = game.Base.UnitStock.Porters.First(p => !p.IsExhausted);
+        var soldier = game.Base.UnitStock.Soldiers.First(s => !s.IsExhausted);
+        var members = new[] { "scout-1", "guard-1" };
+        var units = new[] { porter.Id, soldier.Id };
+        var expectedCapacity = ExpeditionReadiness.Compute(members.Length, new[] { porter, soldier }, 8, 2).CarryCapacity;
+
+        var start = new StartNewExpeditionCommand().Execute(game, members, units, 8, 2);
+
+        AssertTrue(start.Success, "Valid loadout departs");
+        AssertEqual(2, game.Expedition.Members.Count, "Loadout uses the selected members");
+        AssertEqual(8, game.Expedition.Supplies, "Rations become expedition supplies");
+        AssertEqual(2, game.Expedition.Medicine, "Medicine is carried");
+        AssertEqual(expectedCapacity, game.Expedition.Capacity, "Capacity comes from readiness");
+    }
+
+    private static void OverloadedLoadoutIsRejected()
+    {
+        var game = ReturnedGameAtBase();
+        var members = new[] { "scout-1", "guard-1" };
+
+        var overloaded = new StartNewExpeditionCommand().Execute(game, members, System.Array.Empty<string>(), 40, 4);
+        AssertFalse(overloaded.Success, "A loadout that exceeds carry capacity is rejected");
+    }
+
+    private static void RationsAreClampedToBudget()
+    {
+        var game = ReturnedGameAtBase();
+        var members = new[] { "scout-1", "guard-1" };
+        var allUnits = game.Base.UnitStock.Units.Select(u => u.Id).ToArray();
+
+        var start = new StartNewExpeditionCommand().Execute(game, members, allUnits, 100, 0);
+
+        AssertTrue(start.Success, "Loadout with full porter support departs");
+        AssertEqual(StartNewExpeditionCommand.RationBudget, game.Expedition.Supplies, "Rations are clamped to the base budget");
+    }
+
+    private static void ComputeReadinessReflectsPortersAndExhaustion()
+    {
+        var fresh = new BaseUnitState("p-fresh", BaseUnitKind.Porter);
+        var tired = new BaseUnitState("p-tired", BaseUnitKind.Porter, isExhausted: true);
+
+        var freshReadiness = ExpeditionReadiness.Compute(1, new[] { fresh }, 0, 0);
+        AssertEqual(8, freshReadiness.CarryCapacity, "A fresh porter adds full carry capacity");
+        AssertFalse(freshReadiness.SlowMarch, "A fresh loadout marches at full speed");
+
+        var tiredReadiness = ExpeditionReadiness.Compute(1, new[] { tired }, 0, 0);
+        AssertEqual(6, tiredReadiness.CarryCapacity, "An exhausted porter adds less carry capacity");
+        AssertTrue(tiredReadiness.SlowMarch, "An exhausted unit slows the march");
+    }
+
+    private static void BaracksUpgradeGrowsSoldierStock()
+    {
+        var game = ReturnedGameAtBase();
+        var soldiersBefore = game.Base.UnitStock.Soldiers.Count;
+
+        var built = new StartUpgradeCommand().Execute(game, "baracken");
+
+        AssertTrue(built.Success, "Baracken builds");
+        AssertEqual(soldiersBefore + 2, game.Base.UnitStock.Soldiers.Count, "Baracken grows the soldier stock");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
