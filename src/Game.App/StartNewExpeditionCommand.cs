@@ -13,6 +13,11 @@ public sealed class StartNewExpeditionCommand
 
     public StartNewExpeditionResult Execute(GameState game)
     {
+        return Execute(game, null);
+    }
+
+    public StartNewExpeditionResult Execute(GameState game, IReadOnlyList<string>? selectedMemberIds)
+    {
         if (game == null)
         {
             throw new ArgumentNullException(nameof(game));
@@ -30,7 +35,33 @@ public sealed class StartNewExpeditionCommand
         }
 
         var nextNumber = game.Expedition.ExpeditionNumber + 1;
-        var members = CreateNextMembers(game.Expedition, game.Base.LastExpeditionOutcome, nextNumber);
+        IEnumerable<ExpeditionMemberState> members;
+        if (selectedMemberIds != null && selectedMemberIds.Count > 0)
+        {
+            var built = new List<ExpeditionMemberState>();
+            foreach (var id in selectedMemberIds)
+            {
+                var rosterMember = game.Roster.FindMember(id);
+                if (rosterMember == null)
+                {
+                    return StartNewExpeditionResult.Rejected($"Unknown roster member '{id}'.");
+                }
+
+                if (!rosterMember.IsAvailable)
+                {
+                    return StartNewExpeditionResult.Rejected($"{rosterMember.Name} is not available for the expedition.");
+                }
+
+                built.Add(rosterMember.ToExpeditionMember());
+            }
+
+            members = built;
+        }
+        else
+        {
+            members = CreateNextMembers(game.Expedition, game.Base.LastExpeditionOutcome, nextNumber);
+        }
+
         var supplyBonus = game.Base.ConsumePendingSupplyBonus();
         var expedition = new ExpeditionState(
             nextNumber,

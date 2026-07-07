@@ -10,6 +10,7 @@ public enum ExpeditionMemberStatus
     Available,
     Assigned,
     Injured,
+    Exhausted,
     Missing,
     Dead
 }

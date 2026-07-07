@@ -26,6 +26,8 @@ public sealed class BaseState
 
     public int PendingSupplyBonus { get; private set; }
 
+    public bool HasRequestedEngineer { get; private set; }
+
     public IReadOnlyList<string> ArchiveEntries
     {
         get { return archiveEntries; }
@@ -92,6 +94,11 @@ public sealed class BaseState
         var bonus = PendingSupplyBonus;
         PendingSupplyBonus = 0;
         return bonus;
+    }
+
+    public void MarkEngineerRequested()
+    {
+        HasRequestedEngineer = true;
     }
 
     public void MarkExpeditionDepartureArchivePoint()

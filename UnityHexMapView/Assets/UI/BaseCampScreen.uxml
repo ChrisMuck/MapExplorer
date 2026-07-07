@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- =====================================================================
+     BaseCampScreen.uxml  —  Basislager (Turn 5a des HTML-Mockups)
+     Fenster mit Menüleiste. Sektionen "Team" und "Aufbruch" werden vom
+     Controller datengetrieben befüllt (leere, benannte Mount-Points).
+     Basis / Wissen / Fraktionen / Archiv sind als Layout ausformuliert.
+     Setup: siehe README (UIDocument + Panel Settings + Controller).
+     ===================================================================== -->
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="BaseCampScreen.uss" />
+
+    <ui:VisualElement class="bc-root">
+        <ui:VisualElement class="bc-window">
+
+            <!-- ======================= TITELLEISTE ======================= -->
+            <ui:VisualElement class="bc-titlebar">
+                <ui:Label text="⛺" class="bc-tent" />
+                <ui:Label text="BASISLAGER" class="bc-title sans" />
+                <ui:VisualElement class="bc-dot" />
+                <ui:Label name="value-world-day" text="Welt · Tag 12" class="bc-title-sub mono" />
+                <ui:VisualElement class="bc-spacer" />
+                <ui:VisualElement class="bc-res">
+                    <ui:VisualElement class="bc-res-chip">
+                        <ui:Label text="◆" class="ico" />
+                        <ui:Label text="WISSEN" class="bc-res-label" style="margin-right: 8px;" />
+                        <ui:Label name="value-knowledge" text="12" class="bc-res-value--gold mono" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="bc-res-stat">
+                        <ui:Label text="VORRÄTE" class="bc-res-label" />
+                        <ui:Label name="value-supplies" text="42" class="bc-res-value mono" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="bc-res-stat">
+                        <ui:Label text="GRUPPE" class="bc-res-label" />
+                        <ui:Label name="value-party" text="7" class="bc-res-value mono" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label text="✕" class="bc-close" name="btn-close" />
+            </ui:VisualElement>
+
+            <!-- ======================= MENÜLEISTE ======================= -->
+            <ui:VisualElement class="bc-menu">
+                <ui:VisualElement class="bc-tab" name="tab-team">
+                    <ui:Label text="⚑" class="ico" /><ui:Label text="Team" />
+                </ui:VisualElement>
+                <ui:VisualElement class="bc-tab" name="tab-aufbruch">
+                    <ui:Label text="➜" class="ico" /><ui:Label text="Aufbruch" />
+                </ui:VisualElement>
+                <ui:VisualElement class="bc-tab" name="tab-basis">
+                    <ui:Label text="⌂" class="ico" /><ui:Label text="Basis ausbauen" />
+                </ui:VisualElement>
+                <ui:VisualElement class="bc-tab" name="tab-wissen">
+                    <ui:Label text="◆" class="ico" /><ui:Label text="Wissen auswerten" />
+                </ui:VisualElement>
+                <ui:VisualElement class="bc-tab" name="tab-frakt">
+                    <ui:Label text="✦" class="ico" /><ui:Label text="Fraktionen" />
+                </ui:VisualElement>
+                <ui:VisualElement class="bc-tab" name="tab-archiv">
+                    <ui:Label text="❋" class="ico" /><ui:Label text="Archiv" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- ======================= BODY ======================= -->
+            <ui:VisualElement class="bc-body">
+
+                <!-- ========== TEAM (Controller befüllt Mount-Points) ========== -->
+                <ui:VisualElement class="bc-section" name="section-team" style="flex-direction: row;">
+                    <!-- Pool -->
+                    <ui:VisualElement class="col-left">
+                        <ui:VisualElement class="col-head">
+                            <ui:Label text="PERSONAL-POOL" class="section-label" />
+                            <ui:Label name="pool-count" text="7 Personen" class="mono" style="font-size: 11px; color: rgb(201,195,180);" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; padding: 0 12px 10px;">
+                            <ui:Label name="btn-recruit" text="+ Rekrutieren" class="up-btn up-btn--go" style="flex-grow: 1; margin-right: 6px;" />
+                            <ui:Label name="btn-engineer" text="Ingenieur" class="up-btn up-btn--go" style="flex-grow: 1; margin-right: 6px;" />
+                            <ui:Label name="btn-prepare-supplies" text="+ Vorräte" class="up-btn up-btn--go" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:ScrollView class="list-scroll" name="pool-list" />
+                    </ui:VisualElement>
+                    <!-- Detail -->
+                    <ui:VisualElement class="detail">
+                        <ui:VisualElement class="detail-body">
+                            <ui:VisualElement class="detail-head">
+                                <ui:VisualElement class="detail-portrait" name="detail-avatar">
+                                    <ui:Label text="Portrait" class="cap mono" />
+                                </ui:VisualElement>
+                                <ui:VisualElement>
+                                    <ui:Label name="detail-name" text="Mara Vey" class="detail-name serif" />
+                                    <ui:Label name="detail-role" text="Späherin" class="detail-role mono" />
+                                    <ui:VisualElement style="flex-direction: row; align-items: center;">
+                                        <ui:Label name="detail-stars" text="★★★★☆" class="stars-big" />
+                                        <ui:Label name="detail-level" text="Stufe 4" class="detail-level mono" />
+                                    </ui:VisualElement>
+                                    <ui:Label name="detail-status" text="Verfügbar" class="status-pill" style="margin-top: 13px;" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:Label name="detail-bio" text="" class="bio serif" />
+                            <ui:VisualElement class="hr" />
+                            <ui:VisualElement class="detail-cols">
+                                <ui:VisualElement class="detail-col">
+                                    <ui:Label text="FÄHIGKEITEN" class="col-title" />
+                                    <ui:VisualElement name="detail-skills" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="detail-col detail-col--r">
+                                    <ui:Label text="EIGENSCHAFTEN" class="col-title" />
+                                    <ui:VisualElement name="detail-traits" class="trait-wrap" />
+                                    <ui:Label text="AUSRÜSTUNG" class="col-title" style="margin-top: 18px;" />
+                                    <ui:VisualElement name="detail-gear" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="detail-foot">
+                            <ui:Label name="detail-avail" text="" class="detail-avail mono" />
+                            <ui:Label name="detail-heal" text="Heilen" class="toggle-btn toggle-btn--add" style="margin-right: 8px; display: none;" />
+                            <ui:Label name="detail-toggle" text="+ Zum Team hinzufügen" class="toggle-btn toggle-btn--add" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <!-- Team-Roster -->
+                    <ui:VisualElement class="col-right">
+                        <ui:VisualElement class="col-head">
+                            <ui:Label text="EXPEDITIONSTEAM" class="section-label" />
+                            <ui:Label name="team-count" text="2/5" class="mono" style="font-size: 11px; color: rgb(240,207,122);" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="cap-bar"><ui:VisualElement name="team-cap-fill" class="cap-fill" style="width: 40%;" /></ui:VisualElement>
+                        <ui:ScrollView class="list-scroll" name="team-list" />
+                        <ui:VisualElement class="agg-block">
+                            <ui:Label text="GEBÜNDELTE STÄRKEN" class="section-label" style="margin-bottom: 10px;" />
+                            <ui:VisualElement name="team-agg" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- ========== AUFBRUCH (Controller befüllt Mount-Points) ========== -->
+                <ui:VisualElement class="bc-section" name="section-aufbruch" style="flex-direction: row;">
+                    <!-- Kernteam -->
+                    <ui:VisualElement class="col-left">
+                        <ui:VisualElement class="col-head" style="flex-direction: column; align-items: flex-start;">
+                            <ui:Label text="KERNTEAM" class="section-label" />
+                            <ui:Label name="auf-core-count" text="aus Reiter »Team« · 2 Personen" class="hint mono" style="margin-top: 4px;" />
+                        </ui:VisualElement>
+                        <ui:ScrollView class="auf-core-list" name="auf-core-list" />
+                    </ui:VisualElement>
+                    <!-- Einheiten -->
+                    <ui:VisualElement class="units-center">
+                        <ui:VisualElement>
+                            <ui:VisualElement class="units-head">
+                                <ui:Label text="TRÄGER" class="section-label" />
+                                <ui:Label name="porter-count" text="2 / 6 im Bestand" class="units-count mono" />
+                            </ui:VisualElement>
+                            <ui:Label text="Bestand wächst mit »Trägerunterkünfte«" class="hint mono" />
+                            <ui:VisualElement class="units-grid" name="porter-grid" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="hr" style="margin: 22px 0;" />
+                        <ui:VisualElement>
+                            <ui:VisualElement class="units-head">
+                                <ui:Label text="SOLDATEN" class="section-label" />
+                                <ui:Label name="soldier-count" text="1 / 4 im Bestand" class="units-count mono" />
+                            </ui:VisualElement>
+                            <ui:Label text="Bestand wächst mit »Baracken«" class="hint mono" />
+                            <ui:VisualElement class="units-grid" name="soldier-grid" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <!-- Ressourcen + Bereitschaft -->
+                    <ui:VisualElement class="col-right">
+                        <ui:VisualElement class="res-body">
+                            <ui:VisualElement class="res-block">
+                                <ui:Label text="RESSOURCEN MITNEHMEN" class="section-label" style="margin-bottom: 14px;" />
+                                <ui:VisualElement class="res-row">
+                                    <ui:Label text="⌂" class="res-ico" />
+                                    <ui:VisualElement class="res-main">
+                                        <ui:Label text="Rationen" class="res-name" />
+                                        <ui:Label text="von 42 verfügbar" class="res-avail mono" />
+                                    </ui:VisualElement>
+                                    <ui:Label text="−" class="stepper" name="rations-dec" />
+                                    <ui:Label name="rations-value" text="20" class="res-value mono" />
+                                    <ui:Label text="+" class="stepper" name="rations-inc" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="res-row">
+                                    <ui:Label text="✚" class="res-ico" />
+                                    <ui:VisualElement class="res-main">
+                                        <ui:Label text="Medizin" class="res-name" />
+                                        <ui:Label text="von 4 verfügbar" class="res-avail mono" />
+                                    </ui:VisualElement>
+                                    <ui:Label text="−" class="stepper" name="medicine-dec" />
+                                    <ui:Label name="medicine-value" text="2" class="res-value mono" />
+                                    <ui:Label text="+" class="stepper" name="medicine-inc" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="hr" />
+                            <ui:VisualElement class="res-block" style="margin-top: 20px;">
+                                <ui:Label text="STARTBEREITSCHAFT" class="section-label" style="margin-bottom: 14px;" />
+                                <ui:VisualElement class="stat-row"><ui:Label text="Traglast" class="stat-name" /><ui:Label name="stat-traglast" text="22 / 18" class="stat-val mono" /></ui:VisualElement>
+                                <ui:VisualElement class="stat-row"><ui:Label text="Verpflegung" class="stat-name" /><ui:Label name="stat-verpflegung" text="≈ 4 Tage" class="stat-val mono" /></ui:VisualElement>
+                                <ui:VisualElement class="stat-row"><ui:Label text="Verteidigung" class="stat-name" /><ui:Label name="stat-verteidigung" text="3" class="stat-val mono" /></ui:VisualElement>
+                                <ui:VisualElement class="stat-row"><ui:Label text="Marschtempo" class="stat-name" /><ui:Label name="stat-tempo" text="Normal" class="stat-val mono" /></ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="ready-foot">
+                            <ui:Label name="btn-advance-time" text="Einen Tag vergehen lassen" class="ready-btn ready-btn--off" style="margin-bottom: 8px;" />
+                            <ui:Label name="btn-ready" text="Expedition aufbrechen →" class="ready-btn ready-btn--go" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- ========== BASIS AUSBAUEN ========== -->
+                <ui:VisualElement class="bc-section" name="section-basis" style="flex-direction: column;">
+                    <ui:VisualElement class="pane-head">
+                        <ui:VisualElement>
+                            <ui:Label text="Basis mit Wissen ausbauen" class="pane-title serif" />
+                            <ui:Label text="Setze gesammeltes Wissen ein, um dauerhafte Verbesserungen des Lagers freizuschalten." class="pane-sub" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="wissen-chip">
+                            <ui:Label text="◆" class="ico" />
+                            <ui:VisualElement>
+                                <ui:Label text="VERFÜGBARES WISSEN" class="bc-res-label" />
+                                <ui:Label text="12" class="wissen-num mono" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:ScrollView class="basis-scroll">
+                        <!-- Medizin -->
+                        <ui:VisualElement class="up-cat">
+                            <ui:VisualElement class="up-cat-head"><ui:Label text="✚" class="up-cat-ico" style="color: rgb(143,174,116);" /><ui:Label text="MEDIZIN &amp; PFLEGE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
+                            <ui:VisualElement class="up-grid">
+                                <ui:VisualElement class="up-card up-card--built">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Feldlazarett" class="up-name serif" /></ui:VisualElement>
+                                    <ui:Label text="Verwundete erholen sich zwischen den Expeditionen deutlich schneller." class="up-desc" />
+                                    <ui:Label text="✓ Gebaut" class="up-btn up-btn--built" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Kräuterkunde" class="up-name serif" /><ui:Label text="◆ 4" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Schaltet Heilmittel aus lokal gesammelten Pflanzen frei." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card up-card--last up-card--locked">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Quarantänezelt" class="up-name serif" /><ui:Label text="◆ 5" class="up-cost up-cost--locked mono" /></ui:VisualElement>
+                                    <ui:Label text="Verhindert die Ausbreitung von Krankheiten im Lager." class="up-desc" />
+                                    <ui:Label text="Benötigt: Feldlazarett II" class="up-btn up-btn--locked" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <!-- Werkstatt -->
+                        <ui:VisualElement class="up-cat">
+                            <ui:VisualElement class="up-cat-head"><ui:Label text="⚒" class="up-cat-ico" style="color: rgb(201,162,74);" /><ui:Label text="WERKSTATT" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
+                            <ui:VisualElement class="up-grid">
+                                <ui:VisualElement class="up-card up-card--built">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Schmiede" class="up-name serif" /></ui:VisualElement>
+                                    <ui:Label text="Reparatur und Aufwertung von Ausrüstung im Lager." class="up-desc" />
+                                    <ui:Label text="✓ Gebaut" class="up-btn up-btn--built" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Gerberei" class="up-name serif" /><ui:Label text="◆ 3" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Fertigt Rüstungen und Behälter aus erbeuteten Häuten." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card up-card--last up-card--locked">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Präzisionswerkbank" class="up-name serif" /><ui:Label text="◆ 6" class="up-cost up-cost--locked mono" /></ui:VisualElement>
+                                    <ui:Label text="Feinmechanik — schaltet fortgeschrittene Werkzeuge frei." class="up-desc" />
+                                    <ui:Label text="Benötigt: Wissen ◆ 6" class="up-btn up-btn--locked" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <!-- Kartografie -->
+                        <ui:VisualElement class="up-cat">
+                            <ui:VisualElement class="up-cat-head"><ui:Label text="✦" class="up-cat-ico" style="color: rgb(127,160,196);" /><ui:Label text="KARTOGRAFIE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
+                            <ui:VisualElement class="up-grid">
+                                <ui:VisualElement class="up-card up-card--built">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Kartentisch" class="up-name serif" /></ui:VisualElement>
+                                    <ui:Label text="Späher-Berichte werden genauer und decken mehr Felder auf." class="up-desc" />
+                                    <ui:Label text="✓ Gebaut" class="up-btn up-btn--built" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Signalturm" class="up-name serif" /><ui:Label text="◆ 5" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Erhöht die Reichweite ausgesandter Späher um ein Feld." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card up-card--last">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Sternkarten" class="up-name serif" /><ui:Label text="◆ 4" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Ermöglicht Nachtmärsche ohne Moralverlust." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <!-- Vorräte -->
+                        <ui:VisualElement class="up-cat">
+                            <ui:VisualElement class="up-cat-head"><ui:Label text="⌂" class="up-cat-ico" style="color: rgb(217,122,95);" /><ui:Label text="VORRÄTE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
+                            <ui:VisualElement class="up-grid">
+                                <ui:VisualElement class="up-card up-card--built">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Vorratskeller" class="up-name serif" /></ui:VisualElement>
+                                    <ui:Label text="Erhöht die maximale Lagerkapazität für Rationen." class="up-desc" />
+                                    <ui:Label text="✓ Gebaut" class="up-btn up-btn--built" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Räucherei" class="up-name serif" /><ui:Label text="◆ 4" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Konserviert Nahrung — Vorräte verderben langsamer." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card up-card--last up-card--locked">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Brunnen" class="up-name serif" /><ui:Label text="◆ 5" class="up-cost up-cost--locked mono" /></ui:VisualElement>
+                                    <ui:Label text="Sichere Wasserversorgung senkt das Krankheitsrisiko." class="up-desc" />
+                                    <ui:Label text="Benötigt: Grabung" class="up-btn up-btn--locked" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <!-- Unterkünfte -->
+                        <ui:VisualElement class="up-cat">
+                            <ui:VisualElement class="up-cat-head"><ui:Label text="⛺" class="up-cat-ico" style="color: rgb(127,160,196);" /><ui:Label text="UNTERKÜNFTE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
+                            <ui:VisualElement class="up-grid">
+                                <ui:VisualElement class="up-card up-card--built">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Trägerunterkünfte" class="up-name serif" /></ui:VisualElement>
+                                    <ui:Label text="Vergrößert den Pool verfügbarer Träger für Expeditionen." class="up-desc" />
+                                    <ui:Label text="✓ Gebaut" class="up-btn up-btn--built" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Baracken" class="up-name serif" /><ui:Label text="◆ 4" class="up-cost mono" /></ui:VisualElement>
+                                    <ui:Label text="Erhöht die Zahl ausgebildeter Soldaten im Bestand." class="up-desc" />
+                                    <ui:Label text="Ausbauen" class="up-btn up-btn--go" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="up-card up-card--last up-card--locked">
+                                    <ui:VisualElement class="up-top"><ui:Label text="Ausbildungsplatz" class="up-name serif" /><ui:Label text="◆ 5" class="up-cost up-cost--locked mono" /></ui:VisualElement>
+                                    <ui:Label text="Erschöpfte Einheiten erholen sich schneller zwischen den Zügen." class="up-desc" />
+                                    <ui:Label text="Benötigt: Baracken" class="up-btn up-btn--locked" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:ScrollView>
+                </ui:VisualElement>
+
+                <!-- ========== WISSEN AUSWERTEN ========== -->
+                <ui:VisualElement class="bc-section" name="section-wissen" style="flex-direction: row;">
+                    <ui:VisualElement class="col-left" style="width: 412px;">
+                        <ui:VisualElement style="flex-shrink: 0; padding: 18px 20px 14px; border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.06);">
+                            <ui:Label text="AUSWERTUNGS-WARTESCHLANGE" class="section-label" />
+                            <ui:VisualElement class="auswerter">
+                                <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label text="2/3" class="mono" style="color: rgb(244,237,224);" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:ScrollView class="queue-scroll">
+                            <ui:VisualElement class="queue-card queue-card--ready">
+                                <ui:VisualElement class="queue-top"><ui:Label text="Geschnitzte Pfähle" class="queue-name serif" /><ui:Label text="Bereit" class="queue-eta queue-eta--ready mono" /></ui:VisualElement>
+                                <ui:Label text="Feld 14 / 08 · Expedition 1" class="queue-from mono" />
+                                <ui:Label text="✓ Auswerten" class="queue-btn" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="queue-card">
+                                <ui:VisualElement class="queue-top"><ui:Label text="Fremde Saatkörner" class="queue-name serif" /><ui:Label text="≈ 1 Tag" class="queue-eta mono" /></ui:VisualElement>
+                                <ui:Label text="Verlassenes Lager · Jonas" class="queue-from mono" />
+                                <ui:VisualElement class="progress"><ui:VisualElement class="progress-fill" style="width: 64%;" /></ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="queue-card">
+                                <ui:VisualElement class="queue-top"><ui:Label text="Bruchstück einer Karte" class="queue-name serif" /><ui:Label text="≈ 2 Tage" class="queue-eta mono" /></ui:VisualElement>
+                                <ui:Label text="Kammland-Nord · Mara" class="queue-from mono" />
+                                <ui:VisualElement class="progress"><ui:VisualElement class="progress-fill" style="width: 30%;" /></ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="queue-card">
+                                <ui:VisualElement class="queue-top"><ui:Label text="Unbekanntes Metall" class="queue-name serif" /><ui:Label text="Wartet" class="queue-eta mono" /></ui:VisualElement>
+                                <ui:Label text="Aschegilde · Handel" class="queue-from mono" />
+                                <ui:VisualElement class="progress"><ui:VisualElement class="progress-fill" style="width: 0;" /></ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:ScrollView>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="col-center">
+                        <ui:VisualElement style="flex-shrink: 0; flex-direction: row; justify-content: space-between; align-items: baseline; padding: 18px 26px 14px; border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.06);">
+                            <ui:Label text="Gewonnene Erkenntnisse" class="pane-title serif" style="font-size: 19px;" />
+                            <ui:Label text="von Expedition 1 zurückgebracht" class="hint" style="font-size: 11px;" />
+                        </ui:VisualElement>
+                        <ui:ScrollView class="insight-scroll">
+                            <ui:VisualElement class="insight-card">
+                                <ui:Label text="✦" class="insight-ico" style="color: rgb(127,160,196);" />
+                                <ui:VisualElement class="insight-main">
+                                    <ui:VisualElement class="insight-head"><ui:Label text="Grenzmarkierungen der Wächter" class="insight-name serif" /><ui:Label text="Fraktion" class="insight-tag" style="color: rgb(127,160,196); border-color: rgba(127,160,196,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Die Pfähle markieren das Revier der Grenzwächter. Ihr Betreten gilt als Provokation — Umgehung oder Tribut empfohlen." class="insight-text" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="insight-card">
+                                <ui:Label text="✦" class="insight-ico" style="color: rgb(217,122,95);" />
+                                <ui:VisualElement class="insight-main">
+                                    <ui:VisualElement class="insight-head"><ui:Label text="Nährböden des Kammlands" class="insight-name serif" /><ui:Label text="Vorräte" class="insight-tag" style="color: rgb(217,122,95); border-color: rgba(217,122,95,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Die Saatkörner gedeihen selbst in kargem Boden. Eine verlässliche Nahrungsquelle für längere Züge." class="insight-text" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="insight-card">
+                                <ui:Label text="✦" class="insight-ico" style="color: rgb(240,207,122);" />
+                                <ui:VisualElement class="insight-main">
+                                    <ui:VisualElement class="insight-head"><ui:Label text="Vergessene Handelsroute" class="insight-name serif" /><ui:Label text="Kartografie" class="insight-tag" style="color: rgb(240,207,122); border-color: rgba(240,207,122,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Das Kartenfragment zeigt einen alten Pfad durch den Kamm nach Osten — er umgeht das Gebiet der Grenzwächter." class="insight-text" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:ScrollView>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- ========== FRAKTIONEN ========== -->
+                <ui:VisualElement class="bc-section" name="section-frakt" style="flex-direction: column;">
+                    <ui:VisualElement style="flex-shrink: 0; flex-direction: row; justify-content: space-between; align-items: baseline; padding: 18px 28px 14px; border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.06);">
+                        <ui:Label text="Bekannte Fraktionen" class="pane-title serif" style="font-size: 20px;" />
+                        <ui:Label text="4 entdeckt" class="hint" style="font-size: 11px;" />
+                    </ui:VisualElement>
+                    <ui:ScrollView class="frakt-scroll">
+                        <ui:VisualElement name="frakt-grid" class="frakt-grid">
+                            <ui:VisualElement class="faction-card">
+                                <ui:VisualElement class="faction-portrait" style="background-color: rgb(74,69,53);" />
+                                <ui:VisualElement class="faction-main">
+                                    <ui:VisualElement class="faction-top"><ui:Label text="Die Grenzwächter" class="faction-name serif" /><ui:Label text="Neutral" class="stand-pill" style="color: rgb(200,181,122); border-color: rgba(200,181,122,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Territorial · misstrauisch" class="faction-type mono" />
+                                    <ui:VisualElement class="haltung-label"><ui:Label text="Haltung" class="haltung-name" /><ui:Label text="Wachsam" style="font-size: 11px; color: rgb(200,181,122);" /></ui:VisualElement>
+                                    <ui:VisualElement class="haltung-bar"><ui:VisualElement class="haltung-fill" style="width: 48%; background-color: rgb(200,181,122);" /></ui:VisualElement>
+                                    <ui:Label text="„Bewachen die Pässe. Dulden Fremde nur gegen Tribut oder geteiltes Wissen.“" class="faction-info" />
+                                    <ui:VisualElement class="faction-meta"><ui:Label text="Gebiet: Kammland-Nord" class="m" /><ui:Label text="Kontakt: Tag 7" class="m" /></ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="faction-card faction-card--r">
+                                <ui:VisualElement class="faction-portrait" style="background-color: rgb(74,63,52);" />
+                                <ui:VisualElement class="faction-main">
+                                    <ui:VisualElement class="faction-top"><ui:Label text="Die Aschegilde" class="faction-name serif" /><ui:Label text="Verbündet" class="stand-pill" style="color: rgb(143,174,116); border-color: rgba(143,174,116,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Händler · pragmatisch" class="faction-type mono" />
+                                    <ui:VisualElement class="haltung-label"><ui:Label text="Haltung" class="haltung-name" /><ui:Label text="Freundlich" style="font-size: 11px; color: rgb(143,174,116);" /></ui:VisualElement>
+                                    <ui:VisualElement class="haltung-bar"><ui:VisualElement class="haltung-fill" style="width: 72%; background-color: rgb(143,174,116);" /></ui:VisualElement>
+                                    <ui:Label text="„Fahrende Händler. Kaufen alles, verraten manches — für den richtigen Preis.“" class="faction-info" />
+                                    <ui:VisualElement class="faction-meta"><ui:Label text="Gebiet: Südliche Senke" class="m" /><ui:Label text="Kontakt: Tag 6" class="m" /></ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="faction-card">
+                                <ui:VisualElement class="faction-portrait" style="background-color: rgb(63,65,72);" />
+                                <ui:VisualElement class="faction-main">
+                                    <ui:VisualElement class="faction-top"><ui:Label text="Die Stillen" class="faction-name serif" /><ui:Label text="Unbekannt" class="stand-pill" style="color: rgb(143,137,124); border-color: rgba(255,255,255,0.14);" /></ui:VisualElement>
+                                    <ui:Label text="Eremiten · verschlossen" class="faction-type mono" />
+                                    <ui:VisualElement class="haltung-label"><ui:Label text="Haltung" class="haltung-name" /><ui:Label text="Unbekannt" style="font-size: 11px; color: rgb(143,137,124);" /></ui:VisualElement>
+                                    <ui:VisualElement class="haltung-bar"><ui:VisualElement class="haltung-fill" style="width: 20%; background-color: rgb(143,137,124);" /></ui:VisualElement>
+                                    <ui:Label text="„Man kennt nur Gerüchte. Niemand aus der Gruppe hat je mit ihnen gesprochen.“" class="faction-info" />
+                                    <ui:VisualElement class="faction-meta"><ui:Label text="Gebiet: Nebeltäler" class="m" /><ui:Label text="Kontakt: Nie" class="m" /></ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="faction-card faction-card--r">
+                                <ui:VisualElement class="faction-portrait" style="background-color: rgb(58,75,72);" />
+                                <ui:VisualElement class="faction-main">
+                                    <ui:VisualElement class="faction-top"><ui:Label text="Das Talvolk" class="faction-name serif" /><ui:Label text="Angespannt" class="stand-pill" style="color: rgb(224,165,143); border-color: rgba(217,122,95,0.4);" /></ui:VisualElement>
+                                    <ui:Label text="Siedler · ängstlich" class="faction-type mono" />
+                                    <ui:VisualElement class="haltung-label"><ui:Label text="Haltung" class="haltung-name" /><ui:Label text="Nervös" style="font-size: 11px; color: rgb(217,122,95);" /></ui:VisualElement>
+                                    <ui:VisualElement class="haltung-bar"><ui:VisualElement class="haltung-fill" style="width: 40%; background-color: rgb(217,122,95);" /></ui:VisualElement>
+                                    <ui:Label text="„Kleine Siedlung, fürchtet die Grenzwächter. Verbündeter oder Last — noch offen.“" class="faction-info" />
+                                    <ui:VisualElement class="faction-meta"><ui:Label text="Gebiet: Flussniederung" class="m" /><ui:Label text="Kontakt: Tag 3" class="m" /></ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:ScrollView>
+                </ui:VisualElement>
+
+                <!-- ========== ARCHIV ========== -->
+                <ui:VisualElement class="bc-section" name="section-archiv" style="flex-direction: row;">
+                    <ui:VisualElement class="archive-filters">
+                        <ui:Label text="FILTER" class="filter-title" />
+                        <ui:VisualElement class="filter-row active"><ui:Label text="Alle" class="filter-name" /><ui:Label text="6" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row"><ui:Label text="Berichte" class="filter-name" /><ui:Label text="2" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row"><ui:Label text="Briefe" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row"><ui:Label text="Erkenntnisse" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row"><ui:Label text="Verträge" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row"><ui:Label text="Notizen" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="col-center">
+                        <ui:VisualElement class="archive-head">
+                            <ui:Label text="Archiv" class="archive-title serif" />
+                            <ui:VisualElement class="bc-spacer" />
+                            <ui:VisualElement class="archive-search"><ui:Label text="⌕" class="ico" /><ui:Label text="Berichte, Briefe, Funde durchsuchen …" /></ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:ScrollView name="archive-scroll" class="archive-scroll">
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="✎" class="archive-icon" style="color: rgb(240,207,122);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Rauch hinter dem Kamm" class="archive-name serif" /><ui:Label text="Mara · Späher · Tag 5" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Bericht" class="type-tag" /><ui:Label text="Verläss. Mittel" class="archive-rel" style="color: rgb(240,207,122);" /><ui:Label text="Tag 5" class="archive-date mono" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="✉" class="archive-icon" style="color: rgb(127,160,196);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Warnung der Grenzwächter" class="archive-name serif" /><ui:Label text="Vess · Kontakt · Tag 7" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Brief" class="type-tag" /><ui:Label text="Verläss. Hoch" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 7" class="archive-date mono" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="⌂" class="archive-icon" style="color: rgb(164,157,142);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Verlassenes Lager" class="archive-name serif" /><ui:Label text="Jonas · Späher · Tag 4" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Bericht" class="type-tag" /><ui:Label text="Verläss. Hoch" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 4" class="archive-date mono" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="◆" class="archive-icon" style="color: rgb(143,174,116);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Vergessene Handelsroute" class="archive-name serif" /><ui:Label text="Auswertung · Tag 6" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Erkenntnis" class="type-tag" /><ui:Label text="Bestätigt" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 6" class="archive-date mono" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="⇄" class="archive-icon" style="color: rgb(200,181,122);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Handelsvertrag — Aschegilde" class="archive-name serif" /><ui:Label text="Nima · Verhandlung · Tag 6" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Vertrag" class="type-tag" /><ui:Label text="—" class="archive-rel" style="color: rgb(143,137,124);" /><ui:Label text="Tag 6" class="archive-date mono" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="archive-row">
+                                <ui:Label text="✦" class="archive-icon" style="color: rgb(127,160,196);" />
+                                <ui:VisualElement class="archive-main"><ui:Label text="Erste Sichtung: Die Stillen" class="archive-name serif" /><ui:Label text="Gerücht · Tag 2" class="archive-src mono" /></ui:VisualElement>
+                                <ui:Label text="Notiz" class="type-tag" /><ui:Label text="Verläss. Niedrig" class="archive-rel" style="color: rgb(217,122,95);" /><ui:Label text="Tag 2" class="archive-date mono" />
+                            </ui:VisualElement>
+                        </ui:ScrollView>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
