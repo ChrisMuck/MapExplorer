@@ -35,6 +35,21 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         Refresh();
     }
 
+    /// <summary>Hides/shows the whole expedition overlay (used while the base-camp screen is open).</summary>
+    public void SetScreenVisible(bool visible)
+    {
+        if (root == null)
+        {
+            var document = GetComponent<UIDocument>();
+            root = document != null ? document.rootVisualElement : null;
+        }
+
+        if (root != null)
+        {
+            root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+    }
+
     private void OnEnable()
     {
         if (mapView == null)
@@ -85,6 +100,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("scout-modal-close", CloseScoutMissionPopup);
         RegisterClick("scout-mission-send", SendSelectedScoutMission);
         RegisterScoutMissionOptions();
+
+        RegisterClick("action-open-base", () => mapView?.RequestOpenBaseCampFromUi());
 
         if (string.IsNullOrEmpty(openSection))
         {
@@ -343,6 +360,17 @@ public sealed class ExpeditionScreenController : MonoBehaviour
                     ? "Wissen fuer Vorratsvorbereitung der naechsten Expedition ausgeben"
                     : $"Benoetigt {PrepareSuppliesWithKnowledgeCommand.KnowledgeCost} Wissen"
                 : "Lager ist spaeter als Feldaktion geplant";
+        }
+
+        // The base window is only available once the expedition has returned to the base field.
+        var openBaseButton = root?.Q<Label>("action-open-base");
+        if (openBaseButton != null)
+        {
+            var canOpenBase = atBase && isEnded;
+            openBaseButton.EnableInClassList("disabled", !canOpenBase);
+            openBaseButton.tooltip = canOpenBase
+                ? "Basislager-Verwaltung oeffnen"
+                : "Nur in der Basis nach Abschluss der Expedition";
         }
     }
 
@@ -724,6 +752,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
                 return "auf Mission";
             case ExpeditionMemberStatus.Injured:
                 return "verletzt";
+            case ExpeditionMemberStatus.Exhausted:
+                return "erschöpft";
             case ExpeditionMemberStatus.Missing:
                 return "vermisst";
             case ExpeditionMemberStatus.Dead:

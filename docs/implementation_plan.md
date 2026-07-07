@@ -1730,3 +1730,129 @@ Current priority:
 The first exciting moment should come only after movement, fog and scout reports work.
 
 Do not skip ahead to factions, events or special locations before the movement/scout/knowledge loop exists.
+
+---
+
+## 19. Base Camp Screen — Deferred Systems (post-MVP roadmap)
+
+The full-screen base-camp screen (`UnityHexMapView/Assets/UI/BaseCampScreen.uxml` +
+`BaseCampScreenController.cs`) was built with six tabs. The **first increment** wired the tabs that
+map onto existing systems — **Team** (roster + rich person sheet + composition), **base actions**
+(heal / recruit / request-engineer / prepare-supplies / advance-time), **Aufbruch** (start the next
+expedition), and **Fraktionen / Archiv** (read-only). The four systems below are the tabs/features
+that were intentionally left as **non-functional layout placeholders**; record them here so they are
+not forgotten.
+
+Shared constraints: keep rules in `Game.Core`, actions as commands in `Game.App`, Unity only
+renders + sends commands; keep everything deterministic and add `tests/Game.Tests` coverage; treat
+costs/day-counts as tunable placeholders (game-feel, human-owned).
+
+---
+
+### Task 051: Base Upgrade Tree ("Basis ausbauen")
+
+Spend Knowledge Points on persistent base upgrades, grouped in categories (Medizin, Werkstatt,
+Kartografie, Vorräte, Unterkünfte), with built / available / locked (prerequisite) states.
+
+Example effects:
+
+- Feldlazarett — faster/cheaper healing between expeditions
+- Trägerunterkünfte / Baracken — grow the porter / soldier stock (feeds Task 053)
+- Kartentisch / Signalturm — better scout reports / +1 scout range
+- Vorratskeller / Räucherei — higher supply cap / slower spoilage
+
+Current state:
+
+- the "Basis ausbauen" tab shows the mockup layout but does nothing.
+
+Suggested model additions:
+
+- `BaseUpgradeState` (id, category, cost, isBuilt, prerequisiteIds) held on `BaseState`
+- `StartUpgradeCommand` — spend KP, mark built, expose effect hooks other systems read
+
+Acceptance criteria:
+
+- upgrades persist, cost Knowledge Points, and gate on prerequisites
+- at least one effect is observable (e.g. heal cost/time or stock size)
+- deterministic; tests cover purchase, prerequisite gating and effect
+
+Suggested model: high-reasoning or strong coding model.
+
+---
+
+### Task 052: Knowledge Evaluation Queue ("Wissen auswerten")
+
+Unsecured field discoveries enter an evaluation queue at the base; a limited number of "Auswerter"
+process items over base days into archived **Insights** plus Knowledge Points — replacing today's
+lump-sum securing of all unsecured knowledge on return.
+
+Current state:
+
+- the "Wissen auswerten" tab shows the queue + insights layout but does nothing
+- `CompleteExpeditionCommand` currently converts unsecured knowledge to KP in a single lump
+
+Suggested model additions:
+
+- `EvaluationQueueState` (items with source, progress, eta) + evaluator capacity on `BaseState`
+- `AdvanceBaseTimeCommand` advances item progress; a completed item yields an archive Insight + KP
+
+Acceptance criteria:
+
+- items progress deterministically as base time passes; capacity limits parallel evaluation
+- completion adds an archive entry and awards KP (dedup by stable source id)
+- tests cover progress, capacity and completion rewards
+
+Suggested model: high-reasoning or strong coding model.
+
+---
+
+### Task 053: Unit Stock + Resource Loadout ("Aufbruch")
+
+Träger and Soldaten become a countable base stock (grown by Task 051 upgrades), each with a
+condition (frisch / erschöpft). On departure the player picks which units and how many rations /
+medicine to take; readiness (Traglast, Verpflegung, Verteidigung, Marschtempo) is derived and can
+gate the start.
+
+Current state:
+
+- the "Aufbruch" tab shows unit grids, resource steppers and readiness as UI-only placeholders
+- `StartNewExpeditionCommand` starts with fixed supplies + the pending supply-prep bonus
+
+Suggested model additions:
+
+- base stock (porters / soldiers with condition) on `BaseState`
+- `StartNewExpedition` overload taking a loadout (unit ids + rations + medicine), validated and
+  clamped against base stock and carry capacity
+
+Acceptance criteria:
+
+- loadout is drawn from and clamped to the base stock; starting supplies/medicine reflect it
+- readiness / overload computed in Core, not the UI
+- tests cover loadout validation and derived readiness
+
+Suggested model: high-reasoning or strong coding model.
+
+---
+
+### Task 054: Typed, Filterable Archive
+
+Replace the flat string `BaseState.ArchiveEntries` with typed archive entries so the Archiv tab can
+filter and search, and the read-only display carries meaning.
+
+Current state:
+
+- the Archiv tab lists raw archive strings + scout-report titles; the filters are static
+
+Suggested model additions:
+
+- `ArchiveEntryState` (id, kind = Bericht/Brief/Erkenntnis/Vertrag/Notiz, title, source, worldDay,
+  reliability); `BaseState` stores these; populate from scout reports, discoveries, contracts, notes
+- keep a compatibility path so existing plain-string archive writing still works during migration
+
+Acceptance criteria:
+
+- entries are typed and carry source / world day / reliability
+- the tab filters by kind and searches by text
+- existing archive text migrates or coexists; tests cover typing and filtering
+
+Suggested model: high-reasoning or strong coding model.

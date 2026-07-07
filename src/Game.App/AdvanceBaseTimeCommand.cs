@@ -7,6 +7,17 @@ namespace Game.App
 
 public sealed class AdvanceBaseTimeCommand
 {
+    // Authored, deterministic world reactions surfaced while base time passes. The world keeps
+    // moving during preparation; the entry is chosen by world day so a rebuild is reproducible.
+    private static readonly string[] WorldReactions =
+    {
+        "Coastal People report smoke rising in the interior.",
+        "Border Wardens renewed the warning markers near the ravine.",
+        "Travellers say the abandoned camp was disturbed again.",
+        "The gray river ran high; a ford near the crossing washed out.",
+        "The Hidden Ones' tracks were seen and then lost in the northwest."
+    };
+
     public AdvanceBaseTimeResult Execute(GameState game, int days = 1)
     {
         if (game == null)
@@ -25,7 +36,15 @@ public sealed class AdvanceBaseTimeCommand
         }
 
         game.World.AdvanceDays(days);
-        return AdvanceBaseTimeResult.Advanced(game.World.WorldDay, game.Base.CanStartNextExpedition(game.World.WorldDay));
+
+        var reaction = WorldReactions[game.World.WorldDay % WorldReactions.Length];
+        var reactionEntry = $"World day {game.World.WorldDay}: {reaction}";
+        game.Base.AddArchiveEntry(reactionEntry);
+
+        return AdvanceBaseTimeResult.Advanced(
+            game.World.WorldDay,
+            game.Base.CanStartNextExpedition(game.World.WorldDay),
+            reactionEntry);
     }
 }
 }

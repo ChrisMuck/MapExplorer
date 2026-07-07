@@ -87,6 +87,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Transform playerAnnotationRoot;
     private Transform expeditionMarker;
     private ExpeditionScreenController expeditionScreenController;
+    private BaseCampScreenController baseCampScreenController;
     private bool warnedMissingPrefabLibrary;
     private Vector3 lastPanMousePosition;
     private bool isDraggingPan;
@@ -213,6 +214,18 @@ public sealed class UnityHexMapView : MonoBehaviour
         return coreGameState != null && coreGameState.Expedition.Position == coord;
     }
 
+    public bool IsAtBaseForUi()
+    {
+        return coreGameState != null && coreGameState.Expedition.Position == coreGameState.Base.Location;
+    }
+
+    public IReadOnlyList<BaseMemberState> GetRosterForUi()
+    {
+        return coreGameState == null
+            ? System.Array.Empty<BaseMemberState>()
+            : coreGameState.Roster.Members;
+    }
+
     public void RequestEndDayFromUi()
     {
         EndCurrentDay();
@@ -222,6 +235,87 @@ public sealed class UnityHexMapView : MonoBehaviour
     public void RequestCompleteExpeditionFromUi()
     {
         CompleteCurrentExpedition();
+        RefreshToolkitHud();
+    }
+
+    public void RequestStartBaseActionFromUi(BaseActionKind kind, string memberId = null)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartBaseAction(coreGameState, kind, memberId);
+        interactionMessage = result.Success
+            ? result.ArchiveEntry ?? "Base action applied."
+            : result.Error ?? "Base action rejected.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
+    public void RequestAdvanceBaseTimeFromUi()
+    {
+        AdvanceCurrentBaseTime();
+        RefreshToolkitHud();
+    }
+
+    public void RequestOpenBaseCampFromUi()
+    {
+        if (baseCampScreenController == null)
+        {
+            baseCampScreenController = FindObjectOfType<BaseCampScreenController>(true);
+        }
+
+        if (baseCampScreenController == null)
+        {
+            Debug.LogWarning("Base camp screen is not in the scene. Add a GameObject with a UI Document (Source Asset = BaseCampScreen.uxml, its own Panel Settings with a HIGHER sort order than the expedition screen) and a BaseCampScreenController component. See Assets/UI/BaseCampScreen.README.md.");
+            interactionMessage = "Basislager-Fenster fehlt in der Szene (siehe BaseCampScreen.README.md).";
+            RefreshToolkitHud();
+            return;
+        }
+
+        baseCampScreenController.Open();
+    }
+
+    public void SetExpeditionScreenVisible(bool visible)
+    {
+        if (expeditionScreenController == null)
+        {
+            expeditionScreenController = FindObjectOfType<ExpeditionScreenController>();
+        }
+
+        expeditionScreenController?.SetScreenVisible(visible);
+    }
+
+    public void RequestStartNewExpeditionFromUi(IReadOnlyList<string> memberIds)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartNewExpedition(coreGameState, memberIds);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "New expedition rejected.";
+            RefreshHud();
+            RefreshToolkitHud();
+            return;
+        }
+
+        selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        hasInspectedHex = false;
+        interactionMessage = $"Expedition {result.ExpeditionNumber} gestartet.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        UpdateExpeditionMarkerPosition();
+        RefreshHud();
         RefreshToolkitHud();
     }
 
@@ -608,6 +702,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         playerAnnotationRoot = null;
         expeditionMarker = null;
         expeditionScreenController = null;
+        baseCampScreenController = null;
         hasHoverPreview = false;
         hasInspectedHex = false;
         inspectedLocation = null;

@@ -431,6 +431,7 @@
             <ui:Label name="action-add-marker" text="△ Marker" class="btn" />
             <ui:Label name="action-add-note" text="✎ Notiz" class="btn" />
             <ui:Label name="action-camp" text="⛺ Lager" class="btn" />
+            <ui:Label name="action-open-base" text="⌂ Basislager" class="btn" />
             <ui:VisualElement class="spacer" />
             <ui:Label name="action-return-base" text="Expedition abschließen" class="btn btn--ghost" />
             <ui:Label name="action-end-day" text="Tag beenden →" class="btn--primary" />

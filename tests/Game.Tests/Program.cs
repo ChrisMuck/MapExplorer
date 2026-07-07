@@ -23,6 +23,8 @@ var completeExpeditionTests = new CompleteExpeditionCommandTests();
 completeExpeditionTests.RunAll();
 var expeditionLifecycleTests = new ExpeditionLifecycleCommandTests();
 expeditionLifecycleTests.RunAll();
+var baseGameplayTests = new BaseGameplayCommandTests();
+baseGameplayTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2014,5 +2016,153 @@ internal sealed class HexMapStateTests
         }
 
         throw new InvalidOperationException($"{message}: expected {typeof(TException).Name}.");
+    }
+}
+
+internal sealed class BaseGameplayCommandTests
+{
+    public void RunAll()
+    {
+        HealRestoresInjuredRosterMemberAndCostsKnowledgeAndTime();
+        RecruitAddsMemberAndSpendsKnowledgeAndTime();
+        RequestEngineerUnlocksEngineerOnceAndAddsItToRoster();
+        ComposedExpeditionUsesSelectedRosterMembersIncludingEngineer();
+        BaseTimeProducesDeterministicWorldReaction();
+        RosterCarriesRichProfileData();
+        ComposingWithUnavailableMemberIsRejected();
+    }
+
+    private static GameState ReturnedGameAtBase(int knowledgePoints = 50)
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(knowledgePoints);
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        return game;
+    }
+
+    private static void HealRestoresInjuredRosterMemberAndCostsKnowledgeAndTime()
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(50);
+        game.Expedition.FindMember("scout-1")!.SetStatus(ExpeditionMemberStatus.Injured);
+        new CompleteExpeditionCommand().Execute(game);
+
+        var member = game.Roster.FindMember("scout-1")!;
+        AssertEqual(ExpeditionMemberStatus.Injured, member.Status, "Injured status carries into the roster on return");
+
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        var dayBefore = game.World.WorldDay;
+        var heal = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "scout-1");
+
+        AssertTrue(heal.Success, "Heal succeeds");
+        AssertEqual(ExpeditionMemberStatus.Available, member.Status, "Healed member becomes available");
+        AssertEqual(knowledgeBefore - StartBaseActionCommand.HealCost, game.Base.KnowledgePoints, "Heal spends knowledge");
+        AssertEqual(dayBefore + StartBaseActionCommand.HealDays, game.World.WorldDay, "Heal advances base time");
+    }
+
+    private static void RecruitAddsMemberAndSpendsKnowledgeAndTime()
+    {
+        var game = ReturnedGameAtBase();
+        var countBefore = game.Roster.Members.Count;
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        var dayBefore = game.World.WorldDay;
+
+        var recruit = new StartBaseActionCommand().Execute(game, BaseActionKind.RecruitMember);
+
+        AssertTrue(recruit.Success, "Recruit succeeds");
+        AssertEqual(countBefore + 1, game.Roster.Members.Count, "Recruit adds a roster member");
+        AssertEqual(knowledgeBefore - StartBaseActionCommand.RecruitCost, game.Base.KnowledgePoints, "Recruit spends knowledge");
+        AssertEqual(dayBefore + StartBaseActionCommand.RecruitDays, game.World.WorldDay, "Recruit advances base time");
+    }
+
+    private static void RequestEngineerUnlocksEngineerOnceAndAddsItToRoster()
+    {
+        var game = ReturnedGameAtBase();
+        AssertFalse(game.Base.HasRequestedEngineer, "No engineer requested initially");
+
+        var request = new StartBaseActionCommand().Execute(game, BaseActionKind.RequestEngineer);
+        AssertTrue(request.Success, "Engineer request succeeds");
+        AssertTrue(game.Base.HasRequestedEngineer, "Engineer request flag is set");
+        AssertTrue(game.Roster.Available().Any(member => member.Role == ExpeditionMemberRole.Engineer), "Engineer joins the roster");
+
+        var second = new StartBaseActionCommand().Execute(game, BaseActionKind.RequestEngineer);
+        AssertFalse(second.Success, "Engineer cannot be requested twice");
+    }
+
+    private static void ComposedExpeditionUsesSelectedRosterMembersIncludingEngineer()
+    {
+        var game = ReturnedGameAtBase();
+        new StartBaseActionCommand().Execute(game, BaseActionKind.RequestEngineer);
+        var engineer = game.Roster.Available().First(member => member.Role == ExpeditionMemberRole.Engineer);
+        var selected = new[] { "scout-1", "guard-1", engineer.Id };
+
+        var start = new StartNewExpeditionCommand().Execute(game, selected);
+
+        AssertTrue(start.Success, "Composed expedition starts");
+        AssertEqual(3, game.Expedition.Members.Count, "Expedition uses only the selected members");
+        AssertTrue(game.Expedition.Members.Any(member => member.Id == "scout-1"), "Selected member joins the expedition");
+        AssertTrue(game.Expedition.Members.Any(member => member.Role == ExpeditionMemberRole.Engineer), "Engineer joins the second expedition");
+        AssertEqual(2, game.Expedition.ExpeditionNumber, "Second expedition number");
+    }
+
+    private static void BaseTimeProducesDeterministicWorldReaction()
+    {
+        var game = ReturnedGameAtBase(0);
+        var entriesBefore = game.Base.ArchiveEntries.Count;
+
+        var advance = new AdvanceBaseTimeCommand().Execute(game, 1);
+
+        AssertTrue(advance.Success, "Base time advances");
+        AssertTrue(advance.WorldReactionEntry != null, "Base time yields a world reaction");
+        AssertTrue(game.Base.ArchiveEntries.Count > entriesBefore, "World reaction is archived");
+    }
+
+    private static void RosterCarriesRichProfileData()
+    {
+        var game = TutorialGameFactory.Create();
+        var sela = game.Roster.FindMember("medic-1")!;
+
+        AssertEqual(5, sela.Level, "Roster member carries a level");
+        AssertTrue(sela.Skills.Count > 0, "Roster member carries skills");
+        AssertTrue(sela.Gear.Count > 0, "Roster member carries gear");
+        AssertTrue(!string.IsNullOrWhiteSpace(sela.Bio), "Roster member carries a bio");
+    }
+
+    private static void ComposingWithUnavailableMemberIsRejected()
+    {
+        var game = ReturnedGameAtBase();
+        new AdvanceBaseTimeCommand().Execute(game, CompleteExpeditionCommand.NormalPreparationDays);
+        AssertEqual(ExpeditionMemberStatus.Injured, game.Roster.FindMember("guard-2")!.Status, "Injured member stays injured in the pool");
+
+        var rejected = new StartNewExpeditionCommand().Execute(game, new[] { "scout-1", "guard-2" });
+        AssertFalse(rejected.Success, "Composing with an unavailable member is rejected");
+
+        var ok = new StartNewExpeditionCommand().Execute(game, new[] { "scout-1", "guard-1" });
+        AssertTrue(ok.Success, "Composing with available members succeeds");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
     }
 }

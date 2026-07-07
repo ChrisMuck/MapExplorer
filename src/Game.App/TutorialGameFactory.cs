@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -43,10 +44,11 @@ public static class TutorialGameFactory
         new KnowledgeService().RevealFromExpedition(map, knowledge, baseCoord);
 
         var notes = new PlayerNotesState();
+        var members = CreateTutorialMembers().ToList();
         var expedition = new ExpeditionState(
             expeditionNumber: 1,
             position: baseCoord,
-            members: CreateTutorialMembers(),
+            members: members,
             movementPoints: 4,
             supplies: 20,
             medicine: 3,
@@ -56,7 +58,11 @@ public static class TutorialGameFactory
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
 
-        return new GameState(world, knowledge, notes, expedition, baseState, factions: CreateTutorialFactions());
+        // Seed the persistent roster with rich profiles (matching the active members' ids/status)
+        // so returning members reconcile into the pool instead of duplicating.
+        var roster = new BaseRosterState(CreateTutorialRoster());
+
+        return new GameState(world, knowledge, notes, expedition, baseState, factions: CreateTutorialFactions(), roster: roster);
     }
 
     private static HexMapState GenerateTutorialMap(HexMapBounds bounds)
@@ -428,11 +434,58 @@ public static class TutorialGameFactory
             new ExpeditionMemberState("scout-1", "Mira", ExpeditionMemberRole.Scout),
             new ExpeditionMemberState("scout-2", "Tovin", ExpeditionMemberRole.Scout),
             new ExpeditionMemberState("guard-1", "Bram", ExpeditionMemberRole.Guard),
-            new ExpeditionMemberState("guard-2", "Ilyra", ExpeditionMemberRole.Guard),
+            new ExpeditionMemberState("guard-2", "Ilyra", ExpeditionMemberRole.Guard, ExpeditionMemberStatus.Injured),
             new ExpeditionMemberState("carrier-1", "Nessa", ExpeditionMemberRole.Carrier),
-            new ExpeditionMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier),
+            new ExpeditionMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Exhausted),
             new ExpeditionMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic),
             new ExpeditionMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar)
+        };
+    }
+
+    private static IEnumerable<BaseMemberState> CreateTutorialRoster()
+    {
+        return new[]
+        {
+            new BaseMemberState("scout-1", "Mira", ExpeditionMemberRole.Scout, ExpeditionMemberStatus.Available, level: 4,
+                bio: "Kennt das Kammland wie ihre Westentasche. Läuft voraus, wo andere zögern.",
+                skills: new[] { new MemberSkill("Wahrnehmung", 5), new MemberSkill("Ausdauer", 4), new MemberSkill("Tarnung", 4), new MemberSkill("Medizin", 2) },
+                traits: new[] { "Ortskundig", "Nachtsichtig" },
+                gear: new[] { new MemberGear("Werkzeug", "Fernglas"), new MemberGear("Waffe", "Leichter Bogen"), new MemberGear("Ausrüstung", "Kletterseil") }),
+            new BaseMemberState("scout-2", "Tovin", ExpeditionMemberRole.Scout, ExpeditionMemberStatus.Available, level: 3,
+                bio: "Jung und ungeduldig — aber niemand liest Spuren so schnell wie er.",
+                skills: new[] { new MemberSkill("Wahrnehmung", 4), new MemberSkill("Ausdauer", 4), new MemberSkill("Tarnung", 3), new MemberSkill("Verhandlung", 2) },
+                traits: new[] { "Flink", "Übermütig" },
+                gear: new[] { new MemberGear("Waffe", "Wurfmesser"), new MemberGear("Werkzeug", "Kompass") }),
+            new BaseMemberState("guard-1", "Bram", ExpeditionMemberRole.Guard, ExpeditionMemberStatus.Available, level: 3,
+                bio: "Steht die erste und die letzte Wache. Schläft, sagt man, mit offenen Augen.",
+                skills: new[] { new MemberSkill("Stärke", 4), new MemberSkill("Ausdauer", 4), new MemberSkill("Wahrnehmung", 3), new MemberSkill("Handwerk", 2) },
+                traits: new[] { "Wachsam", "Sturköpfig" },
+                gear: new[] { new MemberGear("Waffe", "Speer"), new MemberGear("Rüstung", "Lederharnisch") }),
+            new BaseMemberState("guard-2", "Ilyra", ExpeditionMemberRole.Guard, ExpeditionMemberStatus.Injured, level: 3,
+                bio: "Ruhig im Gefecht, unerschütterlich im Rückzug. Zahlt jeden Sieg mit einer Narbe.",
+                skills: new[] { new MemberSkill("Stärke", 4), new MemberSkill("Ausdauer", 3), new MemberSkill("Wahrnehmung", 3), new MemberSkill("Handwerk", 1) },
+                traits: new[] { "Entschlossen", "Narbig" },
+                gear: new[] { new MemberGear("Waffe", "Kurzschwert"), new MemberGear("Rüstung", "Rundschild") }),
+            new BaseMemberState("carrier-1", "Nessa", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Available, level: 2,
+                bio: "Trägt die doppelte Last ohne Klage — solange die Rationen stimmen.",
+                skills: new[] { new MemberSkill("Stärke", 5), new MemberSkill("Ausdauer", 5), new MemberSkill("Handwerk", 2), new MemberSkill("Wahrnehmung", 1) },
+                traits: new[] { "Bärenkraft", "Langsam" },
+                gear: new[] { new MemberGear("Ausrüstung", "Großer Rucksack") }),
+            new BaseMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Exhausted, level: 2,
+                bio: "Verlässlich bis zum Umfallen — und im Moment nah dran.",
+                skills: new[] { new MemberSkill("Stärke", 4), new MemberSkill("Ausdauer", 4), new MemberSkill("Handwerk", 2), new MemberSkill("Wahrnehmung", 1) },
+                traits: new[] { "Zäh", "Wortkarg" },
+                gear: new[] { new MemberGear("Ausrüstung", "Traggestell") }),
+            new BaseMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic, ExpeditionMemberStatus.Available, level: 5,
+                bio: "Ruhige Hände, nüchterner Blick. Hat mehr Wunden genäht, als sie zählen mag.",
+                skills: new[] { new MemberSkill("Medizin", 5), new MemberSkill("Wissen", 4), new MemberSkill("Wahrnehmung", 3), new MemberSkill("Ausdauer", 2) },
+                traits: new[] { "Gelehrt", "Fürsorglich" },
+                gear: new[] { new MemberGear("Werkzeug", "Arzttasche"), new MemberGear("Ausrüstung", "Kräuterbeutel") }),
+            new BaseMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar, ExpeditionMemberStatus.Available, level: 4,
+                bio: "Liest jede Ruine wie ein offenes Buch — und vergisst darüber das Abendessen.",
+                skills: new[] { new MemberSkill("Wissen", 5), new MemberSkill("Verhandlung", 3), new MemberSkill("Wahrnehmung", 3), new MemberSkill("Ausdauer", 2) },
+                traits: new[] { "Belesen", "Zerstreut" },
+                gear: new[] { new MemberGear("Werkzeug", "Feldbuch"), new MemberGear("Werkzeug", "Lupe") })
         };
     }
 }

@@ -43,6 +43,9 @@ public sealed class CompleteExpeditionCommand
         game.Base.AddArchiveEntry(archiveEntry);
         game.Base.SecureCurrentExpeditionArchiveEntries();
 
+        // Survivors return to the persistent base roster (their injuries/status carry over).
+        game.Roster.AbsorbReturningMembers(game.Expedition);
+
         return CompleteExpeditionResult.Completed(
             game.Base.Location,
             game.Expedition.ExpeditionNumber,
