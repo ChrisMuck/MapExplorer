@@ -25,6 +25,8 @@ var expeditionLifecycleTests = new ExpeditionLifecycleCommandTests();
 expeditionLifecycleTests.RunAll();
 var baseGameplayTests = new BaseGameplayCommandTests();
 baseGameplayTests.RunAll();
+var baseUpgradeTests = new BaseUpgradeCommandTests();
+baseUpgradeTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2140,6 +2142,104 @@ internal sealed class BaseGameplayCommandTests
 
         var ok = new StartNewExpeditionCommand().Execute(game, new[] { "scout-1", "guard-1" });
         AssertTrue(ok.Success, "Composing with available members succeeds");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class BaseUpgradeCommandTests
+{
+    public void RunAll()
+    {
+        BuildingAnAvailableUpgradeSpendsKnowledgeAndPersists();
+        PrerequisiteGatingBlocksLockedUpgrades();
+        AlreadyBuiltAndInsufficientKnowledgeAreRejected();
+        HerbalismUpgradeMakesHealingCheaper();
+    }
+
+    private static GameState ReturnedGameAtBase(int knowledgePoints = 50)
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(knowledgePoints);
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        return game;
+    }
+
+    private static void BuildingAnAvailableUpgradeSpendsKnowledgeAndPersists()
+    {
+        var game = ReturnedGameAtBase();
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        AssertFalse(game.Base.Upgrades.IsBuilt("gerberei"), "Gerberei starts unbuilt");
+
+        var result = new StartUpgradeCommand().Execute(game, "gerberei");
+
+        AssertTrue(result.Success, "Building an available upgrade succeeds");
+        AssertTrue(game.Base.Upgrades.IsBuilt("gerberei"), "Upgrade is marked built");
+        AssertEqual(knowledgeBefore - 3, game.Base.KnowledgePoints, "Upgrade spends its knowledge cost");
+    }
+
+    private static void PrerequisiteGatingBlocksLockedUpgrades()
+    {
+        var game = ReturnedGameAtBase();
+
+        var locked = new StartUpgradeCommand().Execute(game, "ausbildungsplatz");
+        AssertFalse(locked.Success, "Upgrade with unmet prerequisites is rejected");
+
+        var prerequisite = new StartUpgradeCommand().Execute(game, "baracken");
+        AssertTrue(prerequisite.Success, "Prerequisite upgrade can be built");
+
+        var unlocked = new StartUpgradeCommand().Execute(game, "ausbildungsplatz");
+        AssertTrue(unlocked.Success, "Upgrade builds once prerequisites are met");
+    }
+
+    private static void AlreadyBuiltAndInsufficientKnowledgeAreRejected()
+    {
+        var game = ReturnedGameAtBase(0);
+
+        var alreadyBuilt = new StartUpgradeCommand().Execute(game, "schmiede");
+        AssertFalse(alreadyBuilt.Success, "Already-built upgrade is rejected");
+
+        var tooExpensive = new StartUpgradeCommand().Execute(game, "signalturm");
+        AssertFalse(tooExpensive.Success, "Upgrade without enough knowledge is rejected");
+    }
+
+    private static void HerbalismUpgradeMakesHealingCheaper()
+    {
+        var game = ReturnedGameAtBase();
+
+        var full = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "guard-2");
+        AssertTrue(full.Success, "Heal without herbalism succeeds");
+        AssertEqual(StartBaseActionCommand.HealCost, full.KnowledgeSpent, "Heal costs the full amount without herbalism");
+
+        var herbalism = new StartUpgradeCommand().Execute(game, "kraeuterkunde");
+        AssertTrue(herbalism.Success, "Kraeuterkunde builds");
+
+        var cheaper = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "carrier-2");
+        AssertTrue(cheaper.Success, "Heal with herbalism succeeds");
+        AssertEqual(StartBaseActionCommand.HealCostWithHerbalism, cheaper.KnowledgeSpent, "Heal costs less with herbalism");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

@@ -14,6 +14,7 @@ namespace Game.App
 public sealed class StartBaseActionCommand
 {
     public const int HealCost = 5;
+    public const int HealCostWithHerbalism = 2;
     public const int HealDays = 2;
     public const int RecruitCost = 8;
     public const int RecruitDays = 3;
@@ -70,21 +71,23 @@ public sealed class StartBaseActionCommand
             return StartBaseActionResult.Rejected("Unknown roster member.");
         }
 
-        if (member.Status != ExpeditionMemberStatus.Injured)
+        if (member.Status != ExpeditionMemberStatus.Injured && member.Status != ExpeditionMemberStatus.Exhausted)
         {
             return StartBaseActionResult.Rejected($"{member.Name} does not need healing.");
         }
 
-        if (!game.Base.SpendKnowledgePoints(HealCost))
+        // Kräuterkunde (CheaperHealing) makes base healing cost less Knowledge.
+        var cost = game.Base.Upgrades.HasEffect(BaseUpgradeEffect.CheaperHealing) ? HealCostWithHerbalism : HealCost;
+        if (!game.Base.SpendKnowledgePoints(cost))
         {
-            return StartBaseActionResult.Rejected($"Not enough Knowledge Points. Need {HealCost}.");
+            return StartBaseActionResult.Rejected($"Not enough Knowledge Points. Need {cost}.");
         }
 
         member.Heal();
-        var entry = $"Base preparation: {member.Name} recovered from injury ({HealCost} Knowledge, {HealDays} day(s)).";
+        var entry = $"Base preparation: {member.Name} recovered ({cost} Knowledge, {HealDays} day(s)).";
         game.Base.AddArchiveEntry(entry);
         advanceBaseTimeCommand.Execute(game, HealDays);
-        return StartBaseActionResult.Applied(BaseActionKind.HealMember, HealCost, game.Base.KnowledgePoints, game.World.WorldDay, entry);
+        return StartBaseActionResult.Applied(BaseActionKind.HealMember, cost, game.Base.KnowledgePoints, game.World.WorldDay, entry);
     }
 
     private StartBaseActionResult Recruit(GameState game)

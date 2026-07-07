@@ -213,11 +213,11 @@
                             <ui:Label text="◆" class="ico" />
                             <ui:VisualElement>
                                 <ui:Label text="VERFÜGBARES WISSEN" class="bc-res-label" />
-                                <ui:Label text="12" class="wissen-num mono" />
+                                <ui:Label name="basis-knowledge" text="12" class="wissen-num mono" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
-                    <ui:ScrollView class="basis-scroll">
+                    <ui:ScrollView name="basis-scroll" class="basis-scroll">
                         <!-- Medizin -->
                         <ui:VisualElement class="up-cat">
                             <ui:VisualElement class="up-cat-head"><ui:Label text="✚" class="up-cat-ico" style="color: rgb(143,174,116);" /><ui:Label text="MEDIZIN &amp; PFLEGE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>

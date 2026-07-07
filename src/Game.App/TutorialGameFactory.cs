@@ -54,7 +54,7 @@ public static class TutorialGameFactory
             medicine: 3,
             morale: 70,
             capacity: 20);
-        var baseState = new BaseState(baseCoord);
+        var baseState = new BaseState(baseCoord, new BaseUpgradesState(CreateTutorialUpgrades()));
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
 
@@ -439,6 +439,38 @@ public static class TutorialGameFactory
             new ExpeditionMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Exhausted),
             new ExpeditionMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic),
             new ExpeditionMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar)
+        };
+    }
+
+    private static IEnumerable<BaseUpgradeState> CreateTutorialUpgrades()
+    {
+        const string medicine = "Medizin & Pflege";
+        const string workshop = "Werkstatt";
+        const string cartography = "Kartografie";
+        const string supplies = "Vorräte";
+        const string housing = "Unterkünfte";
+
+        return new[]
+        {
+            new BaseUpgradeState("feldlazarett", medicine, "Feldlazarett", "Verwundete erholen sich zwischen den Expeditionen deutlich schneller.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("kraeuterkunde", medicine, "Kräuterkunde", "Heilmittel aus lokal gesammelten Pflanzen — Heilen im Lager kostet weniger Wissen.", 4, BaseUpgradeEffect.CheaperHealing),
+            new BaseUpgradeState("quarantaenezelt", medicine, "Quarantänezelt", "Verhindert die Ausbreitung von Krankheiten im Lager.", 5, BaseUpgradeEffect.None, new[] { "feldlazarett" }),
+
+            new BaseUpgradeState("schmiede", workshop, "Schmiede", "Reparatur und Aufwertung von Ausrüstung im Lager.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("gerberei", workshop, "Gerberei", "Fertigt Rüstungen und Behälter aus erbeuteten Häuten.", 3),
+            new BaseUpgradeState("praezisionswerkbank", workshop, "Präzisionswerkbank", "Feinmechanik — schaltet fortgeschrittene Werkzeuge frei.", 6, BaseUpgradeEffect.None, new[] { "schmiede" }),
+
+            new BaseUpgradeState("kartentisch", cartography, "Kartentisch", "Späher-Berichte werden genauer und decken mehr Felder auf.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("signalturm", cartography, "Signalturm", "Erhöht die Reichweite ausgesandter Späher um ein Feld.", 5, BaseUpgradeEffect.ScoutRangePlus),
+            new BaseUpgradeState("sternkarten", cartography, "Sternkarten", "Ermöglicht Nachtmärsche ohne Moralverlust.", 4),
+
+            new BaseUpgradeState("vorratskeller", supplies, "Vorratskeller", "Erhöht die maximale Lagerkapazität für Rationen.", 0, BaseUpgradeEffect.HigherSupplyCap, isBuilt: true),
+            new BaseUpgradeState("raeucherei", supplies, "Räucherei", "Konserviert Nahrung — Vorräte verderben langsamer.", 4, BaseUpgradeEffect.SlowerSpoilage),
+            new BaseUpgradeState("brunnen", supplies, "Brunnen", "Sichere Wasserversorgung senkt das Krankheitsrisiko.", 5, BaseUpgradeEffect.None, new[] { "vorratskeller" }),
+
+            new BaseUpgradeState("traegerunterkuenfte", housing, "Trägerunterkünfte", "Vergrößert den Pool verfügbarer Träger für Expeditionen.", 0, BaseUpgradeEffect.GrowPorterStock, isBuilt: true),
+            new BaseUpgradeState("baracken", housing, "Baracken", "Erhöht die Zahl ausgebildeter Soldaten im Bestand.", 4, BaseUpgradeEffect.GrowSoldierStock),
+            new BaseUpgradeState("ausbildungsplatz", housing, "Ausbildungsplatz", "Erschöpfte Einheiten erholen sich schneller zwischen den Zügen.", 5, BaseUpgradeEffect.None, new[] { "baracken" })
         };
     }
 

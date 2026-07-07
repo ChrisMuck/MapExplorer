@@ -20,6 +20,7 @@ public sealed class GameApplication
     private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand = new AdvanceBaseTimeCommand();
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
     private readonly StartBaseActionCommand startBaseActionCommand = new StartBaseActionCommand();
+    private readonly StartUpgradeCommand startUpgradeCommand = new StartUpgradeCommand();
     private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand = new OpenFactionInteractionCommand();
@@ -100,6 +101,11 @@ public sealed class GameApplication
     public StartBaseActionResult StartBaseAction(GameState game, BaseActionKind kind, string? memberId = null)
     {
         return startBaseActionCommand.Execute(game, kind, memberId);
+    }
+
+    public StartUpgradeResult StartUpgrade(GameState game, string upgradeId)
+    {
+        return startUpgradeCommand.Execute(game, upgradeId);
     }
 
     public PrepareSuppliesWithKnowledgeResult PrepareSuppliesWithKnowledge(GameState game)

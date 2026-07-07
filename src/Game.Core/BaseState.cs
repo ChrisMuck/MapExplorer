@@ -11,12 +11,15 @@ public sealed class BaseState
     private readonly List<LostExpeditionRecord> lostExpeditions = new();
     private int expeditionArchiveStartIndex;
 
-    public BaseState(HexCoord location)
+    public BaseState(HexCoord location, BaseUpgradesState? upgrades = null)
     {
         Location = location;
+        Upgrades = upgrades ?? new BaseUpgradesState();
     }
 
     public HexCoord Location { get; }
+
+    public BaseUpgradesState Upgrades { get; }
 
     public ExpeditionStatus? LastExpeditionOutcome { get; private set; }
 

@@ -195,6 +195,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
         BuildTeam(state);
         BuildAufbruch(state);
+        BuildBasis(state);
         BuildFactions(state);
         BuildArchive(state);
     }
@@ -515,6 +516,103 @@ public sealed class BaseCampScreenController : MonoBehaviour
                         ? "Kein Team gewählt"
                         : "Expedition aufbrechen →";
         }
+    }
+
+    // ---------------------------------------------------------------- basis ausbauen
+
+    private void BuildBasis(GameState state)
+    {
+        var scroll = root.Q<ScrollView>("basis-scroll");
+        if (scroll == null)
+        {
+            return;
+        }
+
+        SetText("basis-knowledge", state.Base.KnowledgePoints.ToString());
+
+        scroll.Clear();
+        var upgrades = mapView.GetUpgradesForUi();
+        var categories = new List<string>();
+        foreach (var upgrade in upgrades)
+        {
+            if (!categories.Contains(upgrade.Category))
+            {
+                categories.Add(upgrade.Category);
+            }
+        }
+
+        foreach (var category in categories)
+        {
+            var cat = Div("up-cat");
+            var head = Div("up-cat-head");
+            head.Add(Lbl(category, "up-cat-name", "sans"));
+            head.Add(Div("up-cat-line"));
+            cat.Add(head);
+
+            var grid = Div("up-grid");
+            foreach (var upgrade in upgrades.Where(u => u.Category == category))
+            {
+                grid.Add(BuildUpgradeCard(state, upgrade));
+            }
+
+            cat.Add(grid);
+            scroll.Add(cat);
+        }
+    }
+
+    private VisualElement BuildUpgradeCard(GameState state, BaseUpgradeState upgrade)
+    {
+        var card = Div("up-card");
+        var prereqsMet = upgrade.PrerequisiteIds.All(id => mapView.GetUpgradesForUi().Any(u => u.Id == id && u.IsBuilt));
+        var affordable = state.Base.KnowledgePoints >= upgrade.Cost;
+
+        var top = Div("up-top");
+        top.Add(Lbl(upgrade.Name, "up-name", "serif"));
+        if (!upgrade.IsBuilt)
+        {
+            var cost = Lbl($"◆ {upgrade.Cost}", "up-cost", "mono");
+            if (!prereqsMet || !affordable)
+            {
+                cost.AddToClassList("up-cost--locked");
+            }
+
+            top.Add(cost);
+        }
+
+        card.Add(top);
+        card.Add(Lbl(upgrade.Description, "up-desc"));
+
+        Label button;
+        if (upgrade.IsBuilt)
+        {
+            card.AddToClassList("up-card--built");
+            button = Lbl("✓ Gebaut", "up-btn", "up-btn--built");
+        }
+        else if (!prereqsMet)
+        {
+            card.AddToClassList("up-card--locked");
+            var names = string.Join(", ", upgrade.PrerequisiteIds.Select(PrereqName));
+            button = Lbl($"Benötigt: {names}", "up-btn", "up-btn--locked");
+        }
+        else if (!affordable)
+        {
+            button = Lbl($"Benötigt ◆ {upgrade.Cost}", "up-btn", "up-btn--locked");
+        }
+        else
+        {
+            button = Lbl("Ausbauen", "up-btn", "up-btn--go");
+            var id = upgrade.Id;
+            button.RegisterCallback<ClickEvent>(_ => { mapView.RequestStartUpgradeFromUi(id); Refresh(); });
+        }
+
+        card.Add(button);
+        return card;
+    }
+
+    private string PrereqName(string id)
+    {
+        var upgrade = mapView.GetUpgradesForUi().FirstOrDefault(u => u.Id == id);
+        return upgrade != null ? upgrade.Name : id;
     }
 
     // ---------------------------------------------------------------- factions

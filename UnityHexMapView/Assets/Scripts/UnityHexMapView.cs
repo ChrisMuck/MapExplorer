@@ -226,6 +226,28 @@ public sealed class UnityHexMapView : MonoBehaviour
             : coreGameState.Roster.Members;
     }
 
+    public IReadOnlyList<BaseUpgradeState> GetUpgradesForUi()
+    {
+        return coreGameState == null
+            ? System.Array.Empty<BaseUpgradeState>()
+            : coreGameState.Base.Upgrades.Upgrades;
+    }
+
+    public void RequestStartUpgradeFromUi(string upgradeId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartUpgrade(coreGameState, upgradeId);
+        interactionMessage = result.Success
+            ? result.ArchiveEntry ?? "Base upgrade built."
+            : result.Error ?? "Base upgrade rejected.";
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
     public void RequestEndDayFromUi()
     {
         EndCurrentDay();
