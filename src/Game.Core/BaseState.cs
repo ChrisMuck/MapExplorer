@@ -7,16 +7,25 @@ namespace Game.Core
 
 public sealed class BaseState
 {
-    private readonly List<string> archiveEntries = new();
+    private readonly List<ArchiveEntryState> archive = new();
     private readonly List<LostExpeditionRecord> lostExpeditions = new();
     private int expeditionArchiveStartIndex;
 
-    public BaseState(HexCoord location)
+    public BaseState(HexCoord location, BaseUpgradesState? upgrades = null, EvaluationQueueState? evaluationQueue = null, BaseUnitStockState? unitStock = null)
     {
         Location = location;
+        Upgrades = upgrades ?? new BaseUpgradesState();
+        EvaluationQueue = evaluationQueue ?? new EvaluationQueueState();
+        UnitStock = unitStock ?? new BaseUnitStockState();
     }
 
     public HexCoord Location { get; }
+
+    public BaseUpgradesState Upgrades { get; }
+
+    public EvaluationQueueState EvaluationQueue { get; }
+
+    public BaseUnitStockState UnitStock { get; }
 
     public ExpeditionStatus? LastExpeditionOutcome { get; private set; }
 
@@ -28,9 +37,16 @@ public sealed class BaseState
 
     public bool HasRequestedEngineer { get; private set; }
 
+    /// <summary>Typed archive entries; the source of truth for the base archive.</summary>
+    public IReadOnlyList<ArchiveEntryState> Archive
+    {
+        get { return archive; }
+    }
+
+    /// <summary>Back-compat flat view of the archive as strings.</summary>
     public IReadOnlyList<string> ArchiveEntries
     {
-        get { return archiveEntries; }
+        get { return archive.Select(entry => entry.Text).ToList(); }
     }
 
     public IReadOnlyList<LostExpeditionRecord> LostExpeditions
@@ -45,7 +61,12 @@ public sealed class BaseState
             throw new ArgumentException("Archive entry must not be empty.", nameof(entry));
         }
 
-        archiveEntries.Add(entry);
+        archive.Add(ArchiveEntryState.Note(entry));
+    }
+
+    public void AddArchiveEntry(ArchiveEntryState entry)
+    {
+        archive.Add(entry ?? throw new ArgumentNullException(nameof(entry)));
     }
 
     public void AddLostExpeditionRecord(LostExpeditionRecord record)
@@ -103,22 +124,22 @@ public sealed class BaseState
 
     public void MarkExpeditionDepartureArchivePoint()
     {
-        expeditionArchiveStartIndex = archiveEntries.Count;
+        expeditionArchiveStartIndex = archive.Count;
     }
 
     public void SecureCurrentExpeditionArchiveEntries()
     {
-        expeditionArchiveStartIndex = archiveEntries.Count;
+        expeditionArchiveStartIndex = archive.Count;
     }
 
     public void DiscardCurrentExpeditionArchiveEntries()
     {
-        if (archiveEntries.Count <= expeditionArchiveStartIndex)
+        if (archive.Count <= expeditionArchiveStartIndex)
         {
             return;
         }
 
-        archiveEntries.RemoveRange(expeditionArchiveStartIndex, archiveEntries.Count - expeditionArchiveStartIndex);
+        archive.RemoveRange(expeditionArchiveStartIndex, archive.Count - expeditionArchiveStartIndex);
     }
 
     public void ScheduleNextExpedition(ExpeditionStatus outcome, int currentWorldDay, int delayDays)

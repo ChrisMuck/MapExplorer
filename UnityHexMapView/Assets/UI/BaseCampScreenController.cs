@@ -10,9 +10,9 @@ using UnityEngine.UIElements;
 /// real simulation via <see cref="UnityHexMapView"/> (roster, knowledge, factions, archive) and
 /// only sends commands through the existing Request*FromUi seam — it never mutates world state.
 ///
-/// First increment wires: Team (compose), base actions (heal/recruit/engineer/supplies/time),
-/// Aufbruch (start), Fraktionen and Archiv (read-only). "Basis ausbauen" and "Wissen auswerten"
-/// keep the mockup layout as non-functional placeholders (roadmap).
+/// Wires: Team (compose), base actions (heal/recruit/engineer/supplies/time), Aufbruch (unit
+/// stock + resource loadout with live readiness → start), Basis ausbauen (upgrade tree), Wissen
+/// auswerten (evaluation queue), Fraktionen and Archiv (read-only).
 ///
 /// Setup: own GameObject with a UI Document (Source = BaseCampScreen.uxml) + Panel Settings whose
 /// sort order renders above the expedition screen. Starts hidden; opened via
@@ -35,11 +35,20 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
     private const int TeamCap = 6;
 
+    // Mirror of StartNewExpeditionCommand's base budgets so the UI preview matches the command's clamping.
+    private const int RationBudget = 40;
+    private const int MedicineBudget = 4;
+
     private UnityHexMapView mapView;
     private VisualElement root;
     private string openTab = "team";
     private string selectedPersonId;
     private readonly HashSet<string> selectedTeam = new HashSet<string>();
+    private readonly HashSet<string> selectedUnits = new HashSet<string>();
+    private int rations = 20;
+    private int medicine = 2;
+    private ArchiveEntryKind? archiveKindFilter;
+    private string archiveSearch = string.Empty;
     private bool isOpen;
     private bool bound;
 
@@ -91,6 +100,30 @@ public sealed class BaseCampScreenController : MonoBehaviour
         Click("btn-prepare-supplies", PrepareSupplies);
         Click("btn-advance-time", AdvanceTime);
         Click("btn-ready", StartExpedition);
+        Click("rations-dec", () => StepRations(-1));
+        Click("rations-inc", () => StepRations(1));
+        Click("medicine-dec", () => StepMedicine(-1));
+        Click("medicine-inc", () => StepMedicine(1));
+
+        Click("filter-alle", () => SetArchiveFilter(null));
+        Click("filter-bericht", () => SetArchiveFilter(ArchiveEntryKind.Bericht));
+        Click("filter-brief", () => SetArchiveFilter(ArchiveEntryKind.Brief));
+        Click("filter-erkenntnis", () => SetArchiveFilter(ArchiveEntryKind.Erkenntnis));
+        Click("filter-vertrag", () => SetArchiveFilter(ArchiveEntryKind.Vertrag));
+        Click("filter-notiz", () => SetArchiveFilter(ArchiveEntryKind.Notiz));
+
+        var searchField = root.Q<TextField>("archive-search-field");
+        if (searchField != null)
+        {
+            searchField.RegisterValueChangedCallback(evt =>
+            {
+                archiveSearch = evt.newValue ?? string.Empty;
+                if (openTab == "archiv")
+                {
+                    BuildArchive(mapView.CurrentGameState);
+                }
+            });
+        }
 
         if (!isOpen)
         {
@@ -135,6 +168,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
     private void SeedTeamSelection()
     {
         selectedTeam.Clear();
+        selectedUnits.Clear();
         if (mapView == null)
         {
             return;
@@ -147,6 +181,20 @@ public sealed class BaseCampScreenController : MonoBehaviour
                 selectedTeam.Add(member.Id);
             }
         }
+
+        // Pre-select rested units so the first departure has support by default.
+        var stock = mapView.GetUnitStockForUi();
+        foreach (var unit in stock.Units)
+        {
+            if (!unit.IsExhausted)
+            {
+                selectedUnits.Add(unit.Id);
+            }
+        }
+
+        var supplyBonus = mapView.CurrentGameState?.Base.PendingSupplyBonus ?? 0;
+        rations = System.Math.Min(20 + supplyBonus, RationBudget);
+        medicine = System.Math.Min(2, MedicineBudget);
 
         var first = mapView.GetRosterForUi().FirstOrDefault();
         selectedPersonId = first?.Id;
@@ -195,6 +243,8 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
         BuildTeam(state);
         BuildAufbruch(state);
+        BuildBasis(state);
+        BuildWissen(state);
         BuildFactions(state);
         BuildArchive(state);
     }
@@ -477,22 +527,27 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
         SetText("auf-core-count", $"aus Reiter »Team« · {teamMembers.Count} Personen");
 
-        // Träger/Soldaten stock is a roadmap system — show a hint instead of a live grid.
-        ShowGridHint("porter-grid", "Bestand wächst mit Basisausbau (Roadmap).");
-        ShowGridHint("soldier-grid", "Bestand wächst mit Basisausbau (Roadmap).");
-        SetText("porter-count", "—");
-        SetText("soldier-count", "—");
+        // Live Träger/Soldaten stock drawn from the base; each unit is a selectable chip.
+        var stock = mapView.GetUnitStockForUi();
+        BuildUnitGrid("porter-grid", stock.Porters);
+        BuildUnitGrid("soldier-grid", stock.Soldiers);
+        SetText("porter-count", $"{stock.Porters.Count(p => selectedUnits.Contains(p.Id))} / {stock.Porters.Count}");
+        SetText("soldier-count", $"{stock.Soldiers.Count(s => selectedUnits.Contains(s.Id))} / {stock.Soldiers.Count}");
 
-        SetText("rations-value", (20 + state.Base.PendingSupplyBonus).ToString());
-        SetText("medicine-value", "3");
+        // Clamp resources to the base budgets (defensive; steppers already clamp).
+        rations = Clamp(rations, 0, RationBudget + state.Base.PendingSupplyBonus);
+        medicine = Clamp(medicine, 0, MedicineBudget);
+        SetText("rations-value", rations.ToString());
+        SetText("medicine-value", medicine.ToString());
 
         var isEnded = state.Expedition.Status == ExpeditionStatus.Returned || state.Expedition.Status == ExpeditionStatus.Lost;
         var nextReady = isEnded && state.Base.CanStartNextExpedition(state.World.WorldDay);
 
-        SetStat("stat-traglast", $"{teamMembers.Count} Personen", teamMembers.Count > 0 ? Green : Muted);
-        SetStat("stat-verpflegung", $"≈ {(teamMembers.Count > 0 ? (20 + state.Base.PendingSupplyBonus) / teamMembers.Count : 0)} Tage", Gold);
-        SetStat("stat-verteidigung", teamMembers.Count(m => m.Role == ExpeditionMemberRole.Guard).ToString(), Neutral);
-        SetStat("stat-tempo", nextReady ? "Bereit" : "Wartet", nextReady ? Green : Gold);
+        var readiness = mapView.ComputeReadinessForUi(teamMembers.Count, selectedUnits.ToList(), rations, medicine);
+        SetStat("stat-traglast", $"{readiness.Load} / {readiness.CarryCapacity}", readiness.Overload ? Danger : Green);
+        SetStat("stat-verpflegung", $"≈ {readiness.FoodDays} Tage", readiness.FoodDays >= 3 ? Green : Gold);
+        SetStat("stat-verteidigung", readiness.Defense.ToString(), readiness.Defense > 0 ? Neutral : Muted);
+        SetStat("stat-tempo", readiness.SlowMarch ? "Langsam" : "Normal", readiness.SlowMarch ? Gold : Green);
 
         var advance = root.Q<Label>("btn-advance-time");
         if (advance != null)
@@ -503,7 +558,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         var ready = root.Q<Label>("btn-ready");
         if (ready != null)
         {
-            var canStart = nextReady && teamMembers.Count > 0;
+            var canStart = nextReady && teamMembers.Count > 0 && !readiness.Overload;
             ready.RemoveFromClassList("ready-btn--go");
             ready.RemoveFromClassList("ready-btn--off");
             ready.AddToClassList(canStart ? "ready-btn--go" : "ready-btn--off");
@@ -513,8 +568,289 @@ public sealed class BaseCampScreenController : MonoBehaviour
                     ? $"Bereit ab Tag {state.Base.NextExpeditionAvailableWorldDay}"
                     : teamMembers.Count == 0
                         ? "Kein Team gewählt"
-                        : "Expedition aufbrechen →";
+                        : readiness.Overload
+                            ? "Überladen – weniger mitnehmen"
+                            : "Expedition aufbrechen →";
         }
+    }
+
+    private void BuildUnitGrid(string gridName, IReadOnlyList<BaseUnitState> units)
+    {
+        var grid = root?.Q<VisualElement>(gridName);
+        if (grid == null)
+        {
+            return;
+        }
+
+        grid.Clear();
+        if (units.Count == 0)
+        {
+            grid.Add(Lbl("Kein Bestand", "hint", "mono"));
+            return;
+        }
+
+        foreach (var unit in units)
+        {
+            var selected = selectedUnits.Contains(unit.Id);
+            var chip = Div("unit");
+            if (selected) chip.AddToClassList("sel");
+            if (unit.IsExhausted) chip.AddToClassList("tired");
+
+            var tile = Div("unit-tile", unit.Kind == BaseUnitKind.Porter ? "unit-tile--porter" : "unit-tile--soldier");
+            var dot = Div("unit-dot");
+            dot.style.backgroundColor = unit.IsExhausted ? Gold : Green;
+            tile.Add(dot);
+            chip.Add(tile);
+            chip.Add(Lbl(unit.IsExhausted ? "Müde" : "Fit", "unit-cond", "mono"));
+
+            var id = unit.Id;
+            chip.RegisterCallback<ClickEvent>(_ => ToggleUnit(id));
+            grid.Add(chip);
+        }
+    }
+
+    private void ToggleUnit(string unitId)
+    {
+        if (selectedUnits.Contains(unitId))
+        {
+            selectedUnits.Remove(unitId);
+        }
+        else
+        {
+            selectedUnits.Add(unitId);
+        }
+
+        Refresh();
+    }
+
+    private void StepRations(int delta)
+    {
+        var max = RationBudget + (mapView?.CurrentGameState?.Base.PendingSupplyBonus ?? 0);
+        rations = Clamp(rations + delta, 0, max);
+        Refresh();
+    }
+
+    private void StepMedicine(int delta)
+    {
+        medicine = Clamp(medicine + delta, 0, MedicineBudget);
+        Refresh();
+    }
+
+    private static int Clamp(int value, int min, int max)
+    {
+        if (value < min) return min;
+        return value > max ? max : value;
+    }
+
+    // ---------------------------------------------------------------- basis ausbauen
+
+    private void BuildBasis(GameState state)
+    {
+        var scroll = root.Q<ScrollView>("basis-scroll");
+        if (scroll == null)
+        {
+            return;
+        }
+
+        SetText("basis-knowledge", state.Base.KnowledgePoints.ToString());
+
+        scroll.Clear();
+        var upgrades = mapView.GetUpgradesForUi();
+        var categories = new List<string>();
+        foreach (var upgrade in upgrades)
+        {
+            if (!categories.Contains(upgrade.Category))
+            {
+                categories.Add(upgrade.Category);
+            }
+        }
+
+        foreach (var category in categories)
+        {
+            var cat = Div("up-cat");
+            var head = Div("up-cat-head");
+            head.Add(Lbl(category, "up-cat-name", "sans"));
+            head.Add(Div("up-cat-line"));
+            cat.Add(head);
+
+            var grid = Div("up-grid");
+            foreach (var upgrade in upgrades.Where(u => u.Category == category))
+            {
+                grid.Add(BuildUpgradeCard(state, upgrade));
+            }
+
+            cat.Add(grid);
+            scroll.Add(cat);
+        }
+    }
+
+    private VisualElement BuildUpgradeCard(GameState state, BaseUpgradeState upgrade)
+    {
+        var card = Div("up-card");
+        var prereqsMet = upgrade.PrerequisiteIds.All(id => mapView.GetUpgradesForUi().Any(u => u.Id == id && u.IsBuilt));
+        var affordable = state.Base.KnowledgePoints >= upgrade.Cost;
+
+        var top = Div("up-top");
+        top.Add(Lbl(upgrade.Name, "up-name", "serif"));
+        if (!upgrade.IsBuilt)
+        {
+            var cost = Lbl($"◆ {upgrade.Cost}", "up-cost", "mono");
+            if (!prereqsMet || !affordable)
+            {
+                cost.AddToClassList("up-cost--locked");
+            }
+
+            top.Add(cost);
+        }
+
+        card.Add(top);
+        card.Add(Lbl(upgrade.Description, "up-desc"));
+
+        Label button;
+        if (upgrade.IsBuilt)
+        {
+            card.AddToClassList("up-card--built");
+            button = Lbl("✓ Gebaut", "up-btn", "up-btn--built");
+        }
+        else if (!prereqsMet)
+        {
+            card.AddToClassList("up-card--locked");
+            var names = string.Join(", ", upgrade.PrerequisiteIds.Select(PrereqName));
+            button = Lbl($"Benötigt: {names}", "up-btn", "up-btn--locked");
+        }
+        else if (!affordable)
+        {
+            button = Lbl($"Benötigt ◆ {upgrade.Cost}", "up-btn", "up-btn--locked");
+        }
+        else
+        {
+            button = Lbl("Ausbauen", "up-btn", "up-btn--go");
+            var id = upgrade.Id;
+            button.RegisterCallback<ClickEvent>(_ => { mapView.RequestStartUpgradeFromUi(id); Refresh(); });
+        }
+
+        card.Add(button);
+        return card;
+    }
+
+    private string PrereqName(string id)
+    {
+        var upgrade = mapView.GetUpgradesForUi().FirstOrDefault(u => u.Id == id);
+        return upgrade != null ? upgrade.Name : id;
+    }
+
+    // ---------------------------------------------------------------- wissen auswerten
+
+    private void BuildWissen(GameState state)
+    {
+        var queue = mapView.GetEvaluationQueueForUi();
+        var pending = queue.Items.Where(item => !item.IsEvaluated).ToList();
+        var evaluated = queue.Items.Where(item => item.IsEvaluated).ToList();
+
+        // The earliest still-maturing items occupy the evaluator slots; the rest wait.
+        var inProgress = new HashSet<string>();
+        var slots = queue.EvaluatorCapacity;
+        foreach (var item in pending)
+        {
+            if (slots <= 0)
+            {
+                break;
+            }
+
+            if (item.IsReady)
+            {
+                continue;
+            }
+
+            inProgress.Add(item.Id);
+            slots--;
+        }
+
+        SetText("auswerter-info", $"{inProgress.Count}/{queue.EvaluatorCapacity}");
+
+        var queueScroll = root.Q<ScrollView>("queue-scroll");
+        if (queueScroll != null)
+        {
+            queueScroll.Clear();
+            foreach (var item in pending)
+            {
+                queueScroll.Add(BuildQueueCard(item, inProgress.Contains(item.Id)));
+            }
+
+            if (pending.Count == 0)
+            {
+                queueScroll.Add(Lbl("Keine offenen Funde zum Auswerten.", "empty-slot"));
+            }
+        }
+
+        var insightScroll = root.Q<ScrollView>("insight-scroll");
+        if (insightScroll != null)
+        {
+            insightScroll.Clear();
+            foreach (var item in evaluated)
+            {
+                insightScroll.Add(BuildInsightCard(item));
+            }
+
+            if (evaluated.Count == 0)
+            {
+                insightScroll.Add(Lbl("Noch keine Erkenntnisse gesichert.", "empty-slot"));
+            }
+        }
+    }
+
+    private VisualElement BuildQueueCard(EvaluationItemState item, bool inProgress)
+    {
+        var card = Div("queue-card");
+        if (item.IsReady)
+        {
+            card.AddToClassList("queue-card--ready");
+        }
+
+        var top = Div("queue-top");
+        top.Add(Lbl(item.Name, "queue-name", "serif"));
+        var remaining = Mathf.Max(0, item.RequiredDays - item.ProgressDays);
+        var eta = item.IsReady ? "Bereit" : (inProgress ? $"≈ {remaining} Tag(e)" : "Wartet");
+        var etaLabel = Lbl(eta, "queue-eta", "mono");
+        if (item.IsReady)
+        {
+            etaLabel.AddToClassList("queue-eta--ready");
+        }
+
+        top.Add(etaLabel);
+        card.Add(top);
+        card.Add(Lbl(item.Source, "queue-from", "mono"));
+
+        if (item.IsReady)
+        {
+            var button = Lbl("✓ Auswerten", "queue-btn");
+            var id = item.Id;
+            button.RegisterCallback<ClickEvent>(_ => { mapView.RequestEvaluateKnowledgeItemFromUi(id); Refresh(); });
+            card.Add(button);
+        }
+        else
+        {
+            var progress = Div("progress");
+            var fill = Div("progress-fill");
+            fill.style.width = Length.Percent(item.RequiredDays > 0 ? item.ProgressDays / (float)item.RequiredDays * 100f : 0f);
+            progress.Add(fill);
+            card.Add(progress);
+        }
+
+        return card;
+    }
+
+    private VisualElement BuildInsightCard(EvaluationItemState item)
+    {
+        var card = Div("insight-card");
+        card.Add(Lbl("✦", "insight-ico"));
+        var main = Div("insight-main");
+        var head = Div("insight-head");
+        head.Add(Lbl(item.Name, "insight-name", "serif"));
+        main.Add(head);
+        main.Add(Lbl(item.InsightText, "insight-text"));
+        card.Add(main);
+        return card;
     }
 
     // ---------------------------------------------------------------- factions
@@ -576,38 +912,141 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
     private void BuildArchive(GameState state)
     {
+        if (state == null)
+        {
+            return;
+        }
+
         var scroll = root.Q<ScrollView>("archive-scroll");
         if (scroll == null)
         {
             return;
         }
 
+        var all = CollectArchiveEntries(state);
+
+        // Filter counts drive the left rail; recompute each refresh so they stay live.
+        SetText("filter-count-alle", all.Count.ToString());
+        SetText("filter-count-bericht", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Bericht).ToString());
+        SetText("filter-count-brief", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Brief).ToString());
+        SetText("filter-count-erkenntnis", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Erkenntnis).ToString());
+        SetText("filter-count-vertrag", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Vertrag).ToString());
+        SetText("filter-count-notiz", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Notiz).ToString());
+
+        SetActive("filter-alle", !archiveKindFilter.HasValue);
+        SetActive("filter-bericht", archiveKindFilter == ArchiveEntryKind.Bericht);
+        SetActive("filter-brief", archiveKindFilter == ArchiveEntryKind.Brief);
+        SetActive("filter-erkenntnis", archiveKindFilter == ArchiveEntryKind.Erkenntnis);
+        SetActive("filter-vertrag", archiveKindFilter == ArchiveEntryKind.Vertrag);
+        SetActive("filter-notiz", archiveKindFilter == ArchiveEntryKind.Notiz);
+
+        var filtered = ArchiveFilter.Filter(all, archiveKindFilter, archiveSearch);
+
         scroll.Clear();
-        var entries = state.Base.ArchiveEntries;
-        for (var i = entries.Count - 1; i >= 0; i--)
+        if (filtered.Count == 0)
         {
-            var row = Div("archive-row");
-            row.Add(Lbl("❋", "archive-icon"));
-            var main = Div("archive-main");
-            main.Add(Lbl(entries[i], "archive-name", "serif"));
-            row.Add(main);
-            scroll.Add(row);
+            scroll.Add(Lbl(all.Count == 0 ? "Das Archiv ist noch leer." : "Keine Treffer für diesen Filter.", "empty-slot"));
+            return;
         }
 
+        // Newest first.
+        for (var i = filtered.Count - 1; i >= 0; i--)
+        {
+            scroll.Add(BuildArchiveRow(filtered[i]));
+        }
+    }
+
+    private static List<ArchiveEntryState> CollectArchiveEntries(GameState state)
+    {
+        var all = new List<ArchiveEntryState>(state.Base.Archive);
+
+        // Scout reports live in KnowledgeState; surface them as Bericht rows in the same view.
         foreach (var report in state.Knowledge.ScoutReports)
         {
-            var row = Div("archive-row");
-            row.Add(Lbl("✎", "archive-icon"));
-            var main = Div("archive-main");
-            main.Add(Lbl(report.Title, "archive-name", "serif"));
-            main.Add(Lbl("Späherbericht", "archive-src", "mono"));
-            row.Add(main);
-            scroll.Add(row);
+            all.Add(new ArchiveEntryState(report.Title, ArchiveEntryKind.Bericht, "Späher", 0, ArchiveReliability.Mittel));
         }
 
-        if (entries.Count == 0 && state.Knowledge.ScoutReports.Count == 0)
+        return all;
+    }
+
+    private VisualElement BuildArchiveRow(ArchiveEntryState entry)
+    {
+        var row = Div("archive-row");
+        var icon = Lbl(ArchiveIcon(entry.Kind), "archive-icon");
+        icon.style.color = ArchiveKindColor(entry.Kind);
+        row.Add(icon);
+
+        var main = Div("archive-main");
+        main.Add(Lbl(entry.Title, "archive-name", "serif"));
+        main.Add(Lbl(ArchiveSourceLine(entry), "archive-src", "mono"));
+        row.Add(main);
+
+        row.Add(Lbl(entry.Kind.ToString(), "type-tag"));
+
+        var rel = Lbl(ReliabilityText(entry.Reliability), "archive-rel", "mono");
+        rel.style.color = ReliabilityColor(entry.Reliability);
+        row.Add(rel);
+
+        row.Add(Lbl(entry.WorldDay > 0 ? $"Tag {entry.WorldDay}" : "—", "archive-date", "mono"));
+        return row;
+    }
+
+    private void SetArchiveFilter(ArchiveEntryKind? kind)
+    {
+        archiveKindFilter = kind;
+        BuildArchive(mapView.CurrentGameState);
+    }
+
+    private static string ArchiveSourceLine(ArchiveEntryState entry)
+    {
+        return entry.WorldDay > 0 ? $"{entry.Source} · Tag {entry.WorldDay}" : entry.Source;
+    }
+
+    private static string ArchiveIcon(ArchiveEntryKind kind)
+    {
+        switch (kind)
         {
-            scroll.Add(Lbl("Das Archiv ist noch leer.", "empty-slot"));
+            case ArchiveEntryKind.Bericht: return "✎";
+            case ArchiveEntryKind.Brief: return "✉";
+            case ArchiveEntryKind.Erkenntnis: return "◆";
+            case ArchiveEntryKind.Vertrag: return "⇄";
+            default: return "✦";
+        }
+    }
+
+    private Color ArchiveKindColor(ArchiveEntryKind kind)
+    {
+        switch (kind)
+        {
+            case ArchiveEntryKind.Bericht: return Gold;
+            case ArchiveEntryKind.Brief: return Blue;
+            case ArchiveEntryKind.Erkenntnis: return Green;
+            case ArchiveEntryKind.Vertrag: return Neutral;
+            default: return Muted;
+        }
+    }
+
+    private static string ReliabilityText(ArchiveReliability reliability)
+    {
+        switch (reliability)
+        {
+            case ArchiveReliability.Niedrig: return "Verläss. Niedrig";
+            case ArchiveReliability.Mittel: return "Verläss. Mittel";
+            case ArchiveReliability.Hoch: return "Verläss. Hoch";
+            case ArchiveReliability.Bestaetigt: return "Bestätigt";
+            default: return "—";
+        }
+    }
+
+    private Color ReliabilityColor(ArchiveReliability reliability)
+    {
+        switch (reliability)
+        {
+            case ArchiveReliability.Bestaetigt:
+            case ArchiveReliability.Hoch: return Green;
+            case ArchiveReliability.Mittel: return Gold;
+            case ArchiveReliability.Niedrig: return Danger;
+            default: return Muted;
         }
     }
 
@@ -653,7 +1092,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
             return;
         }
 
-        mapView.RequestStartNewExpeditionFromUi(selectedTeam.ToList());
+        mapView.RequestStartLoadoutExpeditionFromUi(selectedTeam.ToList(), selectedUnits.ToList(), rations, medicine);
         if (mapView.CurrentGameState != null && mapView.CurrentGameState.Expedition.Status == ExpeditionStatus.Active)
         {
             Close();
@@ -715,14 +1154,6 @@ public sealed class BaseCampScreenController : MonoBehaviour
         var button = root?.Q<Label>(name);
         if (button == null) return;
         button.EnableInClassList("up-btn--locked", !enabled);
-    }
-
-    private void ShowGridHint(string name, string hint)
-    {
-        var grid = root?.Q<VisualElement>(name);
-        if (grid == null) return;
-        grid.Clear();
-        grid.Add(Lbl(hint, "hint", "mono"));
     }
 
     private static VisualElement Div(params string[] classes)

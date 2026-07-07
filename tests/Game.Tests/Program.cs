@@ -25,6 +25,14 @@ var expeditionLifecycleTests = new ExpeditionLifecycleCommandTests();
 expeditionLifecycleTests.RunAll();
 var baseGameplayTests = new BaseGameplayCommandTests();
 baseGameplayTests.RunAll();
+var baseUpgradeTests = new BaseUpgradeCommandTests();
+baseUpgradeTests.RunAll();
+var evaluationQueueTests = new EvaluationQueueCommandTests();
+evaluationQueueTests.RunAll();
+var baseLoadoutTests = new BaseLoadoutCommandTests();
+baseLoadoutTests.RunAll();
+var archiveTests = new ArchiveCommandTests();
+archiveTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2140,6 +2148,374 @@ internal sealed class BaseGameplayCommandTests
 
         var ok = new StartNewExpeditionCommand().Execute(game, new[] { "scout-1", "guard-1" });
         AssertTrue(ok.Success, "Composing with available members succeeds");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class BaseUpgradeCommandTests
+{
+    public void RunAll()
+    {
+        BuildingAnAvailableUpgradeSpendsKnowledgeAndPersists();
+        PrerequisiteGatingBlocksLockedUpgrades();
+        AlreadyBuiltAndInsufficientKnowledgeAreRejected();
+        HerbalismUpgradeMakesHealingCheaper();
+    }
+
+    private static GameState ReturnedGameAtBase(int knowledgePoints = 50)
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(knowledgePoints);
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        return game;
+    }
+
+    private static void BuildingAnAvailableUpgradeSpendsKnowledgeAndPersists()
+    {
+        var game = ReturnedGameAtBase();
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        AssertFalse(game.Base.Upgrades.IsBuilt("gerberei"), "Gerberei starts unbuilt");
+
+        var result = new StartUpgradeCommand().Execute(game, "gerberei");
+
+        AssertTrue(result.Success, "Building an available upgrade succeeds");
+        AssertTrue(game.Base.Upgrades.IsBuilt("gerberei"), "Upgrade is marked built");
+        AssertEqual(knowledgeBefore - 3, game.Base.KnowledgePoints, "Upgrade spends its knowledge cost");
+    }
+
+    private static void PrerequisiteGatingBlocksLockedUpgrades()
+    {
+        var game = ReturnedGameAtBase();
+
+        var locked = new StartUpgradeCommand().Execute(game, "ausbildungsplatz");
+        AssertFalse(locked.Success, "Upgrade with unmet prerequisites is rejected");
+
+        var prerequisite = new StartUpgradeCommand().Execute(game, "baracken");
+        AssertTrue(prerequisite.Success, "Prerequisite upgrade can be built");
+
+        var unlocked = new StartUpgradeCommand().Execute(game, "ausbildungsplatz");
+        AssertTrue(unlocked.Success, "Upgrade builds once prerequisites are met");
+    }
+
+    private static void AlreadyBuiltAndInsufficientKnowledgeAreRejected()
+    {
+        var game = ReturnedGameAtBase(0);
+
+        var alreadyBuilt = new StartUpgradeCommand().Execute(game, "schmiede");
+        AssertFalse(alreadyBuilt.Success, "Already-built upgrade is rejected");
+
+        var tooExpensive = new StartUpgradeCommand().Execute(game, "signalturm");
+        AssertFalse(tooExpensive.Success, "Upgrade without enough knowledge is rejected");
+    }
+
+    private static void HerbalismUpgradeMakesHealingCheaper()
+    {
+        var game = ReturnedGameAtBase();
+
+        var full = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "guard-2");
+        AssertTrue(full.Success, "Heal without herbalism succeeds");
+        AssertEqual(StartBaseActionCommand.HealCost, full.KnowledgeSpent, "Heal costs the full amount without herbalism");
+
+        var herbalism = new StartUpgradeCommand().Execute(game, "kraeuterkunde");
+        AssertTrue(herbalism.Success, "Kraeuterkunde builds");
+
+        var cheaper = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "carrier-2");
+        AssertTrue(cheaper.Success, "Heal with herbalism succeeds");
+        AssertEqual(StartBaseActionCommand.HealCostWithHerbalism, cheaper.KnowledgeSpent, "Heal costs less with herbalism");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class BaseLoadoutCommandTests
+{
+    public void RunAll()
+    {
+        LoadoutStartUsesSelectedUnitsAndResources();
+        OverloadedLoadoutIsRejected();
+        RationsAreClampedToBudget();
+        ComputeReadinessReflectsPortersAndExhaustion();
+        BaracksUpgradeGrowsSoldierStock();
+    }
+
+    private static GameState ReturnedGameAtBase(int knowledgePoints = 50)
+    {
+        var game = TutorialGameFactory.Create();
+        game.Base.AddKnowledgePoints(knowledgePoints);
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        new AdvanceBaseTimeCommand().Execute(game, CompleteExpeditionCommand.NormalPreparationDays);
+        return game;
+    }
+
+    private static void LoadoutStartUsesSelectedUnitsAndResources()
+    {
+        var game = ReturnedGameAtBase();
+        var porter = game.Base.UnitStock.Porters.First(p => !p.IsExhausted);
+        var soldier = game.Base.UnitStock.Soldiers.First(s => !s.IsExhausted);
+        var members = new[] { "scout-1", "guard-1" };
+        var units = new[] { porter.Id, soldier.Id };
+        var expectedCapacity = ExpeditionReadiness.Compute(members.Length, new[] { porter, soldier }, 8, 2).CarryCapacity;
+
+        var start = new StartNewExpeditionCommand().Execute(game, members, units, 8, 2);
+
+        AssertTrue(start.Success, "Valid loadout departs");
+        AssertEqual(2, game.Expedition.Members.Count, "Loadout uses the selected members");
+        AssertEqual(8, game.Expedition.Supplies, "Rations become expedition supplies");
+        AssertEqual(2, game.Expedition.Medicine, "Medicine is carried");
+        AssertEqual(expectedCapacity, game.Expedition.Capacity, "Capacity comes from readiness");
+    }
+
+    private static void OverloadedLoadoutIsRejected()
+    {
+        var game = ReturnedGameAtBase();
+        var members = new[] { "scout-1", "guard-1" };
+
+        var overloaded = new StartNewExpeditionCommand().Execute(game, members, System.Array.Empty<string>(), 40, 4);
+        AssertFalse(overloaded.Success, "A loadout that exceeds carry capacity is rejected");
+    }
+
+    private static void RationsAreClampedToBudget()
+    {
+        var game = ReturnedGameAtBase();
+        var members = new[] { "scout-1", "guard-1" };
+        var allUnits = game.Base.UnitStock.Units.Select(u => u.Id).ToArray();
+
+        var start = new StartNewExpeditionCommand().Execute(game, members, allUnits, 100, 0);
+
+        AssertTrue(start.Success, "Loadout with full porter support departs");
+        AssertEqual(StartNewExpeditionCommand.RationBudget, game.Expedition.Supplies, "Rations are clamped to the base budget");
+    }
+
+    private static void ComputeReadinessReflectsPortersAndExhaustion()
+    {
+        var fresh = new BaseUnitState("p-fresh", BaseUnitKind.Porter);
+        var tired = new BaseUnitState("p-tired", BaseUnitKind.Porter, isExhausted: true);
+
+        var freshReadiness = ExpeditionReadiness.Compute(1, new[] { fresh }, 0, 0);
+        AssertEqual(8, freshReadiness.CarryCapacity, "A fresh porter adds full carry capacity");
+        AssertFalse(freshReadiness.SlowMarch, "A fresh loadout marches at full speed");
+
+        var tiredReadiness = ExpeditionReadiness.Compute(1, new[] { tired }, 0, 0);
+        AssertEqual(6, tiredReadiness.CarryCapacity, "An exhausted porter adds less carry capacity");
+        AssertTrue(tiredReadiness.SlowMarch, "An exhausted unit slows the march");
+    }
+
+    private static void BaracksUpgradeGrowsSoldierStock()
+    {
+        var game = ReturnedGameAtBase();
+        var soldiersBefore = game.Base.UnitStock.Soldiers.Count;
+
+        var built = new StartUpgradeCommand().Execute(game, "baracken");
+
+        AssertTrue(built.Success, "Baracken builds");
+        AssertEqual(soldiersBefore + 2, game.Base.UnitStock.Soldiers.Count, "Baracken grows the soldier stock");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class ArchiveCommandTests
+{
+    public void RunAll()
+    {
+        PlainStringWriteBecomesNoteAndProjectsBack();
+        EvaluatedInsightIsTypedErkenntnis();
+        ReturnedExpeditionIsTypedBericht();
+        FilterByKindAndSearchWork();
+    }
+
+    private static void PlainStringWriteBecomesNoteAndProjectsBack()
+    {
+        var game = TutorialGameFactory.Create();
+        var before = game.Base.Archive.Count;
+        game.Base.AddArchiveEntry("Ein Testeintrag");
+
+        var last = game.Base.Archive[game.Base.Archive.Count - 1];
+        AssertEqual(ArchiveEntryKind.Notiz, last.Kind, "Plain-string archive writes become notes");
+        AssertEqual("Ein Testeintrag", last.Text, "Text projects back to the original string");
+        AssertTrue(game.Base.ArchiveEntries.Contains("Ein Testeintrag"), "String projection still exposes the entry");
+        AssertEqual(before + 1, game.Base.Archive.Count, "Archive grew by exactly one");
+    }
+
+    private static void EvaluatedInsightIsTypedErkenntnis()
+    {
+        var game = TutorialGameFactory.Create();
+        new CompleteExpeditionCommand().Execute(game);
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+        AssertTrue(result.Success, "Evaluation succeeds");
+
+        var insight = game.Base.Archive.First(e => e.Kind == ArchiveEntryKind.Erkenntnis);
+        AssertEqual("Auswertung", insight.Source, "Insight source is the evaluation");
+        AssertEqual(game.World.WorldDay, insight.WorldDay, "Insight carries the world day");
+        AssertEqual(ArchiveReliability.Bestaetigt, insight.Reliability, "Insight is confirmed");
+    }
+
+    private static void ReturnedExpeditionIsTypedBericht()
+    {
+        var game = TutorialGameFactory.Create();
+        new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(game.Base.Archive.Any(e => e.Kind == ArchiveEntryKind.Bericht), "The return summary is a typed report");
+    }
+
+    private static void FilterByKindAndSearchWork()
+    {
+        var entries = new List<ArchiveEntryState>
+        {
+            new ArchiveEntryState("Rauch hinter dem Kamm", ArchiveEntryKind.Bericht, "Späher", 5, ArchiveReliability.Mittel),
+            new ArchiveEntryState("Handelsvertrag — Aschegilde", ArchiveEntryKind.Vertrag, "Nima", 6, ArchiveReliability.Bestaetigt),
+            new ArchiveEntryState("Vergessene Handelsroute", ArchiveEntryKind.Erkenntnis, "Auswertung", 6, ArchiveReliability.Bestaetigt)
+        };
+
+        var berichte = ArchiveFilter.Filter(entries, ArchiveEntryKind.Bericht, null);
+        AssertEqual(1, berichte.Count, "Kind filter returns only that kind");
+
+        var handel = ArchiveFilter.Filter(entries, null, "handel");
+        AssertEqual(2, handel.Count, "Text search matches titles case-insensitively");
+
+        var bySource = ArchiveFilter.Filter(entries, null, "nima");
+        AssertEqual(1, bySource.Count, "Text search also matches the source");
+
+        AssertEqual(1, ArchiveFilter.CountOfKind(entries, ArchiveEntryKind.Vertrag), "CountOfKind counts a single kind");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+}
+
+internal sealed class EvaluationQueueCommandTests
+{
+    public void RunAll()
+    {
+        EvaluatingAReadyItemAwardsKnowledgeAndArchivesInsight();
+        NotReadyItemIsRejected();
+        BaseTimeMaturesItemsRespectingEvaluatorCapacity();
+    }
+
+    private static GameState ReturnedGameAtBase()
+    {
+        var game = TutorialGameFactory.Create();
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        return game;
+    }
+
+    private static void EvaluatingAReadyItemAwardsKnowledgeAndArchivesInsight()
+    {
+        var game = ReturnedGameAtBase();
+        var item = game.Base.EvaluationQueue.FindItem("eval-pfaehle")!;
+        AssertTrue(item.IsReady, "Seeded item starts ready");
+
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+
+        AssertTrue(result.Success, "Evaluating a ready item succeeds");
+        AssertEqual(knowledgeBefore + item.KnowledgeReward, game.Base.KnowledgePoints, "Evaluation awards knowledge");
+        AssertTrue(game.Base.EvaluationQueue.FindItem("eval-pfaehle")!.IsEvaluated, "Item is marked evaluated");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("Geschnitzte")), "Insight is archived");
+
+        var again = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+        AssertFalse(again.Success, "The same item cannot be evaluated twice");
+    }
+
+    private static void NotReadyItemIsRejected()
+    {
+        var game = ReturnedGameAtBase();
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-saat");
+        AssertFalse(result.Success, "An item still being evaluated cannot be collected");
+    }
+
+    private static void BaseTimeMaturesItemsRespectingEvaluatorCapacity()
+    {
+        var game = ReturnedGameAtBase();
+
+        new AdvanceBaseTimeCommand().Execute(game, 3);
+
+        AssertEqual(3, game.Base.EvaluationQueue.FindItem("eval-saat")!.ProgressDays, "First queued item progressed");
+        AssertEqual(3, game.Base.EvaluationQueue.FindItem("eval-karte")!.ProgressDays, "Second queued item progressed");
+        AssertEqual(0, game.Base.EvaluationQueue.FindItem("eval-metall")!.ProgressDays, "Third item waited (capacity 2)");
+        AssertTrue(game.Base.EvaluationQueue.FindItem("eval-saat")!.IsReady, "Item becomes ready after enough base time");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

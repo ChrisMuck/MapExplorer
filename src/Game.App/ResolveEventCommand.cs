@@ -55,7 +55,12 @@ public sealed class ResolveEventCommand
         switch (option.EffectKind)
         {
             case EventOptionEffectKind.Archive:
-                game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: {option.ResultText}");
+                game.Base.AddArchiveEntry(new ArchiveEntryState(
+                    $"Day {game.World.WorldDay}: {option.ResultText}",
+                    ArchiveEntryKind.Bericht,
+                    "Expedition",
+                    game.World.WorldDay,
+                    ArchiveReliability.Mittel));
                 return option.ResultText;
             case EventOptionEffectKind.AddWarningMarker:
                 if (eventState.Coord.HasValue)

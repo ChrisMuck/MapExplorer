@@ -1749,7 +1749,7 @@ costs/day-counts as tunable placeholders (game-feel, human-owned).
 
 ---
 
-### Task 051: Base Upgrade Tree ("Basis ausbauen")
+### Task 051: Base Upgrade Tree ("Basis ausbauen") — ✅ Done
 
 Spend Knowledge Points on persistent base upgrades, grouped in categories (Medizin, Werkstatt,
 Kartografie, Vorräte, Unterkünfte), with built / available / locked (prerequisite) states.
@@ -1780,7 +1780,7 @@ Suggested model: high-reasoning or strong coding model.
 
 ---
 
-### Task 052: Knowledge Evaluation Queue ("Wissen auswerten")
+### Task 052: Knowledge Evaluation Queue ("Wissen auswerten") — ✅ Done
 
 Unsecured field discoveries enter an evaluation queue at the base; a limited number of "Auswerter"
 process items over base days into archived **Insights** plus Knowledge Points — replacing today's
@@ -1806,53 +1806,50 @@ Suggested model: high-reasoning or strong coding model.
 
 ---
 
-### Task 053: Unit Stock + Resource Loadout ("Aufbruch")
+### Task 053: Unit Stock + Resource Loadout ("Aufbruch") — ✅ Done
 
 Träger and Soldaten become a countable base stock (grown by Task 051 upgrades), each with a
 condition (frisch / erschöpft). On departure the player picks which units and how many rations /
 medicine to take; readiness (Traglast, Verpflegung, Verteidigung, Marschtempo) is derived and can
 gate the start.
 
-Current state:
+Implemented:
 
-- the "Aufbruch" tab shows unit grids, resource steppers and readiness as UI-only placeholders
-- `StartNewExpeditionCommand` starts with fixed supplies + the pending supply-prep bonus
-
-Suggested model additions:
-
-- base stock (porters / soldiers with condition) on `BaseState`
-- `StartNewExpedition` overload taking a loadout (unit ids + rations + medicine), validated and
-  clamped against base stock and carry capacity
-
-Acceptance criteria:
-
-- loadout is drawn from and clamped to the base stock; starting supplies/medicine reflect it
-- readiness / overload computed in Core, not the UI
-- tests cover loadout validation and derived readiness
+- `BaseUnitState` / `BaseUnitStockState` on `BaseState` (porters + soldiers with condition);
+  seeded in `TutorialGameFactory`; `GrowPorterStock` / `GrowSoldierStock` upgrades add units.
+- `ExpeditionReadiness.Compute(...)` in Core derives carry capacity, load/overload, food days,
+  defense and slow-march from members + selected units + rations + medicine.
+- `StartNewExpeditionCommand.Execute(game, memberIds, unitIds, rations, medicine)` loadout
+  overload: clamps rations/medicine to base budgets, rejects overload, and starts the expedition
+  with the derived supplies/medicine/capacity. Facade `GameApplication.StartNewExpedition(...)` +
+  `ComputeReadiness(...)`.
+- Unity: seam `GetUnitStockForUi` / `ComputeReadinessForUi` / `RequestStartLoadoutExpeditionFromUi`;
+  the "Aufbruch" tab has live unit grids, resource steppers and readiness stats.
+- Tests: `BaseLoadoutCommandTests` (loadout start, overload rejection, ration clamping, readiness,
+  Baracken stock growth).
 
 Suggested model: high-reasoning or strong coding model.
 
 ---
 
-### Task 054: Typed, Filterable Archive
+### Task 054: Typed, Filterable Archive — ✅ Done
 
 Replace the flat string `BaseState.ArchiveEntries` with typed archive entries so the Archiv tab can
 filter and search, and the read-only display carries meaning.
 
-Current state:
+Implemented:
 
-- the Archiv tab lists raw archive strings + scout-report titles; the filters are static
-
-Suggested model additions:
-
-- `ArchiveEntryState` (id, kind = Bericht/Brief/Erkenntnis/Vertrag/Notiz, title, source, worldDay,
-  reliability); `BaseState` stores these; populate from scout reports, discoveries, contracts, notes
-- keep a compatibility path so existing plain-string archive writing still works during migration
-
-Acceptance criteria:
-
-- entries are typed and carry source / world day / reliability
-- the tab filters by kind and searches by text
-- existing archive text migrates or coexists; tests cover typing and filtering
+- `ArchiveEntryState` (title, `ArchiveEntryKind` = Bericht/Brief/Erkenntnis/Vertrag/Notiz, source,
+  worldDay, `ArchiveReliability`) is the new backing store on `BaseState`; `Archive` exposes the
+  typed list and `ArchiveEntries` stays as a string projection for back-compat.
+- `AddArchiveEntry(string)` still works (wraps as a `Notiz`); commands emit typed entries where it
+  matters — `CompleteExpeditionCommand` / `ResolveEventCommand` → Bericht, `EvaluateKnowledgeItem`
+  → Erkenntnis, `PurchaseFactionOffer` → Vertrag. Expedition-discard/secure operate on the typed
+  list unchanged.
+- `ArchiveFilter.Filter(entries, kind?, search)` + `CountOfKind` in Core; the Archiv tab wires kind
+  filter chips (with live counts), a text search field, and typed rows (icon / type tag /
+  reliability / day). Scout reports are folded in as Bericht rows.
+- Tests: `ArchiveCommandTests` (plain-string back-compat, typed Erkenntnis/Bericht entries, kind +
+  text filtering).
 
 Suggested model: high-reasoning or strong coding model.

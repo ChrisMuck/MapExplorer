@@ -20,6 +20,8 @@ public sealed class GameApplication
     private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand = new AdvanceBaseTimeCommand();
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
     private readonly StartBaseActionCommand startBaseActionCommand = new StartBaseActionCommand();
+    private readonly StartUpgradeCommand startUpgradeCommand = new StartUpgradeCommand();
+    private readonly EvaluateKnowledgeItemCommand evaluateKnowledgeItemCommand = new EvaluateKnowledgeItemCommand();
     private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand = new OpenFactionInteractionCommand();
@@ -97,9 +99,53 @@ public sealed class GameApplication
         return startNewExpeditionCommand.Execute(game, memberIds);
     }
 
+    public StartNewExpeditionResult StartNewExpedition(
+        GameState game,
+        IReadOnlyList<string>? memberIds,
+        IReadOnlyList<string>? unitIds,
+        int rations,
+        int medicine)
+    {
+        return startNewExpeditionCommand.Execute(game, memberIds, unitIds, rations, medicine);
+    }
+
+    /// <summary>Derives readiness for a planned loadout without starting the expedition (UI preview).</summary>
+    public ExpeditionReadiness ComputeReadiness(GameState game, int memberCount, IReadOnlyList<string>? unitIds, int rations, int medicine)
+    {
+        if (game == null)
+        {
+            throw new ArgumentNullException(nameof(game));
+        }
+
+        var units = new List<BaseUnitState>();
+        if (unitIds != null)
+        {
+            foreach (var id in unitIds)
+            {
+                var unit = game.Base.UnitStock.FindUnit(id);
+                if (unit != null)
+                {
+                    units.Add(unit);
+                }
+            }
+        }
+
+        return ExpeditionReadiness.Compute(memberCount, units, rations, medicine);
+    }
+
     public StartBaseActionResult StartBaseAction(GameState game, BaseActionKind kind, string? memberId = null)
     {
         return startBaseActionCommand.Execute(game, kind, memberId);
+    }
+
+    public StartUpgradeResult StartUpgrade(GameState game, string upgradeId)
+    {
+        return startUpgradeCommand.Execute(game, upgradeId);
+    }
+
+    public EvaluateKnowledgeItemResult EvaluateKnowledgeItem(GameState game, string itemId)
+    {
+        return evaluateKnowledgeItemCommand.Execute(game, itemId);
     }
 
     public PrepareSuppliesWithKnowledgeResult PrepareSuppliesWithKnowledge(GameState game)

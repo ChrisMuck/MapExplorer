@@ -54,7 +54,11 @@ public static class TutorialGameFactory
             medicine: 3,
             morale: 70,
             capacity: 20);
-        var baseState = new BaseState(baseCoord);
+        var baseState = new BaseState(
+            baseCoord,
+            new BaseUpgradesState(CreateTutorialUpgrades()),
+            new EvaluationQueueState(CreateTutorialEvaluationItems()),
+            CreateTutorialUnitStock());
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
 
@@ -439,6 +443,65 @@ public static class TutorialGameFactory
             new ExpeditionMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Exhausted),
             new ExpeditionMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic),
             new ExpeditionMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar)
+        };
+    }
+
+    private static BaseUnitStockState CreateTutorialUnitStock()
+    {
+        // Porter stock reflects the pre-built Trägerunterkünfte; Soldaten grow when Baracken is built.
+        var stock = new BaseUnitStockState();
+        stock.Add(BaseUnitKind.Porter, 4);
+        stock.Add(BaseUnitKind.Porter, 2, exhausted: true);
+        stock.Add(BaseUnitKind.Soldier, 1);
+        stock.Add(BaseUnitKind.Soldier, 1, exhausted: true);
+        return stock;
+    }
+
+    private static IEnumerable<EvaluationItemState> CreateTutorialEvaluationItems()
+    {
+        return new[]
+        {
+            new EvaluationItemState("eval-pfaehle", "Geschnitzte Pfähle", "Feld 14 / 08 · Expedition 1", 1, 3,
+                "Die Pfähle markieren das Revier der Grenzwächter. Ihr Betreten gilt als Provokation — Umgehung oder Tribut empfohlen.",
+                progressDays: 1),
+            new EvaluationItemState("eval-saat", "Fremde Saatkörner", "Verlassenes Lager · Jonas", 3, 4,
+                "Die Saatkörner gedeihen selbst in kargem Boden. Eine verlässliche Nahrungsquelle für längere Züge."),
+            new EvaluationItemState("eval-karte", "Bruchstück einer Karte", "Kammland-Nord · Mara", 4, 5,
+                "Das Kartenfragment zeigt einen alten Pfad durch den Kamm nach Osten — er umgeht das Gebiet der Grenzwächter."),
+            new EvaluationItemState("eval-metall", "Unbekanntes Metall", "Aschegilde · Handel", 5, 4,
+                "Ein ungewöhnlich leichtes, hartes Metall. Die Aschegilde hätte sicher Interesse an der Quelle.")
+        };
+    }
+
+    private static IEnumerable<BaseUpgradeState> CreateTutorialUpgrades()
+    {
+        const string medicine = "Medizin & Pflege";
+        const string workshop = "Werkstatt";
+        const string cartography = "Kartografie";
+        const string supplies = "Vorräte";
+        const string housing = "Unterkünfte";
+
+        return new[]
+        {
+            new BaseUpgradeState("feldlazarett", medicine, "Feldlazarett", "Verwundete erholen sich zwischen den Expeditionen deutlich schneller.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("kraeuterkunde", medicine, "Kräuterkunde", "Heilmittel aus lokal gesammelten Pflanzen — Heilen im Lager kostet weniger Wissen.", 4, BaseUpgradeEffect.CheaperHealing),
+            new BaseUpgradeState("quarantaenezelt", medicine, "Quarantänezelt", "Verhindert die Ausbreitung von Krankheiten im Lager.", 5, BaseUpgradeEffect.None, new[] { "feldlazarett" }),
+
+            new BaseUpgradeState("schmiede", workshop, "Schmiede", "Reparatur und Aufwertung von Ausrüstung im Lager.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("gerberei", workshop, "Gerberei", "Fertigt Rüstungen und Behälter aus erbeuteten Häuten.", 3),
+            new BaseUpgradeState("praezisionswerkbank", workshop, "Präzisionswerkbank", "Feinmechanik — schaltet fortgeschrittene Werkzeuge frei.", 6, BaseUpgradeEffect.None, new[] { "schmiede" }),
+
+            new BaseUpgradeState("kartentisch", cartography, "Kartentisch", "Späher-Berichte werden genauer und decken mehr Felder auf.", 0, BaseUpgradeEffect.None, isBuilt: true),
+            new BaseUpgradeState("signalturm", cartography, "Signalturm", "Erhöht die Reichweite ausgesandter Späher um ein Feld.", 5, BaseUpgradeEffect.ScoutRangePlus),
+            new BaseUpgradeState("sternkarten", cartography, "Sternkarten", "Ermöglicht Nachtmärsche ohne Moralverlust.", 4),
+
+            new BaseUpgradeState("vorratskeller", supplies, "Vorratskeller", "Erhöht die maximale Lagerkapazität für Rationen.", 0, BaseUpgradeEffect.HigherSupplyCap, isBuilt: true),
+            new BaseUpgradeState("raeucherei", supplies, "Räucherei", "Konserviert Nahrung — Vorräte verderben langsamer.", 4, BaseUpgradeEffect.SlowerSpoilage),
+            new BaseUpgradeState("brunnen", supplies, "Brunnen", "Sichere Wasserversorgung senkt das Krankheitsrisiko.", 5, BaseUpgradeEffect.None, new[] { "vorratskeller" }),
+
+            new BaseUpgradeState("traegerunterkuenfte", housing, "Trägerunterkünfte", "Vergrößert den Pool verfügbarer Träger für Expeditionen.", 0, BaseUpgradeEffect.GrowPorterStock, isBuilt: true),
+            new BaseUpgradeState("baracken", housing, "Baracken", "Erhöht die Zahl ausgebildeter Soldaten im Bestand.", 4, BaseUpgradeEffect.GrowSoldierStock),
+            new BaseUpgradeState("ausbildungsplatz", housing, "Ausbildungsplatz", "Erschöpfte Einheiten erholen sich schneller zwischen den Zügen.", 5, BaseUpgradeEffect.None, new[] { "baracken" })
         };
     }
 

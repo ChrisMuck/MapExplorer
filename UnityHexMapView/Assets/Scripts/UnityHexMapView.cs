@@ -226,6 +226,55 @@ public sealed class UnityHexMapView : MonoBehaviour
             : coreGameState.Roster.Members;
     }
 
+    public IReadOnlyList<BaseUpgradeState> GetUpgradesForUi()
+    {
+        return coreGameState == null
+            ? System.Array.Empty<BaseUpgradeState>()
+            : coreGameState.Base.Upgrades.Upgrades;
+    }
+
+    public IReadOnlyList<ArchiveEntryState> GetArchiveForUi()
+    {
+        return coreGameState == null
+            ? System.Array.Empty<ArchiveEntryState>()
+            : coreGameState.Base.Archive;
+    }
+
+    public void RequestStartUpgradeFromUi(string upgradeId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartUpgrade(coreGameState, upgradeId);
+        interactionMessage = result.Success
+            ? result.ArchiveEntry ?? "Base upgrade built."
+            : result.Error ?? "Base upgrade rejected.";
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
+    public EvaluationQueueState GetEvaluationQueueForUi()
+    {
+        return coreGameState == null ? new EvaluationQueueState() : coreGameState.Base.EvaluationQueue;
+    }
+
+    public void RequestEvaluateKnowledgeItemFromUi(string itemId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.EvaluateKnowledgeItem(coreGameState, itemId);
+        interactionMessage = result.Success
+            ? result.ArchiveEntry ?? "Knowledge evaluated."
+            : result.Error ?? "Evaluation rejected.";
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
     public void RequestEndDayFromUi()
     {
         EndCurrentDay();
@@ -299,6 +348,49 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var result = gameApplication.StartNewExpedition(coreGameState, memberIds);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "New expedition rejected.";
+            RefreshHud();
+            RefreshToolkitHud();
+            return;
+        }
+
+        selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+        hasInspectedHex = false;
+        interactionMessage = $"Expedition {result.ExpeditionNumber} gestartet.";
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        UpdateExpeditionMarkerPosition();
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
+    public BaseUnitStockState GetUnitStockForUi()
+    {
+        return coreGameState == null ? new BaseUnitStockState() : coreGameState.Base.UnitStock;
+    }
+
+    public ExpeditionReadiness ComputeReadinessForUi(int memberCount, IReadOnlyList<string> unitIds, int rations, int medicine)
+    {
+        if (coreGameState == null)
+        {
+            return ExpeditionReadiness.Compute(memberCount, System.Array.Empty<BaseUnitState>(), rations, medicine);
+        }
+
+        return gameApplication.ComputeReadiness(coreGameState, memberCount, unitIds, rations, medicine);
+    }
+
+    public void RequestStartLoadoutExpeditionFromUi(IReadOnlyList<string> memberIds, IReadOnlyList<string> unitIds, int rations, int medicine)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.StartNewExpedition(coreGameState, memberIds, unitIds, rations, medicine);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "New expedition rejected.";

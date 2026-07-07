@@ -213,11 +213,11 @@
                             <ui:Label text="◆" class="ico" />
                             <ui:VisualElement>
                                 <ui:Label text="VERFÜGBARES WISSEN" class="bc-res-label" />
-                                <ui:Label text="12" class="wissen-num mono" />
+                                <ui:Label name="basis-knowledge" text="12" class="wissen-num mono" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
-                    <ui:ScrollView class="basis-scroll">
+                    <ui:ScrollView name="basis-scroll" class="basis-scroll">
                         <!-- Medizin -->
                         <ui:VisualElement class="up-cat">
                             <ui:VisualElement class="up-cat-head"><ui:Label text="✚" class="up-cat-ico" style="color: rgb(143,174,116);" /><ui:Label text="MEDIZIN &amp; PFLEGE" class="up-cat-name sans" /><ui:VisualElement class="up-cat-line" /></ui:VisualElement>
@@ -332,10 +332,10 @@
                         <ui:VisualElement style="flex-shrink: 0; padding: 18px 20px 14px; border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.06);">
                             <ui:Label text="AUSWERTUNGS-WARTESCHLANGE" class="section-label" />
                             <ui:VisualElement class="auswerter">
-                                <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label text="2/3" class="mono" style="color: rgb(244,237,224);" />
+                                <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label name="auswerter-info" text="2/3" class="mono" style="color: rgb(244,237,224);" />
                             </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:ScrollView class="queue-scroll">
+                        <ui:ScrollView name="queue-scroll" class="queue-scroll">
                             <ui:VisualElement class="queue-card queue-card--ready">
                                 <ui:VisualElement class="queue-top"><ui:Label text="Geschnitzte Pfähle" class="queue-name serif" /><ui:Label text="Bereit" class="queue-eta queue-eta--ready mono" /></ui:VisualElement>
                                 <ui:Label text="Feld 14 / 08 · Expedition 1" class="queue-from mono" />
@@ -363,7 +363,7 @@
                             <ui:Label text="Gewonnene Erkenntnisse" class="pane-title serif" style="font-size: 19px;" />
                             <ui:Label text="von Expedition 1 zurückgebracht" class="hint" style="font-size: 11px;" />
                         </ui:VisualElement>
-                        <ui:ScrollView class="insight-scroll">
+                        <ui:ScrollView name="insight-scroll" class="insight-scroll">
                             <ui:VisualElement class="insight-card">
                                 <ui:Label text="✦" class="insight-ico" style="color: rgb(127,160,196);" />
                                 <ui:VisualElement class="insight-main">
@@ -447,53 +447,22 @@
 
                 <!-- ========== ARCHIV ========== -->
                 <ui:VisualElement class="bc-section" name="section-archiv" style="flex-direction: row;">
-                    <ui:VisualElement class="archive-filters">
+                    <ui:VisualElement class="archive-filters" name="archive-filters">
                         <ui:Label text="FILTER" class="filter-title" />
-                        <ui:VisualElement class="filter-row active"><ui:Label text="Alle" class="filter-name" /><ui:Label text="6" class="filter-count mono" /></ui:VisualElement>
-                        <ui:VisualElement class="filter-row"><ui:Label text="Berichte" class="filter-name" /><ui:Label text="2" class="filter-count mono" /></ui:VisualElement>
-                        <ui:VisualElement class="filter-row"><ui:Label text="Briefe" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
-                        <ui:VisualElement class="filter-row"><ui:Label text="Erkenntnisse" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
-                        <ui:VisualElement class="filter-row"><ui:Label text="Verträge" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
-                        <ui:VisualElement class="filter-row"><ui:Label text="Notizen" class="filter-name" /><ui:Label text="1" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row active" name="filter-alle"><ui:Label text="Alle" class="filter-name" /><ui:Label name="filter-count-alle" text="0" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row" name="filter-bericht"><ui:Label text="Berichte" class="filter-name" /><ui:Label name="filter-count-bericht" text="0" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row" name="filter-brief"><ui:Label text="Briefe" class="filter-name" /><ui:Label name="filter-count-brief" text="0" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row" name="filter-erkenntnis"><ui:Label text="Erkenntnisse" class="filter-name" /><ui:Label name="filter-count-erkenntnis" text="0" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row" name="filter-vertrag"><ui:Label text="Verträge" class="filter-name" /><ui:Label name="filter-count-vertrag" text="0" class="filter-count mono" /></ui:VisualElement>
+                        <ui:VisualElement class="filter-row" name="filter-notiz"><ui:Label text="Notizen" class="filter-name" /><ui:Label name="filter-count-notiz" text="0" class="filter-count mono" /></ui:VisualElement>
                     </ui:VisualElement>
                     <ui:VisualElement class="col-center">
                         <ui:VisualElement class="archive-head">
                             <ui:Label text="Archiv" class="archive-title serif" />
                             <ui:VisualElement class="bc-spacer" />
-                            <ui:VisualElement class="archive-search"><ui:Label text="⌕" class="ico" /><ui:Label text="Berichte, Briefe, Funde durchsuchen …" /></ui:VisualElement>
+                            <ui:VisualElement class="archive-search"><ui:Label text="⌕" class="ico" /><ui:TextField name="archive-search-field" class="archive-search-field" /></ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:ScrollView name="archive-scroll" class="archive-scroll">
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="✎" class="archive-icon" style="color: rgb(240,207,122);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Rauch hinter dem Kamm" class="archive-name serif" /><ui:Label text="Mara · Späher · Tag 5" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Bericht" class="type-tag" /><ui:Label text="Verläss. Mittel" class="archive-rel" style="color: rgb(240,207,122);" /><ui:Label text="Tag 5" class="archive-date mono" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="✉" class="archive-icon" style="color: rgb(127,160,196);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Warnung der Grenzwächter" class="archive-name serif" /><ui:Label text="Vess · Kontakt · Tag 7" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Brief" class="type-tag" /><ui:Label text="Verläss. Hoch" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 7" class="archive-date mono" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="⌂" class="archive-icon" style="color: rgb(164,157,142);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Verlassenes Lager" class="archive-name serif" /><ui:Label text="Jonas · Späher · Tag 4" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Bericht" class="type-tag" /><ui:Label text="Verläss. Hoch" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 4" class="archive-date mono" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="◆" class="archive-icon" style="color: rgb(143,174,116);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Vergessene Handelsroute" class="archive-name serif" /><ui:Label text="Auswertung · Tag 6" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Erkenntnis" class="type-tag" /><ui:Label text="Bestätigt" class="archive-rel" style="color: rgb(143,174,116);" /><ui:Label text="Tag 6" class="archive-date mono" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="⇄" class="archive-icon" style="color: rgb(200,181,122);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Handelsvertrag — Aschegilde" class="archive-name serif" /><ui:Label text="Nima · Verhandlung · Tag 6" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Vertrag" class="type-tag" /><ui:Label text="—" class="archive-rel" style="color: rgb(143,137,124);" /><ui:Label text="Tag 6" class="archive-date mono" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="archive-row">
-                                <ui:Label text="✦" class="archive-icon" style="color: rgb(127,160,196);" />
-                                <ui:VisualElement class="archive-main"><ui:Label text="Erste Sichtung: Die Stillen" class="archive-name serif" /><ui:Label text="Gerücht · Tag 2" class="archive-src mono" /></ui:VisualElement>
-                                <ui:Label text="Notiz" class="type-tag" /><ui:Label text="Verläss. Niedrig" class="archive-rel" style="color: rgb(217,122,95);" /><ui:Label text="Tag 2" class="archive-date mono" />
-                            </ui:VisualElement>
-                        </ui:ScrollView>
+                        <ui:ScrollView name="archive-scroll" class="archive-scroll" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 

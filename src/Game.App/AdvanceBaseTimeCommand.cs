@@ -36,6 +36,7 @@ public sealed class AdvanceBaseTimeCommand
         }
 
         game.World.AdvanceDays(days);
+        game.Base.EvaluationQueue.AdvanceDays(days);
 
         var reaction = WorldReactions[game.World.WorldDay % WorldReactions.Length];
         var reactionEntry = $"World day {game.World.WorldDay}: {reaction}";
