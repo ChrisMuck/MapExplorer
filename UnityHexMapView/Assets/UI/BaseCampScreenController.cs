@@ -47,6 +47,8 @@ public sealed class BaseCampScreenController : MonoBehaviour
     private readonly HashSet<string> selectedUnits = new HashSet<string>();
     private int rations = 20;
     private int medicine = 2;
+    private ArchiveEntryKind? archiveKindFilter;
+    private string archiveSearch = string.Empty;
     private bool isOpen;
     private bool bound;
 
@@ -102,6 +104,26 @@ public sealed class BaseCampScreenController : MonoBehaviour
         Click("rations-inc", () => StepRations(1));
         Click("medicine-dec", () => StepMedicine(-1));
         Click("medicine-inc", () => StepMedicine(1));
+
+        Click("filter-alle", () => SetArchiveFilter(null));
+        Click("filter-bericht", () => SetArchiveFilter(ArchiveEntryKind.Bericht));
+        Click("filter-brief", () => SetArchiveFilter(ArchiveEntryKind.Brief));
+        Click("filter-erkenntnis", () => SetArchiveFilter(ArchiveEntryKind.Erkenntnis));
+        Click("filter-vertrag", () => SetArchiveFilter(ArchiveEntryKind.Vertrag));
+        Click("filter-notiz", () => SetArchiveFilter(ArchiveEntryKind.Notiz));
+
+        var searchField = root.Q<TextField>("archive-search-field");
+        if (searchField != null)
+        {
+            searchField.RegisterValueChangedCallback(evt =>
+            {
+                archiveSearch = evt.newValue ?? string.Empty;
+                if (openTab == "archiv")
+                {
+                    BuildArchive(mapView.CurrentGameState);
+                }
+            });
+        }
 
         if (!isOpen)
         {
@@ -890,38 +912,141 @@ public sealed class BaseCampScreenController : MonoBehaviour
 
     private void BuildArchive(GameState state)
     {
+        if (state == null)
+        {
+            return;
+        }
+
         var scroll = root.Q<ScrollView>("archive-scroll");
         if (scroll == null)
         {
             return;
         }
 
+        var all = CollectArchiveEntries(state);
+
+        // Filter counts drive the left rail; recompute each refresh so they stay live.
+        SetText("filter-count-alle", all.Count.ToString());
+        SetText("filter-count-bericht", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Bericht).ToString());
+        SetText("filter-count-brief", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Brief).ToString());
+        SetText("filter-count-erkenntnis", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Erkenntnis).ToString());
+        SetText("filter-count-vertrag", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Vertrag).ToString());
+        SetText("filter-count-notiz", ArchiveFilter.CountOfKind(all, ArchiveEntryKind.Notiz).ToString());
+
+        SetActive("filter-alle", !archiveKindFilter.HasValue);
+        SetActive("filter-bericht", archiveKindFilter == ArchiveEntryKind.Bericht);
+        SetActive("filter-brief", archiveKindFilter == ArchiveEntryKind.Brief);
+        SetActive("filter-erkenntnis", archiveKindFilter == ArchiveEntryKind.Erkenntnis);
+        SetActive("filter-vertrag", archiveKindFilter == ArchiveEntryKind.Vertrag);
+        SetActive("filter-notiz", archiveKindFilter == ArchiveEntryKind.Notiz);
+
+        var filtered = ArchiveFilter.Filter(all, archiveKindFilter, archiveSearch);
+
         scroll.Clear();
-        var entries = state.Base.ArchiveEntries;
-        for (var i = entries.Count - 1; i >= 0; i--)
+        if (filtered.Count == 0)
         {
-            var row = Div("archive-row");
-            row.Add(Lbl("❋", "archive-icon"));
-            var main = Div("archive-main");
-            main.Add(Lbl(entries[i], "archive-name", "serif"));
-            row.Add(main);
-            scroll.Add(row);
+            scroll.Add(Lbl(all.Count == 0 ? "Das Archiv ist noch leer." : "Keine Treffer für diesen Filter.", "empty-slot"));
+            return;
         }
 
+        // Newest first.
+        for (var i = filtered.Count - 1; i >= 0; i--)
+        {
+            scroll.Add(BuildArchiveRow(filtered[i]));
+        }
+    }
+
+    private static List<ArchiveEntryState> CollectArchiveEntries(GameState state)
+    {
+        var all = new List<ArchiveEntryState>(state.Base.Archive);
+
+        // Scout reports live in KnowledgeState; surface them as Bericht rows in the same view.
         foreach (var report in state.Knowledge.ScoutReports)
         {
-            var row = Div("archive-row");
-            row.Add(Lbl("✎", "archive-icon"));
-            var main = Div("archive-main");
-            main.Add(Lbl(report.Title, "archive-name", "serif"));
-            main.Add(Lbl("Späherbericht", "archive-src", "mono"));
-            row.Add(main);
-            scroll.Add(row);
+            all.Add(new ArchiveEntryState(report.Title, ArchiveEntryKind.Bericht, "Späher", 0, ArchiveReliability.Mittel));
         }
 
-        if (entries.Count == 0 && state.Knowledge.ScoutReports.Count == 0)
+        return all;
+    }
+
+    private VisualElement BuildArchiveRow(ArchiveEntryState entry)
+    {
+        var row = Div("archive-row");
+        var icon = Lbl(ArchiveIcon(entry.Kind), "archive-icon");
+        icon.style.color = ArchiveKindColor(entry.Kind);
+        row.Add(icon);
+
+        var main = Div("archive-main");
+        main.Add(Lbl(entry.Title, "archive-name", "serif"));
+        main.Add(Lbl(ArchiveSourceLine(entry), "archive-src", "mono"));
+        row.Add(main);
+
+        row.Add(Lbl(entry.Kind.ToString(), "type-tag"));
+
+        var rel = Lbl(ReliabilityText(entry.Reliability), "archive-rel", "mono");
+        rel.style.color = ReliabilityColor(entry.Reliability);
+        row.Add(rel);
+
+        row.Add(Lbl(entry.WorldDay > 0 ? $"Tag {entry.WorldDay}" : "—", "archive-date", "mono"));
+        return row;
+    }
+
+    private void SetArchiveFilter(ArchiveEntryKind? kind)
+    {
+        archiveKindFilter = kind;
+        BuildArchive(mapView.CurrentGameState);
+    }
+
+    private static string ArchiveSourceLine(ArchiveEntryState entry)
+    {
+        return entry.WorldDay > 0 ? $"{entry.Source} · Tag {entry.WorldDay}" : entry.Source;
+    }
+
+    private static string ArchiveIcon(ArchiveEntryKind kind)
+    {
+        switch (kind)
         {
-            scroll.Add(Lbl("Das Archiv ist noch leer.", "empty-slot"));
+            case ArchiveEntryKind.Bericht: return "✎";
+            case ArchiveEntryKind.Brief: return "✉";
+            case ArchiveEntryKind.Erkenntnis: return "◆";
+            case ArchiveEntryKind.Vertrag: return "⇄";
+            default: return "✦";
+        }
+    }
+
+    private Color ArchiveKindColor(ArchiveEntryKind kind)
+    {
+        switch (kind)
+        {
+            case ArchiveEntryKind.Bericht: return Gold;
+            case ArchiveEntryKind.Brief: return Blue;
+            case ArchiveEntryKind.Erkenntnis: return Green;
+            case ArchiveEntryKind.Vertrag: return Neutral;
+            default: return Muted;
+        }
+    }
+
+    private static string ReliabilityText(ArchiveReliability reliability)
+    {
+        switch (reliability)
+        {
+            case ArchiveReliability.Niedrig: return "Verläss. Niedrig";
+            case ArchiveReliability.Mittel: return "Verläss. Mittel";
+            case ArchiveReliability.Hoch: return "Verläss. Hoch";
+            case ArchiveReliability.Bestaetigt: return "Bestätigt";
+            default: return "—";
+        }
+    }
+
+    private Color ReliabilityColor(ArchiveReliability reliability)
+    {
+        switch (reliability)
+        {
+            case ArchiveReliability.Bestaetigt:
+            case ArchiveReliability.Hoch: return Green;
+            case ArchiveReliability.Mittel: return Gold;
+            case ArchiveReliability.Niedrig: return Danger;
+            default: return Muted;
         }
     }
 

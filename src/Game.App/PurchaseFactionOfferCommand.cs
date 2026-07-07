@@ -61,7 +61,12 @@ public sealed class PurchaseFactionOfferCommand
         MarkOfferResolved(game, interaction, offer);
 
         var archiveEntry = $"Day {game.World.WorldDay}: accepted faction offer '{offer.Title}' from {interaction.FactionName}.";
-        game.Base.AddArchiveEntry(archiveEntry);
+        game.Base.AddArchiveEntry(new ArchiveEntryState(
+            archiveEntry,
+            ArchiveEntryKind.Vertrag,
+            interaction.FactionName,
+            game.World.WorldDay,
+            ArchiveReliability.Bestaetigt));
 
         return FactionOfferResult.Accepted(offer, BuildResultMessage(offer), archiveEntry);
     }

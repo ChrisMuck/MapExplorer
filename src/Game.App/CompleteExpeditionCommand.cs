@@ -40,7 +40,12 @@ public sealed class CompleteExpeditionCommand
         game.Expedition.SetStatus(ExpeditionStatus.Returned);
         game.Base.ScheduleNextExpedition(ExpeditionStatus.Returned, game.World.WorldDay, NormalPreparationDays);
         var archiveEntry = $"Expedition {game.Expedition.ExpeditionNumber} returned on world day {game.World.WorldDay} after {game.Expedition.ExpeditionDay} day(s). Reports, notes and faction observations were secured. Knowledge secured: {securedKnowledge}.";
-        game.Base.AddArchiveEntry(archiveEntry);
+        game.Base.AddArchiveEntry(new ArchiveEntryState(
+            archiveEntry,
+            ArchiveEntryKind.Bericht,
+            $"Expedition {game.Expedition.ExpeditionNumber}",
+            game.World.WorldDay,
+            ArchiveReliability.Hoch));
         game.Base.SecureCurrentExpeditionArchiveEntries();
 
         // Survivors return to the persistent base roster (their injuries/status carry over).

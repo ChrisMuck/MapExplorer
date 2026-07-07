@@ -47,7 +47,12 @@ public sealed class EvaluateKnowledgeItemCommand
         item.MarkEvaluated();
         game.Base.AddKnowledgePoints(item.KnowledgeReward);
         var entry = $"Erkenntnis gesichert: {item.Name} (+{item.KnowledgeReward} Wissen). {item.InsightText}";
-        game.Base.AddArchiveEntry(entry);
+        game.Base.AddArchiveEntry(new ArchiveEntryState(
+            entry,
+            ArchiveEntryKind.Erkenntnis,
+            "Auswertung",
+            game.World.WorldDay,
+            ArchiveReliability.Bestaetigt));
 
         return EvaluateKnowledgeItemResult.Evaluated(item.Id, item.Name, item.KnowledgeReward, game.Base.KnowledgePoints, item.InsightText, entry);
     }

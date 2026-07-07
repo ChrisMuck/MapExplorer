@@ -31,6 +31,8 @@ var evaluationQueueTests = new EvaluationQueueCommandTests();
 evaluationQueueTests.RunAll();
 var baseLoadoutTests = new BaseLoadoutCommandTests();
 baseLoadoutTests.RunAll();
+var archiveTests = new ArchiveCommandTests();
+archiveTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2377,6 +2379,87 @@ internal sealed class BaseLoadoutCommandTests
         if (condition)
         {
             throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class ArchiveCommandTests
+{
+    public void RunAll()
+    {
+        PlainStringWriteBecomesNoteAndProjectsBack();
+        EvaluatedInsightIsTypedErkenntnis();
+        ReturnedExpeditionIsTypedBericht();
+        FilterByKindAndSearchWork();
+    }
+
+    private static void PlainStringWriteBecomesNoteAndProjectsBack()
+    {
+        var game = TutorialGameFactory.Create();
+        var before = game.Base.Archive.Count;
+        game.Base.AddArchiveEntry("Ein Testeintrag");
+
+        var last = game.Base.Archive[game.Base.Archive.Count - 1];
+        AssertEqual(ArchiveEntryKind.Notiz, last.Kind, "Plain-string archive writes become notes");
+        AssertEqual("Ein Testeintrag", last.Text, "Text projects back to the original string");
+        AssertTrue(game.Base.ArchiveEntries.Contains("Ein Testeintrag"), "String projection still exposes the entry");
+        AssertEqual(before + 1, game.Base.Archive.Count, "Archive grew by exactly one");
+    }
+
+    private static void EvaluatedInsightIsTypedErkenntnis()
+    {
+        var game = TutorialGameFactory.Create();
+        new CompleteExpeditionCommand().Execute(game);
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+        AssertTrue(result.Success, "Evaluation succeeds");
+
+        var insight = game.Base.Archive.First(e => e.Kind == ArchiveEntryKind.Erkenntnis);
+        AssertEqual("Auswertung", insight.Source, "Insight source is the evaluation");
+        AssertEqual(game.World.WorldDay, insight.WorldDay, "Insight carries the world day");
+        AssertEqual(ArchiveReliability.Bestaetigt, insight.Reliability, "Insight is confirmed");
+    }
+
+    private static void ReturnedExpeditionIsTypedBericht()
+    {
+        var game = TutorialGameFactory.Create();
+        new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(game.Base.Archive.Any(e => e.Kind == ArchiveEntryKind.Bericht), "The return summary is a typed report");
+    }
+
+    private static void FilterByKindAndSearchWork()
+    {
+        var entries = new List<ArchiveEntryState>
+        {
+            new ArchiveEntryState("Rauch hinter dem Kamm", ArchiveEntryKind.Bericht, "Späher", 5, ArchiveReliability.Mittel),
+            new ArchiveEntryState("Handelsvertrag — Aschegilde", ArchiveEntryKind.Vertrag, "Nima", 6, ArchiveReliability.Bestaetigt),
+            new ArchiveEntryState("Vergessene Handelsroute", ArchiveEntryKind.Erkenntnis, "Auswertung", 6, ArchiveReliability.Bestaetigt)
+        };
+
+        var berichte = ArchiveFilter.Filter(entries, ArchiveEntryKind.Bericht, null);
+        AssertEqual(1, berichte.Count, "Kind filter returns only that kind");
+
+        var handel = ArchiveFilter.Filter(entries, null, "handel");
+        AssertEqual(2, handel.Count, "Text search matches titles case-insensitively");
+
+        var bySource = ArchiveFilter.Filter(entries, null, "nima");
+        AssertEqual(1, bySource.Count, "Text search also matches the source");
+
+        AssertEqual(1, ArchiveFilter.CountOfKind(entries, ArchiveEntryKind.Vertrag), "CountOfKind counts a single kind");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
         }
     }
 }

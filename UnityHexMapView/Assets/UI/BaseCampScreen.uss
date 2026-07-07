@@ -384,6 +384,11 @@
     border-width: 1px; border-color: rgba(255, 255, 255, 0.1);
 }
 .archive-search .ico { margin-right: 9px; }
+.archive-search-field { flex-grow: 1; min-width: 200px; }
+.archive-search-field > TextInput {
+    background-color: rgba(0, 0, 0, 0); border-width: 0; padding: 0;
+    color: rgb(210, 202, 188); font-size: 12px;
+}
 .archive-scroll { flex-grow: 1; padding: 14px 24px; }
 .archive-row {
     flex-direction: row; align-items: center; padding: 13px 16px; margin-bottom: 8px;

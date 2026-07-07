@@ -233,6 +233,13 @@ public sealed class UnityHexMapView : MonoBehaviour
             : coreGameState.Base.Upgrades.Upgrades;
     }
 
+    public IReadOnlyList<ArchiveEntryState> GetArchiveForUi()
+    {
+        return coreGameState == null
+            ? System.Array.Empty<ArchiveEntryState>()
+            : coreGameState.Base.Archive;
+    }
+
     public void RequestStartUpgradeFromUi(string upgradeId)
     {
         if (coreGameState == null)

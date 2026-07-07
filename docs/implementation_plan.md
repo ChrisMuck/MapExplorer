@@ -1832,25 +1832,24 @@ Suggested model: high-reasoning or strong coding model.
 
 ---
 
-### Task 054: Typed, Filterable Archive
+### Task 054: Typed, Filterable Archive — ✅ Done
 
 Replace the flat string `BaseState.ArchiveEntries` with typed archive entries so the Archiv tab can
 filter and search, and the read-only display carries meaning.
 
-Current state:
+Implemented:
 
-- the Archiv tab lists raw archive strings + scout-report titles; the filters are static
-
-Suggested model additions:
-
-- `ArchiveEntryState` (id, kind = Bericht/Brief/Erkenntnis/Vertrag/Notiz, title, source, worldDay,
-  reliability); `BaseState` stores these; populate from scout reports, discoveries, contracts, notes
-- keep a compatibility path so existing plain-string archive writing still works during migration
-
-Acceptance criteria:
-
-- entries are typed and carry source / world day / reliability
-- the tab filters by kind and searches by text
-- existing archive text migrates or coexists; tests cover typing and filtering
+- `ArchiveEntryState` (title, `ArchiveEntryKind` = Bericht/Brief/Erkenntnis/Vertrag/Notiz, source,
+  worldDay, `ArchiveReliability`) is the new backing store on `BaseState`; `Archive` exposes the
+  typed list and `ArchiveEntries` stays as a string projection for back-compat.
+- `AddArchiveEntry(string)` still works (wraps as a `Notiz`); commands emit typed entries where it
+  matters — `CompleteExpeditionCommand` / `ResolveEventCommand` → Bericht, `EvaluateKnowledgeItem`
+  → Erkenntnis, `PurchaseFactionOffer` → Vertrag. Expedition-discard/secure operate on the typed
+  list unchanged.
+- `ArchiveFilter.Filter(entries, kind?, search)` + `CountOfKind` in Core; the Archiv tab wires kind
+  filter chips (with live counts), a text search field, and typed rows (icon / type tag /
+  reliability / day). Scout reports are folded in as Bericht rows.
+- Tests: `ArchiveCommandTests` (plain-string back-compat, typed Erkenntnis/Bericht entries, kind +
+  text filtering).
 
 Suggested model: high-reasoning or strong coding model.
