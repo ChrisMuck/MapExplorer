@@ -196,6 +196,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         BuildTeam(state);
         BuildAufbruch(state);
         BuildBasis(state);
+        BuildWissen(state);
         BuildFactions(state);
         BuildArchive(state);
     }
@@ -613,6 +614,120 @@ public sealed class BaseCampScreenController : MonoBehaviour
     {
         var upgrade = mapView.GetUpgradesForUi().FirstOrDefault(u => u.Id == id);
         return upgrade != null ? upgrade.Name : id;
+    }
+
+    // ---------------------------------------------------------------- wissen auswerten
+
+    private void BuildWissen(GameState state)
+    {
+        var queue = mapView.GetEvaluationQueueForUi();
+        var pending = queue.Items.Where(item => !item.IsEvaluated).ToList();
+        var evaluated = queue.Items.Where(item => item.IsEvaluated).ToList();
+
+        // The earliest still-maturing items occupy the evaluator slots; the rest wait.
+        var inProgress = new HashSet<string>();
+        var slots = queue.EvaluatorCapacity;
+        foreach (var item in pending)
+        {
+            if (slots <= 0)
+            {
+                break;
+            }
+
+            if (item.IsReady)
+            {
+                continue;
+            }
+
+            inProgress.Add(item.Id);
+            slots--;
+        }
+
+        SetText("auswerter-info", $"{inProgress.Count}/{queue.EvaluatorCapacity}");
+
+        var queueScroll = root.Q<ScrollView>("queue-scroll");
+        if (queueScroll != null)
+        {
+            queueScroll.Clear();
+            foreach (var item in pending)
+            {
+                queueScroll.Add(BuildQueueCard(item, inProgress.Contains(item.Id)));
+            }
+
+            if (pending.Count == 0)
+            {
+                queueScroll.Add(Lbl("Keine offenen Funde zum Auswerten.", "empty-slot"));
+            }
+        }
+
+        var insightScroll = root.Q<ScrollView>("insight-scroll");
+        if (insightScroll != null)
+        {
+            insightScroll.Clear();
+            foreach (var item in evaluated)
+            {
+                insightScroll.Add(BuildInsightCard(item));
+            }
+
+            if (evaluated.Count == 0)
+            {
+                insightScroll.Add(Lbl("Noch keine Erkenntnisse gesichert.", "empty-slot"));
+            }
+        }
+    }
+
+    private VisualElement BuildQueueCard(EvaluationItemState item, bool inProgress)
+    {
+        var card = Div("queue-card");
+        if (item.IsReady)
+        {
+            card.AddToClassList("queue-card--ready");
+        }
+
+        var top = Div("queue-top");
+        top.Add(Lbl(item.Name, "queue-name", "serif"));
+        var remaining = Mathf.Max(0, item.RequiredDays - item.ProgressDays);
+        var eta = item.IsReady ? "Bereit" : (inProgress ? $"≈ {remaining} Tag(e)" : "Wartet");
+        var etaLabel = Lbl(eta, "queue-eta", "mono");
+        if (item.IsReady)
+        {
+            etaLabel.AddToClassList("queue-eta--ready");
+        }
+
+        top.Add(etaLabel);
+        card.Add(top);
+        card.Add(Lbl(item.Source, "queue-from", "mono"));
+
+        if (item.IsReady)
+        {
+            var button = Lbl("✓ Auswerten", "queue-btn");
+            var id = item.Id;
+            button.RegisterCallback<ClickEvent>(_ => { mapView.RequestEvaluateKnowledgeItemFromUi(id); Refresh(); });
+            card.Add(button);
+        }
+        else
+        {
+            var progress = Div("progress");
+            var fill = Div("progress-fill");
+            fill.style.width = Length.Percent(item.RequiredDays > 0 ? item.ProgressDays / (float)item.RequiredDays * 100f : 0f);
+            progress.Add(fill);
+            card.Add(progress);
+        }
+
+        return card;
+    }
+
+    private VisualElement BuildInsightCard(EvaluationItemState item)
+    {
+        var card = Div("insight-card");
+        card.Add(Lbl("✦", "insight-ico"));
+        var main = Div("insight-main");
+        var head = Div("insight-head");
+        head.Add(Lbl(item.Name, "insight-name", "serif"));
+        main.Add(head);
+        main.Add(Lbl(item.InsightText, "insight-text"));
+        card.Add(main);
+        return card;
     }
 
     // ---------------------------------------------------------------- factions

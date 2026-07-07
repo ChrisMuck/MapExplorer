@@ -54,7 +54,10 @@ public static class TutorialGameFactory
             medicine: 3,
             morale: 70,
             capacity: 20);
-        var baseState = new BaseState(baseCoord, new BaseUpgradesState(CreateTutorialUpgrades()));
+        var baseState = new BaseState(
+            baseCoord,
+            new BaseUpgradesState(CreateTutorialUpgrades()),
+            new EvaluationQueueState(CreateTutorialEvaluationItems()));
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
 
@@ -439,6 +442,22 @@ public static class TutorialGameFactory
             new ExpeditionMemberState("carrier-2", "Oren", ExpeditionMemberRole.Carrier, ExpeditionMemberStatus.Exhausted),
             new ExpeditionMemberState("medic-1", "Sela", ExpeditionMemberRole.Medic),
             new ExpeditionMemberState("scholar-1", "Rook", ExpeditionMemberRole.Scholar)
+        };
+    }
+
+    private static IEnumerable<EvaluationItemState> CreateTutorialEvaluationItems()
+    {
+        return new[]
+        {
+            new EvaluationItemState("eval-pfaehle", "Geschnitzte Pfähle", "Feld 14 / 08 · Expedition 1", 1, 3,
+                "Die Pfähle markieren das Revier der Grenzwächter. Ihr Betreten gilt als Provokation — Umgehung oder Tribut empfohlen.",
+                progressDays: 1),
+            new EvaluationItemState("eval-saat", "Fremde Saatkörner", "Verlassenes Lager · Jonas", 3, 4,
+                "Die Saatkörner gedeihen selbst in kargem Boden. Eine verlässliche Nahrungsquelle für längere Züge."),
+            new EvaluationItemState("eval-karte", "Bruchstück einer Karte", "Kammland-Nord · Mara", 4, 5,
+                "Das Kartenfragment zeigt einen alten Pfad durch den Kamm nach Osten — er umgeht das Gebiet der Grenzwächter."),
+            new EvaluationItemState("eval-metall", "Unbekanntes Metall", "Aschegilde · Handel", 5, 4,
+                "Ein ungewöhnlich leichtes, hartes Metall. Die Aschegilde hätte sicher Interesse an der Quelle.")
         };
     }
 

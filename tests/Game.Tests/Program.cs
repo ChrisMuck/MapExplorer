@@ -27,6 +27,8 @@ var baseGameplayTests = new BaseGameplayCommandTests();
 baseGameplayTests.RunAll();
 var baseUpgradeTests = new BaseUpgradeCommandTests();
 baseUpgradeTests.RunAll();
+var evaluationQueueTests = new EvaluationQueueCommandTests();
+evaluationQueueTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -2240,6 +2242,85 @@ internal sealed class BaseUpgradeCommandTests
         var cheaper = new StartBaseActionCommand().Execute(game, BaseActionKind.HealMember, "carrier-2");
         AssertTrue(cheaper.Success, "Heal with herbalism succeeds");
         AssertEqual(StartBaseActionCommand.HealCostWithHerbalism, cheaper.KnowledgeSpent, "Heal costs less with herbalism");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class EvaluationQueueCommandTests
+{
+    public void RunAll()
+    {
+        EvaluatingAReadyItemAwardsKnowledgeAndArchivesInsight();
+        NotReadyItemIsRejected();
+        BaseTimeMaturesItemsRespectingEvaluatorCapacity();
+    }
+
+    private static GameState ReturnedGameAtBase()
+    {
+        var game = TutorialGameFactory.Create();
+        var complete = new CompleteExpeditionCommand().Execute(game);
+        AssertTrue(complete.Success, "Setup: expedition returns to base");
+        return game;
+    }
+
+    private static void EvaluatingAReadyItemAwardsKnowledgeAndArchivesInsight()
+    {
+        var game = ReturnedGameAtBase();
+        var item = game.Base.EvaluationQueue.FindItem("eval-pfaehle")!;
+        AssertTrue(item.IsReady, "Seeded item starts ready");
+
+        var knowledgeBefore = game.Base.KnowledgePoints;
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+
+        AssertTrue(result.Success, "Evaluating a ready item succeeds");
+        AssertEqual(knowledgeBefore + item.KnowledgeReward, game.Base.KnowledgePoints, "Evaluation awards knowledge");
+        AssertTrue(game.Base.EvaluationQueue.FindItem("eval-pfaehle")!.IsEvaluated, "Item is marked evaluated");
+        AssertTrue(game.Base.ArchiveEntries.Any(entry => entry.Contains("Geschnitzte")), "Insight is archived");
+
+        var again = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
+        AssertFalse(again.Success, "The same item cannot be evaluated twice");
+    }
+
+    private static void NotReadyItemIsRejected()
+    {
+        var game = ReturnedGameAtBase();
+        var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-saat");
+        AssertFalse(result.Success, "An item still being evaluated cannot be collected");
+    }
+
+    private static void BaseTimeMaturesItemsRespectingEvaluatorCapacity()
+    {
+        var game = ReturnedGameAtBase();
+
+        new AdvanceBaseTimeCommand().Execute(game, 3);
+
+        AssertEqual(3, game.Base.EvaluationQueue.FindItem("eval-saat")!.ProgressDays, "First queued item progressed");
+        AssertEqual(3, game.Base.EvaluationQueue.FindItem("eval-karte")!.ProgressDays, "Second queued item progressed");
+        AssertEqual(0, game.Base.EvaluationQueue.FindItem("eval-metall")!.ProgressDays, "Third item waited (capacity 2)");
+        AssertTrue(game.Base.EvaluationQueue.FindItem("eval-saat")!.IsReady, "Item becomes ready after enough base time");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

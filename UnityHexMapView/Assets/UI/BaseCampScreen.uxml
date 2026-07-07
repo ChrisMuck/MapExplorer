@@ -332,10 +332,10 @@
                         <ui:VisualElement style="flex-shrink: 0; padding: 18px 20px 14px; border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.06);">
                             <ui:Label text="AUSWERTUNGS-WARTESCHLANGE" class="section-label" />
                             <ui:VisualElement class="auswerter">
-                                <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label text="2/3" class="mono" style="color: rgb(244,237,224);" />
+                                <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label name="auswerter-info" text="2/3" class="mono" style="color: rgb(244,237,224);" />
                             </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:ScrollView class="queue-scroll">
+                        <ui:ScrollView name="queue-scroll" class="queue-scroll">
                             <ui:VisualElement class="queue-card queue-card--ready">
                                 <ui:VisualElement class="queue-top"><ui:Label text="Geschnitzte Pfähle" class="queue-name serif" /><ui:Label text="Bereit" class="queue-eta queue-eta--ready mono" /></ui:VisualElement>
                                 <ui:Label text="Feld 14 / 08 · Expedition 1" class="queue-from mono" />
@@ -363,7 +363,7 @@
                             <ui:Label text="Gewonnene Erkenntnisse" class="pane-title serif" style="font-size: 19px;" />
                             <ui:Label text="von Expedition 1 zurückgebracht" class="hint" style="font-size: 11px;" />
                         </ui:VisualElement>
-                        <ui:ScrollView class="insight-scroll">
+                        <ui:ScrollView name="insight-scroll" class="insight-scroll">
                             <ui:VisualElement class="insight-card">
                                 <ui:Label text="✦" class="insight-ico" style="color: rgb(127,160,196);" />
                                 <ui:VisualElement class="insight-main">

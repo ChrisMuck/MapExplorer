@@ -248,6 +248,26 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public EvaluationQueueState GetEvaluationQueueForUi()
+    {
+        return coreGameState == null ? new EvaluationQueueState() : coreGameState.Base.EvaluationQueue;
+    }
+
+    public void RequestEvaluateKnowledgeItemFromUi(string itemId)
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var result = gameApplication.EvaluateKnowledgeItem(coreGameState, itemId);
+        interactionMessage = result.Success
+            ? result.ArchiveEntry ?? "Knowledge evaluated."
+            : result.Error ?? "Evaluation rejected.";
+        RefreshHud();
+        RefreshToolkitHud();
+    }
+
     public void RequestEndDayFromUi()
     {
         EndCurrentDay();
