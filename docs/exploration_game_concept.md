@@ -3697,6 +3697,34 @@ Open MVP work remains:
 - balance Knowledge Point income, upgrade costs, recovery time and loadout pressure
 - keep Base Camp decisions readable and fast so they support exploration instead of replacing it
 
+### 16A.1B Field Finds And Analysis Items
+
+The "Wissen auswerten" tab should start empty at the beginning of a new game. Analysis items appear
+only after the expedition finds something in the world and returns it, reports it or preserves enough
+evidence for the base to study it.
+
+Examples of analysis-worthy finds:
+
+- Fremde Saatkörner
+- Unbekanntes Metall
+- Unbekannte Waffe
+- Bruchstück einer Karte
+- Geschnitzte Pfähle or other border signs
+- Masked symbols, sealed objects or ritual fragments
+- Unusual medicine, spores, animal remains or contaminated water samples
+- Old camp records, coded letters or broken tools
+
+Design rules:
+
+- A find should have a stable source id so it cannot be farmed repeatedly.
+- A find should record where it came from and who reported or carried it back.
+- Some finds require successful return to base; if the expedition is lost, these items are lost too
+  unless a later expedition recovers them.
+- Analysis should take base time and may be limited by evaluator capacity.
+- Analysis results create archived insights and may award Knowledge Points, reveal safer routes,
+  unlock faction dialogue, unlock offers or clarify special-location risks.
+- The player should understand why an item is analyzable; it should not appear as abstract research.
+
 ### 16A.2 Base Time
 
 Base actions may consume days or weeks.

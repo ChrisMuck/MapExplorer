@@ -365,6 +365,7 @@ internal sealed class GameStateTests
         AssertEqual(game.Base.Location, game.Expedition.Position, "Expedition starts at base");
         AssertEqual(KnowledgeLevel.Confirmed, game.Knowledge.GetTileKnowledge(game.Base.Location), "Base starts confirmed");
         AssertEqual(TerrainType.Coast, game.World.Map.GetTile(game.Base.Location).Terrain, "Base tile terrain");
+        AssertEqual(0, game.Base.EvaluationQueue.Items.Count, "Expedition starts without base evaluation items");
     }
 
     private static void TutorialExpeditionHasExpectedStartingTeam()
@@ -2410,6 +2411,7 @@ internal sealed class ArchiveCommandTests
     {
         var game = TutorialGameFactory.Create();
         new CompleteExpeditionCommand().Execute(game);
+        EvaluationQueueCommandTests.SeedEvaluationItems(game);
         var result = new EvaluateKnowledgeItemCommand().Execute(game, "eval-pfaehle");
         AssertTrue(result.Success, "Evaluation succeeds");
 
@@ -2478,7 +2480,41 @@ internal sealed class EvaluationQueueCommandTests
         var game = TutorialGameFactory.Create();
         var complete = new CompleteExpeditionCommand().Execute(game);
         AssertTrue(complete.Success, "Setup: expedition returns to base");
+        SeedEvaluationItems(game);
         return game;
+    }
+
+    public static void SeedEvaluationItems(GameState game)
+    {
+        game.Base.EvaluationQueue.Add(new EvaluationItemState(
+            "eval-pfaehle",
+            "Geschnitzte Pfähle",
+            "Feld 14 / 08 · Expedition 1",
+            1,
+            3,
+            "Die Pfähle markieren das Revier der Grenzwächter. Ihr Betreten gilt als Provokation; Umgehung oder Tribut empfohlen.",
+            progressDays: 1));
+        game.Base.EvaluationQueue.Add(new EvaluationItemState(
+            "eval-saat",
+            "Fremde Saatkörner",
+            "Verlassenes Lager · Jonas",
+            3,
+            4,
+            "Die Saatkörner gedeihen selbst in kargem Boden. Eine verlässliche Nahrungsquelle für längere Züge."));
+        game.Base.EvaluationQueue.Add(new EvaluationItemState(
+            "eval-karte",
+            "Bruchstück einer Karte",
+            "Kammland-Nord · Mara",
+            4,
+            5,
+            "Das Kartenfragment zeigt einen alten Pfad durch den Kamm nach Osten."));
+        game.Base.EvaluationQueue.Add(new EvaluationItemState(
+            "eval-metall",
+            "Unbekanntes Metall",
+            "Aschegilde · Handel",
+            5,
+            4,
+            "Ein ungewöhnlich leichtes, hartes Metall. Eine Fraktion könnte Interesse an der Quelle haben."));
     }
 
     private static void EvaluatingAReadyItemAwardsKnowledgeAndArchivesInsight()

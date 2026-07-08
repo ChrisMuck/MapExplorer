@@ -536,6 +536,16 @@ Current data ownership:
 Unity presentation may open the Base Camp UI, show these state objects and send commands. It must not
 own the base economy, recovery rules, upgrade rules, evaluation rules or expedition departure rules.
 
+Current rule:
+
+- A new tutorial expedition starts with an empty `EvaluationQueueState`.
+- Evaluation items should be created by world discoveries, inspected locations, scout reports,
+  faction exchanges or recovered expedition records, not seeded into the base at game start.
+- Future discovery commands should add analysis items with stable source ids, source text, required
+  base days, Knowledge Point reward and insight text.
+- Lost expeditions should lose their unsecured analysis items unless a later recovery action restores
+  them.
+
 ---
 
 ## 10. Simplified Map Presentation

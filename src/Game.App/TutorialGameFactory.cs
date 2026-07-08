@@ -57,7 +57,7 @@ public static class TutorialGameFactory
         var baseState = new BaseState(
             baseCoord,
             new BaseUpgradesState(CreateTutorialUpgrades()),
-            new EvaluationQueueState(CreateTutorialEvaluationItems()),
+            new EvaluationQueueState(),
             CreateTutorialUnitStock());
         baseState.AddArchiveEntry("First expedition prepared at the coastal base.");
         baseState.MarkExpeditionDepartureArchivePoint();
