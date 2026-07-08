@@ -10,7 +10,8 @@ These instructions apply to Codex, Claude Code and other coding agents unless a 
 
 Before changing gameplay systems, read:
 
-- `docs/exploration_game_concept.md`
+- `docs/gameconcept/exploration_game_concept.md`
+- the relevant specialist document in `docs/gameconcept/` for the system being changed
 - `docs/technical_concept.md`
 - `docs/map_presentation_simplified_concept.md` before changing map presentation
 - `docs/ui_ux_concept.md` before changing UI, map panels, popups or interaction flow

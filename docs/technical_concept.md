@@ -1,7 +1,7 @@
 # Technical Concept
 
 Working Title: **Untitled Expedition Game**  
-Related Design Document: `exploration_game_concept.md`  
+Related Design Document: `docs/gameconcept/exploration_game_concept.md`
 Engine Decision: **Unity 6.5 + C#**  
 MVP Target Platform: **Desktop, primarily Windows**  
 Status: **Early Technical Architecture / Living Document**
@@ -239,7 +239,9 @@ It should not own the simulation.
 ```text
 expedition-game/
   docs/
-    exploration_game_concept.md
+    gameconcept/
+      exploration_game_concept.md
+      *_concept.md
     technical_concept.md
     ui_ux_concept.md
     map_presentation_simplified_concept.md
@@ -854,7 +856,8 @@ This completes the Vertical Slice technical target.
 
 All AI coding agents should follow these rules:
 
-1. Read `exploration_game_concept.md` before changing gameplay systems.
+1. Read `docs/gameconcept/exploration_game_concept.md` before changing gameplay systems.
+   Then read the relevant specialist document in `docs/gameconcept/`.
 2. Read `technical_concept.md` before changing architecture.
 3. Read `map_presentation_simplified_concept.md` before changing map presentation.
 4. Read `ui_ux_concept.md` before changing UI.

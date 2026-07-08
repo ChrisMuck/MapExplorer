@@ -8,7 +8,7 @@ This document translates the design and technical concept into concrete implemen
 
 Related documents:
 
-- `docs/exploration_game_concept.md`
+- `docs/gameconcept/exploration_game_concept.md`
 - `docs/technical_concept.md`
 - `AGENTS.md`
 - `CLAUDE.md`
@@ -177,7 +177,7 @@ saves/dev/
 
 Move or copy the following documents into `docs/`:
 
-- `exploration_game_concept.md`
+- `docs/gameconcept/exploration_game_concept.md`
 - `technical_concept.md`
 
 Keep these files at repository root:

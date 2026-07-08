@@ -4,7 +4,7 @@ UI and UX concept for the Expedition Exploration Game.
 
 Related documents:
 
-- `exploration_game_concept.md`
+- `docs/gameconcept/exploration_game_concept.md`
 - `technical_concept.md`
 - `IMPLEMENTATION_PLAN.md`
 - `AGENTS.md`
