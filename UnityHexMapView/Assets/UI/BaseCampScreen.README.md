@@ -19,14 +19,26 @@ existing `Request*FromUi` seam — it never mutates world state.
   `BaseCampScreenController.Open()`).
 - The title-bar **✕** (`btn-close`) or a successful "Expedition aufbrechen →" hides it again.
 
-## What is wired vs. placeholder (first increment)
-- **Team** — pool, person detail (level/skills/traits/gear/bio from the roster), team compose.
-- **Base actions** — Rekrutieren / Ingenieur / +Vorräte (Team header), Heilen (person detail),
-  "Einen Tag vergehen lassen" (Aufbruch) → real commands, spend knowledge + advance time.
-- **Aufbruch** — starts the next expedition from the selected team; unit stock, resource loadout and
-  readiness numbers are UI-only placeholders for now.
-- **Fraktionen / Archiv** — read-only from `FactionState` / `Base.ArchiveEntries` + scout reports.
-- **Basis ausbauen / Wissen auswerten** — mockup layout only (roadmap, not yet functional).
+## Current wiring
+- **Team** - pool, person detail (level/skills/traits/gear/bio from the roster), selected team and
+  healing/recruiting base actions.
+- **Base actions** - recruit, request engineer, prepare supplies, heal selected member and advance
+  base time through real commands. These actions spend Knowledge Points and/or advance world day.
+- **Aufbruch** - starts the next expedition from the selected team. Porter/soldier unit stock,
+  rations, medicine and readiness are backed by `BaseUnitStockState`, `ExpeditionReadiness` and the
+  loadout overload of `StartNewExpeditionCommand`.
+- **Basis ausbauen** - persistent upgrade cards backed by `BaseUpgradeState` /
+  `StartUpgradeCommand`.
+- **Wissen auswerten** - evaluation queue backed by `EvaluationQueueState`, `AdvanceBaseTimeCommand`
+  and `EvaluateKnowledgeItemCommand`.
+- **Fraktionen** - read-only from `FactionState`.
+- **Archiv** - typed archive entries plus scout reports, with filters and search.
+
+## Still prototype-level
+- Costs, durations, readiness thresholds and upgrade effects are tuning placeholders.
+- More generated expedition discoveries still need to feed the evaluation/archive loop.
+- Final portraits, archive thumbnails and polished content are intentionally not in scope yet.
+- Keep new rules in `Game.Core` / `Game.App`; this controller should remain a presentation bridge.
 
 ## Fonts
 `.serif / .sans / .mono` fall back to the default font unless you assign Font Assets (see the

@@ -427,18 +427,23 @@ Acceptance:
 
 Implement:
 
-- simple base screen
+- Base Camp screen as the MVP preparation hub
 - heal member
 - archive reports
 - recruit/request engineer
 - time passing
 - simple world reactions
+- team selection, unit support stock and departure loadout
+- limited upgrades paid with Knowledge Points
+- knowledge evaluation queue and typed archive
 
 Acceptance:
 
 - Base actions advance world day.
 - Engineer can become available for the second expedition.
 - World reaction creates journal/archive/world change entry.
+- The player can review what was learned, prepare a different team and start the next expedition
+  from base.
 
 ### 21. Start Second Expedition
 
@@ -449,11 +454,14 @@ Add:
 - old knowledge and notes remain
 - new team can include engineer
 - expedition starts from base
+- selected team, support units, rations and medicine define the departure loadout
 
 Acceptance:
 
 - Player can return to the ravine with better preparation.
 - Second expedition feels like continuation, not restart.
+- Returning successfully preserves useful archive/report/faction knowledge; lost expeditions discard
+  unsecured field knowledge and require a longer replacement delay.
 
 ## Review Gates
 

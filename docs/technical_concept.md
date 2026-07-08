@@ -413,6 +413,9 @@ StartCampCommand
 StartProjectCommand
 ReturnToBaseCommand
 StartBaseActionCommand
+StartUpgradeCommand
+EvaluateKnowledgeItemCommand
+AdvanceBaseTimeCommand
 StartNewExpeditionCommand
 ```
 
@@ -491,6 +494,15 @@ The initial data model remains defined around:
 - EventState
 - GoalState
 - BaseState
+- BaseRosterState
+- BaseMemberState
+- BaseUnitStockState
+- BaseUnitState
+- BaseUpgradesState
+- BaseUpgradeState
+- EvaluationQueueState
+- EvaluationItemState
+- ArchiveEntryState
 - VisualAssetDefinition
 - PersistentWorldChange
 
@@ -501,6 +513,28 @@ Hexes use axial coordinates:
 ```csharp
 public readonly record struct HexCoord(int Q, int R);
 ```
+
+### 9.1 Current Base Camp Model
+
+The current MVP prototype treats Base Camp as a command-driven preparation phase backed by Core/App
+state, not by Unity scene objects.
+
+Current data ownership:
+
+- `BaseState` stores base location, Knowledge Points, pending supply bonus, next-expedition timing,
+  typed archive entries, lost expedition records, upgrades, evaluation queue and unit stock.
+- `BaseRosterState` stores named people available to the base; UI composition selects from this
+  roster and `StartNewExpeditionCommand` converts selected roster members into expedition members.
+- `BaseUnitStockState` stores generic porter/soldier support units used during departure loadout.
+- `BaseUpgradesState` stores persistent upgrades; `StartUpgradeCommand` spends Knowledge Points and
+  marks upgrades built.
+- `EvaluationQueueState` stores base analysis items; `AdvanceBaseTimeCommand` advances progress and
+  `EvaluateKnowledgeItemCommand` converts ready items into archived insights and Knowledge Points.
+- `ArchiveEntryState` is the typed archive source of truth; legacy string archive access is only a
+  compatibility projection.
+
+Unity presentation may open the Base Camp UI, show these state objects and send commands. It must not
+own the base economy, recovery rules, upgrade rules, evaluation rules or expedition departure rules.
 
 ---
 

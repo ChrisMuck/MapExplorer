@@ -3666,6 +3666,37 @@ During the Base Phase, the player may:
 - compare old and new knowledge
 - start a new expedition
 
+### 16A.1A Current Base Camp Implementation
+
+The current Unity prototype has a dedicated Base Camp screen. This is now part of the MVP loop, not
+only a later meta-progression idea.
+
+The Base Camp screen currently covers:
+
+- team review and expedition team composition
+- member detail view with role, status, traits, skills, gear and biography
+- base actions such as healing, recruitment, engineer request, supply preparation and base time
+  advancement
+- next expedition setup with selected members, porter/soldier support units, rations, medicine and
+  readiness preview
+- limited base upgrades paid with Knowledge Points
+- knowledge evaluation queue that matures over base days and can create archived insights
+- faction overview
+- typed, searchable archive with reports, notes, insights and treaties
+
+Design boundary:
+
+> Base Camp is the preparation and memory hub of the expedition game. It must not become a separate
+> city-builder, production chain or 4X management layer.
+
+Open MVP work remains:
+
+- tighten the normal return / lost expedition / replacement expedition loop in the UI
+- make archive, reports and faction notes useful for planning the next expedition
+- connect more discoveries to the evaluation queue instead of relying on seeded tutorial items
+- balance Knowledge Point income, upgrade costs, recovery time and loadout pressure
+- keep Base Camp decisions readable and fast so they support exploration instead of replacing it
+
 ### 16A.2 Base Time
 
 Base actions may consume days or weeks.

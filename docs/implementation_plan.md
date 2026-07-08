@@ -1733,19 +1733,37 @@ Do not skip ahead to factions, events or special locations before the movement/s
 
 ---
 
-## 19. Base Camp Screen — Deferred Systems (post-MVP roadmap)
+## 19. Base Camp Screen — Current MVP Hub
 
 The full-screen base-camp screen (`UnityHexMapView/Assets/UI/BaseCampScreen.uxml` +
-`BaseCampScreenController.cs`) was built with six tabs. The **first increment** wired the tabs that
-map onto existing systems — **Team** (roster + rich person sheet + composition), **base actions**
-(heal / recruit / request-engineer / prepare-supplies / advance-time), **Aufbruch** (start the next
-expedition), and **Fraktionen / Archiv** (read-only). The four systems below are the tabs/features
-that were intentionally left as **non-functional layout placeholders**; record them here so they are
-not forgotten.
+`BaseCampScreenController.cs`) is now part of the MVP loop. It connects the returned expedition,
+archived knowledge, base preparation and the next expedition.
+
+The six tabs currently map to implemented or partially implemented systems: **Team** (roster + rich
+person sheet + composition), **base actions** (heal / recruit / request-engineer / prepare-supplies /
+advance-time), **Aufbruch** (selected team, unit stock, resources and readiness), **Basis ausbauen**
+(Knowledge Point upgrades), **Wissen auswerten** (evaluation queue) and **Fraktionen / Archiv**
+(planning information).
 
 Shared constraints: keep rules in `Game.Core`, actions as commands in `Game.App`, Unity only
 renders + sends commands; keep everything deterministic and add `tests/Game.Tests` coverage; treat
 costs/day-counts as tunable placeholders (game-feel, human-owned).
+
+Current update:
+
+The Base Camp screen is now part of the MVP hub, not only a deferred roadmap item. The screen wires
+Team, Aufbruch, Basis ausbauen, Wissen auswerten, Fraktionen and Archiv through Core/App state and
+commands. Remaining work is mostly readability, flow tuning, balancing and connecting more generated
+discoveries to archive/evaluation content.
+
+Current open work:
+
+- make returned / lost / replacement expedition outcomes fully legible in the Base Camp UI
+- connect generated discoveries and reports to evaluation/archive flows instead of relying mostly on
+  tutorial seed data
+- tune Knowledge Point income, action costs, upgrade costs, unit capacity and recovery timings
+- keep faction notes, archive and reports useful for planning the next expedition
+- decide which Base Camp controls are MVP-critical and hide or defer the rest
 
 ---
 
@@ -1761,14 +1779,13 @@ Example effects:
 - Kartentisch / Signalturm — better scout reports / +1 scout range
 - Vorratskeller / Räucherei — higher supply cap / slower spoilage
 
-Current state:
+Implemented:
 
-- the "Basis ausbauen" tab shows the mockup layout but does nothing.
+- `BaseUpgradeState` / `BaseUpgradesState` on `BaseState`.
+- `StartUpgradeCommand` spends Knowledge Points, checks prerequisites and marks upgrades built.
+- Some effects are observable already, such as stock growth and cheaper healing hooks.
+- Unity displays built / available / locked upgrade cards and sends the command.
 
-Suggested model additions:
-
-- `BaseUpgradeState` (id, category, cost, isBuilt, prerequisiteIds) held on `BaseState`
-- `StartUpgradeCommand` — spend KP, mark built, expose effect hooks other systems read
 
 Acceptance criteria:
 
@@ -1786,15 +1803,13 @@ Unsecured field discoveries enter an evaluation queue at the base; a limited num
 process items over base days into archived **Insights** plus Knowledge Points — replacing today's
 lump-sum securing of all unsecured knowledge on return.
 
-Current state:
+Implemented:
 
-- the "Wissen auswerten" tab shows the queue + insights layout but does nothing
-- `CompleteExpeditionCommand` currently converts unsecured knowledge to KP in a single lump
-
-Suggested model additions:
-
-- `EvaluationQueueState` (items with source, progress, eta) + evaluator capacity on `BaseState`
-- `AdvanceBaseTimeCommand` advances item progress; a completed item yields an archive Insight + KP
+- `EvaluationQueueState` / `EvaluationItemState` on `BaseState`.
+- `AdvanceBaseTimeCommand` advances queue progress with evaluator capacity.
+- `EvaluateKnowledgeItemCommand` converts ready items into typed archive insights plus Knowledge
+  Points.
+- Unity displays pending, in-progress, ready and evaluated items.
 
 Acceptance criteria:
 

@@ -508,6 +508,32 @@ New information:
 - Border markers near the ravine were renewed.
 ```
 
+### 12.1 Current Base Camp Screen
+
+The current prototype uses a separate full-screen UI Toolkit document for Base Camp. It opens when an
+expedition has returned to the base and sits above the map UI.
+
+Current tabs:
+
+- Team: roster pool, selected team, person detail, healing and base recruiting actions.
+- Aufbruch: selected core team, porter/soldier support units, rations, medicine, readiness preview
+  and start-next-expedition action.
+- Basis ausbauen: Knowledge Point upgrade cards with built, available and locked states.
+- Wissen auswerten: evaluation queue, progress, ready insights and evaluation action.
+- Fraktionen: current faction contact notes and attitude summary.
+- Archiv: typed archive entries with filters and search.
+
+UI rules for Base Camp:
+
+- It is a planning and memory screen, not a city-management dashboard.
+- It should make the next expedition easier to plan from what the previous expedition learned.
+- Base time must remain visible whenever actions consume days.
+- Important results should become archive/report entries instead of disappearing into transient UI.
+- Start-next-expedition readiness must be readable before departure: team size, carry capacity,
+  rations, medicine, defense and overload/slow-march warnings.
+- The screen may be visually richer than the map HUD, but it must stay fast to scan and must not
+  hide mandatory actions inside decorative panels.
+
 ---
 
 ## 13. UI Modes
@@ -643,7 +669,8 @@ This must not feel like admin work.
 
 ### UI-5: Event and Base Screens
 
-Create focused event modal and simple base screen.
+Create focused event modals and a readable Base Camp screen for return, archive, preparation and
+next-expedition setup.
 
 ### UI-6: Visual Identity Pass
 
