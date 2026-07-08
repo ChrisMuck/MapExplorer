@@ -905,6 +905,168 @@ The same information should not repeatedly grant full Knowledge.
 
 Knowledge sources should have stable IDs so the game can prevent farming repeated map movement, repeated scout reports or reselling the same information.
 
+### Findings and Analysis
+
+Findings are concrete things, traces, samples or records discovered by an expedition that are not
+fully understood in the field.
+
+They are the content backbone of the "Wissen auswerten" base tab.
+
+Important rule:
+
+> The base evaluation queue starts empty. Findings enter the queue only after the expedition discovers
+> something and brings back enough evidence, testimony, sketches or samples to study.
+
+Examples:
+
+- Fremde Saatkoerner
+- Unbekanntes Metall
+- Unbekannte Waffe
+- Bruchstueck einer Karte
+- Geschnitzte Grenzzeichen
+- Maskiertes Symbol
+- Versiegeltes Gefaess
+- Alte Lageraufzeichnungen
+- Verfaerbte Knochen
+- Fremde Medizin
+- Verbrannte Werkzeuge
+- Unbekannte Munition
+- Stein mit Warnritual
+- Wasserprobe aus einem verbotenen Bach
+
+Findings are not generic research tasks.
+
+Each finding should answer at least one player-facing question:
+
+- What is this?
+- Who made it?
+- Why is it here?
+- Is it dangerous?
+- Which faction cares about it?
+- Does it reveal a route, taboo, warning, technology, resource or history?
+- Does it make a previous report more reliable or less reliable?
+
+#### Finding Lifecycle
+
+1. Expedition discovers a finding in the field.
+2. The finding is added to the active expedition as unsecured evidence.
+3. If the expedition returns, the finding becomes a base analysis item.
+4. Analysis consumes base time.
+5. Analysis produces an explanation, archive entry and possible Knowledge Points.
+6. Some findings unlock map notes, faction dialogue, offers, warnings, routes or future events.
+7. If the expedition is lost, physical findings are lost unless a later expedition recovers them.
+
+Some findings may be only recorded instead of physically carried.
+
+Examples:
+
+- sketch of warning signs: can survive as a report if the scout returns
+- metal object: must be physically returned
+- overheard faction phrase: depends on witness survival
+- map fragment: can be damaged or lost
+
+#### MVP Finding Categories
+
+Use authored ranges. Exact values can be picked per item or deterministically within the range when
+the item is generated.
+
+| Category | Examples | Analysis Time | Knowledge Reward |
+|---|---|---:|---:|
+| Minor trace | carved marks, ash pattern, camp remains | 1-2 days | 1-3 Knowledge |
+| Plant or food sample | strange seeds, fungus, preserved grain | 2-4 days | 2-6 Knowledge |
+| Environmental sample | water, spores, animal remains, soil | 3-6 days | 3-8 Knowledge |
+| Map or written fragment | map shard, journal page, coded note | 1-4 days | 3-10 Knowledge |
+| Faction sign or object | warning post, grave token, banner, mask mark | 2-5 days | 4-12 Knowledge |
+| Technical object | unknown metal, broken device, unusual weapon | 4-8 days | 6-16 Knowledge |
+| Dangerous sample | corrupted matter, sealed residue, infected remains | 5-10 days | 8-20 Knowledge |
+| Major mystery object | sealed relic, key object, core symbol | 7-14 days | 15-35 Knowledge |
+| Lost expedition record | recovered journal, map case, last camp notes | 2-6 days | 5-18 Knowledge |
+
+MVP recommendation:
+
+- most early findings should use 1-5 days and 2-10 Knowledge
+- major findings should be rare and use 7-14 days and 15-35 Knowledge
+- do not overload the first expedition with too many findings; one or two meaningful items are
+  better than a full research queue
+
+#### Analysis Output
+
+Every completed analysis must produce a readable explanation.
+
+Bad result:
+
+```text
+4 Knowledge
+```
+
+Good result:
+
+```text
+Fremde Saatkoerner
+
+The seeds are not native to the coast. They germinate quickly in poor soil and were stored in waxed
+cloth, suggesting they were carried for planned travel rather than eaten locally. This may explain
+how inland groups survive long dry crossings.
+
+Effect:
+- Archive insight added
+- +4 Knowledge
+- New question: who cultivates these seeds?
+```
+
+Analysis should teach the player something about the world.
+
+#### Data-Driven Finding Definitions
+
+Findings should be authored in external JSON files so content can be expanded without changing code.
+
+Suggested file location:
+
+```text
+Assets/GameData/Findings/*.json
+```
+
+Suggested definition shape:
+
+```json
+{
+  "id": "finding-foreign-seeds",
+  "displayName": "Fremde Saatkoerner",
+  "category": "PlantSample",
+  "rarity": "Common",
+  "sourceTags": ["abandoned-camp", "coastal-route", "food"],
+  "minAnalysisDays": 2,
+  "maxAnalysisDays": 4,
+  "minKnowledgeReward": 2,
+  "maxKnowledgeReward": 6,
+  "requiresPhysicalReturn": true,
+  "requiredSpecialistRoles": ["Scholar"],
+  "relatedFactionIds": ["coastal-people"],
+  "relatedLocationKinds": ["AbandonedCamp"],
+  "fieldDescription": "Small dark seeds wrapped in waxed cloth.",
+  "analysisTitle": "A travel crop, not local food",
+  "analysisExplanation": "The seeds germinate quickly in poor soil and were packed for transport. Someone uses them to survive long inland crossings.",
+  "archiveKind": "Insight",
+  "unlocks": [
+    { "kind": "MapQuestion", "id": "who-cultivates-travel-crop" },
+    { "kind": "FactionTopic", "id": "ask-coastal-about-inland-crop" }
+  ],
+  "repeatPolicy": "OncePerSource"
+}
+```
+
+Rules:
+
+- `id` is stable and unique.
+- `sourceTags` let map generation place findings in appropriate contexts.
+- `minAnalysisDays` / `maxAnalysisDays` and `minKnowledgeReward` / `maxKnowledgeReward` define the
+  authored range.
+- the chosen actual values should be deterministic for a generated world seed.
+- `fieldDescription` is what the expedition can observe before analysis.
+- `analysisExplanation` is the player-facing payoff after analysis.
+- `unlocks` can point to map questions, faction topics, trade offers, warnings, routes or events.
+- `repeatPolicy` prevents farming.
+
 ---
 
 ## 11. Procedural World
@@ -2576,6 +2738,311 @@ Offers should create map pressure:
 
 This gives the MVP enough variety without requiring a large inventory, price simulation or full diplomacy economy.
 
+### 13P.10 Relationship-Dependent Faction Trade
+
+Faction relationships must influence trade.
+
+This applies to:
+
+- Supplies
+- Medicine
+- guides
+- access
+- safe passage
+- maps
+- rumors
+- warnings
+- specialist help
+- release of captured expedition members
+- information about special locations
+- information about other factions
+
+Core rule:
+
+> A faction relationship affects not only price, but also availability, quality, reliability and
+> conditions.
+
+A hostile faction should not behave like a normal shop with slightly higher prices.
+
+Depending on the situation, a hostile or distrustful faction may:
+
+- refuse trade
+- demand extreme prices
+- require a mediator
+- require an apology or favor first
+- offer only incomplete information
+- offer old or unreliable information
+- deliberately hide critical details
+- offer a trap
+- demand a non-Knowledge payment
+- confiscate or extort information
+- trade only through an intermediary
+
+#### Relationship Tiers
+
+For the MVP, use simple relationship tiers:
+
+```text
+Hostile
+Distrustful
+Neutral
+Friendly
+Trusted
+```
+
+Suggested initial price factors:
+
+```text
+Hostile:      no trade or x2.5
+Distrustful:  x1.5
+Neutral:      x1.0
+Friendly:     x0.8
+Trusted:      x0.6
+```
+
+Example:
+
+```text
+Base cost of information: 10 Knowledge
+
+Hostile:      unavailable or 25 Knowledge
+Distrustful:  15 Knowledge
+Neutral:      10 Knowledge
+Friendly:      8 Knowledge
+Trusted:       6 Knowledge
+```
+
+These values are placeholders and must be balanced through playtesting.
+
+#### Price Is Not The Only Difference
+
+Relationship should also affect:
+
+- whether the offer exists
+- how accurate the information is
+- how current it is
+- how detailed it is
+- whether sensitive information is included
+- whether a guide is offered
+- whether safe passage is included
+- whether the faction expects a favor
+- whether the information may be misleading
+- whether the player is allowed to ask certain questions
+
+Example:
+
+```text
+Neutral:
+Follow the eastern river.
+
+Friendly:
+Follow the eastern river until the three black stones. Avoid the southern ford after rain.
+
+Trusted:
+Follow the eastern river until the three black stones. A hidden path begins behind the fallen cedar.
+Our guide can take you there.
+
+Distrustful:
+Somewhere beyond the eastern forest there may be a crossing.
+
+Hostile:
+No offer, or an expensive and possibly misleading answer.
+```
+
+The UI must not reveal hidden deception directly.
+
+It may show:
+
+```text
+Reliability: Uncertain
+```
+
+It should not show:
+
+```text
+This faction is lying.
+```
+
+#### Trade Access By Relationship
+
+Some offers require minimum relationship tiers.
+
+Example:
+
+```text
+Neutral:
+- Supplies
+- common rumors
+- known public roads
+- basic trade
+
+Friendly:
+- safe crossings
+- local guides
+- danger warnings
+- basic medical help
+- more reliable maps
+
+Trusted:
+- secret paths
+- sensitive borders
+- faction taboos
+- leader access
+- information about sealed places
+- help rescuing a scout
+- exclusive specialists
+```
+
+A good relationship should create more than a discount.
+
+It should open new possibilities.
+
+#### Trust, Anger And Fear
+
+Faction trade is influenced by the internal faction values:
+
+```text
+Trust
+Anger
+Fear
+```
+
+High Trust may cause:
+
+- lower Knowledge cost
+- more reliable information
+- better detail
+- sensitive offers
+- guides
+- credit or delayed payment
+- willingness to help with rescue
+- willingness to believe expedition reports
+
+High Anger may cause:
+
+- higher Knowledge cost
+- trade refusal
+- blocked topics
+- demand for apology
+- demand for compensation
+- hostile conditions
+- limited access
+
+Fear is different from trust.
+
+High Fear may cause short-term concessions:
+
+- lower price temporarily
+- information given under pressure
+- passage offered to make the expedition leave
+- release of a prisoner
+
+But it may also cause long-term risk:
+
+- false information
+- hidden resentment
+- future revenge
+- warnings to other factions
+- blocked routes
+- ambushes
+- increased hostility later
+
+Fear should never be equivalent to friendship.
+
+#### Topic-Specific Restrictions
+
+A faction may trade normally but still refuse a specific topic.
+
+Example:
+
+> We trade with you. But we will not speak about the sealed gate.
+
+Important memories and taboos should influence topic access.
+
+Examples:
+
+- the player respected a warning
+- the player opened a grave
+- the player returned a body
+- the player entered forbidden territory
+- the player shared dangerous knowledge
+- the player lied
+- the player broke a promise
+- the player helped a village
+
+A global relationship tier should not override every specific memory.
+
+#### Sharing Knowledge With Factions
+
+The player may also share knowledge with factions.
+
+Relationship affects how much value the faction gives in return.
+
+A friendly faction may:
+
+- believe the information
+- pay more
+- act on warnings
+- improve trust
+- offer future help
+
+A distrustful faction may:
+
+- demand proof
+- pay less
+- refuse uncertain reports
+- accept only confirmed information
+
+A hostile faction may:
+
+- refuse to buy
+- confiscate information
+- demand it as a condition
+- claim it already knows
+- use the information against the expedition
+
+Knowledge sources must have stable IDs so the same information cannot be sold repeatedly for unlimited
+profit.
+
+#### Data-Driven Faction Offers
+
+Faction offers should also be authored as data.
+
+Suggested file location:
+
+```text
+Assets/GameData/FactionOffers/*.json
+```
+
+Suggested definition shape:
+
+```json
+{
+  "id": "offer-border-warden-safe-pass",
+  "factionId": "border-wardens",
+  "displayName": "Guarded pass through the ridge",
+  "type": "SafePassage",
+  "baseKnowledgeCost": 12,
+  "minimumRelationshipTier": "Neutral",
+  "minimumTrust": 10,
+  "maximumAnger": 40,
+  "allowFearBasedAccess": false,
+  "baseInformationQuality": "Reliable",
+  "requiredMemoryFlags": ["respected-border-warning"],
+  "blockingMemoryFlags": ["opened-marked-grave"],
+  "relatedLocationId": "ridge-pass-east",
+  "resultText": "The wardens mark a narrow pass and warn that the southern trail is watched."
+}
+```
+
+For the MVP, keep the cost formula simple:
+
+```text
+Final Cost = Base Cost x Relationship Factor
+```
+
+Sensitive information should use access requirements rather than a complex extra formula.
+
 
 ---
 
@@ -3703,6 +4170,10 @@ The "Wissen auswerten" tab should start empty at the beginning of a new game. An
 only after the expedition finds something in the world and returns it, reports it or preserves enough
 evidence for the base to study it.
 
+This is the Base Camp presentation of the Findings system defined in the Knowledge Economy section.
+The field discovery is exciting because it is concrete; the base analysis is exciting because it
+explains what the discovery means.
+
 Examples of analysis-worthy finds:
 
 - Fremde Saatkörner
@@ -3724,6 +4195,7 @@ Design rules:
 - Analysis results create archived insights and may award Knowledge Points, reveal safer routes,
   unlock faction dialogue, unlock offers or clarify special-location risks.
 - The player should understand why an item is analyzable; it should not appear as abstract research.
+- The UI should show the field description before analysis and the explanation after analysis.
 
 ### 16A.2 Base Time
 
