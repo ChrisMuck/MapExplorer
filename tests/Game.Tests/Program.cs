@@ -1458,6 +1458,7 @@ internal sealed class LocationInteractionFrameworkTests
     public void RunAll()
     {
         TutorialBridgeIsImmediateEdgeLocation();
+        TutorialBridgeTileIsMovableFromBase();
         BridgeActionsComeFromArchetypeAndModifiers();
         RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
         RebuildBridgeIsGenericLockedProject();
@@ -1474,6 +1475,20 @@ internal sealed class LocationInteractionFrameworkTests
         AssertEqual(game.Base.Location, bridge.Anchor.Coords[0], "Bridge edge starts at base");
         AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[1], "Bridge edge ends at first field");
         AssertEqual("broken-ravine", game.World.Map.GetTile(new HexCoord(2, 15)).LocationId, "First field points to bridge location");
+    }
+
+    private static void TutorialBridgeTileIsMovableFromBase()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+
+        var move = app.MoveExpedition(game, new HexCoord(2, 15));
+        var interaction = app.GetLocationInteraction(game, "broken-ravine");
+
+        AssertTrue(move.Success, "Expedition can move from base to bridge field");
+        AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Expedition reaches bridge test field");
+        AssertTrue(interaction.Success, "Bridge interaction is available after arrival");
+        AssertTrue(interaction.Interaction != null && interaction.Interaction.Options.Count > 0, "Bridge interaction has actions after arrival");
     }
 
     private static void BridgeActionsComeFromArchetypeAndModifiers()
