@@ -2617,84 +2617,529 @@ Location history should support readable archive and journal summaries.
 
 ---
 
-## 17. Authored Definition Example
+## 17. JSON Authoring Contract
 
-The exact storage format is an implementation decision. The following shape is illustrative.
+Location content is authored as JSON data and loaded into generic registries. Gameplay code must not know whether a concrete entry is a broken bridge, a grave, a shrine or a campfire. It only reads stable IDs, declarative requirements, costs, risk profiles, outcome tables, effects and presentation fields.
 
-### 17.1 Broken Bridge Instance
+### 17.1 Loader Rules
+
+The loader scans the configured game-data folders, reads every JSON document with a supported `documentType`, validates references, then merges the definitions into registries by stable ID.
+
+Recommended MVP folder layout:
+
+```text
+UnityHexMapView/Assets/GameData/Locations/Archetypes/*.json
+UnityHexMapView/Assets/GameData/Locations/Variants/*.json
+UnityHexMapView/Assets/GameData/Locations/Modifiers/*.json
+UnityHexMapView/Assets/GameData/Locations/Actions/*.json
+UnityHexMapView/Assets/GameData/Locations/OutcomeTables/*.json
+UnityHexMapView/Assets/GameData/Locations/ContentProfiles/*.json
+UnityHexMapView/Assets/GameData/Locations/Instances/*.json
+```
+
+This folder layout is a convention for humans, not a gameplay rule. The code keys off `documentType` and IDs, not filenames or concrete variant names.
+
+Each document uses this envelope:
 
 ```json
 {
-  "id": "loc-old-trade-road-bridge",
+  "documentType": "location-actions",
   "schemaVersion": 1,
-  "archetypeId": "route-obstacle",
-  "variantId": "broken-bridge",
-  "anchor": {
-    "kind": "Edge",
-    "hexA": [25, 21],
-    "hexB": [26, 20]
-  },
-  "modifierIds": [
-    "modifier-repairable",
-    "modifier-unstable",
-    "modifier-watched"
-  ],
-  "contentProfileId": "content-old-trade-road-bridge",
-  "initialState": {
-    "knowledge": "Unknown",
-    "interaction": "Untouched",
-    "operational": "Blocked",
-    "presence": "Unknown"
-  },
-  "actionTemplateIds": [
-    "action-observe",
-    "action-assess-crossing",
-    "action-find-bypass",
-    "action-send-scout-around",
-    "action-attempt-crossing",
-    "action-rebuild-bridge",
-    "action-mark",
-    "action-leave"
+  "contentVersion": 1,
+  "items": []
+}
+```
+
+Supported `documentType` values:
+
+```text
+location-archetypes
+location-variants
+location-modifiers
+location-actions
+location-outcome-tables
+location-content-profiles
+location-instances
+```
+
+Rules:
+
+- `schemaVersion` controls parser compatibility.
+- `contentVersion` controls balancing/text/content iteration and does not by itself require save migration.
+- `id` values are globally stable within their registry.
+- References are by ID only.
+- Runtime saves store IDs, state and resolved history, not duplicated definitions.
+- Unknown IDs fail validation in editor/tests and fail gracefully at runtime with placeholder text rather than corrupting state.
+
+### 17.2 Archetype Documents
+
+Archetypes define the default interaction pattern and default action library.
+
+```json
+{
+  "documentType": "location-archetypes",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "route-obstacle",
+      "label": "Route Obstacle",
+      "defaultActionIds": [
+        "action-assess-crossing",
+        "action-find-bypass",
+        "action-construct-temporary-passage",
+        "action-attempt-crossing",
+        "action-mark",
+        "action-leave"
+      ],
+      "allowedAnchorKinds": ["Point", "Edge", "Area"],
+      "presentation": {
+        "categoryLabel": "FUNDSTELLE",
+        "icon": "route-obstacle"
+      }
+    }
   ]
 }
 ```
 
-### 17.2 Marked Grave Instance
+### 17.3 Variant Documents
+
+Variants define what the location appears to be. They may add or remove action IDs, but they do not create bespoke code paths.
 
 ```json
 {
-  "id": "loc-warden-marked-grave",
+  "documentType": "location-variants",
   "schemaVersion": 1,
-  "archetypeId": "investigation-site",
-  "variantId": "marked-grave",
-  "anchor": {
-    "kind": "Point",
-    "hex": [18, 23]
-  },
-  "modifierIds": [
-    "modifier-sacred",
-    "modifier-faction-owned",
-    "modifier-searchable"
-  ],
-  "factionIds": [
-    "border-wardens"
-  ],
-  "contentProfileId": "content-warden-grave-warning",
-  "initialState": {
-    "knowledge": "Unknown",
-    "interaction": "Untouched",
-    "operational": "Closed",
-    "presence": "Empty"
-  },
-  "actionTemplateIds": [
-    "action-observe",
-    "action-inspect",
-    "action-document",
-    "action-investigate",
-    "action-leave-offering",
-    "action-disturb",
-    "action-mark",
-    "action-leave"
+  "items": [
+    {
+      "id": "broken-bridge",
+      "archetypeId": "route-obstacle",
+      "label": "Zerstoerte Bruecke",
+      "subtitle": "Streckenhindernis",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": [
+        "modifier-repairable",
+        "modifier-unstable",
+        "modifier-watched"
+      ],
+      "defaultContentProfileId": "content-old-trade-road-bridge",
+      "presentation": {
+        "icon": "broken-bridge",
+        "imageId": "placeholder-bridge"
+      }
+    }
+  ]
+}
+```
+
+### 17.4 Modifier Documents
+
+Modifiers alter reusable behavior: actions, requirements, costs, risk, effects or presentation hints. A modifier can be dormant when its `appliesWhen` condition is not met.
+
+```json
+{
+  "documentType": "location-modifiers",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "modifier-unstable",
+      "label": "Instabil",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "appliesWhen": {
+        "operationalStateAny": ["Blocked", "RiskyPassage"]
+      },
+      "riskAdjustments": [
+        {
+          "actionId": "action-attempt-crossing",
+          "scoreDelta": 15
+        },
+        {
+          "actionId": "action-rebuild-bridge",
+          "scoreDelta": 15
+        }
+      ],
+      "presentation": {
+        "chipTone": "warning"
+      }
+    }
+  ]
+}
+```
+
+### 17.5 Action Documents
+
+Actions are reusable operations. The UI must be able to render any action from this shape without special-case code.
+
+```json
+{
+  "documentType": "location-actions",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "action-attempt-crossing",
+      "label": "Bruecke ueberqueren",
+      "description": "Die Truemmer oder die provisorische Querung nutzen und die andere Seite erreichen.",
+      "family": "Traverse",
+      "visibility": {
+        "default": "visible"
+      },
+      "hardRequirements": [
+        {
+          "kind": "PositionOnOrAdjacent",
+          "unmetReason": "Die Expedition muss am Ort oder angrenzend sein."
+        }
+      ],
+      "costs": [
+        {
+          "kind": "MovementPoints",
+          "amount": 1,
+          "timing": "onCommit"
+        }
+      ],
+      "duration": {
+        "kind": "Immediate"
+      },
+      "riskProfile": {
+        "baseRisk": 45,
+        "baseRiskByOperationalState": {
+          "Blocked": 45,
+          "RiskyPassage": 20,
+          "Repaired": 5
+        },
+        "confidence": "Assessed",
+        "bandThresholds": "default"
+      },
+      "outcomeTableId": "outcome-route-obstacle-attempt-crossing",
+      "repeatPolicy": "RepeatableWithCost",
+      "presentation": {
+        "icon": "crossing",
+        "primaryButtonLabel": "Aktion durchfuehren"
+      }
+    }
+  ]
+}
+```
+
+Cost objects use this common shape:
+
+```json
+{
+  "kind": "Supplies",
+  "amount": 1,
+  "timing": "onCommit",
+  "optional": false,
+  "failureBehavior": "rejectIfCannotPay"
+}
+```
+
+Initial cost kinds:
+
+```text
+MovementPoints
+FieldDay
+ProjectDay
+Supplies
+Medicine
+Morale
+Capacity
+EquipmentDurability
+TradeGoods
+FactionGoodwill
+MemberRisk
+```
+
+### 17.6 Outcome Table Documents
+
+Outcome tables define weighted outcomes per risk band and the effects for each tier. The resolver consumes the table generically; the content profile supplies concrete text, clues and presentation where referenced.
+
+```json
+{
+  "documentType": "location-outcome-tables",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "outcome-route-obstacle-attempt-crossing",
+      "appliesTo": {
+        "archetypeId": "route-obstacle",
+        "actionId": "action-attempt-crossing"
+      },
+      "tiers": {
+        "Low": [
+          { "tier": "MajorSuccess", "weight": 20 },
+          { "tier": "Success", "weight": 55 },
+          { "tier": "SuccessWithCost", "weight": 15 },
+          { "tier": "PartialResult", "weight": 8 },
+          { "tier": "Failure", "weight": 2 },
+          { "tier": "SevereFailure", "weight": 0 }
+        ],
+        "Moderate": [
+          { "tier": "MajorSuccess", "weight": 15 },
+          { "tier": "Success", "weight": 45 },
+          { "tier": "SuccessWithCost", "weight": 20 },
+          { "tier": "PartialResult", "weight": 10 },
+          { "tier": "Failure", "weight": 8 },
+          { "tier": "SevereFailure", "weight": 2 }
+        ],
+        "High": [
+          { "tier": "MajorSuccess", "weight": 5 },
+          { "tier": "Success", "weight": 25 },
+          { "tier": "SuccessWithCost", "weight": 25 },
+          { "tier": "PartialResult", "weight": 20 },
+          { "tier": "Failure", "weight": 15 },
+          { "tier": "SevereFailure", "weight": 10 }
+        ],
+        "Extreme": [
+          { "tier": "MajorSuccess", "weight": 0 },
+          { "tier": "Success", "weight": 15 },
+          { "tier": "SuccessWithCost", "weight": 20 },
+          { "tier": "PartialResult", "weight": 20 },
+          { "tier": "Failure", "weight": 25 },
+          { "tier": "SevereFailure", "weight": 20 }
+        ]
+      },
+      "effectBundles": {
+        "MajorSuccess": [
+          {
+            "kind": "AddUnsecuredKnowledge",
+            "amount": 2,
+            "text": "Die Expedition bestaetigt eine nutzbare Route ueber die Schlucht."
+          }
+        ],
+        "Success": [
+          {
+            "kind": "AddUnsecuredKnowledge",
+            "amount": 1,
+            "text": "Die Expedition erreicht die andere Seite."
+          }
+        ],
+        "SuccessWithCost": [
+          {
+            "kind": "ConsumeSupplies",
+            "amount": 1,
+            "text": "Beim Uebergang geht Ausruestung verloren."
+          },
+          {
+            "kind": "ChangeMorale",
+            "amount": -1,
+            "text": "Der Uebergang belastet die Gruppe."
+          }
+        ],
+        "PartialResult": [
+          {
+            "kind": "ConsumeSupplies",
+            "amount": 1,
+            "text": "Die Expedition muss umkehren und verliert Material."
+          }
+        ],
+        "Failure": [
+          {
+            "kind": "ChangeMorale",
+            "amount": -1,
+            "text": "Der Versuch scheitert und erschuettert die Gruppe."
+          }
+        ],
+        "SevereFailure": [
+          {
+            "kind": "InjureMember",
+            "selection": "randomActiveMember",
+            "severity": "Wounded",
+            "text": "Ein Expeditionsmitglied stuerzt bei der Querung."
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Outcome tier IDs are fixed vocabulary:
+
+```text
+MajorSuccess
+Success
+SuccessWithCost
+PartialResult
+Failure
+SevereFailure
+```
+
+An outcome table may omit tiers that are impossible for an action, but every weighted tier must have a matching effect bundle. Zero-weight tiers may be omitted from `effectBundles`.
+
+### 17.7 Content Profile Documents
+
+Content profiles provide authored text, clues, findings, image references and flavor slots. They must not redefine gameplay rules.
+
+```json
+{
+  "documentType": "location-content-profiles",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "content-old-trade-road-bridge",
+      "title": "Zerstoerte Bruecke",
+      "shortDescription": "Die alte Handelsbruecke ist eingestuerzt.",
+      "description": "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
+      "flavorByState": {
+        "Blocked": "Die Schlucht trennt die alte Handelsroute.",
+        "RiskyPassage": "Ein provisorischer Uebergang haengt ueber der Schlucht.",
+        "Repaired": "Die Bruecke ist wieder passierbar."
+      },
+      "imageId": "placeholder-bridge",
+      "journalText": {
+        "discovered": "Eine zerstoerte Bruecke blockiert die Route.",
+        "resolved": "Die Bruecke wurde als Routenproblem dokumentiert."
+      }
+    }
+  ]
+}
+```
+
+### 17.8 Instance Documents
+
+Instances place authored or generated locations into a world. They reference definitions and store initial runtime state only.
+
+```json
+{
+  "documentType": "location-instances",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "loc-old-trade-road-bridge",
+      "archetypeId": "route-obstacle",
+      "variantId": "broken-bridge",
+      "anchor": {
+        "kind": "Edge",
+        "hexes": [[25, 21], [26, 20]]
+      },
+      "modifierIds": [
+        "modifier-repairable",
+        "modifier-unstable",
+        "modifier-watched"
+      ],
+      "factionIds": ["border-wardens"],
+      "contentProfileId": "content-old-trade-road-bridge",
+      "initialState": {
+        "knowledge": "Unknown",
+        "interaction": "Untouched",
+        "operational": "Blocked",
+        "presence": "Unknown"
+      },
+      "generationTags": [
+        "old-road",
+        "river-crossing"
+      ]
+    }
+  ]
+}
+```
+
+Anchor shapes:
+
+```json
+[
+  { "kind": "Point", "hexes": [[18, 23]] },
+  { "kind": "Edge", "hexes": [[25, 21], [26, 20]] },
+  { "kind": "Area", "hexes": [[10, 12], [10, 13], [11, 12]] },
+  { "kind": "Path", "hexes": [[10, 12], [11, 12], [12, 13]] }
+]
+```
+
+### 17.9 UI Binding Contract
+
+The location interaction screen binds to the resolved interaction model, not raw JSON and not variant-specific code.
+
+The model exposed to UI must contain:
+
+- location title, subtitle, icon/image and flavor text from Content Profile + Variant presentation
+- anchor text derived from the generic anchor
+- state chips derived from state channels
+- modifier chips derived from active or dormant modifier definitions
+- action rows derived from resolved available/locked action definitions
+- cost summary derived from `costs`
+- risk band and confidence derived from `riskProfile`
+- selected action detail from the action definition
+- result view from the resolved outcome tier and effect bundle text
+- project view from active project state and project-related effects
+
+If a new JSON action is authored using existing requirement, cost, risk, outcome and effect kinds, the screen must render it without code changes.
+
+### 17.10 MVP Minimum
+
+For the first playable implementation, the JSON loader only needs to support:
+
+- `location-actions`
+- `location-outcome-tables`
+- `location-content-profiles`
+- `location-instances`
+- the currently implemented archetypes, variants and modifiers
+- the currently implemented requirement, cost and effect kinds
+
+Hardcoded fallback definitions are acceptable during migration, but JSON definitions are authoritative when present. The long-term target is that adding a new concrete location requires JSON only unless it introduces a genuinely new requirement, cost or effect kind.
+
+### 17.11 Broken Bridge Instance Example
+
+```json
+{
+  "documentType": "location-instances",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "loc-old-trade-road-bridge",
+      "archetypeId": "route-obstacle",
+      "variantId": "broken-bridge",
+      "anchor": {
+        "kind": "Edge",
+        "hexes": [[25, 21], [26, 20]]
+      },
+      "modifierIds": [
+        "modifier-repairable",
+        "modifier-unstable",
+        "modifier-watched"
+      ],
+      "contentProfileId": "content-old-trade-road-bridge",
+      "initialState": {
+        "knowledge": "Unknown",
+        "interaction": "Untouched",
+        "operational": "Blocked",
+        "presence": "Unknown"
+      }
+    }
+  ]
+}
+```
+
+### 17.12 Marked Grave Instance Example
+
+```json
+{
+  "documentType": "location-instances",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "loc-warden-marked-grave",
+      "archetypeId": "investigation-site",
+      "variantId": "marked-grave",
+      "anchor": {
+        "kind": "Point",
+        "hexes": [[18, 23]]
+      },
+      "modifierIds": [
+        "modifier-sacred",
+        "modifier-faction-owned",
+        "modifier-searchable"
+      ],
+      "factionIds": [
+        "border-wardens"
+      ],
+      "contentProfileId": "content-warden-grave-warning",
+      "initialState": {
+        "knowledge": "Unknown",
+        "interaction": "Untouched",
+        "operational": "Closed",
+        "presence": "Empty"
+      }
+    }
   ]
 }
 ```
@@ -2839,12 +3284,21 @@ A generated significant location should:
 Automated validation should report:
 
 - duplicate or missing IDs
+- unsupported `documentType` values
+- missing or unsupported `schemaVersion`
+- malformed JSON document envelopes
+- duplicate IDs across files in the same registry
 - missing archetype, variant, modifier or action references
+- missing outcome table, content profile or effect bundle references
 - unsupported anchor types
 - invalid state values
 - invalid state transitions
+- unsupported requirement, cost or effect kinds
 - actions with impossible requirements
+- actions with costs that cannot be paid and no declared failure behavior
 - outcome tables with no valid outcome
+- weighted outcome tiers with no matching effect bundle
+- outcome table weights that are all zero for a reachable risk band
 - unknown effects
 - missing content text
 - rewarding actions without repeat policies
@@ -3432,54 +3886,40 @@ falseInterpretations:
 
 ### 25.6 Instance Definition (JSON)
 
-This extends the original example already sketched in Section 17.1 with the concrete action set and state model defined above.
+This uses the JSON Authoring Contract from Section 17. The concrete action set, costs, risk profiles and outcome tables are registry definitions; the instance only places this bridge into the world and declares its initial runtime state.
 
 ```json
 {
-  "id": "loc-old-trade-road-bridge",
+  "documentType": "location-instances",
   "schemaVersion": 1,
-  "archetypeId": "route-obstacle",
-  "variantId": "broken-bridge",
-  "anchor": {
-    "kind": "Edge",
-    "hexA": [18, 22],
-    "hexB": [19, 22]
-  },
-  "modifierIds": [
-    "modifier-repairable",
-    "modifier-unstable",
-    "modifier-watched"
-  ],
-  "factionIds": ["border-wardens"],
-  "contentProfileId": "content-old-trade-road-bridge",
-  "initialState": {
-    "knowledge": "Unknown",
-    "interaction": "Untouched",
-    "operational": "Blocked",
-    "presence": "Unknown"
-  },
-  "actionTemplateIds": [
-    "action-observe",
-    "action-assess-crossing",
-    "action-find-bypass",
-    "action-send-scout-around",
-    "action-construct-temporary-passage",
-    "action-attempt-crossing",
-    "action-rebuild-bridge",
-    "action-mark",
-    "action-leave"
-  ],
-  "riskProfileOverrides": {
-    "action-assess-crossing":               { "bandThresholds": "default" },
-    "action-find-bypass":                   { "bandThresholds": "default" },
-    "action-construct-temporary-passage":   { "bandThresholds": "default" },
-    "action-attempt-crossing":              { "bandThresholds": "default" },
-    "action-rebuild-bridge":                { "bandThresholds": "default" }
-  }
+  "items": [
+    {
+      "id": "loc-old-trade-road-bridge",
+      "archetypeId": "route-obstacle",
+      "variantId": "broken-bridge",
+      "anchor": {
+        "kind": "Edge",
+        "hexes": [[18, 22], [19, 22]]
+      },
+      "modifierIds": [
+        "modifier-repairable",
+        "modifier-unstable",
+        "modifier-watched"
+      ],
+      "factionIds": ["border-wardens"],
+      "contentProfileId": "content-old-trade-road-bridge",
+      "initialState": {
+        "knowledge": "Unknown",
+        "interaction": "Untouched",
+        "operational": "Blocked",
+        "presence": "Unknown"
+      }
+    }
+  ]
 }
 ```
 
-No field here duplicates the authored definitions — the instance stores only anchor, active modifiers, faction link, content reference, current state and action set, exactly as prescribed in Section 3.2 (Definition Data Is Separate From Runtime State).
+No field here duplicates the authored definitions. The instance stores only anchor, active modifiers, faction link, content reference and initial state, exactly as prescribed in Section 3.2 (Definition Data Is Separate From Runtime State). Actions, costs, risk profiles and outcome tables are loaded from the definition registries described in Section 17.
 
 ---
 
@@ -3545,4 +3985,3 @@ This section records what changed in this document as a result of simulating all
 
 - Simulating Territorial Marker confirmed the need for Section 9.4B (Social Risk) rather than surfacing an independent problem — `FollowInstruction`/`CrossBoundary` face the same social-stakes-not-physical-danger issue as Contact Site's actions.
 - A moving anchor for `Dynamic Situation` variants like a faction patrol was considered and is not a new gap — Path Anchors are already acknowledged as deferred (Section 4.4). Since Dynamic Situation is deferred past the Vertical Slice entirely (Section 21), this doesn't need resolving yet.
-

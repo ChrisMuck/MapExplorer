@@ -39,15 +39,22 @@ public sealed class LocationInteractionOption
 
 public sealed class LocationInteractionModel
 {
-    public LocationInteractionModel(SpecialLocationState location, IEnumerable<LocationInteractionOption> options)
+    public LocationInteractionModel(
+        SpecialLocationState location,
+        IEnumerable<LocationInteractionOption> options,
+        LocationContentProfileDefinition? contentProfile = null)
     {
         Location = location ?? throw new ArgumentNullException(nameof(location));
         Options = new List<LocationInteractionOption>(options ?? throw new ArgumentNullException(nameof(options)));
+        ContentProfile = contentProfile;
     }
 
     public SpecialLocationState Location { get; }
 
     public IReadOnlyList<LocationInteractionOption> Options { get; }
+
+    /// <summary>Authored presentation for this location, or null when no content profile is set.</summary>
+    public LocationContentProfileDefinition? ContentProfile { get; }
 
     public LocationInteractionOption? FindOption(string actionId)
     {
@@ -66,13 +73,72 @@ public sealed class LocationInteractionModel
 public sealed class LocationInteractionService
 {
     private readonly LocationInteractionDefinitionSet definitions;
+    private readonly Random rng;
 
-    public LocationInteractionService(LocationInteractionDefinitionSet definitions)
+    public LocationInteractionService(LocationInteractionDefinitionSet definitions, Random? rng = null)
     {
         this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+        this.rng = rng ?? new Random();
     }
 
-    public LocationInteractionModel BuildInteraction(SpecialLocationState location, ExpeditionState expedition)
+    public LocationInteractionDefinitionSet Definitions => definitions;
+
+    /// <summary>
+    /// Resolves an action's outcome table for the given risk band into a concrete tier + effect bundle
+    /// (concept Section 17.6). Returns null when the action has no outcome table (e.g. project actions).
+    /// A forced tier bypasses the weighted roll for deterministic tests.
+    /// </summary>
+    public LocationOutcomeResolution? ResolveOutcome(
+        LocationActionDefinition action,
+        LocationRiskBand band,
+        LocationOutcomeTier? forcedTier = null)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException(nameof(action));
+        }
+
+        var table = definitions.FindOutcomeTable(action.OutcomeTableId);
+        if (table == null)
+        {
+            return null;
+        }
+
+        var tier = forcedTier ?? RollTier(table.WeightsForBand(band));
+        return new LocationOutcomeResolution(tier, table.EffectsForTier(tier));
+    }
+
+    private LocationOutcomeTier RollTier(IReadOnlyList<LocationOutcomeTierWeight> weights)
+    {
+        var total = 0;
+        foreach (var weight in weights)
+        {
+            total += weight.Weight;
+        }
+
+        if (total <= 0)
+        {
+            return weights.Count > 0 ? weights[0].Tier : LocationOutcomeTier.Success;
+        }
+
+        var roll = rng.Next(total);
+        var accumulated = 0;
+        foreach (var weight in weights)
+        {
+            accumulated += weight.Weight;
+            if (roll < accumulated)
+            {
+                return weight.Tier;
+            }
+        }
+
+        return weights[weights.Count - 1].Tier;
+    }
+
+    public LocationInteractionModel BuildInteraction(
+        SpecialLocationState location,
+        ExpeditionState expedition,
+        IReadOnlyList<FactionState>? linkedFactions = null)
     {
         if (location == null)
         {
@@ -84,14 +150,15 @@ public sealed class LocationInteractionService
             throw new ArgumentNullException(nameof(expedition));
         }
 
+        var contentProfile = definitions.FindContentProfile(location.ContentProfileId);
         if (string.IsNullOrWhiteSpace(location.ArchetypeId))
         {
-            return new LocationInteractionModel(location, Enumerable.Empty<LocationInteractionOption>());
+            return new LocationInteractionModel(location, Enumerable.Empty<LocationInteractionOption>(), contentProfile);
         }
 
         if (!definitions.Archetypes.TryGetValue(location.ArchetypeId, out var archetype))
         {
-            return new LocationInteractionModel(location, Enumerable.Empty<LocationInteractionOption>());
+            return new LocationInteractionModel(location, Enumerable.Empty<LocationInteractionOption>(), contentProfile);
         }
 
         var activeModifiers = ActiveModifiers(location).ToList();
@@ -105,8 +172,11 @@ public sealed class LocationInteractionService
                 continue;
             }
 
-            var lockedReason = FirstUnmetRequirement(action, location, expedition, activeModifiers);
-            var rawRisk = CalculateRawRisk(action, location, activeModifiers);
+            // Repeat policy (§7.6): an exhausted action is shown but locked, not farmed.
+            var lockedReason = IsRepeatExhausted(action, location)
+                ? "Bereits durchgefuehrt."
+                : FirstUnmetRequirement(action, location, expedition, activeModifiers);
+            var rawRisk = CalculateRawRisk(action, location, activeModifiers, linkedFactions);
             options.Add(new LocationInteractionOption(
                 action,
                 string.IsNullOrWhiteSpace(lockedReason),
@@ -116,7 +186,27 @@ public sealed class LocationInteractionService
                 action.RiskProfile.Confidence));
         }
 
-        return new LocationInteractionModel(location, options);
+        return new LocationInteractionModel(location, options, contentProfile);
+    }
+
+    /// <summary>Repeat-policy key for consumed-action tracking (§7.6).</summary>
+    public static string RepeatKey(LocationActionDefinition action, SpecialLocationState location)
+    {
+        return action.RepeatPolicy == LocationActionRepeatPolicy.OncePerState
+            ? $"{action.Id}@{location.OperationalStateId}"
+            : action.Id;
+    }
+
+    private static bool IsRepeatExhausted(LocationActionDefinition action, SpecialLocationState location)
+    {
+        switch (action.RepeatPolicy)
+        {
+            case LocationActionRepeatPolicy.OncePerLocation:
+            case LocationActionRepeatPolicy.OncePerState:
+                return location.HasResolvedAction(RepeatKey(action, location));
+            default:
+                return false;
+        }
     }
 
     public IReadOnlyList<LocationModifierDefinition> ActiveModifiers(SpecialLocationState location)
@@ -236,7 +326,8 @@ public sealed class LocationInteractionService
     private static int CalculateRawRisk(
         LocationActionDefinition action,
         SpecialLocationState location,
-        IReadOnlyList<LocationModifierDefinition> activeModifiers)
+        IReadOnlyList<LocationModifierDefinition> activeModifiers,
+        IReadOnlyList<FactionState>? linkedFactions)
     {
         var risk = action.RiskProfile.BaseRisk;
         if (action.RiskProfile.BaseRiskByOperationalStateId.TryGetValue(location.OperationalStateId, out var stateRisk))
@@ -252,8 +343,49 @@ public sealed class LocationInteractionService
             }
         }
 
+        // Social risk (§9.4B): faction attitude drives risk for social actions rather than danger.
+        if (action.SocialRisk && linkedFactions != null)
+        {
+            foreach (var faction in linkedFactions)
+            {
+                risk += Round(faction.Anger, 4) + Round(faction.Fear, 4) - Round(faction.Trust, 4);
+            }
+        }
+
         return Math.Max(0, risk);
     }
+
+    private static int Round(int value, int divisor)
+    {
+        return (int)Math.Round(value / (double)divisor, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>
+    /// Recovery Check (§9.9): when a member-ending effect would apply on a bad outcome, a softer roll
+    /// decides whether the member is spared. A present Medic improves the odds; forced value for tests.
+    /// </summary>
+    public LocationRecoveryOutcome RollRecovery(bool improved, LocationRecoveryOutcome? forced = null)
+    {
+        if (forced.HasValue)
+        {
+            return forced.Value;
+        }
+
+        var preservedChance = BaseRecoveryChance + (improved ? RecoveryImprovementBonus : 0);
+        var roll = rng.Next(100);
+        if (roll < preservedChance)
+        {
+            return LocationRecoveryOutcome.Preserved;
+        }
+
+        return roll < preservedChance + PartialRecoveryBand
+            ? LocationRecoveryOutcome.PartiallyPreserved
+            : LocationRecoveryOutcome.Lost;
+    }
+
+    private const int BaseRecoveryChance = 35;
+    private const int RecoveryImprovementBonus = 25;
+    private const int PartialRecoveryBand = 30;
 
     private static LocationRiskBand ToBand(int rawRisk)
     {

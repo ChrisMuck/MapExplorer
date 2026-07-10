@@ -8,6 +8,9 @@ namespace Game.Core
 public sealed class SpecialLocationState
 {
     private readonly List<string> modifierIds = new();
+    private readonly List<string> factionIds = new();
+    private readonly HashSet<string> resolvedActionKeys = new();
+    private readonly HashSet<string> flags = new();
 
     public SpecialLocationState(string id, LocationKind kind, HexCoord coord, string name)
         : this(
@@ -38,7 +41,8 @@ public sealed class SpecialLocationState
         string? contentProfileId = null,
         string interactionStateId = LocationStateIds.Interaction.Untouched,
         string operationalStateId = LocationStateIds.Operational.None,
-        string presenceStateId = LocationStateIds.Presence.Unknown)
+        string presenceStateId = LocationStateIds.Presence.Unknown,
+        IEnumerable<string>? factionIds = null)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -57,6 +61,14 @@ public sealed class SpecialLocationState
             foreach (var modifierId in modifierIds)
             {
                 this.modifierIds.Add(RequireText(modifierId, nameof(modifierIds)));
+            }
+        }
+
+        if (factionIds != null)
+        {
+            foreach (var factionId in factionIds)
+            {
+                this.factionIds.Add(RequireText(factionId, nameof(factionIds)));
             }
         }
     }
@@ -78,6 +90,12 @@ public sealed class SpecialLocationState
     public IReadOnlyList<string> ModifierIds
     {
         get { return modifierIds; }
+    }
+
+    /// <summary>Factions linked to this location (owner/guardian), used for social risk (§9.4B).</summary>
+    public IReadOnlyList<string> FactionIds
+    {
+        get { return factionIds; }
     }
 
     public string? ContentProfileId { get; }
@@ -183,6 +201,28 @@ public sealed class SpecialLocationState
     public void ClearProject()
     {
         ActiveProject = null;
+    }
+
+    /// <summary>Records that an action resolved here, keyed for its repeat policy (§7.6, "Consumed Content").</summary>
+    public void MarkActionResolved(string key)
+    {
+        resolvedActionKeys.Add(RequireText(key, nameof(key)));
+    }
+
+    public bool HasResolvedAction(string key)
+    {
+        return resolvedActionKeys.Contains(key);
+    }
+
+    /// <summary>Sets a free-form instance flag (§9.4.2A state-gated inputs, e.g. "hasBeenRespected").</summary>
+    public void SetFlag(string flag)
+    {
+        flags.Add(RequireText(flag, nameof(flag)));
+    }
+
+    public bool HasFlag(string flag)
+    {
+        return flags.Contains(flag);
     }
 
     private static string RequireText(string value, string name)

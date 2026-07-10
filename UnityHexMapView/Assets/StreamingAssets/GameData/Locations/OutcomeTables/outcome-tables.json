@@ -1,0 +1,279 @@
+{
+  "documentType": "location-outcome-tables",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "outcome-assess-crossing",
+      "appliesTo": { "archetypeId": "route-obstacle", "actionId": "action-assess-crossing" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "inspected", "text": "Die Bruecke ist als instabiler, aber reparierbarer Uebergang dokumentiert." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition gewinnt verwertbare Routenkenntnis." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-find-bypass",
+      "appliesTo": { "archetypeId": "route-obstacle", "actionId": "action-find-bypass" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 80 }, { "tier": "Failure", "weight": 20 } ],
+        "Moderate": [ { "tier": "Success", "weight": 60 }, { "tier": "Failure", "weight": 40 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Ein langsamer, aber nutzbarer Umweg wird notiert." },
+          { "kind": "AddArchiveEntry", "text": "Ein Umweg um die zerstoerte Bruecke wurde als Routenhypothese vermerkt." }
+        ],
+        "Failure": [
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Die Suche verbraucht zusaetzliche Vorraete, ohne einen sicheren Weg zu finden." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-construct-temporary-passage",
+      "appliesTo": { "archetypeId": "route-obstacle", "actionId": "action-construct-temporary-passage" },
+      "tiers": {
+        "Low": [ { "tier": "SuccessWithCost", "weight": 85 }, { "tier": "Failure", "weight": 15 } ],
+        "Moderate": [ { "tier": "SuccessWithCost", "weight": 65 }, { "tier": "Failure", "weight": 35 } ],
+        "High": [ { "tier": "SuccessWithCost", "weight": 45 }, { "tier": "Failure", "weight": 55 } ]
+      },
+      "effectBundles": {
+        "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "risky-passage", "text": "Der operative Zustand wechselt zu: Riskante Passage." },
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Seile und Material werden abgenutzt." },
+          { "kind": "AddArchiveEntry", "text": "Ein provisorischer Seiluebergang wurde an der zerstoerten Bruecke eingerichtet." }
+        ],
+        "Failure": [
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Material geht beim Bauversuch verloren." },
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Gruppe verliert Vertrauen in die Querung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-attempt-crossing",
+      "appliesTo": { "archetypeId": "route-obstacle", "actionId": "action-attempt-crossing" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 80 }, { "tier": "SuccessWithCost", "weight": 20 } ],
+        "Moderate": [ { "tier": "Success", "weight": 60 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 10 } ],
+        "High": [ { "tier": "Success", "weight": 30 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 25 }, { "tier": "SevereFailure", "weight": 15 } ],
+        "Extreme": [ { "tier": "Success", "weight": 15 }, { "tier": "SuccessWithCost", "weight": 25 }, { "tier": "Failure", "weight": 35 }, { "tier": "SevereFailure", "weight": 25 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition bestaetigt die Route ueber die Schlucht." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Beim Uebergang geht Ausruestung verloren." },
+          { "kind": "ChangeMorale", "amount": -1, "text": "Der Uebergang belastet die Gruppe." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Der Versuch scheitert und erschuettert die Gruppe." }
+        ],
+        "SevereFailure": [
+          { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Ein Expeditionsmitglied stuerzt bei der Querung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-inspect",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-inspect" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "inspected", "text": "Der Ort wurde inspiziert." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Ein Hinweis wurde gesichert." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-document",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-document" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddArchiveEntry", "text": "Die Fundstelle wurde dokumentiert." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-investigate",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-investigate" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 40 }, { "tier": "PartialResult", "weight": 60 } ],
+        "Moderate": [ { "tier": "Success", "weight": 30 }, { "tier": "PartialResult", "weight": 55 }, { "tier": "Failure", "weight": 15 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Die Untersuchung liefert eine belastbare Deutung." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Gesichertes Fundstellenwissen wurde gewonnen." }
+        ],
+        "PartialResult": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Die Untersuchung liefert Hinweise, aber keine sichere Deutung." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Unsicheres Fundstellenwissen wurde gewonnen." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Untersuchung bleibt ergebnislos und zehrt an der Gruppe." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-leave-offering",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-leave-offering" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders respected a marked grave", "text": "Der respektvolle Umgang koennte erinnert werden." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-disturb",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-disturb" },
+      "tiers": {
+        "Moderate": [ { "tier": "Success", "weight": 40 }, { "tier": "SuccessWithCost", "weight": 40 }, { "tier": "Failure", "weight": 20 } ],
+        "High": [ { "tier": "Success", "weight": 15 }, { "tier": "SuccessWithCost", "weight": 35 }, { "tier": "Failure", "weight": 30 }, { "tier": "SevereFailure", "weight": 20 } ],
+        "Extreme": [ { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 40 }, { "tier": "SevereFailure", "weight": 30 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." },
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Gruppe ist sich uneins, ob dies richtig war." },
+          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Der Eingriff misslingt und belastet die Gruppe." },
+          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+        ],
+        "SevereFailure": [
+          { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim gewaltsamen Oeffnen wird jemand verletzt." },
+          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-mark",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-mark" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddArchiveEntry", "text": "Die Fundstelle wurde fuer spaeter markiert." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-leave",
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-leave" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 100 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "AddArchiveEntry", "text": "Die Expedition liess die Fundstelle unangetastet." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-search",
+      "appliesTo": { "archetypeId": "trace-site", "actionId": "action-search" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 70 }, { "tier": "SuccessWithCost", "weight": 20 }, { "tier": "Failure", "weight": 10 } ],
+        "Moderate": [ { "tier": "Success", "weight": 50 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 20 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "searched", "text": "Die Fundstelle wurde gruendlich durchsucht." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Verwertbare Spuren werden gesichert." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Ein paar Spuren werden gefunden." },
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Suche zehrt an der Gruppe." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Suche bleibt ergebnislos." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-interpret",
+      "appliesTo": { "archetypeId": "territorial-marker", "actionId": "action-interpret" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 60 }, { "tier": "PartialResult", "weight": 40 } ],
+        "Moderate": [ { "tier": "Success", "weight": 40 }, { "tier": "PartialResult", "weight": 45 }, { "tier": "Failure", "weight": 15 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "interpreted", "text": "Die Zeichen werden sicher gedeutet." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Eine belastbare Deutung wird gesichert." }
+        ],
+        "PartialResult": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Eine unsichere Deutung wird notiert." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Zeichen bleiben raetselhaft." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-cross-boundary",
+      "appliesTo": { "archetypeId": "territorial-marker", "actionId": "action-cross-boundary" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 70 }, { "tier": "SuccessWithCost", "weight": 25 }, { "tier": "Failure", "weight": 5 } ],
+        "Moderate": [ { "tier": "Success", "weight": 45 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 20 }, { "tier": "SevereFailure", "weight": 5 } ],
+        "High": [ { "tier": "Success", "weight": 20 }, { "tier": "SuccessWithCost", "weight": 25 }, { "tier": "Failure", "weight": 35 }, { "tier": "SevereFailure", "weight": 20 } ],
+        "Extreme": [ { "tier": "SuccessWithCost", "weight": 20 }, { "tier": "Failure", "weight": 45 }, { "tier": "SevereFailure", "weight": 35 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Expedition ueberschreitet die Grenze unbehelligt." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
+          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 6, "text": "Die Grenzwaechter registrieren den Uebertritt veraergert." }
+        ],
+        "Failure": [
+          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 10, "text": "Die Grenzwaechter reagieren zurueckweisend auf den Uebertritt." },
+          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders crossed a warned border", "text": "Der Uebertritt koennte erinnert werden." }
+        ],
+        "SevereFailure": [
+          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 15, "text": "Der Uebertritt provoziert eine feindselige Reaktion." },
+          { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim Rueckzug wird jemand verletzt." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-generic-observe",
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": { "Success": [ { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition sammelt einen Eindruck des Ortes." } ] }
+    },
+    {
+      "id": "outcome-generic-note",
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": { "Success": [ { "kind": "AddArchiveEntry", "text": "Eine Notiz zum Ort wurde im Archiv vermerkt." } ] }
+    },
+    {
+      "id": "outcome-generic-assess",
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": { "Success": [ { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Eine erste Einschaetzung wird notiert." } ] }
+    },
+    {
+      "id": "outcome-generic-withdraw",
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": { "Success": [ { "kind": "AddArchiveEntry", "text": "Die Expedition zog sich zurueck." } ] }
+    }
+  ]
+}

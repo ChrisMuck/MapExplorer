@@ -149,7 +149,11 @@ public enum LocationEffectKind
     ChangeMorale,
     AddFactionMemory,
     AddArchiveEntry,
-    OpenRoute
+    OpenRoute,
+    InjureMember,
+    ChangeFactionTrust,
+    ChangeFactionAnger,
+    ChangeFactionFear
 }
 
 public sealed class LocationArchetypeDefinition
@@ -208,13 +212,17 @@ public sealed class LocationModifierDefinition
         IEnumerable<string>? addedActionIds = null,
         IEnumerable<string>? removedActionIds = null,
         IReadOnlyDictionary<string, int>? riskAdjustmentsByActionId = null,
-        IEnumerable<string>? appliesWhenOperationalStateIds = null)
+        IEnumerable<string>? appliesWhenOperationalStateIds = null,
+        IEnumerable<string>? compatibleArchetypeIds = null,
+        IEnumerable<string>? incompatibleModifierIds = null)
     {
         Id = RequireText(id, nameof(id));
         AddedActionIds = new List<string>(addedActionIds ?? Enumerable.Empty<string>());
         RemovedActionIds = new List<string>(removedActionIds ?? Enumerable.Empty<string>());
         RiskAdjustmentsByActionId = new Dictionary<string, int>(riskAdjustmentsByActionId ?? new Dictionary<string, int>());
         AppliesWhenOperationalStateIds = new List<string>(appliesWhenOperationalStateIds ?? Enumerable.Empty<string>());
+        CompatibleArchetypeIds = new List<string>(compatibleArchetypeIds ?? Enumerable.Empty<string>());
+        IncompatibleModifierIds = new List<string>(incompatibleModifierIds ?? Enumerable.Empty<string>());
     }
 
     public string Id { get; }
@@ -226,6 +234,18 @@ public sealed class LocationModifierDefinition
     public IReadOnlyDictionary<string, int> RiskAdjustmentsByActionId { get; }
 
     public IReadOnlyList<string> AppliesWhenOperationalStateIds { get; }
+
+    /// <summary>Archetypes this modifier may attach to (§12.2). Empty = compatible with any.</summary>
+    public IReadOnlyList<string> CompatibleArchetypeIds { get; }
+
+    /// <summary>Modifiers that must not be active alongside this one (§12.2).</summary>
+    public IReadOnlyList<string> IncompatibleModifierIds { get; }
+
+    public bool IsCompatibleWithArchetype(string? archetypeId)
+    {
+        return CompatibleArchetypeIds.Count == 0 ||
+            (!string.IsNullOrWhiteSpace(archetypeId) && CompatibleArchetypeIds.Contains(archetypeId));
+    }
 
     public bool AppliesTo(SpecialLocationState location)
     {
@@ -313,7 +333,9 @@ public sealed class LocationEffectDefinition
         string? stateId = null,
         int amount = 0,
         string? factionId = null,
-        string? memory = null)
+        string? memory = null,
+        string? selection = null,
+        string? severity = null)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -323,6 +345,8 @@ public sealed class LocationEffectDefinition
         Amount = amount;
         FactionId = string.IsNullOrWhiteSpace(factionId) ? null : factionId;
         Memory = string.IsNullOrWhiteSpace(memory) ? null : memory;
+        Selection = string.IsNullOrWhiteSpace(selection) ? null : selection;
+        Severity = string.IsNullOrWhiteSpace(severity) ? null : severity;
     }
 
     public string Id { get; }
@@ -341,31 +365,11 @@ public sealed class LocationEffectDefinition
 
     public string? Memory { get; }
 
-    private static string RequireText(string value, string name)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("Value must not be empty.", name);
-        }
+    /// <summary>Member-selection strategy for member-targeting effects (e.g. "randomActiveMember").</summary>
+    public string? Selection { get; }
 
-        return value;
-    }
-}
-
-public sealed class LocationOutcomeDefinition
-{
-    public LocationOutcomeDefinition(string id, string label, IEnumerable<LocationEffectDefinition> effects)
-    {
-        Id = RequireText(id, nameof(id));
-        Label = RequireText(label, nameof(label));
-        Effects = new List<LocationEffectDefinition>(effects ?? throw new ArgumentNullException(nameof(effects)));
-    }
-
-    public string Id { get; }
-
-    public string Label { get; }
-
-    public IReadOnlyList<LocationEffectDefinition> Effects { get; }
+    /// <summary>Severity hint for member-targeting effects (e.g. "Wounded").</summary>
+    public string? Severity { get; }
 
     private static string RequireText(string value, string name)
     {
@@ -386,22 +390,30 @@ public sealed class LocationActionDefinition
         string description,
         IEnumerable<LocationRequirementDefinition>? hardRequirements = null,
         LocationRiskProfileDefinition? riskProfile = null,
-        IEnumerable<LocationOutcomeDefinition>? outcomes = null,
+        string? outcomeTableId = null,
+        IEnumerable<LocationCostDefinition>? costs = null,
         LocationActionRepeatPolicy repeatPolicy = LocationActionRepeatPolicy.Repeatable,
         bool startsProject = false,
         int projectDurationDays = 0,
-        IEnumerable<LocationEffectDefinition>? projectCompletionEffects = null)
+        IEnumerable<LocationEffectDefinition>? projectCompletionEffects = null,
+        string? icon = null,
+        string? primaryButtonLabel = null,
+        bool socialRisk = false)
     {
         Id = RequireText(id, nameof(id));
         Label = RequireText(label, nameof(label));
         Description = RequireText(description, nameof(description));
         HardRequirements = new List<LocationRequirementDefinition>(hardRequirements ?? Enumerable.Empty<LocationRequirementDefinition>());
         RiskProfile = riskProfile ?? new LocationRiskProfileDefinition(0, confidence: LocationEstimateConfidence.Assessed);
-        Outcomes = new List<LocationOutcomeDefinition>(outcomes ?? Enumerable.Empty<LocationOutcomeDefinition>());
+        OutcomeTableId = string.IsNullOrWhiteSpace(outcomeTableId) ? null : outcomeTableId;
+        Costs = new List<LocationCostDefinition>(costs ?? Enumerable.Empty<LocationCostDefinition>());
         RepeatPolicy = repeatPolicy;
         StartsProject = startsProject;
         ProjectDurationDays = projectDurationDays;
         ProjectCompletionEffects = new List<LocationEffectDefinition>(projectCompletionEffects ?? Enumerable.Empty<LocationEffectDefinition>());
+        Icon = string.IsNullOrWhiteSpace(icon) ? null : icon;
+        PrimaryButtonLabel = string.IsNullOrWhiteSpace(primaryButtonLabel) ? null : primaryButtonLabel;
+        SocialRisk = socialRisk;
 
         if (StartsProject && ProjectDurationDays < 1)
         {
@@ -419,7 +431,10 @@ public sealed class LocationActionDefinition
 
     public LocationRiskProfileDefinition RiskProfile { get; }
 
-    public IReadOnlyList<LocationOutcomeDefinition> Outcomes { get; }
+    /// <summary>Id of the band-weighted outcome table this action resolves through, or null for project actions.</summary>
+    public string? OutcomeTableId { get; }
+
+    public IReadOnlyList<LocationCostDefinition> Costs { get; }
 
     public LocationActionRepeatPolicy RepeatPolicy { get; }
 
@@ -428,6 +443,13 @@ public sealed class LocationActionDefinition
     public int ProjectDurationDays { get; }
 
     public IReadOnlyList<LocationEffectDefinition> ProjectCompletionEffects { get; }
+
+    public string? Icon { get; }
+
+    public string? PrimaryButtonLabel { get; }
+
+    /// <summary>When true, risk is driven by faction attitude rather than physical danger (§9.4B).</summary>
+    public bool SocialRisk { get; }
 
     private static string RequireText(string value, string name)
     {
@@ -446,12 +468,16 @@ public sealed class LocationInteractionDefinitionSet
         IEnumerable<LocationArchetypeDefinition> archetypes,
         IEnumerable<LocationVariantDefinition> variants,
         IEnumerable<LocationModifierDefinition> modifiers,
-        IEnumerable<LocationActionDefinition> actions)
+        IEnumerable<LocationActionDefinition> actions,
+        IEnumerable<LocationOutcomeTableDefinition>? outcomeTables = null,
+        IEnumerable<LocationContentProfileDefinition>? contentProfiles = null)
     {
         Archetypes = ToDictionary(archetypes, item => item.Id);
         Variants = ToDictionary(variants, item => item.Id);
         Modifiers = ToDictionary(modifiers, item => item.Id);
         Actions = ToDictionary(actions, item => item.Id);
+        OutcomeTables = ToDictionary(outcomeTables ?? Enumerable.Empty<LocationOutcomeTableDefinition>(), item => item.Id);
+        ContentProfiles = ToDictionary(contentProfiles ?? Enumerable.Empty<LocationContentProfileDefinition>(), item => item.Id);
     }
 
     public IReadOnlyDictionary<string, LocationArchetypeDefinition> Archetypes { get; }
@@ -461,6 +487,62 @@ public sealed class LocationInteractionDefinitionSet
     public IReadOnlyDictionary<string, LocationModifierDefinition> Modifiers { get; }
 
     public IReadOnlyDictionary<string, LocationActionDefinition> Actions { get; }
+
+    public IReadOnlyDictionary<string, LocationOutcomeTableDefinition> OutcomeTables { get; }
+
+    public IReadOnlyDictionary<string, LocationContentProfileDefinition> ContentProfiles { get; }
+
+    public LocationOutcomeTableDefinition? FindOutcomeTable(string? id)
+    {
+        return !string.IsNullOrWhiteSpace(id) && OutcomeTables.TryGetValue(id!, out var table) ? table : null;
+    }
+
+    public LocationContentProfileDefinition? FindContentProfile(string? id)
+    {
+        return !string.IsNullOrWhiteSpace(id) && ContentProfiles.TryGetValue(id!, out var profile) ? profile : null;
+    }
+
+    /// <summary>Whether a modifier may attach to an archetype (§12.2). Unknown modifiers are allowed.</summary>
+    public bool IsModifierCompatible(string? archetypeId, string modifierId)
+    {
+        return !Modifiers.TryGetValue(modifierId, out var modifier) || modifier.IsCompatibleWithArchetype(archetypeId);
+    }
+
+    /// <summary>
+    /// Validates a modifier set for an archetype (§12.2): every modifier compatible with the archetype
+    /// and no two active modifiers mutually incompatible. Returns the human-readable errors (empty = ok).
+    /// </summary>
+    public IReadOnlyList<string> ValidateModifierSet(string? archetypeId, IReadOnlyList<string> modifierIds)
+    {
+        var errors = new List<string>();
+        if (modifierIds == null)
+        {
+            return errors;
+        }
+
+        foreach (var modifierId in modifierIds)
+        {
+            if (!Modifiers.TryGetValue(modifierId, out var modifier))
+            {
+                continue;
+            }
+
+            if (!modifier.IsCompatibleWithArchetype(archetypeId))
+            {
+                errors.Add($"Modifier '{modifierId}' is not compatible with archetype '{archetypeId}'.");
+            }
+
+            foreach (var otherId in modifierIds)
+            {
+                if (otherId != modifierId && modifier.IncompatibleModifierIds.Contains(otherId))
+                {
+                    errors.Add($"Modifiers '{modifierId}' and '{otherId}' are declared incompatible.");
+                }
+            }
+        }
+
+        return errors;
+    }
 
     private static IReadOnlyDictionary<string, T> ToDictionary<T>(IEnumerable<T> items, Func<T, string> getId)
     {

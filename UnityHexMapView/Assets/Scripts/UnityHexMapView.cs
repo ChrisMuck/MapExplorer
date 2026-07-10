@@ -76,7 +76,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Camera strategyCamera;
     private GameState coreGameState;
     private readonly MovementCostService movementCostService = new MovementCostService();
-    private readonly GameApplication gameApplication = new GameApplication();
+    private readonly GameApplication gameApplication = CreateGameApplication();
     private Transform currentBuildRoot;
     private HexMapWindSway windSway;
     private Transform terrainRoot;
@@ -609,6 +609,27 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         interactionMessage = result.Error ?? "Nothing to inspect here.";
         RefreshToolkitHud();
+    }
+
+    // Loads the JSON-authored location content from StreamingAssets (concept Section 17), falling
+    // back to the in-code definitions if the data folder is missing or fails validation.
+    private static GameApplication CreateGameApplication()
+    {
+        try
+        {
+            var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData", "Locations");
+            var bundle = LocationDataLoader.LoadFromDirectory(root);
+            if (bundle != null)
+            {
+                return new GameApplication(bundle);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"Location JSON load failed, using in-code fallback definitions: {ex.Message}");
+        }
+
+        return new GameApplication();
     }
 
     public LocationInteractionQueryResult GetLocationInteractionForUi(string locationId)
@@ -2997,8 +3018,8 @@ public sealed class UnityHexMapView : MonoBehaviour
             return false;
         }
 
-        return location.ArchetypeId == LocationInteractionContent.ArchetypeRouteObstacle ||
-            location.Kind == LocationKind.BrokenRavine;
+        // Any archetype-driven location auto-opens its interaction screen on first arrival.
+        return true;
     }
 
     private void EndCurrentDay()
@@ -3134,9 +3155,9 @@ public sealed class UnityHexMapView : MonoBehaviour
             return result.Error ?? "Location action rejected.";
         }
 
-        var prefix = result.Outcome == null
+        var prefix = string.IsNullOrEmpty(result.OutcomeLabel)
             ? result.Action?.Label ?? "Location action"
-            : $"{result.Action?.Label}: {result.Outcome.Label}";
+            : $"{result.Action?.Label}: {result.OutcomeLabel}";
 
         if (result.EffectTexts.Count == 0)
         {

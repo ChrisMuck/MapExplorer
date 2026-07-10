@@ -1,0 +1,57 @@
+{
+  "documentType": "location-variants",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "broken-bridge",
+      "archetypeId": "route-obstacle",
+      "label": "Zerstoerte Bruecke",
+      "subtitle": "Streckenhindernis",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-repairable", "modifier-unstable", "modifier-watched"],
+      "defaultContentProfileId": "content-old-trade-road-bridge"
+    },
+    {
+      "id": "marked-grave",
+      "archetypeId": "investigation-site",
+      "label": "Markiertes Grab",
+      "subtitle": "Untersuchungsstelle",
+      "addedActionIds": ["action-leave-offering", "action-disturb"],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-sacred", "modifier-faction-owned", "modifier-watched"],
+      "defaultContentProfileId": "content-marked-grave"
+    },
+    {
+      "id": "abandoned-camp",
+      "archetypeId": "trace-site",
+      "label": "Verlassenes Lager",
+      "subtitle": "Spurenfeld",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-searchable", "modifier-campable", "modifier-weather-damaged"],
+      "defaultContentProfileId": "content-abandoned-camp"
+    },
+    {
+      "id": "border-warning-sign",
+      "archetypeId": "territorial-marker",
+      "label": "Grenzwarnung",
+      "subtitle": "Territoriales Zeichen",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-faction-owned", "modifier-watched"],
+      "defaultContentProfileId": "content-border-warning"
+    },
+    {
+      "id": "sealed-gate",
+      "archetypeId": "containment-site",
+      "label": "Versiegeltes Tor",
+      "subtitle": "Verschlussstelle",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-sealed", "modifier-guarded"],
+      "defaultContentProfileId": "content-sealed-gate"
+    }
+  ]
+}

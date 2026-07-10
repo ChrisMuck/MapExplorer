@@ -1,0 +1,330 @@
+{
+  "documentType": "location-actions",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "action-observe",
+      "label": "Beobachten",
+      "description": "Den Ort aus sicherer Naehe betrachten, ohne einzugreifen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-inspect",
+      "label": "Inspizieren",
+      "description": "Den Ort betrachten, ohne etwas zu veraendern.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-inspect"
+    },
+    {
+      "id": "action-search",
+      "label": "Durchsuchen",
+      "description": "Die Fundstelle systematisch nach Spuren und Brauchbarem absuchen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-search",
+      "repeatPolicy": "OncePerState"
+    },
+    {
+      "id": "action-investigate",
+      "label": "Untersuchen",
+      "description": "Den Ort eingehender untersuchen und eine Deutung versuchen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 25, "confidence": "Guess" },
+      "outcomeTableId": "outcome-investigate"
+    },
+    {
+      "id": "action-document",
+      "label": "Dokumentieren",
+      "description": "Zeichen, Lage und Zustand fuer spaetere Auswertung festhalten.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-document"
+    },
+    {
+      "id": "action-collect",
+      "label": "Aufsammeln",
+      "description": "Zurueckgelassene Gegenstaende oder Hinweise mitnehmen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-observe",
+      "repeatPolicy": "OncePerState"
+    },
+    {
+      "id": "action-compare-archive",
+      "label": "Mit Archiv abgleichen",
+      "description": "Die Funde mit bekannten Archivberichten vergleichen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-note"
+    },
+    {
+      "id": "action-interpret",
+      "label": "Deuten",
+      "description": "Die Zeichen lesen und ihre Bedeutung einordnen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-interpret"
+    },
+    {
+      "id": "action-leave-offering",
+      "label": "Opfergabe hinterlassen",
+      "description": "Den Ort respektvoll behandeln, bevor weitere Schritte unternommen werden.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-leave-offering"
+    },
+    {
+      "id": "action-disturb",
+      "label": "Stoeren",
+      "description": "Das Grab oder Siegel trotz Warnzeichen oeffnen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 45, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-disturb"
+    },
+    {
+      "id": "action-cross-boundary",
+      "label": "Grenze ueberschreiten",
+      "description": "Die markierte Grenze trotz der Warnung ueberqueren.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
+      "outcomeTableId": "outcome-cross-boundary",
+      "socialRisk": true
+    },
+    {
+      "id": "action-assess-crossing",
+      "label": "Ueberqueren einschaetzen",
+      "description": "Die Statik der Truemmer und die Schlucht beurteilen, ohne die Querung zu versuchen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-assess-crossing",
+      "repeatPolicy": "OncePerLocation"
+    },
+    {
+      "id": "action-find-bypass",
+      "label": "Umweg suchen",
+      "description": "Eine Route um die Schlucht herum suchen. Das kostet Zeit, kann aber den gefaehrlichen Uebergang vermeiden.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
+      "outcomeTableId": "outcome-find-bypass",
+      "repeatPolicy": "OncePerState"
+    },
+    {
+      "id": "action-construct-temporary-passage",
+      "label": "Seiluebergang bauen",
+      "description": "Eine provisorische Querung errichten. Der Bau ist riskant, macht die Passage danach aber berechenbarer.",
+      "hardRequirements": [ { "kind": "OperationalStateAny", "values": ["blocked"], "unmetReason": "Nur ein blockierter Uebergang braucht eine provisorische Querung." } ],
+      "riskProfile": { "baseRisk": 20, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-construct-temporary-passage",
+      "costs": [ { "kind": "Supplies", "amount": 1, "timing": "onCommit" } ],
+      "repeatPolicy": "RepeatableWithCost"
+    },
+    {
+      "id": "action-attempt-crossing",
+      "label": "Bruecke ueberqueren",
+      "description": "Die Truemmer oder die provisorische Querung nutzen und die andere Seite erreichen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 45, "baseRiskByOperationalState": { "blocked": 45, "risky-passage": 20, "repaired": 5 }, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-attempt-crossing",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
+      "repeatPolicy": "RepeatableWithCost"
+    },
+    {
+      "id": "action-rebuild-bridge",
+      "label": "Bruecke wieder aufbauen",
+      "description": "Ein mehrtaegiges Projekt, das den Uebergang dauerhaft wiederherstellt.",
+      "hardRequirements": [
+        { "kind": "OperationalStateAny", "values": ["blocked", "risky-passage"], "unmetReason": "Die Bruecke muss blockiert oder riskant passierbar sein." },
+        { "kind": "RolePresent", "role": "Engineer", "unmetReason": "Erfordert eine Ingenieurin oder einen Ingenieur." },
+        { "kind": "AnchorKind", "anchorKind": "Edge", "unmetReason": "Nur ein Kantenhindernis kann als Uebergang repariert werden." }
+      ],
+      "riskProfile": { "baseRisk": 25, "confidence": "Assessed" },
+      "repeatPolicy": "OncePerLocation",
+      "project": {
+        "durationDays": 3,
+        "completionEffects": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "repaired", "text": "Der operative Zustand wechselt zu: Repariert." },
+          { "kind": "OpenRoute", "text": "Die Bruecke oeffnet eine dauerhafte Route ueber die Schlucht." },
+          { "kind": "AddArchiveEntry", "text": "Die zerstoerte Bruecke wurde dauerhaft repariert." }
+        ]
+      }
+    },
+    {
+      "id": "action-inspect-seal",
+      "label": "Siegel pruefen",
+      "description": "Das Siegel und seine Warnzeichen aus der Naehe betrachten.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-approach-cautiously",
+      "label": "Vorsichtig naehern",
+      "description": "Sich dem Ort behutsam naehern und die Lage einschaetzen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-communicate",
+      "label": "Kommunizieren",
+      "description": "Kontakt aufnehmen und ein Gespraech versuchen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe",
+      "socialRisk": true
+    },
+    {
+      "id": "action-trade",
+      "label": "Handeln",
+      "description": "Waren oder Wissen tauschen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe",
+      "socialRisk": true
+    },
+    {
+      "id": "action-request-passage",
+      "label": "Durchlass erbitten",
+      "description": "Um sichere Durchreise durch das Gebiet bitten.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-note",
+      "socialRisk": true
+    },
+    {
+      "id": "action-withdraw",
+      "label": "Zurueckziehen",
+      "description": "Sich vom Ort zurueckziehen, ohne zu handeln.",
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-withdraw"
+    },
+    {
+      "id": "action-assess",
+      "label": "Einschaetzen",
+      "description": "Nutzen, Menge und Gefahren des Ortes abschaetzen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-assess"
+    },
+    {
+      "id": "action-harvest-carefully",
+      "label": "Behutsam ernten",
+      "description": "Vorsichtig entnehmen, um die Quelle zu schonen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe",
+      "repeatPolicy": "OncePerState"
+    },
+    {
+      "id": "action-harvest-fully",
+      "label": "Vollstaendig ernten",
+      "description": "So viel wie moeglich entnehmen, auf Kosten der Erneuerung.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe",
+      "repeatPolicy": "OncePerLocation"
+    },
+    {
+      "id": "action-assess-risk",
+      "label": "Gefahr einschaetzen",
+      "description": "Die Bedrohung der Zone lesen, bevor man sie betritt.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-assess"
+    },
+    {
+      "id": "action-avoid",
+      "label": "Ausweichen",
+      "description": "Die Zone meiden und einen anderen Weg nehmen.",
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-withdraw"
+    },
+    {
+      "id": "action-traverse-cautiously",
+      "label": "Vorsichtig durchqueren",
+      "description": "Die Zone langsam und geschuetzt durchqueren.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 30, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-find-safe-route",
+      "label": "Sichere Route finden",
+      "description": "Einen gangbaren Pfad durch die Gefahr suchen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-note"
+    },
+    {
+      "id": "action-observe-from-distance",
+      "label": "Aus der Ferne beobachten",
+      "description": "Das Wahrzeichen aus der Distanz betrachten und einordnen.",
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-approach",
+      "label": "Naehern",
+      "description": "Sich dem Ort naehern.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-survey",
+      "label": "Vermessen",
+      "description": "Die Umgebung vom Wahrzeichen aus vermessen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-map-surroundings",
+      "label": "Umgebung kartieren",
+      "description": "Die weitere Umgebung aufnehmen und als Kartenwissen sichern.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-note"
+    },
+    {
+      "id": "action-assist",
+      "label": "Helfen",
+      "description": "In die Lage eingreifen und Hilfe leisten.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe"
+    },
+    {
+      "id": "action-negotiate",
+      "label": "Verhandeln",
+      "description": "Mit den Beteiligten eine Loesung aushandeln.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
+      "outcomeTableId": "outcome-generic-observe",
+      "socialRisk": true
+    },
+    {
+      "id": "action-ignore",
+      "label": "Ignorieren",
+      "description": "Die Situation nicht beachten und weiterziehen.",
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-generic-withdraw"
+    },
+    {
+      "id": "action-mark",
+      "label": "Markieren",
+      "description": "Eine eigene Kartenmarkierung anlegen.",
+      "outcomeTableId": "outcome-mark"
+    },
+    {
+      "id": "action-leave",
+      "label": "Verlassen",
+      "description": "Die Fundstelle unangetastet lassen.",
+      "outcomeTableId": "outcome-leave"
+    }
+  ]
+}

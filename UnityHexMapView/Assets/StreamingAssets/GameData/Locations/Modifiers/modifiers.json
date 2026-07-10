@@ -1,0 +1,178 @@
+{
+  "documentType": "location-modifiers",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "modifier-repairable",
+      "label": "Reparierbar",
+      "addedActionIds": ["action-rebuild-bridge"],
+      "compatibleArchetypeIds": ["route-obstacle", "landmark-site", "investigation-site"]
+    },
+    {
+      "id": "modifier-unstable",
+      "label": "Instabil",
+      "appliesWhen": { "operationalStateAny": ["blocked", "risky-passage"] },
+      "riskAdjustments": [
+        { "actionId": "action-construct-temporary-passage", "scoreDelta": 15 },
+        { "actionId": "action-attempt-crossing", "scoreDelta": 15 },
+        { "actionId": "action-rebuild-bridge", "scoreDelta": 15 }
+      ],
+      "compatibleArchetypeIds": ["route-obstacle", "investigation-site", "containment-site"]
+    },
+    {
+      "id": "modifier-watched",
+      "label": "Beobachtet",
+      "compatibleArchetypeIds": ["trace-site", "investigation-site", "territorial-marker", "landmark-site", "dynamic-situation", "route-obstacle"]
+    },
+    {
+      "id": "modifier-sacred",
+      "label": "Heilig",
+      "riskAdjustments": [
+        { "actionId": "action-disturb", "scoreDelta": 35 },
+        { "actionId": "action-investigate", "scoreDelta": 10 },
+        { "actionId": "action-cross-boundary", "scoreDelta": 10 }
+      ],
+      "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "resource-site", "contact-site", "containment-site"]
+    },
+    {
+      "id": "modifier-faction-owned",
+      "label": "Fraktionsbesitz",
+      "compatibleArchetypeIds": ["trace-site", "investigation-site", "territorial-marker", "contact-site", "resource-site", "route-obstacle"]
+    },
+    {
+      "id": "modifier-sealed",
+      "label": "Versiegelt",
+      "compatibleArchetypeIds": ["investigation-site", "containment-site"],
+      "incompatibleModifierIds": ["modifier-collapsed"]
+    },
+    {
+      "id": "modifier-collapsed",
+      "label": "Eingestuerzt",
+      "compatibleArchetypeIds": ["route-obstacle", "investigation-site", "containment-site"],
+      "incompatibleModifierIds": ["modifier-sealed"]
+    },
+    {
+      "id": "modifier-flooded",
+      "label": "Ueberflutet",
+      "compatibleArchetypeIds": ["route-obstacle", "hazard-zone"],
+      "incompatibleModifierIds": ["modifier-burning"]
+    },
+    {
+      "id": "modifier-burning",
+      "label": "Brennend",
+      "compatibleArchetypeIds": ["hazard-zone", "dynamic-situation"],
+      "incompatibleModifierIds": ["modifier-flooded"]
+    },
+    {
+      "id": "modifier-underground",
+      "label": "Unterirdisch",
+      "compatibleArchetypeIds": ["investigation-site", "containment-site"]
+    },
+    {
+      "id": "modifier-damaged",
+      "label": "Beschaedigt",
+      "compatibleArchetypeIds": ["route-obstacle", "landmark-site"]
+    },
+    {
+      "id": "modifier-taboo",
+      "label": "Tabu",
+      "compatibleArchetypeIds": ["investigation-site", "territorial-marker"]
+    },
+    {
+      "id": "modifier-guarded",
+      "label": "Bewacht",
+      "compatibleArchetypeIds": ["route-obstacle", "contact-site", "containment-site"],
+      "incompatibleModifierIds": ["modifier-invitation"]
+    },
+    {
+      "id": "modifier-occupied",
+      "label": "Besetzt",
+      "compatibleArchetypeIds": ["contact-site", "dynamic-situation"]
+    },
+    {
+      "id": "modifier-invitation",
+      "label": "Einladung",
+      "compatibleArchetypeIds": ["territorial-marker", "contact-site"],
+      "incompatibleModifierIds": ["modifier-guarded"]
+    },
+    {
+      "id": "modifier-contaminated",
+      "label": "Verseucht",
+      "compatibleArchetypeIds": ["trace-site", "investigation-site", "resource-site", "hazard-zone", "containment-site"]
+    },
+    {
+      "id": "modifier-trapped",
+      "label": "Verfallen gesichert",
+      "compatibleArchetypeIds": ["investigation-site", "containment-site"]
+    },
+    {
+      "id": "modifier-hostile-presence",
+      "label": "Feindliche Praesenz",
+      "compatibleArchetypeIds": ["contact-site", "dynamic-situation", "hazard-zone"]
+    },
+    {
+      "id": "modifier-creature-presence",
+      "label": "Kreaturen",
+      "compatibleArchetypeIds": ["hazard-zone", "dynamic-situation"]
+    },
+    {
+      "id": "modifier-spreading",
+      "label": "Ausbreitend",
+      "compatibleArchetypeIds": ["hazard-zone"]
+    },
+    {
+      "id": "modifier-searchable",
+      "label": "Durchsuchbar",
+      "compatibleArchetypeIds": ["trace-site", "investigation-site"]
+    },
+    {
+      "id": "modifier-campable",
+      "label": "Lagertauglich",
+      "compatibleArchetypeIds": ["trace-site"]
+    },
+    {
+      "id": "modifier-harvestable",
+      "label": "Erntbar",
+      "compatibleArchetypeIds": ["resource-site"]
+    },
+    {
+      "id": "modifier-climbable",
+      "label": "Besteigbar",
+      "compatibleArchetypeIds": ["landmark-site"]
+    },
+    {
+      "id": "modifier-signal-capable",
+      "label": "Signalfaehig",
+      "compatibleArchetypeIds": ["landmark-site"]
+    },
+    {
+      "id": "modifier-contains-heavy-object",
+      "label": "Schwere Bergung",
+      "compatibleArchetypeIds": ["trace-site", "investigation-site"]
+    },
+    {
+      "id": "modifier-recently-used",
+      "label": "Kuerzlich genutzt",
+      "compatibleArchetypeIds": ["trace-site", "contact-site", "resource-site"]
+    },
+    {
+      "id": "modifier-weather-damaged",
+      "label": "Wetterschaden",
+      "compatibleArchetypeIds": ["trace-site", "route-obstacle"]
+    },
+    {
+      "id": "modifier-old-knowledge-linked",
+      "label": "Alt-Wissen verknuepft",
+      "compatibleArchetypeIds": ["investigation-site", "landmark-site"]
+    },
+    {
+      "id": "modifier-previously-visited",
+      "label": "Zuvor besucht"
+    },
+    {
+      "id": "modifier-changed-by-expedition",
+      "label": "Von Expedition veraendert"
+    }
+  ]
+}

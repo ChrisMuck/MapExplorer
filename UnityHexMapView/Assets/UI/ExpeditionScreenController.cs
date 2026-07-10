@@ -1057,7 +1057,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             locationInteractionView = LocationInteractionView.Project;
         }
 
-        RenderLocationHeader(location);
+        RenderLocationHeader(interaction);
         RenderLocationViews(interaction);
     }
 
@@ -1077,17 +1077,24 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshLocationInteractionPopup(mapView?.CurrentGameState);
     }
 
-    private void RenderLocationHeader(SpecialLocationState location)
+    private void RenderLocationHeader(LocationInteractionModel interaction)
     {
+        var location = interaction.Location;
+        var profile = interaction.ContentProfile;
+        var subtitle = string.IsNullOrWhiteSpace(profile?.Subtitle)
+            ? $"{ArchetypeText(location.ArchetypeId)} - Variante: {VariantText(location.VariantId)}"
+            : profile!.Subtitle!;
+        var flavor = profile?.FlavorForState(location.OperationalStateId);
+
         SetText("location-icon-glyph", LocationIconText(location));
         SetText("location-eyebrow", "FUNDSTELLE");
         SetText("location-anchor", LocationAnchorText(location.Anchor));
-        SetText("location-title", location.Name);
-        SetText("location-subtitle", $"{ArchetypeText(location.ArchetypeId)} - Variante: {VariantText(location.VariantId)}");
+        SetText("location-title", string.IsNullOrWhiteSpace(profile?.Title) ? location.Name : profile!.Title);
+        SetText("location-subtitle", subtitle);
         SetText("state-knowledge", "Wissensstand: Bestaetigt");
         SetText("state-operational", $"Zustand: {LocationOperationalStateText(location.OperationalStateId)}");
         SetText("state-presence", $"Anwesenheit: {LocationPresenceStateText(location.PresenceStateId)}");
-        SetText("location-flavor", LocationFlavorText(location));
+        SetText("location-flavor", string.IsNullOrWhiteSpace(flavor) ? LocationFlavorText(location) : flavor);
 
         var operational = root?.Q<Label>("state-operational");
         operational?.EnableInClassList("bi-state-pill--alert", IsOperationalAlert(location.OperationalStateId));
@@ -1260,7 +1267,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private void RenderLocationOutcomeView()
     {
         var outcome = latestLocationActionResult;
-        SetText("outcome-tier", outcome?.Outcome?.Label ?? (outcome?.Success == false ? "Abgelehnt" : "Ergebnis"));
+        SetText("outcome-tier", outcome?.OutcomeLabel ?? (outcome?.Success == false ? "Abgelehnt" : "Ergebnis"));
         SetText("outcome-caption", LocationActionResultText(outcome));
 
         var effects = root?.Q<VisualElement>("outcome-effects");
@@ -1742,12 +1749,35 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return $"{action.ProjectDurationDays} Projekttage";
         }
 
+        if (action.Costs.Count > 0)
+        {
+            var parts = new List<string>();
+            foreach (var cost in action.Costs)
+            {
+                parts.Add($"{cost.Amount} {CostKindText(cost.Kind)}");
+            }
+
+            return string.Join(", ", parts);
+        }
+
         if (action.RepeatPolicy == LocationActionRepeatPolicy.RepeatableWithCost)
         {
             return "moegliche Kosten";
         }
 
         return "sofort";
+    }
+
+    private static string CostKindText(LocationCostKind kind)
+    {
+        switch (kind)
+        {
+            case LocationCostKind.MovementPoints: return "Bewegung";
+            case LocationCostKind.Supplies: return "Vorraete";
+            case LocationCostKind.Medicine: return "Medizin";
+            case LocationCostKind.Morale: return "Moral";
+            default: return kind.ToString();
+        }
     }
 
     private static string RequirementText(LocationRequirementDefinition requirement)

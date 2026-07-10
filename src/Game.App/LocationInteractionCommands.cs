@@ -34,7 +34,8 @@ public sealed class GetLocationInteractionCommand
             return LocationInteractionQueryResult.Rejected("This location is not confirmed knowledge yet.");
         }
 
-        return LocationInteractionQueryResult.Found(interactionService.BuildInteraction(location, game.Expedition));
+        return LocationInteractionQueryResult.Found(
+            interactionService.BuildInteraction(location, game.Expedition, LocationInteractionSupport.LinkedFactions(game, location)));
     }
 
     private static bool IsKnownEnough(GameState game, SpecialLocationState location)
@@ -56,6 +57,25 @@ public sealed class GetLocationInteractionCommand
     }
 }
 
+internal static class LocationInteractionSupport
+{
+    /// <summary>Resolves the faction states a location is linked to, for social risk (§9.4B).</summary>
+    public static IReadOnlyList<FactionState> LinkedFactions(GameState game, SpecialLocationState location)
+    {
+        var factions = new List<FactionState>();
+        foreach (var factionId in location.FactionIds)
+        {
+            var faction = game.FindFaction(factionId);
+            if (faction != null)
+            {
+                factions.Add(faction);
+            }
+        }
+
+        return factions;
+    }
+}
+
 public sealed class ResolveLocationActionCommand
 {
     private readonly LocationInteractionService interactionService;
@@ -65,7 +85,12 @@ public sealed class ResolveLocationActionCommand
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
     }
 
-    public LocationActionResult Execute(GameState game, string locationId, string actionId, string? forcedOutcomeId = null)
+    public LocationActionResult Execute(
+        GameState game,
+        string locationId,
+        string actionId,
+        LocationOutcomeTier? forcedTier = null,
+        LocationRecoveryOutcome? forcedRecovery = null)
     {
         if (game == null)
         {
@@ -78,7 +103,7 @@ public sealed class ResolveLocationActionCommand
             return LocationActionResult.Rejected("Location was not found.");
         }
 
-        var interaction = interactionService.BuildInteraction(location, game.Expedition);
+        var interaction = interactionService.BuildInteraction(location, game.Expedition, LocationInteractionSupport.LinkedFactions(game, location));
         var option = interaction.FindOption(actionId);
         if (option == null)
         {
@@ -90,49 +115,68 @@ public sealed class ResolveLocationActionCommand
             return LocationActionResult.Rejected(option.LockedReason ?? "This action is locked.");
         }
 
+        // Consumed-action key must reflect the state the action ran in, before any effect changes it (§7.6).
+        var repeatKey = LocationInteractionService.RepeatKey(option.Action, location);
+
         if (option.Action.StartsProject)
         {
             location.StartProject(option.Action.Id, option.Action.ProjectDurationDays);
+            location.MarkActionResolved(repeatKey);
             game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: project started at {location.Name}: {option.Action.Label}.");
-            return LocationActionResult.Resolved(location, option.Action, null, new[] { $"Project started: {option.Action.Label}." });
+            return LocationActionResult.Resolved(location, option.Action, null, null, new[] { $"Project started: {option.Action.Label}." });
         }
 
-        var outcome = SelectOutcome(option.Action, forcedOutcomeId);
-        if (outcome == null)
+        var resolution = interactionService.ResolveOutcome(option.Action, option.RiskBand, forcedTier);
+        if (resolution == null)
         {
             return LocationActionResult.Rejected("This action has no outcome table yet.");
         }
 
-        var texts = ApplyEffects(game, location, outcome.Effects);
-        return LocationActionResult.Resolved(location, option.Action, outcome, texts);
+        // Recovery Check (§9.9): a member-ending effect gets a softer roll before it is applied.
+        LocationRecoveryOutcome? recovery = null;
+        if (resolution.Effects.Any(effect => IsMemberEndingEffect(effect.Kind)))
+        {
+            recovery = interactionService.RollRecovery(HasMedic(game.Expedition), forcedRecovery);
+        }
+
+        var texts = ApplyEffects(game, location, resolution.Effects, recovery);
+        location.MarkActionResolved(repeatKey);
+        return LocationActionResult.Resolved(location, option.Action, resolution.Tier, resolution.Label, texts);
     }
 
-    internal static IReadOnlyList<string> ApplyEffects(GameState game, SpecialLocationState location, IReadOnlyList<LocationEffectDefinition> effects)
+    private static bool IsMemberEndingEffect(LocationEffectKind kind)
+    {
+        return kind == LocationEffectKind.InjureMember;
+    }
+
+    private static bool HasMedic(ExpeditionState expedition)
+    {
+        return expedition.Members.Any(member =>
+            member.Role == ExpeditionMemberRole.Medic &&
+            member.Status != ExpeditionMemberStatus.Missing &&
+            member.Status != ExpeditionMemberStatus.Dead);
+    }
+
+    internal static IReadOnlyList<string> ApplyEffects(
+        GameState game,
+        SpecialLocationState location,
+        IReadOnlyList<LocationEffectDefinition> effects,
+        LocationRecoveryOutcome? recovery = null)
     {
         var texts = new List<string>();
         foreach (var effect in effects)
         {
+            if (IsMemberEndingEffect(effect.Kind) && recovery == LocationRecoveryOutcome.Preserved)
+            {
+                texts.Add("Ein Ungluecklicher konnte im letzten Moment gerettet werden.");
+                continue;
+            }
+
             ApplyEffect(game, location, effect);
             texts.Add(effect.Text);
         }
 
         return texts;
-    }
-
-    private static LocationOutcomeDefinition? SelectOutcome(LocationActionDefinition action, string? forcedOutcomeId)
-    {
-        if (!string.IsNullOrWhiteSpace(forcedOutcomeId))
-        {
-            foreach (var outcome in action.Outcomes)
-            {
-                if (outcome.Id == forcedOutcomeId)
-                {
-                    return outcome;
-                }
-            }
-        }
-
-        return action.Outcomes.Count == 0 ? null : action.Outcomes[0];
     }
 
     private static void ApplyEffect(GameState game, SpecialLocationState location, LocationEffectDefinition effect)
@@ -170,8 +214,35 @@ public sealed class ResolveLocationActionCommand
             case LocationEffectKind.OpenRoute:
                 OpenRoute(game, location);
                 break;
+            case LocationEffectKind.InjureMember:
+                InjureMember(game);
+                break;
+            case LocationEffectKind.ChangeFactionTrust:
+                game.FindFaction(effect.FactionId ?? "")?.Adjust(trustDelta: effect.Amount);
+                break;
+            case LocationEffectKind.ChangeFactionAnger:
+                game.FindFaction(effect.FactionId ?? "")?.Adjust(angerDelta: effect.Amount);
+                break;
+            case LocationEffectKind.ChangeFactionFear:
+                game.FindFaction(effect.FactionId ?? "")?.Adjust(fearDelta: effect.Amount);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported location effect kind {effect.Kind}.");
+        }
+    }
+
+    private static void InjureMember(GameState game)
+    {
+        // MVP: injure the first still-active member. "selection" is honored loosely for now.
+        foreach (var member in game.Expedition.Members)
+        {
+            if (member.Status != ExpeditionMemberStatus.Injured &&
+                member.Status != ExpeditionMemberStatus.Missing &&
+                member.Status != ExpeditionMemberStatus.Dead)
+            {
+                member.SetStatus(ExpeditionMemberStatus.Injured);
+                return;
+            }
         }
     }
 
@@ -237,12 +308,12 @@ public sealed class AdvanceLocationProjectCommand
         location.AdvanceProject();
         if (!location.ActiveProject.IsComplete)
         {
-            return LocationActionResult.Resolved(location, action, null, new[] { $"Project progress: {location.ActiveProject.Progress}/{location.ActiveProject.RequiredProgress}." });
+            return LocationActionResult.Resolved(location, action, null, null, new[] { $"Project progress: {location.ActiveProject.Progress}/{location.ActiveProject.RequiredProgress}." });
         }
 
         var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects);
         location.ClearProject();
-        return LocationActionResult.Resolved(location, action, null, texts);
+        return LocationActionResult.Resolved(location, action, null, null, texts);
     }
 }
 }

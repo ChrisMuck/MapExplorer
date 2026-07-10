@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Game.Core;
 
 namespace Game.App
@@ -10,7 +11,8 @@ public sealed class GameApplication
 {
     public HexMapBounds DefaultPrototypeBounds { get; } = new(40, 30);
     private readonly MovementCostService movementCostService = new MovementCostService();
-    private readonly LocationInteractionDefinitionSet locationInteractionDefinitions = LocationInteractionContent.CreateDefinitionSet();
+    private readonly LocationInteractionDefinitionSet locationInteractionDefinitions;
+    private readonly IReadOnlyList<SpecialLocationState>? locationInstances;
     private readonly EndDayCommand endDayCommand = new EndDayCommand();
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
@@ -34,7 +36,29 @@ public sealed class GameApplication
     private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
 
     public GameApplication()
+        : this(null)
     {
+    }
+
+    /// <summary>
+    /// Builds the app facade. Location content comes from the supplied JSON bundle (concept Section 17)
+    /// when provided; otherwise it is auto-loaded from the StreamingAssets game-data folder if that
+    /// folder can be found on disk, and finally falls back to the in-code definitions (Section 17.10).
+    /// </summary>
+    public GameApplication(LocationDataBundle? locationData)
+    {
+        locationData ??= TryLoadDefaultLocationData();
+        if (locationData != null)
+        {
+            locationInteractionDefinitions = locationData.Definitions;
+            locationInstances = locationData.Instances;
+        }
+        else
+        {
+            locationInteractionDefinitions = LocationInteractionContent.CreateDefinitionSet();
+            locationInstances = null;
+        }
+
         var locationInteractionService = new LocationInteractionService(locationInteractionDefinitions);
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
@@ -43,7 +67,34 @@ public sealed class GameApplication
 
     public GameState CreateTutorialGame()
     {
-        return TutorialGameFactory.Create();
+        return TutorialGameFactory.Create(locationInstances);
+    }
+
+    private static LocationDataBundle? TryLoadDefaultLocationData()
+    {
+        foreach (var root in CandidateDataRoots())
+        {
+            var bundle = LocationDataLoader.LoadFromDirectory(root);
+            if (bundle != null)
+            {
+                return bundle;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> CandidateDataRoots()
+    {
+        const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData/Locations";
+        yield return Path.Combine(Directory.GetCurrentDirectory(), relative);
+
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+        {
+            yield return Path.Combine(dir, relative);
+            dir = Directory.GetParent(dir)?.FullName;
+        }
     }
 
     public MoveExpeditionResult MoveExpedition(GameState game, HexCoord destination)
@@ -87,9 +138,14 @@ public sealed class GameApplication
         return getLocationInteractionCommand.Execute(game, locationId);
     }
 
-    public LocationActionResult ResolveLocationAction(GameState game, string locationId, string actionId, string? forcedOutcomeId = null)
+    public LocationActionResult ResolveLocationAction(
+        GameState game,
+        string locationId,
+        string actionId,
+        LocationOutcomeTier? forcedTier = null,
+        LocationRecoveryOutcome? forcedRecovery = null)
     {
-        return resolveLocationActionCommand.Execute(game, locationId, actionId, forcedOutcomeId);
+        return resolveLocationActionCommand.Execute(game, locationId, actionId, forcedTier, forcedRecovery);
     }
 
     public LocationActionResult AdvanceLocationProject(GameState game, string locationId)

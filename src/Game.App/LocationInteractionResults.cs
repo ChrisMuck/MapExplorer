@@ -38,14 +38,16 @@ public sealed class LocationActionResult
         bool success,
         SpecialLocationState? location,
         LocationActionDefinition? action,
-        LocationOutcomeDefinition? outcome,
+        LocationOutcomeTier? resolvedTier,
+        string? outcomeLabel,
         IReadOnlyList<string> effectTexts,
         string? error)
     {
         Success = success;
         Location = location;
         Action = action;
-        Outcome = outcome;
+        ResolvedTier = resolvedTier;
+        OutcomeLabel = outcomeLabel;
         EffectTexts = effectTexts;
         Error = error;
     }
@@ -56,7 +58,11 @@ public sealed class LocationActionResult
 
     public LocationActionDefinition? Action { get; }
 
-    public LocationOutcomeDefinition? Outcome { get; }
+    /// <summary>The rolled outcome tier, or null for project start/advance (no tier roll).</summary>
+    public LocationOutcomeTier? ResolvedTier { get; }
+
+    /// <summary>Display label for the resolved tier, or null when there was no tier roll.</summary>
+    public string? OutcomeLabel { get; }
 
     public IReadOnlyList<string> EffectTexts { get; }
 
@@ -65,15 +71,16 @@ public sealed class LocationActionResult
     public static LocationActionResult Resolved(
         SpecialLocationState location,
         LocationActionDefinition action,
-        LocationOutcomeDefinition? outcome,
+        LocationOutcomeTier? resolvedTier,
+        string? outcomeLabel,
         IReadOnlyList<string> effectTexts)
     {
-        return new LocationActionResult(true, location, action, outcome, effectTexts, null);
+        return new LocationActionResult(true, location, action, resolvedTier, outcomeLabel, effectTexts, null);
     }
 
     public static LocationActionResult Rejected(string error)
     {
-        return new LocationActionResult(false, null, null, null, Array.Empty<string>(), error);
+        return new LocationActionResult(false, null, null, null, null, Array.Empty<string>(), error);
     }
 }
 }
