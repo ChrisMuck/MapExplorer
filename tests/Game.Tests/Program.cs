@@ -35,6 +35,8 @@ var archiveTests = new ArchiveCommandTests();
 archiveTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
+var locationInteractionTests = new LocationInteractionFrameworkTests();
+locationInteractionTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
 eventQueueTests.RunAll();
 var factionTests = new FactionPresenceTests();
@@ -431,7 +433,7 @@ internal sealed class GameStateTests
     private static void PlayerNotesAreSeparateFromKnowledgeAndWorldState()
     {
         var game = TutorialGameFactory.Create();
-        var coord = new HexCoord(12, 15);
+        var coord = game.World.Locations.First(location => location.Id == "marked-grave").Coord;
 
         game.PlayerNotes.AddMarker(new PlayerMapMarkerState("marker-1", coord, PlayerMapMarkerKind.Question, "Broken bridge?"));
         game.PlayerNotes.AddNote(new PlayerMapNoteState("note-1", coord, "Need an engineer later."));
@@ -439,7 +441,7 @@ internal sealed class GameStateTests
         AssertEqual(1, game.PlayerNotes.Markers.Count, "Marker count");
         AssertEqual(1, game.PlayerNotes.Notes.Count, "Note count");
         AssertEqual(KnowledgeLevel.Unknown, game.Knowledge.GetTileKnowledge(coord), "Note does not reveal knowledge");
-        AssertEqual("broken-ravine", game.World.Map.GetTile(coord).LocationId, "Note does not mutate world location");
+        AssertEqual("marked-grave", game.World.Map.GetTile(coord).LocationId, "Note does not mutate world location");
     }
 
     private static void WorldDayCanAdvanceWithoutChangingExpeditionDay()
@@ -1424,6 +1426,162 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(result.Success, "Watchtower inspection succeeds");
         AssertEqual(watchtower.Id, definition.Source, "Hidden symbol source points to watchtower");
         AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol leverage is recorded");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class LocationInteractionFrameworkTests
+{
+    public void RunAll()
+    {
+        TutorialBridgeIsImmediateEdgeLocation();
+        BridgeActionsComeFromArchetypeAndModifiers();
+        RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
+        RebuildBridgeIsGenericLockedProject();
+        MarkedGraveUsesSameInteractionFramework();
+    }
+
+    private static void TutorialBridgeIsImmediateEdgeLocation()
+    {
+        var game = TutorialGameFactory.Create();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+
+        AssertEqual(new HexCoord(2, 15), bridge.Coord, "Bridge sits on first field after base");
+        AssertEqual(LocationAnchorKind.Edge, bridge.Anchor.Kind, "Bridge uses edge anchor");
+        AssertEqual(game.Base.Location, bridge.Anchor.Coords[0], "Bridge edge starts at base");
+        AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[1], "Bridge edge ends at first field");
+        AssertEqual("broken-ravine", game.World.Map.GetTile(new HexCoord(2, 15)).LocationId, "First field points to bridge location");
+    }
+
+    private static void BridgeActionsComeFromArchetypeAndModifiers()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var result = app.GetLocationInteraction(game, bridge.Id);
+
+        AssertTrue(result.Success, "Bridge interaction query succeeds");
+        var interaction = result.Interaction;
+        AssertTrue(interaction != null, "Bridge interaction model exists");
+        if (interaction == null)
+        {
+            throw new InvalidOperationException("Bridge interaction model missing.");
+        }
+
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Route obstacle action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Repairable modifier adds rebuild action");
+        AssertTrue(interaction.Options.All(option => option.Action.Id != LocationInteractionContent.ActionDisturb), "Investigation-site action is absent");
+    }
+
+    private static void RopeCrossingChangesStateAndRiskWithoutVariantSwitch()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var before = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        var crossingBefore = before?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
+        AssertTrue(crossingBefore != null, "Crossing action exists before rope crossing");
+        AssertEqual(LocationRiskBand.High, crossingBefore!.RiskBand, "Blocked bridge crossing risk is high");
+
+        var result = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionConstructTemporaryPassage, "success-with-cost");
+
+        AssertTrue(result.Success, "Rope crossing action resolves");
+        AssertEqual(LocationStateIds.Operational.RiskyPassage, bridge.OperationalStateId, "Rope crossing changes operational state");
+
+        var after = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        var crossingAfter = after?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
+        AssertTrue(crossingAfter != null, "Crossing action exists after rope crossing");
+        AssertEqual(LocationRiskBand.Moderate, crossingAfter!.RiskBand, "Risky passage crossing risk is recomputed from state");
+    }
+
+    private static void RebuildBridgeIsGenericLockedProject()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var withoutEngineer = app.GetLocationInteraction(game, bridge.Id).Interaction?.FindOption(LocationInteractionContent.ActionRebuildBridge);
+        AssertTrue(withoutEngineer != null, "Rebuild action is visible without engineer");
+        AssertFalse(withoutEngineer!.IsAvailable, "Rebuild action is locked without engineer");
+
+        var members = game.Expedition.Members
+            .Concat(new[] { new ExpeditionMemberState("engineer-test", "Ansel", ExpeditionMemberRole.Engineer) })
+            .ToList();
+        game.SetExpedition(new ExpeditionState(
+            game.Expedition.ExpeditionNumber,
+            game.Expedition.Position,
+            members,
+            game.Expedition.ExpeditionDay,
+            game.Expedition.MovementPoints,
+            game.Expedition.MaxMovementPoints,
+            game.Expedition.Supplies,
+            game.Expedition.Medicine,
+            game.Expedition.Morale,
+            game.Expedition.Capacity,
+            game.Expedition.Status,
+            game.Expedition.UnsecuredKnowledge));
+
+        var start = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionRebuildBridge);
+        AssertTrue(start.Success, "Engineer can start bridge project");
+        AssertTrue(bridge.ActiveProject != null, "Bridge project state is stored on location");
+
+        app.AdvanceLocationProject(game, bridge.Id);
+        app.AdvanceLocationProject(game, bridge.Id);
+        var complete = app.AdvanceLocationProject(game, bridge.Id);
+
+        AssertTrue(complete.Success, "Project completion succeeds");
+        AssertEqual(LocationStateIds.Operational.Repaired, bridge.OperationalStateId, "Bridge is repaired after project completion");
+        AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "OpenRoute effect creates persistent route");
+    }
+
+    private static void MarkedGraveUsesSameInteractionFramework()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var grave = game.World.Locations.First(location => location.Id == "marked-grave");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, grave.Coord);
+
+        var result = app.GetLocationInteraction(game, grave.Id);
+
+        AssertTrue(result.Success, "Marked grave interaction query succeeds");
+        var interaction = result.Interaction;
+        AssertTrue(interaction != null, "Marked grave interaction model exists");
+        if (interaction == null)
+        {
+            throw new InvalidOperationException("Marked grave interaction model missing.");
+        }
+
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionInspect), "Investigation archetype action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionLeaveOffering), "Marked grave variant adds offering action");
+        AssertFalse(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Route-obstacle action is absent");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

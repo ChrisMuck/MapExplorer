@@ -152,6 +152,11 @@ public sealed class ExpeditionState
         Supplies += amount;
     }
 
+    public void AdjustMorale(int amount)
+    {
+        Morale = Math.Max(0, Morale + amount);
+    }
+
     public void AddUnsecuredKnowledge(int amount)
     {
         if (amount < 0)

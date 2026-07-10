@@ -15,7 +15,7 @@ public static class TutorialGameFactory
         var baseCoord = BaseCoord();
 
         map.SetTile(new HexTileState(baseCoord, TerrainType.Coast, locationId: "base-camp"));
-        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road"));
+        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road", locationId: "broken-ravine"));
         map.SetTile(new HexTileState(new HexCoord(3, 15), TerrainType.Grassland, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(4, 15), TerrainType.Grassland, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(5, 15), TerrainType.Forest, roadId: "old-coast-road"));
@@ -24,7 +24,7 @@ public static class TutorialGameFactory
         map.SetTile(new HexTileState(new HexCoord(9, 14), TerrainType.Mountain, elevation: 4, isBlocked: true));
         map.SetTile(new HexTileState(new HexCoord(6, 16), TerrainType.Swamp, riverId: "gray-river"));
         // Landmarks sit on open ground so they are not hidden under forest canopy or mountains.
-        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland, locationId: "broken-ravine"));
+        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland));
         map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Grassland, locationId: "marked-grave"));
         map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Grassland, locationId: "abandoned-camp"));
 
@@ -130,8 +130,39 @@ public static class TutorialGameFactory
             new SpecialLocationState("settlement-south", LocationKind.Settlement, ViewCoord(-3, 5), "Foothill Camp"),
             new SpecialLocationState("watchtower", LocationKind.Watchtower, ViewCoord(9, 2), "Old Watchtower"),
             new SpecialLocationState("mine", LocationKind.Mine, ViewCoord(-10, -2), "Abandoned Mine"),
-            new SpecialLocationState("broken-ravine", LocationKind.BrokenRavine, new HexCoord(12, 15), "Broken Ravine"),
-            new SpecialLocationState("marked-grave", LocationKind.MarkedGrave, ViewCoord(-8, 4), "Marked Grave"),
+            new SpecialLocationState(
+                "broken-ravine",
+                LocationKind.BrokenRavine,
+                new HexCoord(2, 15),
+                "Zerstoerte Bruecke",
+                LocationAnchor.Edge(BaseCoord(), new HexCoord(2, 15)),
+                LocationInteractionContent.ArchetypeRouteObstacle,
+                LocationInteractionContent.VariantBrokenBridge,
+                new[]
+                {
+                    LocationInteractionContent.ModifierRepairable,
+                    LocationInteractionContent.ModifierUnstable,
+                    LocationInteractionContent.ModifierWatched
+                },
+                contentProfileId: "content-old-trade-road-bridge",
+                operationalStateId: LocationStateIds.Operational.Blocked,
+                presenceStateId: LocationStateIds.Presence.Watched),
+            new SpecialLocationState(
+                "marked-grave",
+                LocationKind.MarkedGrave,
+                ViewCoord(-8, 4),
+                "Marked Grave",
+                LocationAnchor.Point(ViewCoord(-8, 4)),
+                LocationInteractionContent.ArchetypeInvestigationSite,
+                LocationInteractionContent.VariantMarkedGrave,
+                new[]
+                {
+                    LocationInteractionContent.ModifierSacred,
+                    LocationInteractionContent.ModifierFactionOwned
+                },
+                contentProfileId: "content-marked-grave",
+                operationalStateId: LocationStateIds.Operational.Sealed,
+                presenceStateId: LocationStateIds.Presence.Empty),
             new SpecialLocationState("abandoned-camp", LocationKind.AbandonedCamp, ViewCoord(-2, 3), "Abandoned Camp")
         };
     }

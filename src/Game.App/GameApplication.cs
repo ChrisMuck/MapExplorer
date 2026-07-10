@@ -10,6 +10,7 @@ public sealed class GameApplication
 {
     public HexMapBounds DefaultPrototypeBounds { get; } = new(40, 30);
     private readonly MovementCostService movementCostService = new MovementCostService();
+    private readonly LocationInteractionDefinitionSet locationInteractionDefinitions = LocationInteractionContent.CreateDefinitionSet();
     private readonly EndDayCommand endDayCommand = new EndDayCommand();
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
@@ -28,6 +29,17 @@ public sealed class GameApplication
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand = new OpenFactionInteractionCommand();
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
+    private readonly GetLocationInteractionCommand getLocationInteractionCommand;
+    private readonly ResolveLocationActionCommand resolveLocationActionCommand;
+    private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
+
+    public GameApplication()
+    {
+        var locationInteractionService = new LocationInteractionService(locationInteractionDefinitions);
+        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
+        resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
+        advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
+    }
 
     public GameState CreateTutorialGame()
     {
@@ -68,6 +80,21 @@ public sealed class GameApplication
     public InspectLocationResult InspectLocation(GameState game, HexCoord coord)
     {
         return inspectLocationCommand.Execute(game, coord);
+    }
+
+    public LocationInteractionQueryResult GetLocationInteraction(GameState game, string locationId)
+    {
+        return getLocationInteractionCommand.Execute(game, locationId);
+    }
+
+    public LocationActionResult ResolveLocationAction(GameState game, string locationId, string actionId, string? forcedOutcomeId = null)
+    {
+        return resolveLocationActionCommand.Execute(game, locationId, actionId, forcedOutcomeId);
+    }
+
+    public LocationActionResult AdvanceLocationProject(GameState game, string locationId)
+    {
+        return advanceLocationProjectCommand.Execute(game, locationId);
     }
 
     public ResolveEventResult ResolveEvent(GameState game, string eventId, string optionId)
