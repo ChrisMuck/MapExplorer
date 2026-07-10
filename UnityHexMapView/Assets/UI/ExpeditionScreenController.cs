@@ -7,6 +7,13 @@ using UnityEngine.UIElements;
 [RequireComponent(typeof(UIDocument))]
 public sealed class ExpeditionScreenController : MonoBehaviour
 {
+    private enum LocationInteractionView
+    {
+        Actions,
+        Outcome,
+        Project
+    }
+
     private const string Reports = "reports";
     private const string Scouts = "scouts";
     private const string Journal = "journal";
@@ -17,6 +24,11 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private VisualElement sidePanel;
     private Label sidePanelTitle;
     private string openSection;
+    private string openLocationInteractionId;
+    private string selectedLocationActionId;
+    private string locationInteractionMessage;
+    private LocationActionResult latestLocationActionResult;
+    private LocationInteractionView locationInteractionView = LocationInteractionView.Actions;
     private bool isCompact;
     private bool isNarrow;
     private Vector2 lastResponsiveSize;
@@ -91,7 +103,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("action-send-scout-panel", OpenScoutMissionPopup);
         RegisterClick("action-add-marker", () => mapView?.RequestAddMarkerFromUi());
         RegisterClick("action-add-note", () => mapView?.RequestAddNoteFromUi());
-        RegisterClick("action-inspect", () => mapView?.RequestInspectSelectedLocationFromUi());
+        RegisterClick("action-inspect", HandleInspectAction);
+        RegisterClick("selected-location-action", HandleInspectAction);
+        RegisterClick("btn-close", CloseLocationInteractionPopup);
+        RegisterClick("btn-back-from-outcome", ShowLocationActions);
+        RegisterClick("btn-back-from-project", ShowLocationActions);
+        RegisterClick("btn-advance-project", AdvanceLocationProject);
         RegisterClick("action-camp", () => mapView?.RequestPrepareSuppliesWithKnowledgeFromUi());
         RegisterClick("action-return-base", () => mapView?.RequestCompleteExpeditionFromUi());
         RegisterClick("action-end-day", () => mapView?.RequestEndDayFromUi());
@@ -173,8 +190,25 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshActionBar(state);
         BuildArchiveList(state);
         RefreshEventPopup(state);
+        RefreshLocationInteractionPopup(state);
         RefreshFactionInteractionPopup(state);
         RefreshScoutMissionPopup(state);
+    }
+
+    public void OpenLocationInteraction(string locationId)
+    {
+        if (string.IsNullOrWhiteSpace(locationId))
+        {
+            return;
+        }
+
+        openLocationInteractionId = locationId;
+        selectedLocationActionId = null;
+        locationInteractionMessage = null;
+        latestLocationActionResult = null;
+        locationInteractionView = LocationInteractionView.Actions;
+        SetDisplay("location-interaction-popup", true);
+        RefreshLocationInteractionPopup(mapView?.CurrentGameState);
     }
 
     private void RefreshKnowledgeStats(GameState state)
@@ -236,6 +270,27 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         SetText("scout-mission-preview", mapView.CurrentInteractionMessage);
+    }
+
+    private void HandleInspectAction()
+    {
+        if (mapView == null || mapView.CurrentGameState == null)
+        {
+            return;
+        }
+
+        var coord = mapView.CurrentSelectedCoreCoord;
+        var location = mapView.GetLocationForUi(coord);
+        if (location != null &&
+            mapView.GetKnowledgeForUi(coord) == KnowledgeLevel.Confirmed &&
+            !string.IsNullOrWhiteSpace(location.ArchetypeId))
+        {
+            OpenLocationInteraction(location.Id);
+            return;
+        }
+
+        mapView.RequestInspectSelectedLocationFromUi();
+        Refresh();
     }
 
     private void RegisterScoutMissionOptions()
@@ -437,14 +492,20 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         SetText("selected-location-kind", LocationKindText(location.Kind));
-        SetText("selected-location-status", location.IsInspected ? "Untersucht" : "Neu");
+        var hasInteractionModel = !string.IsNullOrWhiteSpace(location.ArchetypeId);
+        var touched = location.IsInspected || location.InteractionStateId != LocationStateIds.Interaction.Untouched;
+        SetText("selected-location-status", touched ? LocationInteractionStateText(location.InteractionStateId) : "Neu");
         SetText("selected-location-name", location.Name);
         SetText("selected-location-risk", LocationRiskText(location));
-        SetText("selected-location-action", location.IsInspected ? "Archiviert. Weitere Hinweise im Journal prüfen." : "Aktion: Ort untersuchen und Ereignis auslösen.");
+        SetText("selected-location-action", hasInteractionModel
+            ? "Aktion: Entscheidungen oeffnen."
+            : location.IsInspected ? "Archiviert. Weitere Hinweise im Journal pruefen." : "Aktion: Ort untersuchen und Ereignis ausloesen.");
 
         if (inspectButton != null)
         {
-            inspectButton.text = location.IsInspected ? "⌕ Ort ansehen" : "⌕ Ort untersuchen";
+            inspectButton.text = hasInteractionModel
+                ? "Ort oeffnen"
+                : location.IsInspected ? "Ort ansehen" : "Ort untersuchen";
             inspectButton.EnableInClassList("disabled", false);
         }
     }
@@ -961,6 +1022,440 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
     }
 
+    private void RefreshLocationInteractionPopup(GameState state)
+    {
+        var popup = root?.Q<VisualElement>("location-interaction-popup");
+        var options = root?.Q<VisualElement>("action-list");
+        if (popup == null || options == null)
+        {
+            return;
+        }
+
+        if (state == null || string.IsNullOrWhiteSpace(openLocationInteractionId))
+        {
+            popup.style.display = DisplayStyle.None;
+            options.Clear();
+            return;
+        }
+
+        var result = mapView.GetLocationInteractionForUi(openLocationInteractionId);
+        if (!result.Success || result.Interaction == null)
+        {
+            popup.style.display = DisplayStyle.None;
+            options.Clear();
+            locationInteractionMessage = result.Error;
+            return;
+        }
+
+        var interaction = result.Interaction;
+        var location = interaction.Location;
+        popup.style.display = DisplayStyle.Flex;
+        if (location.ActiveProject != null &&
+            locationInteractionView == LocationInteractionView.Actions &&
+            string.IsNullOrWhiteSpace(selectedLocationActionId))
+        {
+            locationInteractionView = LocationInteractionView.Project;
+        }
+
+        RenderLocationHeader(interaction);
+        RenderLocationViews(interaction);
+    }
+
+    private void CloseLocationInteractionPopup()
+    {
+        openLocationInteractionId = null;
+        selectedLocationActionId = null;
+        locationInteractionMessage = null;
+        latestLocationActionResult = null;
+        locationInteractionView = LocationInteractionView.Actions;
+        SetDisplay("location-interaction-popup", false);
+    }
+
+    private void ShowLocationActions()
+    {
+        locationInteractionView = LocationInteractionView.Actions;
+        RefreshLocationInteractionPopup(mapView?.CurrentGameState);
+    }
+
+    private void RenderLocationHeader(LocationInteractionModel interaction)
+    {
+        var location = interaction.Location;
+        var profile = interaction.ContentProfile;
+        var subtitle = string.IsNullOrWhiteSpace(profile?.Subtitle)
+            ? $"{ArchetypeText(location.ArchetypeId)} - Variante: {VariantText(location.VariantId)}"
+            : profile!.Subtitle!;
+        var flavor = profile?.FlavorForState(location.OperationalStateId);
+
+        SetText("location-icon-glyph", LocationIconText(location));
+        SetText("location-eyebrow", "FUNDSTELLE");
+        SetText("location-anchor", LocationAnchorText(location.Anchor));
+        SetText("location-title", string.IsNullOrWhiteSpace(profile?.Title) ? location.Name : profile!.Title);
+        SetText("location-subtitle", subtitle);
+        SetText("state-knowledge", "Wissensstand: Bestaetigt");
+        SetText("state-operational", $"Zustand: {LocationOperationalStateText(location.OperationalStateId)}");
+        SetText("state-presence", $"Anwesenheit: {LocationPresenceStateText(location.PresenceStateId)}");
+        SetText("location-flavor", string.IsNullOrWhiteSpace(flavor) ? LocationFlavorText(location) : flavor);
+
+        var operational = root?.Q<Label>("state-operational");
+        operational?.EnableInClassList("bi-state-pill--alert", IsOperationalAlert(location.OperationalStateId));
+
+        var modifierRow = root?.Q<VisualElement>("modifier-row");
+        modifierRow?.Clear();
+        if (modifierRow == null)
+        {
+            return;
+        }
+
+        foreach (var modifierId in location.ModifierIds)
+        {
+            var modifier = new Label(ModifierText(modifierId));
+            modifier.AddToClassList("bi-modifier");
+            modifier.EnableInClassList("bi-modifier--warn", modifierId == LocationInteractionContent.ModifierUnstable);
+            modifierRow.Add(modifier);
+        }
+    }
+
+    private void RenderLocationViews(LocationInteractionModel interaction)
+    {
+        var showActions = locationInteractionView == LocationInteractionView.Actions;
+        var showOutcome = locationInteractionView == LocationInteractionView.Outcome;
+        var showProject = locationInteractionView == LocationInteractionView.Project;
+        SetElementDisplay("view-actions", showActions);
+        SetElementDisplay("view-outcome", showOutcome);
+        SetElementDisplay("view-project", showProject);
+
+        if (showOutcome)
+        {
+            RenderLocationOutcomeView();
+            return;
+        }
+
+        if (showProject)
+        {
+            RenderLocationProjectView(interaction);
+            return;
+        }
+
+        RenderLocationActionView(interaction);
+    }
+
+    private void RenderLocationActionView(LocationInteractionModel interaction)
+    {
+        var actionList = root?.Q<VisualElement>("action-list");
+        var detailPanel = root?.Q<VisualElement>("detail-panel");
+        if (actionList == null || detailPanel == null)
+        {
+            return;
+        }
+
+        EnsureSelectedLocationAction(interaction);
+        actionList.Clear();
+
+        foreach (var option in interaction.Options)
+        {
+            actionList.Add(CreateLocationActionRow(option));
+        }
+
+        RenderLocationActionDetail(detailPanel, interaction, FindSelectedLocationOption(interaction));
+    }
+
+    private VisualElement CreateLocationActionRow(LocationInteractionOption option)
+    {
+        var row = new VisualElement();
+        row.AddToClassList("bi-action-row");
+        row.EnableInClassList("selected", option.Action.Id == selectedLocationActionId);
+        row.EnableInClassList("locked", !option.IsAvailable);
+        row.tooltip = option.IsAvailable ? option.Action.Description : option.LockedReason;
+
+        var glyph = new Label(ActionGlyphText(option.Action.Id));
+        glyph.AddToClassList("bi-action-glyph");
+        row.Add(glyph);
+
+        var main = new VisualElement();
+        main.AddToClassList("bi-action-main");
+        var title = new Label(option.Action.Label);
+        title.AddToClassList("bi-action-title");
+        main.Add(title);
+        var note = new Label(option.IsAvailable ? ConfidenceText(option.Confidence) : option.LockedReason ?? "Gesperrt");
+        note.AddToClassList("bi-action-note");
+        main.Add(note);
+        row.Add(main);
+
+        var risk = new Label(option.IsAvailable ? RiskPillText(option.RiskBand) : "LOCK");
+        risk.AddToClassList("bi-risk-pill");
+        risk.AddToClassList(RiskPillClass(option.RiskBand));
+        risk.EnableInClassList("bi-risk-pill--locked", !option.IsAvailable);
+        row.Add(risk);
+
+        var actionId = option.Action.Id;
+        row.RegisterCallback<ClickEvent>(evt =>
+        {
+            selectedLocationActionId = actionId;
+            locationInteractionView = LocationInteractionView.Actions;
+            RefreshLocationInteractionPopup(mapView?.CurrentGameState);
+            evt.StopPropagation();
+        });
+        return row;
+    }
+
+    private void RenderLocationActionDetail(VisualElement detailPanel, LocationInteractionModel interaction, LocationInteractionOption option)
+    {
+        detailPanel.Clear();
+        if (option == null)
+        {
+            var empty = new Label("Keine Aktion verfuegbar.");
+            empty.AddToClassList("bi-detail-title");
+            detailPanel.Add(empty);
+            return;
+        }
+
+        var title = new Label(option.Action.Label);
+        title.AddToClassList("bi-detail-title");
+        detailPanel.Add(title);
+
+        var description = new Label(option.Action.Description);
+        description.AddToClassList("bi-detail-description");
+        detailPanel.Add(description);
+
+        var meta = new VisualElement();
+        meta.AddToClassList("bi-detail-meta");
+        var risk = new Label(RiskPillText(option.RiskBand));
+        risk.AddToClassList("bi-risk-pill");
+        risk.AddToClassList(RiskPillClass(option.RiskBand));
+        meta.Add(risk);
+        var cost = new Label(LocationActionCostText(option.Action));
+        cost.AddToClassList("bi-detail-cost");
+        meta.Add(cost);
+        detailPanel.Add(meta);
+
+        var note = new Label(option.IsAvailable
+            ? $"Einschaetzung: {ConfidenceText(option.Confidence)}."
+            : option.LockedReason ?? "Diese Aktion ist aktuell gesperrt.");
+        note.AddToClassList("bi-detail-note");
+        detailPanel.Add(note);
+
+        if (option.Action.HardRequirements.Count > 0)
+        {
+            var requirements = new VisualElement();
+            requirements.AddToClassList("bi-requirement-list");
+            foreach (var requirement in option.Action.HardRequirements)
+            {
+                var line = new Label(RequirementText(requirement));
+                line.AddToClassList("bi-requirement");
+                requirements.Add(line);
+            }
+
+            detailPanel.Add(requirements);
+        }
+
+        var buttonText = option.Action.StartsProject ? "Projekt starten" : "Aktion durchfuehren";
+        var button = new Label(option.IsAvailable ? buttonText : "Gesperrt");
+        button.AddToClassList("bi-primary-button");
+        button.EnableInClassList("disabled", !option.IsAvailable);
+        if (option.IsAvailable)
+        {
+            button.RegisterCallback<ClickEvent>(evt =>
+            {
+                ResolveSelectedLocationAction(interaction.Location.Id);
+                evt.StopPropagation();
+            });
+        }
+
+        detailPanel.Add(button);
+    }
+
+    private void RenderLocationOutcomeView()
+    {
+        var outcome = latestLocationActionResult;
+        SetText("outcome-tier", outcome?.OutcomeLabel ?? (outcome?.Success == false ? "Abgelehnt" : "Ergebnis"));
+        SetText("outcome-caption", LocationActionResultText(outcome));
+
+        var effects = root?.Q<VisualElement>("outcome-effects");
+        effects?.Clear();
+        if (effects == null)
+        {
+            return;
+        }
+
+        if (outcome == null || outcome.EffectTexts.Count == 0)
+        {
+            AddEffectCard(effects, outcome?.Error ?? "Keine direkten Effekte.");
+            return;
+        }
+
+        foreach (var text in outcome.EffectTexts)
+        {
+            AddEffectCard(effects, text);
+        }
+    }
+
+    private void RenderLocationProjectView(LocationInteractionModel interaction)
+    {
+        var project = interaction.Location.ActiveProject;
+        var action = FindActionForProject(interaction, project);
+        SetText("project-title", action?.Label ?? "Aktives Projekt");
+
+        var effects = root?.Q<VisualElement>("project-effects");
+        effects?.Clear();
+        if (project == null)
+        {
+            SetText("project-day-label", "Kein aktives Projekt an dieser Fundstelle.");
+            SetProgress("project-progress-fill", 0f);
+            AddEffectCard(effects, "Starte eine Projektaktion, um hier Fortschritt aufzubauen.");
+            return;
+        }
+
+        SetText("project-day-label", $"Fortschritt {project.Progress}/{project.RequiredProgress}");
+        var progress = project.RequiredProgress <= 0 ? 0f : project.Progress * 100f / project.RequiredProgress;
+        SetProgress("project-progress-fill", progress);
+
+        if (action != null)
+        {
+            AddEffectCard(effects, action.Description);
+            foreach (var effect in action.ProjectCompletionEffects)
+            {
+                AddEffectCard(effects, effect.Text);
+            }
+        }
+        else
+        {
+            AddEffectCard(effects, "Dieses Projekt verweist auf eine nicht registrierte Aktion.");
+        }
+    }
+
+    private void ResolveSelectedLocationAction(string locationId)
+    {
+        if (string.IsNullOrWhiteSpace(selectedLocationActionId))
+        {
+            return;
+        }
+
+        latestLocationActionResult = mapView?.RequestResolveLocationActionFromUi(locationId, selectedLocationActionId);
+        locationInteractionMessage = LocationActionResultText(latestLocationActionResult);
+        if (selectedLocationActionId == LocationInteractionContent.ActionLeave &&
+            latestLocationActionResult != null &&
+            latestLocationActionResult.Success)
+        {
+            CloseLocationInteractionPopup();
+            return;
+        }
+
+        if (latestLocationActionResult != null && latestLocationActionResult.Success)
+        {
+            locationInteractionView = latestLocationActionResult.Action != null && latestLocationActionResult.Action.StartsProject
+                ? LocationInteractionView.Project
+                : LocationInteractionView.Outcome;
+        }
+        else
+        {
+            locationInteractionView = LocationInteractionView.Actions;
+        }
+
+        Refresh();
+    }
+
+    private void AdvanceLocationProject()
+    {
+        if (string.IsNullOrWhiteSpace(openLocationInteractionId))
+        {
+            return;
+        }
+
+        latestLocationActionResult = mapView?.RequestAdvanceLocationProjectFromUi(openLocationInteractionId);
+        locationInteractionMessage = LocationActionResultText(latestLocationActionResult);
+        if (latestLocationActionResult != null && latestLocationActionResult.Success && latestLocationActionResult.Location?.ActiveProject == null)
+        {
+            locationInteractionView = LocationInteractionView.Outcome;
+        }
+        else
+        {
+            locationInteractionView = LocationInteractionView.Project;
+        }
+
+        Refresh();
+    }
+
+    private void EnsureSelectedLocationAction(LocationInteractionModel interaction)
+    {
+        if (FindSelectedLocationOption(interaction) != null)
+        {
+            return;
+        }
+
+        selectedLocationActionId = null;
+        foreach (var option in interaction.Options)
+        {
+            if (option.IsAvailable)
+            {
+                selectedLocationActionId = option.Action.Id;
+                return;
+            }
+        }
+
+        if (interaction.Options.Count > 0)
+        {
+            selectedLocationActionId = interaction.Options[0].Action.Id;
+        }
+    }
+
+    private LocationInteractionOption FindSelectedLocationOption(LocationInteractionModel interaction)
+    {
+        if (string.IsNullOrWhiteSpace(selectedLocationActionId))
+        {
+            return null;
+        }
+
+        return interaction.FindOption(selectedLocationActionId);
+    }
+
+    private static LocationActionDefinition FindActionForProject(LocationInteractionModel interaction, LocationProjectState project)
+    {
+        if (project == null)
+        {
+            return null;
+        }
+
+        foreach (var option in interaction.Options)
+        {
+            if (option.Action.Id == project.ActionId)
+            {
+                return option.Action;
+            }
+        }
+
+        return null;
+    }
+
+    private void AddEffectCard(VisualElement parent, string text)
+    {
+        if (parent == null)
+        {
+            return;
+        }
+
+        var card = new Label(text);
+        card.AddToClassList("bi-effect-card");
+        parent.Add(card);
+    }
+
+    private void SetElementDisplay(string elementName, bool visible)
+    {
+        var element = root?.Q<VisualElement>(elementName);
+        if (element != null)
+        {
+            element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+    }
+
+    private void SetProgress(string elementName, float percent)
+    {
+        var element = root?.Q<VisualElement>(elementName);
+        if (element != null)
+        {
+            element.style.width = Length.Percent(Mathf.Clamp(percent, 0f, 100f));
+        }
+    }
+
     private void RefreshFactionInteractionPopup(GameState state)
     {
         var popup = root?.Q<VisualElement>("faction-contact-popup");
@@ -1078,6 +1573,372 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         return "Kostenlos";
+    }
+
+    private static string LocationIconText(SpecialLocationState location)
+    {
+        if (location == null)
+        {
+            return "?";
+        }
+
+        switch (location.ArchetypeId)
+        {
+            case LocationInteractionContent.ArchetypeRouteObstacle:
+                return "~";
+            case LocationInteractionContent.ArchetypeInvestigationSite:
+                return "?";
+            default:
+                return "+";
+        }
+    }
+
+    private static string LocationAnchorText(LocationAnchor anchor)
+    {
+        if (anchor == null)
+        {
+            return "Ort unbekannt";
+        }
+
+        switch (anchor.Kind)
+        {
+            case LocationAnchorKind.Edge:
+                return $"Kante {CoordText(anchor.Coords[0])} - {CoordText(anchor.Coords[1])}";
+            case LocationAnchorKind.Area:
+                return $"Gebiet {anchor.Coords.Count} Felder";
+            case LocationAnchorKind.Path:
+                return $"Pfad {anchor.Coords.Count} Felder";
+            default:
+                return $"Feld {CoordText(anchor.PrimaryCoord)}";
+        }
+    }
+
+    private static string CoordText(HexCoord coord)
+    {
+        return $"{coord.Q:00}/{coord.R:00}";
+    }
+
+    private static string ArchetypeText(string archetypeId)
+    {
+        switch (archetypeId)
+        {
+            case LocationInteractionContent.ArchetypeRouteObstacle:
+                return "Streckenhindernis";
+            case LocationInteractionContent.ArchetypeInvestigationSite:
+                return "Untersuchungsort";
+            default:
+                return string.IsNullOrWhiteSpace(archetypeId) ? "Fundstelle" : archetypeId;
+        }
+    }
+
+    private static string VariantText(string variantId)
+    {
+        switch (variantId)
+        {
+            case LocationInteractionContent.VariantBrokenBridge:
+                return "Zerstoerte Bruecke";
+            case LocationInteractionContent.VariantMarkedGrave:
+                return "Markiertes Grab";
+            default:
+                return string.IsNullOrWhiteSpace(variantId) ? "Unbekannt" : variantId;
+        }
+    }
+
+    private static string ModifierText(string modifierId)
+    {
+        switch (modifierId)
+        {
+            case LocationInteractionContent.ModifierRepairable:
+                return "Reparierbar";
+            case LocationInteractionContent.ModifierUnstable:
+                return "Instabil";
+            case LocationInteractionContent.ModifierWatched:
+                return "Beobachtet";
+            case LocationInteractionContent.ModifierSacred:
+                return "Sakral";
+            case LocationInteractionContent.ModifierFactionOwned:
+                return "Fraktionsgebiet";
+            default:
+                return string.IsNullOrWhiteSpace(modifierId) ? "Modifier" : modifierId;
+        }
+    }
+
+    private static string LocationFlavorText(SpecialLocationState location)
+    {
+        if (location == null)
+        {
+            return "Die Expedition steht vor einer Entscheidung.";
+        }
+
+        if (location.VariantId == LocationInteractionContent.VariantBrokenBridge)
+        {
+            return "Die alte Handelsbruecke ist eingestuerzt. Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.";
+        }
+
+        if (location.VariantId == LocationInteractionContent.VariantMarkedGrave)
+        {
+            return "Ein gesetztes Zeichen markiert diesen Ort. Die Bedeutung ist noch unsicher, aber die Expedition sollte nicht achtlos handeln.";
+        }
+
+        return LocationRiskText(location);
+    }
+
+    private static bool IsOperationalAlert(string stateId)
+    {
+        return stateId == LocationStateIds.Operational.Blocked ||
+            stateId == LocationStateIds.Operational.RiskyPassage ||
+            stateId == LocationStateIds.Operational.Destroyed ||
+            stateId == LocationStateIds.Operational.Sealed;
+    }
+
+    private static string ActionGlyphText(string actionId)
+    {
+        switch (actionId)
+        {
+            case LocationInteractionContent.ActionAssessCrossing:
+            case LocationInteractionContent.ActionInspect:
+            case LocationInteractionContent.ActionInvestigate:
+                return "?";
+            case LocationInteractionContent.ActionFindBypass:
+                return "->";
+            case LocationInteractionContent.ActionConstructTemporaryPassage:
+                return "~";
+            case LocationInteractionContent.ActionAttemptCrossing:
+                return ">";
+            case LocationInteractionContent.ActionRebuildBridge:
+                return "#";
+            case LocationInteractionContent.ActionDocument:
+            case LocationInteractionContent.ActionMark:
+                return "+";
+            case LocationInteractionContent.ActionLeave:
+                return "X";
+            default:
+                return "-";
+        }
+    }
+
+    private static string RiskPillText(LocationRiskBand risk)
+    {
+        return risk == LocationRiskBand.None ? "Kein Risiko" : RiskBandText(risk);
+    }
+
+    private static string RiskPillClass(LocationRiskBand risk)
+    {
+        switch (risk)
+        {
+            case LocationRiskBand.Moderate:
+                return "bi-risk-pill--moderate";
+            case LocationRiskBand.High:
+                return "bi-risk-pill--high";
+            case LocationRiskBand.Extreme:
+                return "bi-risk-pill--extreme";
+            default:
+                return string.Empty;
+        }
+    }
+
+    private static string LocationActionCostText(LocationActionDefinition action)
+    {
+        if (action == null)
+        {
+            return "Kosten unbekannt";
+        }
+
+        if (action.StartsProject)
+        {
+            return $"{action.ProjectDurationDays} Projekttage";
+        }
+
+        if (action.Costs.Count > 0)
+        {
+            var parts = new List<string>();
+            foreach (var cost in action.Costs)
+            {
+                parts.Add($"{cost.Amount} {CostKindText(cost.Kind)}");
+            }
+
+            return string.Join(", ", parts);
+        }
+
+        if (action.RepeatPolicy == LocationActionRepeatPolicy.RepeatableWithCost)
+        {
+            return "moegliche Kosten";
+        }
+
+        return "sofort";
+    }
+
+    private static string CostKindText(LocationCostKind kind)
+    {
+        switch (kind)
+        {
+            case LocationCostKind.MovementPoints: return "Bewegung";
+            case LocationCostKind.Supplies: return "Vorraete";
+            case LocationCostKind.Medicine: return "Medizin";
+            case LocationCostKind.Morale: return "Moral";
+            default: return kind.ToString();
+        }
+    }
+
+    private static string RequirementText(LocationRequirementDefinition requirement)
+    {
+        if (requirement == null)
+        {
+            return "Voraussetzung unbekannt";
+        }
+
+        switch (requirement.Kind)
+        {
+            case LocationRequirementKind.OperationalStateAny:
+                return $"Zustand: {string.Join(", ", requirement.Values)}";
+            case LocationRequirementKind.ModifierActive:
+                return $"Modifier aktiv: {string.Join(", ", requirement.Values)}";
+            case LocationRequirementKind.RolePresent:
+                return requirement.RequiredRole.HasValue
+                    ? $"Rolle erforderlich: {requirement.RequiredRole.Value}"
+                    : "Spezialrolle erforderlich";
+            case LocationRequirementKind.PositionOnOrAdjacent:
+                return "Expedition am Ort oder angrenzend";
+            case LocationRequirementKind.AnchorKind:
+                return requirement.RequiredAnchorKind.HasValue
+                    ? $"Ortstyp: {requirement.RequiredAnchorKind.Value}"
+                    : "Passender Ortstyp erforderlich";
+            default:
+                return requirement.UnmetReason;
+        }
+    }
+
+    private static string LocationOptionText(LocationInteractionOption option)
+    {
+        var risk = option.RiskBand == LocationRiskBand.None ? "kein Risiko" : $"Risiko: {RiskBandText(option.RiskBand)}";
+        if (!option.IsAvailable)
+        {
+            return $"{option.Action.Label} · gesperrt: {option.LockedReason ?? "nicht verfuegbar"}";
+        }
+
+        return $"{option.Action.Label} · {risk} · {ConfidenceText(option.Confidence)}";
+    }
+
+    private static string LocationActionResultText(LocationActionResult result)
+    {
+        if (result == null)
+        {
+            return "Keine Rueckmeldung.";
+        }
+
+        if (!result.Success)
+        {
+            return result.Error ?? "Aktion abgelehnt.";
+        }
+
+        var text = result.Outcome == null
+            ? result.Action?.Label ?? "Aktion ausgefuehrt"
+            : $"{result.Action?.Label}: {result.Outcome.Label}";
+        if (result.EffectTexts.Count == 0)
+        {
+            return text;
+        }
+
+        return $"{text}. {string.Join(" ", result.EffectTexts)}";
+    }
+
+    private static string LocationStateSummary(SpecialLocationState location)
+    {
+        var interaction = LocationInteractionStateText(location.InteractionStateId);
+        var operation = LocationOperationalStateText(location.OperationalStateId);
+        var presence = LocationPresenceStateText(location.PresenceStateId);
+        return $"{interaction} · {operation} · {presence}";
+    }
+
+    private static string LocationInteractionStateText(string stateId)
+    {
+        switch (stateId)
+        {
+            case LocationStateIds.Interaction.Untouched:
+                return "Neu";
+            case LocationStateIds.Interaction.Observed:
+                return "Beobachtet";
+            case LocationStateIds.Interaction.Inspected:
+                return "Eingeschaetzt";
+            case LocationStateIds.Interaction.Investigated:
+                return "Untersucht";
+            case LocationStateIds.Interaction.Exhausted:
+                return "Ausgeschoepft";
+            default:
+                return stateId;
+        }
+    }
+
+    private static string LocationOperationalStateText(string stateId)
+    {
+        switch (stateId)
+        {
+            case LocationStateIds.Operational.Blocked:
+                return "Blockiert";
+            case LocationStateIds.Operational.RiskyPassage:
+                return "Riskante Passage";
+            case LocationStateIds.Operational.TemporarilyOpen:
+                return "Provisorisch offen";
+            case LocationStateIds.Operational.Open:
+                return "Offen";
+            case LocationStateIds.Operational.Repaired:
+                return "Repariert";
+            case LocationStateIds.Operational.Sealed:
+                return "Versiegelt";
+            case LocationStateIds.Operational.None:
+                return "Kein Betriebszustand";
+            default:
+                return stateId;
+        }
+    }
+
+    private static string LocationPresenceStateText(string stateId)
+    {
+        switch (stateId)
+        {
+            case LocationStateIds.Presence.Empty:
+                return "Leer";
+            case LocationStateIds.Presence.Watched:
+                return "Beobachtet";
+            case LocationStateIds.Presence.Occupied:
+                return "Besetzt";
+            case LocationStateIds.Presence.Unknown:
+                return "Praesenz unklar";
+            default:
+                return stateId;
+        }
+    }
+
+    private static string RiskBandText(LocationRiskBand risk)
+    {
+        switch (risk)
+        {
+            case LocationRiskBand.Low:
+                return "niedrig";
+            case LocationRiskBand.Moderate:
+                return "moderat";
+            case LocationRiskBand.High:
+                return "hoch";
+            case LocationRiskBand.Extreme:
+                return "extrem";
+            default:
+                return "keins";
+        }
+    }
+
+    private static string ConfidenceText(LocationEstimateConfidence confidence)
+    {
+        switch (confidence)
+        {
+            case LocationEstimateConfidence.Guess:
+                return "Schaetzung";
+            case LocationEstimateConfidence.Assessed:
+                return "eingeschaetzt";
+            case LocationEstimateConfidence.Confirmed:
+                return "bestaetigt";
+            default:
+                return confidence.ToString();
+        }
     }
 
     private void RegisterRail(string elementName, string section)
@@ -1219,6 +2080,63 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         {
             sidePanel.pickingMode = PickingMode.Position;
         }
+    }
+
+    public bool IsPointerOverMapBlockingUi(Vector3 screenPosition)
+    {
+        if (root == null || root.panel == null || root.resolvedStyle.display == DisplayStyle.None)
+        {
+            return false;
+        }
+
+        var panelPosition = RuntimePanelUtils.ScreenToPanel(
+            root.panel,
+            new Vector2(screenPosition.x, screenPosition.y));
+
+        if (IsVisibleElementAt("location-interaction-popup", panelPosition) ||
+            IsVisibleElementAt("event-popup", panelPosition) ||
+            IsVisibleElementAt("scout-mission-popup", panelPosition) ||
+            IsVisibleElementAt("faction-contact-popup", panelPosition))
+        {
+            return true;
+        }
+
+        return IsMapBlockingElement(root.panel.Pick(panelPosition));
+    }
+
+    private bool IsVisibleElementAt(string elementName, Vector2 panelPosition)
+    {
+        var element = root?.Q<VisualElement>(elementName);
+        return element != null &&
+            element.resolvedStyle.display != DisplayStyle.None &&
+            element.resolvedStyle.visibility == Visibility.Visible &&
+            element.worldBound.Contains(panelPosition);
+    }
+
+    private static bool IsMapBlockingElement(VisualElement element)
+    {
+        for (var current = element; current != null; current = current.parent)
+        {
+            if (current.ClassListContains("topbar") ||
+                current.ClassListContains("left-panel") ||
+                current.ClassListContains("rail") ||
+                current.ClassListContains("side-panel") ||
+                current.ClassListContains("action-bar") ||
+                current.ClassListContains("bi-root") ||
+                current.ClassListContains("event-popup") ||
+                current.ClassListContains("scout-popup") ||
+                current.ClassListContains("faction-popup"))
+            {
+                return true;
+            }
+
+            if (current.ClassListContains("map-area"))
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     private void SetText(string elementName, string text)

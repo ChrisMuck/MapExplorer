@@ -58,6 +58,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     [Range(0, 8)] public int reachablePreviewRadius = 2;
     [SerializeField] private bool useCoreTutorialState = true;
     [SerializeField] private bool usePrefabOverrides = true;
+    [SerializeField] private bool autoRebuildInEditMode = false;
     [SerializeField] private HexMapPrefabLibrary prefabLibrary;
 
     private const float Sqrt3 = 1.73205080757f;
@@ -70,11 +71,12 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<TerrainKind, Material[]> topMaterialVariants = new();
     private readonly Dictionary<TerrainKind, Material> sideMaterials = new();
     private readonly Dictionary<string, Material> featureMaterials = new();
+    private readonly Dictionary<string, Mesh> generatedMeshCache = new();
     private Transform cameraRig;
     private Camera strategyCamera;
     private GameState coreGameState;
     private readonly MovementCostService movementCostService = new MovementCostService();
-    private readonly GameApplication gameApplication = new GameApplication();
+    private readonly GameApplication gameApplication = CreateGameApplication();
     private Transform currentBuildRoot;
     private HexMapWindSway windSway;
     private Transform terrainRoot;
@@ -94,6 +96,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Vector3 rightInspectStartMousePosition;
     private Vector2Int rightInspectStartHex;
     private bool hasRightInspectStart;
+    private readonly HashSet<string> autoOpenedLocationInteractionIds = new();
     private bool hasHoverPreview;
     private Vector2Int hoverPreviewHex;
     private bool hasInspectedHex;
@@ -608,6 +611,101 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    // Loads the JSON-authored location content from StreamingAssets (concept Section 17), falling
+    // back to the in-code definitions if the data folder is missing or fails validation.
+    private static GameApplication CreateGameApplication()
+    {
+        try
+        {
+            var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData", "Locations");
+            var bundle = LocationDataLoader.LoadFromDirectory(root);
+            if (bundle != null)
+            {
+                return new GameApplication(bundle);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"Location JSON load failed, using in-code fallback definitions: {ex.Message}");
+        }
+
+        return new GameApplication();
+    }
+
+    public LocationInteractionQueryResult GetLocationInteractionForUi(string locationId)
+    {
+        if (coreGameState == null)
+        {
+            return LocationInteractionQueryResult.Rejected("No active game state.");
+        }
+
+        return gameApplication.GetLocationInteraction(coreGameState, locationId);
+    }
+
+    public LocationActionResult RequestResolveLocationActionFromUi(string locationId, string actionId)
+    {
+        if (coreGameState == null)
+        {
+            return LocationActionResult.Rejected("No active game state.");
+        }
+
+        var result = gameApplication.ResolveLocationAction(coreGameState, locationId, actionId);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Location action rejected.";
+            RefreshToolkitHud();
+            return result;
+        }
+
+        if (result.Location != null)
+        {
+            inspectedHex = CoreCoordToViewCoord(result.Location.Coord);
+            hasInspectedHex = true;
+            inspectedLocation = result.Location;
+        }
+
+        interactionMessage = LocationActionMessage(result);
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+        RefreshToolkitHud();
+        return result;
+    }
+
+    public LocationActionResult RequestAdvanceLocationProjectFromUi(string locationId)
+    {
+        if (coreGameState == null)
+        {
+            return LocationActionResult.Rejected("No active game state.");
+        }
+
+        var result = gameApplication.AdvanceLocationProject(coreGameState, locationId);
+        if (!result.Success)
+        {
+            interactionMessage = result.Error ?? "Location project rejected.";
+            RefreshToolkitHud();
+            return result;
+        }
+
+        if (result.Location != null)
+        {
+            inspectedHex = CoreCoordToViewCoord(result.Location.Coord);
+            hasInspectedHex = true;
+            inspectedLocation = result.Location;
+        }
+
+        interactionMessage = LocationActionMessage(result);
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+        RefreshToolkitHud();
+        return result;
+    }
+
     public void RequestPrepareSuppliesWithKnowledgeFromUi()
     {
         if (coreGameState == null)
@@ -701,12 +799,20 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void OnEnable()
     {
-        RequestRebuild();
+        if (Application.isPlaying || autoRebuildInEditMode)
+        {
+            RequestRebuild();
+        }
     }
 
     private void OnValidate()
     {
-        if (isActiveAndEnabled)
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        if (Application.isPlaying || autoRebuildInEditMode)
         {
             RequestRebuild();
         }
@@ -773,13 +879,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     public void Rebuild()
     {
         ClearGeneratedChildren();
+        ClearGeneratedRuntimeAssets();
         tiles.Clear();
         featureObjectsByCoord.Clear();
         featureObjectsByPath.Clear();
-        topMaterials.Clear();
-        topMaterialVariants.Clear();
-        sideMaterials.Clear();
-        featureMaterials.Clear();
         strategyCamera = null;
         cameraRig = null;
         currentBuildRoot = null;
@@ -887,6 +990,20 @@ public sealed class UnityHexMapView : MonoBehaviour
             children.Add(transform.GetChild(i).gameObject);
         }
 
+        var generatedMeshes = new HashSet<Mesh>();
+        foreach (var child in children)
+        {
+            CollectGeneratedMeshes(child, generatedMeshes);
+        }
+
+        foreach (var mesh in generatedMeshCache.Values)
+        {
+            if (mesh != null && IsGeneratedRuntimeAsset(mesh))
+            {
+                generatedMeshes.Add(mesh);
+            }
+        }
+
         foreach (var child in children)
         {
             if (Application.isPlaying)
@@ -898,6 +1015,105 @@ public sealed class UnityHexMapView : MonoBehaviour
                 DestroyImmediate(child);
             }
         }
+
+        foreach (var mesh in generatedMeshes)
+        {
+            if (mesh != null)
+            {
+                DestroyGeneratedObject(mesh);
+            }
+        }
+    }
+
+    private void ClearGeneratedRuntimeAssets()
+    {
+        var materials = new HashSet<Material>();
+        CollectMaterials(topMaterials.Values, materials);
+        CollectMaterials(sideMaterials.Values, materials);
+        CollectMaterials(featureMaterials.Values, materials);
+        foreach (var variants in topMaterialVariants.Values)
+        {
+            CollectMaterials(variants, materials);
+        }
+
+        var textures = new HashSet<Texture>();
+        foreach (var material in materials)
+        {
+            if (material == null)
+            {
+                continue;
+            }
+
+            var texture = material.mainTexture;
+            if (texture != null && IsGeneratedRuntimeAsset(texture))
+            {
+                textures.Add(texture);
+            }
+        }
+
+        foreach (var material in materials)
+        {
+            if (material != null && IsGeneratedRuntimeAsset(material))
+            {
+                DestroyGeneratedObject(material);
+            }
+        }
+
+        foreach (var texture in textures)
+        {
+            if (texture != null)
+            {
+                DestroyGeneratedObject(texture);
+            }
+        }
+
+        topMaterials.Clear();
+        topMaterialVariants.Clear();
+        sideMaterials.Clear();
+        featureMaterials.Clear();
+        generatedMeshCache.Clear();
+    }
+
+    private static void CollectMaterials(IEnumerable<Material> source, HashSet<Material> target)
+    {
+        foreach (var material in source)
+        {
+            if (material != null)
+            {
+                target.Add(material);
+            }
+        }
+    }
+
+    private static void CollectGeneratedMeshes(GameObject root, HashSet<Mesh> meshes)
+    {
+        var meshFilters = root.GetComponentsInChildren<MeshFilter>(true);
+        foreach (var meshFilter in meshFilters)
+        {
+            var mesh = meshFilter.sharedMesh;
+            if (mesh != null && IsGeneratedRuntimeAsset(mesh))
+            {
+                meshFilter.sharedMesh = null;
+                meshes.Add(mesh);
+            }
+        }
+    }
+
+    private static bool IsGeneratedRuntimeAsset(Object obj)
+    {
+        if ((obj.hideFlags & HideFlags.DontSave) == 0)
+        {
+            return false;
+        }
+
+#if UNITY_EDITOR
+        if (UnityEditor.EditorUtility.IsPersistent(obj))
+        {
+            return false;
+        }
+#endif
+
+        return true;
     }
 
     private static void DestroyGeneratedObject(Object obj)
@@ -2751,6 +2967,59 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             FocusCameraOnCoord(selectedPreviewHex);
         }
+
+        TryAutoOpenLocationInteractionOnArrival();
+    }
+
+    private void TryAutoOpenLocationInteractionOnArrival()
+    {
+        if (coreGameState == null)
+        {
+            return;
+        }
+
+        var location = FindLocation(coreGameState.Expedition.Position);
+        if (!ShouldAutoOpenLocationInteraction(location))
+        {
+            return;
+        }
+
+        if (!autoOpenedLocationInteractionIds.Add(location.Id))
+        {
+            return;
+        }
+
+        inspectedHex = CoreCoordToViewCoord(location.Coord);
+        hasInspectedHex = true;
+        inspectedLocation = location;
+
+        if (expeditionScreenController == null)
+        {
+            expeditionScreenController = FindObjectOfType<ExpeditionScreenController>();
+        }
+
+        expeditionScreenController?.OpenLocationInteraction(location.Id);
+    }
+
+    private bool ShouldAutoOpenLocationInteraction(SpecialLocationState location)
+    {
+        if (location == null || string.IsNullOrWhiteSpace(location.ArchetypeId))
+        {
+            return false;
+        }
+
+        if (coreGameState.Knowledge.GetTileKnowledge(location.Coord) != KnowledgeLevel.Confirmed)
+        {
+            return false;
+        }
+
+        if (location.InteractionStateId != LocationStateIds.Interaction.Untouched)
+        {
+            return false;
+        }
+
+        // Any archetype-driven location auto-opens its interaction screen on first arrival.
+        return true;
     }
 
     private void EndCurrentDay()
@@ -2877,6 +3146,25 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         return $"{message} Scout updates: {result.ScoutResolutions.Count}, reports: {reports}.";
+    }
+
+    private static string LocationActionMessage(LocationActionResult result)
+    {
+        if (!result.Success)
+        {
+            return result.Error ?? "Location action rejected.";
+        }
+
+        var prefix = string.IsNullOrEmpty(result.OutcomeLabel)
+            ? result.Action?.Label ?? "Location action"
+            : $"{result.Action?.Label}: {result.OutcomeLabel}";
+
+        if (result.EffectTexts.Count == 0)
+        {
+            return prefix;
+        }
+
+        return $"{prefix}. {string.Join(" ", result.EffectTexts)}";
     }
 
     private void DrawAnnotationControls()
@@ -3258,7 +3546,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private bool TryGetPointerHex(out Vector2Int coord)
     {
         coord = default;
-        if (strategyCamera == null)
+        if (strategyCamera == null || IsPointerBlockedByExpeditionUi())
         {
             return false;
         }
@@ -3274,6 +3562,17 @@ public sealed class UnityHexMapView : MonoBehaviour
         var local = transform.InverseTransformPoint(hit);
         coord = WorldToAxial(local);
         return tiles.ContainsKey(coord);
+    }
+
+    private bool IsPointerBlockedByExpeditionUi()
+    {
+        if (expeditionScreenController == null)
+        {
+            expeditionScreenController = FindObjectOfType<ExpeditionScreenController>();
+        }
+
+        return expeditionScreenController != null &&
+            expeditionScreenController.IsPointerOverMapBlockingUi(Input.mousePosition);
     }
 
     private void UpdateCameraPan()
@@ -3312,6 +3611,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         if (keyboard.sqrMagnitude > 0.001f)
         {
             cameraRig.position += keyboard.normalized * (cameraPanSpeed * Time.deltaTime);
+        }
+
+        if (IsPointerBlockedByExpeditionUi() &&
+            (Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2) || Input.GetMouseButton(1) || Input.GetMouseButton(2)))
+        {
+            isDraggingPan = false;
+            return;
         }
 
         var panButtonDown = Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2);
@@ -4007,6 +4313,12 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private Mesh HexTopMesh(float radius, float y)
     {
+        var key = MeshCacheKey("hex-top", radius, y);
+        if (generatedMeshCache.TryGetValue(key, out var cached) && cached != null)
+        {
+            return cached;
+        }
+
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var triangles = new List<int>();
@@ -4023,11 +4335,19 @@ public sealed class UnityHexMapView : MonoBehaviour
             triangles.Add(start + 2);
         }
 
-        return MeshFrom(vertices, uvs, triangles, "HexTop");
+        var mesh = MeshFrom(vertices, uvs, triangles, "HexTop");
+        generatedMeshCache[key] = mesh;
+        return mesh;
     }
 
     private Mesh HexSideMesh(float radius, float y)
     {
+        var key = MeshCacheKey("hex-side", radius, y, VisualTileBottomY);
+        if (generatedMeshCache.TryGetValue(key, out var cached) && cached != null)
+        {
+            return cached;
+        }
+
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var triangles = new List<int>();
@@ -4048,11 +4368,19 @@ public sealed class UnityHexMapView : MonoBehaviour
             triangles.Add(start + 3);
         }
 
-        return MeshFrom(vertices, uvs, triangles, "HexSide");
+        var mesh = MeshFrom(vertices, uvs, triangles, "HexSide");
+        generatedMeshCache[key] = mesh;
+        return mesh;
     }
 
     private Mesh HexRingMesh(float outerRadius, float innerRadius, float y)
     {
+        var key = MeshCacheKey("hex-ring", outerRadius, innerRadius, y);
+        if (generatedMeshCache.TryGetValue(key, out var cached) && cached != null)
+        {
+            return cached;
+        }
+
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var triangles = new List<int>();
@@ -4075,11 +4403,19 @@ public sealed class UnityHexMapView : MonoBehaviour
             triangles.Add(start + 3);
         }
 
-        return MeshFrom(vertices, uvs, triangles, "HexRing");
+        var mesh = MeshFrom(vertices, uvs, triangles, "HexRing");
+        generatedMeshCache[key] = mesh;
+        return mesh;
     }
 
     private Mesh CylinderMesh(float bottomRadius, float topRadius, float height, int segments)
     {
+        var key = MeshCacheKey("cylinder", bottomRadius, topRadius, height, segments);
+        if (generatedMeshCache.TryGetValue(key, out var cached) && cached != null)
+        {
+            return cached;
+        }
+
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var triangles = new List<int>();
@@ -4114,7 +4450,9 @@ public sealed class UnityHexMapView : MonoBehaviour
             triangles.Add(start + 2);
         }
 
-        return MeshFrom(vertices, uvs, triangles, "Cylinder");
+        var mesh = MeshFrom(vertices, uvs, triangles, "Cylinder");
+        generatedMeshCache[key] = mesh;
+        return mesh;
     }
 
     private GameObject CreateCone(string name, float bottomRadius, float topRadius, float height, Material material)
@@ -4636,6 +4974,26 @@ public sealed class UnityHexMapView : MonoBehaviour
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
         return mesh;
+    }
+
+    private static string MeshCacheKey(string prefix, params float[] values)
+    {
+        var key = prefix;
+        foreach (var value in values)
+        {
+            key += ":" + Mathf.RoundToInt(value * 10000f);
+        }
+
+        return key;
+    }
+
+    private static string MeshCacheKey(string prefix, float valueA, float valueB, float valueC, int valueD)
+    {
+        return prefix + ":" +
+            Mathf.RoundToInt(valueA * 10000f) + ":" +
+            Mathf.RoundToInt(valueB * 10000f) + ":" +
+            Mathf.RoundToInt(valueC * 10000f) + ":" +
+            valueD;
     }
 
     private Vector3 AxialToWorld(Vector2Int coord)

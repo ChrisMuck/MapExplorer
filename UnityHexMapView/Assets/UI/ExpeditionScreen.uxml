@@ -329,6 +329,65 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- ======================= LOCATION INTERACTION POPUP ======================= -->
+        <ui:VisualElement name="location-interaction-popup" class="bi-root" style="display: none;">
+            <ui:VisualElement class="bi-popup">
+                <ui:VisualElement class="bi-header">
+                    <ui:VisualElement class="bi-icon">
+                        <ui:Label name="location-icon-glyph" text="~" class="bi-icon-glyph" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="bi-header-main">
+                        <ui:VisualElement class="bi-kicker-row">
+                            <ui:Label name="location-eyebrow" text="FUNDSTELLE" class="bi-eyebrow mono" />
+                            <ui:Label text="•" class="bi-muted mono" />
+                            <ui:Label name="location-anchor" text="Feld 00/00" class="bi-anchor mono" />
+                        </ui:VisualElement>
+                        <ui:Label name="location-title" text="Fundstelle" class="bi-title serif" />
+                        <ui:Label name="location-subtitle" text="Archetyp · Variante" class="bi-subtitle mono" />
+                        <ui:VisualElement class="bi-state-row">
+                            <ui:Label name="state-knowledge" text="Wissensstand: Bestaetigt" class="bi-state-pill" />
+                            <ui:Label name="state-operational" text="Zustand: Unklar" class="bi-state-pill bi-state-pill--alert" />
+                            <ui:Label name="state-presence" text="Anwesenheit: Unklar" class="bi-state-pill" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="modifier-row" class="bi-modifier-row" />
+                    </ui:VisualElement>
+                    <ui:Label name="btn-close" text="X" class="bi-close" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="bi-flavor-band">
+                    <ui:Label name="location-flavor" text="Die Expedition steht vor einer Entscheidung." class="bi-flavor serif" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="view-actions" class="bi-body">
+                    <ui:VisualElement class="bi-action-column">
+                        <ui:Label text="VERFUEGBARE AKTIONEN" class="bi-section-label mono" />
+                        <ui:VisualElement name="action-list" class="bi-action-list" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="detail-panel" class="bi-detail-panel" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="view-outcome" class="bi-outcome-view" style="display: none;">
+                    <ui:Label name="outcome-tier" text="Ergebnis" class="bi-outcome-tier serif" />
+                    <ui:Label name="outcome-caption" text="Die Aktion wurde ausgefuehrt." class="bi-outcome-caption" />
+                    <ui:VisualElement name="outcome-effects" class="bi-effect-list" />
+                    <ui:Label name="btn-back-from-outcome" text="Zurueck zu den Aktionen" class="bi-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="view-project" class="bi-project-view" style="display: none;">
+                    <ui:Label name="project-title" text="Projekt" class="bi-outcome-tier serif" />
+                    <ui:Label name="project-day-label" text="Fortschritt 0/0" class="bi-outcome-caption" />
+                    <ui:VisualElement class="bi-progress-track">
+                        <ui:VisualElement name="project-progress-fill" class="bi-progress-fill" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="project-effects" class="bi-effect-list" />
+                    <ui:VisualElement class="bi-project-actions">
+                        <ui:Label name="btn-advance-project" text="Projekttag investieren" class="bi-primary-button" />
+                        <ui:Label name="btn-back-from-project" text="Zurueck zu den Aktionen" class="bi-secondary-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- ======================= SCOUT MISSION MODAL ======================= -->
         <ui:VisualElement name="scout-mission-popup" class="scout-popup" style="display: none;">
             <ui:VisualElement class="scout-modal">

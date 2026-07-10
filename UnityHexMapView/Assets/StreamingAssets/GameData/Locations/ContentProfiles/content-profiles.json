@@ -1,0 +1,88 @@
+{
+  "documentType": "location-content-profiles",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "content-old-trade-road-bridge",
+      "title": "Zerstoerte Bruecke",
+      "subtitle": "Streckenhindernis",
+      "shortDescription": "Die alte Handelsbruecke ist eingestuerzt.",
+      "description": "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
+      "flavorByState": {
+        "blocked": "Die Schlucht trennt die alte Handelsroute.",
+        "risky-passage": "Ein provisorischer Uebergang haengt ueber der Schlucht.",
+        "repaired": "Die Bruecke ist wieder passierbar."
+      },
+      "imageId": "placeholder-bridge",
+      "journalText": {
+        "discovered": "Eine zerstoerte Bruecke blockiert die Route.",
+        "resolved": "Die Bruecke wurde als Routenproblem dokumentiert."
+      }
+    },
+    {
+      "id": "content-marked-grave",
+      "title": "Markiertes Grab",
+      "subtitle": "Untersuchungsstelle",
+      "shortDescription": "Ein sorgfaeltig markiertes Grab am Wegesrand.",
+      "description": "Zeichen und Steine deuten auf eine Grenzwaechter-Bestattung hin.",
+      "flavorByState": {
+        "sealed": "Das Grab ist verschlossen und mit Warnzeichen versehen.",
+        "open": "Das Grab wurde geoeffnet."
+      },
+      "imageId": "placeholder-grave",
+      "journalText": {
+        "discovered": "Ein markiertes Grab wurde entdeckt.",
+        "resolved": "Das markierte Grab wurde untersucht."
+      }
+    },
+    {
+      "id": "content-abandoned-camp",
+      "title": "Verlassenes Lager",
+      "subtitle": "Spurenfeld",
+      "shortDescription": "Ein kaltes, verlassenes Lager frueherer Reisender.",
+      "description": "Kalte Feuerstelle, zurueckgelassene Ausruestung und Fussspuren erzaehlen von einem hastigen Aufbruch.",
+      "flavorByState": {
+        "untouched": "Das Lager wirkt unberuehrt seit dem Aufbruch.",
+        "searched": "Das Lager wurde gruendlich durchsucht."
+      },
+      "imageId": "placeholder-camp",
+      "journalText": {
+        "discovered": "Ein verlassenes Lager wurde gefunden.",
+        "resolved": "Das verlassene Lager wurde ausgewertet."
+      }
+    },
+    {
+      "id": "content-border-warning",
+      "title": "Grenzwarnung",
+      "subtitle": "Territoriales Zeichen",
+      "shortDescription": "Warnzeichen am Rand eines beanspruchten Gebiets.",
+      "description": "Geschnitzte Pfaehle und Zeichen markieren eine Grenze der Grenzwaechter — eine unausgesprochene Aufforderung, fernzubleiben.",
+      "flavorByState": {
+        "untouched": "Die Zeichen stehen frisch und deutlich am Wegesrand.",
+        "interpreted": "Die Bedeutung der Zeichen ist nun verstanden.",
+        "violated": "Die Grenze wurde ueberschritten."
+      },
+      "imageId": "placeholder-warning",
+      "journalText": {
+        "discovered": "Warnzeichen deuten auf eine Grenze hin.",
+        "resolved": "Die Grenzwarnung wurde gedeutet."
+      }
+    },
+    {
+      "id": "content-sealed-gate",
+      "title": "Versiegeltes Tor",
+      "subtitle": "Verschlussstelle",
+      "shortDescription": "Ein altes, absichtlich versiegeltes Tor.",
+      "description": "Schwere Riegel und verwitterte Zeichen halten dieses Tor verschlossen. Warum es versiegelt wurde, bleibt vorerst unklar.",
+      "flavorByState": {
+        "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen."
+      },
+      "imageId": "placeholder-gate",
+      "journalText": {
+        "discovered": "Ein versiegeltes Tor wurde entdeckt.",
+        "resolved": "Das versiegelte Tor wurde dokumentiert."
+      }
+    }
+  ]
+}

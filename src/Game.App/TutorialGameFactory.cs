@@ -10,12 +10,22 @@ public static class TutorialGameFactory
 {
     public static GameState Create()
     {
+        return Create(null);
+    }
+
+    /// <summary>
+    /// Builds the tutorial world. When <paramref name="interactionInstances"/> is supplied (from the
+    /// JSON location data), those archetype-driven locations are used; otherwise the in-code fallback
+    /// instances are built. Plain map markers (settlements, base, watchtower, mine) are always in code.
+    /// </summary>
+    public static GameState Create(IReadOnlyList<SpecialLocationState>? interactionInstances)
+    {
         var bounds = new HexMapBounds(40, 30);
         var map = GenerateTutorialMap(bounds);
         var baseCoord = BaseCoord();
 
         map.SetTile(new HexTileState(baseCoord, TerrainType.Coast, locationId: "base-camp"));
-        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road"));
+        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road", locationId: "broken-ravine"));
         map.SetTile(new HexTileState(new HexCoord(3, 15), TerrainType.Grassland, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(4, 15), TerrainType.Grassland, roadId: "old-coast-road"));
         map.SetTile(new HexTileState(new HexCoord(5, 15), TerrainType.Forest, roadId: "old-coast-road"));
@@ -24,9 +34,11 @@ public static class TutorialGameFactory
         map.SetTile(new HexTileState(new HexCoord(9, 14), TerrainType.Mountain, elevation: 4, isBlocked: true));
         map.SetTile(new HexTileState(new HexCoord(6, 16), TerrainType.Swamp, riverId: "gray-river"));
         // Landmarks sit on open ground so they are not hidden under forest canopy or mountains.
-        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland, locationId: "broken-ravine"));
+        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland));
         map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Grassland, locationId: "marked-grave"));
         map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Grassland, locationId: "abandoned-camp"));
+        map.SetTile(new HexTileState(ViewCoord(-3, 1), TerrainType.Grassland, locationId: "border-warning"));
+        map.SetTile(new HexTileState(ViewCoord(5, -2), TerrainType.Hills, locationId: "sealed-gate"));
 
         // Keep the ancient wall on open plains so it reads clearly instead of vanishing in the range.
         foreach (var coord in ViewPath(AncientWallRoute))
@@ -39,7 +51,7 @@ public static class TutorialGameFactory
 
         ApplyFactionTerritories(map);
 
-        var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations());
+        var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations(interactionInstances));
         var knowledge = new KnowledgeState();
         new KnowledgeService().RevealFromExpedition(map, knowledge, baseCoord);
 
@@ -118,9 +130,10 @@ public static class TutorialGameFactory
         (5, 3), (6, 3), (7, 3), (8, 3), (9, 3), (10, 3), (11, 2), (12, 2)
     };
 
-    private static IEnumerable<SpecialLocationState> CreateTutorialLocations()
+    private static IEnumerable<SpecialLocationState> CreateTutorialLocations(IReadOnlyList<SpecialLocationState>? interactionInstances)
     {
-        return new[]
+        // Plain map markers with no archetype-driven interaction stay in code.
+        var locations = new List<SpecialLocationState>
         {
             new SpecialLocationState("base-camp", LocationKind.BaseCamp, BaseCoord(), "Coastal Base"),
             new SpecialLocationState("settlement-west", LocationKind.Settlement, ViewCoord(-5, 2), "Western Camp"),
@@ -129,10 +142,84 @@ public static class TutorialGameFactory
             new SpecialLocationState("settlement-north", LocationKind.Settlement, ViewCoord(4, 3), "Northern Village"),
             new SpecialLocationState("settlement-south", LocationKind.Settlement, ViewCoord(-3, 5), "Foothill Camp"),
             new SpecialLocationState("watchtower", LocationKind.Watchtower, ViewCoord(9, 2), "Old Watchtower"),
-            new SpecialLocationState("mine", LocationKind.Mine, ViewCoord(-10, -2), "Abandoned Mine"),
-            new SpecialLocationState("broken-ravine", LocationKind.BrokenRavine, new HexCoord(12, 15), "Broken Ravine"),
-            new SpecialLocationState("marked-grave", LocationKind.MarkedGrave, ViewCoord(-8, 4), "Marked Grave"),
-            new SpecialLocationState("abandoned-camp", LocationKind.AbandonedCamp, ViewCoord(-2, 3), "Abandoned Camp")
+            new SpecialLocationState("mine", LocationKind.Mine, ViewCoord(-10, -2), "Abandoned Mine")
+        };
+
+        // Archetype-driven interaction locations. Placement is code-driven for the slice (until the
+        // §18 procedural generator); definitions come from the JSON registries. A future generator can
+        // inject placed instances via interactionInstances instead.
+        locations.AddRange(interactionInstances is { Count: > 0 }
+            ? interactionInstances
+            : CreateSliceInteractionLocations());
+
+        return locations;
+    }
+
+    private static IEnumerable<SpecialLocationState> CreateSliceInteractionLocations()
+    {
+        return new[]
+        {
+            new SpecialLocationState(
+                "broken-ravine",
+                LocationKind.BrokenRavine,
+                new HexCoord(2, 15),
+                "Zerstoerte Bruecke",
+                LocationAnchor.Edge(BaseCoord(), new HexCoord(2, 15)),
+                "route-obstacle",
+                "broken-bridge",
+                new[] { "modifier-repairable", "modifier-unstable", "modifier-watched" },
+                contentProfileId: "content-old-trade-road-bridge",
+                operationalStateId: LocationStateIds.Operational.Blocked,
+                presenceStateId: LocationStateIds.Presence.Watched),
+            new SpecialLocationState(
+                "marked-grave",
+                LocationKind.MarkedGrave,
+                ViewCoord(-8, 4),
+                "Markiertes Grab",
+                LocationAnchor.Point(ViewCoord(-8, 4)),
+                "investigation-site",
+                "marked-grave",
+                new[] { "modifier-sacred", "modifier-faction-owned" },
+                contentProfileId: "content-marked-grave",
+                operationalStateId: LocationStateIds.Operational.Sealed,
+                presenceStateId: LocationStateIds.Presence.Empty,
+                factionIds: new[] { "border-wardens" }),
+            new SpecialLocationState(
+                "abandoned-camp",
+                LocationKind.AbandonedCamp,
+                ViewCoord(-2, 3),
+                "Verlassenes Lager",
+                LocationAnchor.Point(ViewCoord(-2, 3)),
+                "trace-site",
+                "abandoned-camp",
+                new[] { "modifier-searchable", "modifier-campable" },
+                contentProfileId: "content-abandoned-camp",
+                interactionStateId: LocationStateIds.Interaction.Untouched,
+                presenceStateId: LocationStateIds.Presence.Abandoned),
+            new SpecialLocationState(
+                "border-warning",
+                LocationKind.Landmark,
+                ViewCoord(-3, 1),
+                "Grenzwarnung",
+                LocationAnchor.Point(ViewCoord(-3, 1)),
+                "territorial-marker",
+                "border-warning-sign",
+                new[] { "modifier-faction-owned", "modifier-watched" },
+                contentProfileId: "content-border-warning",
+                presenceStateId: LocationStateIds.Presence.Watched,
+                factionIds: new[] { "border-wardens" }),
+            new SpecialLocationState(
+                "sealed-gate",
+                LocationKind.Ruin,
+                ViewCoord(5, -2),
+                "Versiegeltes Tor",
+                LocationAnchor.Point(ViewCoord(5, -2)),
+                "containment-site",
+                "sealed-gate",
+                new[] { "modifier-sealed", "modifier-guarded" },
+                contentProfileId: "content-sealed-gate",
+                operationalStateId: LocationStateIds.Operational.Sealed,
+                presenceStateId: LocationStateIds.Presence.Unknown)
         };
     }
 

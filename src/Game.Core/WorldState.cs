@@ -42,6 +42,21 @@ public sealed class WorldState
 
     public int WorldDay { get; private set; }
 
+    public void AddPath(WorldPathState path)
+    {
+        if (path == null)
+        {
+            throw new ArgumentNullException(nameof(path));
+        }
+
+        if (paths.Any(existing => existing.Id == path.Id))
+        {
+            return;
+        }
+
+        paths.Add(path);
+    }
+
     public void AdvanceDays(int days)
     {
         if (days < 1)

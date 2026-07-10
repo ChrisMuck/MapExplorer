@@ -35,6 +35,10 @@ var archiveTests = new ArchiveCommandTests();
 archiveTests.RunAll();
 var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
+var locationInteractionTests = new LocationInteractionFrameworkTests();
+locationInteractionTests.RunAll();
+var locationDataJsonTests = new LocationDataJsonTests();
+locationDataJsonTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
 eventQueueTests.RunAll();
 var factionTests = new FactionPresenceTests();
@@ -431,7 +435,7 @@ internal sealed class GameStateTests
     private static void PlayerNotesAreSeparateFromKnowledgeAndWorldState()
     {
         var game = TutorialGameFactory.Create();
-        var coord = new HexCoord(12, 15);
+        var coord = game.World.Locations.First(location => location.Id == "marked-grave").Coord;
 
         game.PlayerNotes.AddMarker(new PlayerMapMarkerState("marker-1", coord, PlayerMapMarkerKind.Question, "Broken bridge?"));
         game.PlayerNotes.AddNote(new PlayerMapNoteState("note-1", coord, "Need an engineer later."));
@@ -439,7 +443,7 @@ internal sealed class GameStateTests
         AssertEqual(1, game.PlayerNotes.Markers.Count, "Marker count");
         AssertEqual(1, game.PlayerNotes.Notes.Count, "Note count");
         AssertEqual(KnowledgeLevel.Unknown, game.Knowledge.GetTileKnowledge(coord), "Note does not reveal knowledge");
-        AssertEqual("broken-ravine", game.World.Map.GetTile(coord).LocationId, "Note does not mutate world location");
+        AssertEqual("marked-grave", game.World.Map.GetTile(coord).LocationId, "Note does not mutate world location");
     }
 
     private static void WorldDayCanAdvanceWithoutChangingExpeditionDay()
@@ -1424,6 +1428,426 @@ internal sealed class InspectLocationCommandTests
         AssertTrue(result.Success, "Watchtower inspection succeeds");
         AssertEqual(watchtower.Id, definition.Source, "Hidden symbol source points to watchtower");
         AssertTrue(game.LeverageItems.Contains(FactionInteractionDefinitions.HiddenSealedSymbolId), "Hidden symbol leverage is recorded");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class LocationInteractionFrameworkTests
+{
+    public void RunAll()
+    {
+        TutorialBridgeIsImmediateEdgeLocation();
+        TutorialBridgeTileIsMovableFromBase();
+        BridgeActionsComeFromArchetypeAndModifiers();
+        RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
+        RebuildBridgeIsGenericLockedProject();
+        MarkedGraveUsesSameInteractionFramework();
+    }
+
+    private static void TutorialBridgeIsImmediateEdgeLocation()
+    {
+        var game = TutorialGameFactory.Create();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+
+        AssertEqual(new HexCoord(2, 15), bridge.Coord, "Bridge sits on first field after base");
+        AssertEqual(LocationAnchorKind.Edge, bridge.Anchor.Kind, "Bridge uses edge anchor");
+        AssertEqual(game.Base.Location, bridge.Anchor.Coords[0], "Bridge edge starts at base");
+        AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[1], "Bridge edge ends at first field");
+        AssertEqual("broken-ravine", game.World.Map.GetTile(new HexCoord(2, 15)).LocationId, "First field points to bridge location");
+    }
+
+    private static void TutorialBridgeTileIsMovableFromBase()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+
+        var move = app.MoveExpedition(game, new HexCoord(2, 15));
+        var interaction = app.GetLocationInteraction(game, "broken-ravine");
+
+        AssertTrue(move.Success, "Expedition can move from base to bridge field");
+        AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Expedition reaches bridge test field");
+        AssertTrue(interaction.Success, "Bridge interaction is available after arrival");
+        AssertTrue(interaction.Interaction != null && interaction.Interaction.Options.Count > 0, "Bridge interaction has actions after arrival");
+    }
+
+    private static void BridgeActionsComeFromArchetypeAndModifiers()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var result = app.GetLocationInteraction(game, bridge.Id);
+
+        AssertTrue(result.Success, "Bridge interaction query succeeds");
+        var interaction = result.Interaction;
+        AssertTrue(interaction != null, "Bridge interaction model exists");
+        if (interaction == null)
+        {
+            throw new InvalidOperationException("Bridge interaction model missing.");
+        }
+
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Route obstacle action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Repairable modifier adds rebuild action");
+        AssertTrue(interaction.Options.All(option => option.Action.Id != LocationInteractionContent.ActionDisturb), "Investigation-site action is absent");
+    }
+
+    private static void RopeCrossingChangesStateAndRiskWithoutVariantSwitch()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var before = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        var crossingBefore = before?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
+        AssertTrue(crossingBefore != null, "Crossing action exists before rope crossing");
+        AssertEqual(LocationRiskBand.High, crossingBefore!.RiskBand, "Blocked bridge crossing risk is high");
+
+        var result = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionConstructTemporaryPassage, LocationOutcomeTier.SuccessWithCost);
+
+        AssertTrue(result.Success, "Rope crossing action resolves");
+        AssertEqual(LocationStateIds.Operational.RiskyPassage, bridge.OperationalStateId, "Rope crossing changes operational state");
+
+        var after = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        var crossingAfter = after?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
+        AssertTrue(crossingAfter != null, "Crossing action exists after rope crossing");
+        AssertEqual(LocationRiskBand.Moderate, crossingAfter!.RiskBand, "Risky passage crossing risk is recomputed from state");
+    }
+
+    private static void RebuildBridgeIsGenericLockedProject()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var withoutEngineer = app.GetLocationInteraction(game, bridge.Id).Interaction?.FindOption(LocationInteractionContent.ActionRebuildBridge);
+        AssertTrue(withoutEngineer != null, "Rebuild action is visible without engineer");
+        AssertFalse(withoutEngineer!.IsAvailable, "Rebuild action is locked without engineer");
+
+        var members = game.Expedition.Members
+            .Concat(new[] { new ExpeditionMemberState("engineer-test", "Ansel", ExpeditionMemberRole.Engineer) })
+            .ToList();
+        game.SetExpedition(new ExpeditionState(
+            game.Expedition.ExpeditionNumber,
+            game.Expedition.Position,
+            members,
+            game.Expedition.ExpeditionDay,
+            game.Expedition.MovementPoints,
+            game.Expedition.MaxMovementPoints,
+            game.Expedition.Supplies,
+            game.Expedition.Medicine,
+            game.Expedition.Morale,
+            game.Expedition.Capacity,
+            game.Expedition.Status,
+            game.Expedition.UnsecuredKnowledge));
+
+        var start = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionRebuildBridge);
+        AssertTrue(start.Success, "Engineer can start bridge project");
+        AssertTrue(bridge.ActiveProject != null, "Bridge project state is stored on location");
+
+        app.AdvanceLocationProject(game, bridge.Id);
+        app.AdvanceLocationProject(game, bridge.Id);
+        var complete = app.AdvanceLocationProject(game, bridge.Id);
+
+        AssertTrue(complete.Success, "Project completion succeeds");
+        AssertEqual(LocationStateIds.Operational.Repaired, bridge.OperationalStateId, "Bridge is repaired after project completion");
+        AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "OpenRoute effect creates persistent route");
+    }
+
+    private static void MarkedGraveUsesSameInteractionFramework()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var grave = game.World.Locations.First(location => location.Id == "marked-grave");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, grave.Coord);
+
+        var result = app.GetLocationInteraction(game, grave.Id);
+
+        AssertTrue(result.Success, "Marked grave interaction query succeeds");
+        var interaction = result.Interaction;
+        AssertTrue(interaction != null, "Marked grave interaction model exists");
+        if (interaction == null)
+        {
+            throw new InvalidOperationException("Marked grave interaction model missing.");
+        }
+
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionInspect), "Investigation archetype action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionLeaveOffering), "Marked grave variant adds offering action");
+        AssertFalse(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Route-obstacle action is absent");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class LocationDataJsonTests
+{
+    public void RunAll()
+    {
+        AllTenArchetypesLoadAndAreRepresentable();
+        ContentProfileSurfacesTitleAndFlavor();
+        WeightedOutcomeStaysWithinAuthoredBandRow();
+        ForcedTierAppliesAuthoredEffectBundle();
+        ModifierCompatibilityIsEnforced();
+        RepeatPolicyLocksAndReopensOnStateChange();
+        RecoveryCheckSpareseOrAppliesInjury();
+        SocialRiskRisesWithFactionAnger();
+        ValidationRejectsUnknownDocumentType();
+        ValidationRejectsWeightedTierWithoutEffectBundle();
+    }
+
+    private static LocationDataBundle LoadBundle()
+    {
+        var bundle = LocationDataLoader.LoadFromDirectory(LocationsDataRoot());
+        AssertTrue(bundle != null, "Location JSON bundle loads from StreamingAssets");
+        return bundle!;
+    }
+
+    private static readonly string[] AllArchetypeIds =
+    {
+        "trace-site", "investigation-site", "route-obstacle", "containment-site", "territorial-marker",
+        "contact-site", "resource-site", "hazard-zone", "landmark-site", "dynamic-situation"
+    };
+
+    private static void AllTenArchetypesLoadAndAreRepresentable()
+    {
+        var defs = LoadBundle().Definitions;
+
+        // No instances are authored as JSON anymore — placement is code/generator-driven (§18).
+        foreach (var archetypeId in AllArchetypeIds)
+        {
+            AssertTrue(defs.Archetypes.ContainsKey(archetypeId), $"Archetype '{archetypeId}' loads from JSON");
+            var archetype = defs.Archetypes[archetypeId];
+            AssertTrue(archetype.DefaultActionIds.Count > 0, $"Archetype '{archetypeId}' has default actions");
+
+            foreach (var actionId in archetype.DefaultActionIds)
+            {
+                AssertTrue(defs.Actions.ContainsKey(actionId), $"Archetype '{archetypeId}' action '{actionId}' is defined");
+                var action = defs.Actions[actionId];
+                if (!action.StartsProject)
+                {
+                    AssertTrue(defs.FindOutcomeTable(action.OutcomeTableId) != null, $"Action '{actionId}' has an outcome table");
+                }
+            }
+        }
+    }
+
+    private static void ContentProfileSurfacesTitleAndFlavor()
+    {
+        var defs = LoadBundle().Definitions;
+        var profile = defs.FindContentProfile("content-old-trade-road-bridge");
+        AssertTrue(profile != null, "Bridge content profile is present");
+        AssertEqual("Zerstoerte Bruecke", profile!.Title, "Content profile carries the authored title");
+        AssertEqual("Die Schlucht trennt die alte Handelsroute.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
+    }
+
+    private static void WeightedOutcomeStaysWithinAuthoredBandRow()
+    {
+        var bundle = LoadBundle();
+        var service = new LocationInteractionService(bundle.Definitions, new System.Random(20260710));
+        var action = bundle.Definitions.Actions["action-attempt-crossing"];
+
+        var allowed = new HashSet<LocationOutcomeTier>
+        {
+            LocationOutcomeTier.Success,
+            LocationOutcomeTier.SuccessWithCost,
+            LocationOutcomeTier.Failure,
+            LocationOutcomeTier.SevereFailure
+        };
+
+        var seen = new HashSet<LocationOutcomeTier>();
+        for (var i = 0; i < 300; i++)
+        {
+            var resolution = service.ResolveOutcome(action, LocationRiskBand.High);
+            AssertTrue(resolution != null, "High-band roll produces a resolution");
+            AssertTrue(allowed.Contains(resolution!.Tier), "Rolled tier is within the authored High band row");
+            AssertTrue(resolution.Effects.Count > 0, "Rolled tier has an effect bundle");
+            seen.Add(resolution.Tier);
+        }
+
+        AssertTrue(seen.Count >= 2, "Weighted roll actually varies across tiers");
+    }
+
+    private static void ForcedTierAppliesAuthoredEffectBundle()
+    {
+        var bundle = LoadBundle();
+        var service = new LocationInteractionService(bundle.Definitions);
+        var action = bundle.Definitions.Actions["action-attempt-crossing"];
+
+        var resolution = service.ResolveOutcome(action, LocationRiskBand.High, LocationOutcomeTier.SevereFailure);
+        AssertTrue(resolution != null, "Forced tier resolves");
+        AssertEqual(LocationOutcomeTier.SevereFailure, resolution!.Tier, "Forced tier is honored");
+        AssertTrue(resolution.Effects.Any(effect => effect.Kind == LocationEffectKind.InjureMember), "SevereFailure bundle injures a member");
+    }
+
+    private static void ModifierCompatibilityIsEnforced()
+    {
+        var defs = LoadBundle().Definitions;
+
+        AssertTrue(defs.IsModifierCompatible("investigation-site", "modifier-sacred"), "Sacred is compatible with investigation-site");
+        AssertFalse(defs.IsModifierCompatible("route-obstacle", "modifier-harvestable"), "Harvestable is not compatible with route-obstacle");
+
+        var okErrors = defs.ValidateModifierSet("route-obstacle", new[] { "modifier-repairable", "modifier-unstable" });
+        AssertEqual(0, okErrors.Count, "A valid modifier set has no compatibility errors");
+
+        var incompatible = defs.ValidateModifierSet("hazard-zone", new[] { "modifier-burning", "modifier-flooded" });
+        AssertTrue(incompatible.Count > 0, "Declared-incompatible modifiers are rejected together");
+    }
+
+    private static void RepeatPolicyLocksAndReopensOnStateChange()
+    {
+        var app = new GameApplication();
+        var game = app.CreateTutorialGame();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var once = app.ResolveLocationAction(game, bridge.Id, "action-assess-crossing", LocationOutcomeTier.Success);
+        AssertTrue(once.Success, "OncePerLocation action resolves once");
+        var locked = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-assess-crossing")!;
+        AssertFalse(locked.IsAvailable, "OncePerLocation action locks after use");
+
+        var bypass = app.ResolveLocationAction(game, bridge.Id, "action-find-bypass", LocationOutcomeTier.Success);
+        AssertTrue(bypass.Success, "OncePerState action resolves in the current state");
+        var lockedBypass = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
+        AssertFalse(lockedBypass.IsAvailable, "OncePerState action locks in the same state");
+
+        app.ResolveLocationAction(game, bridge.Id, "action-construct-temporary-passage", LocationOutcomeTier.SuccessWithCost);
+        var reopened = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
+        AssertTrue(reopened.IsAvailable, "OncePerState action reopens after the operational state changes");
+    }
+
+    private static void RecoveryCheckSpareseOrAppliesInjury()
+    {
+        var app = new GameApplication();
+        var game = app.CreateTutorialGame();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
+
+        var before = game.Expedition.Members.Count(member => member.Status == ExpeditionMemberStatus.Injured);
+
+        var preserved = app.ResolveLocationAction(game, bridge.Id, "action-attempt-crossing", LocationOutcomeTier.SevereFailure, LocationRecoveryOutcome.Preserved);
+        AssertTrue(preserved.Success, "Severe failure resolves");
+        AssertEqual(before, game.Expedition.Members.Count(member => member.Status == ExpeditionMemberStatus.Injured), "Preserved recovery spares the member");
+
+        var lost = app.ResolveLocationAction(game, bridge.Id, "action-attempt-crossing", LocationOutcomeTier.SevereFailure, LocationRecoveryOutcome.Lost);
+        AssertTrue(lost.Success, "Severe failure resolves again");
+        AssertTrue(game.Expedition.Members.Count(member => member.Status == ExpeditionMemberStatus.Injured) > before, "Lost recovery applies the injury");
+    }
+
+    private static void SocialRiskRisesWithFactionAnger()
+    {
+        var app = new GameApplication();
+        var game = app.CreateTutorialGame();
+        var sign = game.World.Locations.First(location => location.Id == "border-warning");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, sign.Coord);
+
+        var before = app.GetLocationInteraction(game, sign.Id).Interaction!.FindOption("action-cross-boundary")!;
+        var rawBefore = before.RawRisk;
+        var bandBefore = before.RiskBand;
+
+        game.FindFaction("border-wardens")!.Adjust(angerDelta: 80);
+
+        var after = app.GetLocationInteraction(game, sign.Id).Interaction!.FindOption("action-cross-boundary")!;
+        AssertTrue(after.RawRisk > rawBefore, "Higher faction anger raises the raw social risk");
+        AssertTrue((int)after.RiskBand >= (int)bandBefore, "Displayed band never drops when true danger rises (Fairness Rule 3)");
+    }
+
+    private static void ValidationRejectsUnknownDocumentType()
+    {
+        var malformed = "{ \"documentType\": \"location-nonsense\", \"schemaVersion\": 1, \"items\": [] }";
+        AssertThrows(() => LocationDataLoader.LoadFromJson(new[] { malformed }), "Unknown document type is rejected");
+    }
+
+    private static void ValidationRejectsWeightedTierWithoutEffectBundle()
+    {
+        var malformed =
+            "{ \"documentType\": \"location-outcome-tables\", \"schemaVersion\": 1, \"items\": [" +
+            "{ \"id\": \"bad-table\", \"tiers\": { \"High\": [ { \"tier\": \"Failure\", \"weight\": 10 } ] }, \"effectBundles\": {} } ] }";
+        AssertThrows(() => LocationDataLoader.LoadFromJson(new[] { malformed }), "Weighted tier without an effect bundle is rejected");
+    }
+
+    private static string LocationsDataRoot()
+    {
+        const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData/Locations";
+        var cwd = Path.Combine(Directory.GetCurrentDirectory(), relative);
+        if (Directory.Exists(cwd))
+        {
+            return cwd;
+        }
+
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+        {
+            var candidate = Path.Combine(dir, relative);
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+
+        throw new InvalidOperationException("Location JSON data folder not found for tests.");
+    }
+
+    private static void AssertThrows(Action action, string message)
+    {
+        try
+        {
+            action();
+        }
+        catch (LocationDataException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"{message}: expected a LocationDataException.");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)
