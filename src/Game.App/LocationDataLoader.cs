@@ -390,6 +390,17 @@ public static class LocationDataLoader
                     }
                 }
             }
+
+            foreach (var bundle in table.EffectBundles)
+            {
+                foreach (var effect in bundle)
+                {
+                    if (!string.IsNullOrWhiteSpace(effect.FactionId))
+                    {
+                        errors.Add($"Outcome table '{table.Id}' effect '{effect.Id}' directly references faction '{effect.FactionId}'. Use a neutral World Trigger instead.");
+                    }
+                }
+            }
         }
 
         // Modifier compatibility references must resolve (§12.2 / §19 "modifier incompatibilities").

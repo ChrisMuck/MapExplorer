@@ -134,6 +134,8 @@ public sealed class LocationOutcomeTableDefinition
 
     public IEnumerable<LocationRiskBand> Bands => weightsByBand.Keys;
 
+    public IEnumerable<IReadOnlyList<LocationEffectDefinition>> EffectBundles => effectBundles.Values;
+
     private static string RequireText(string value, string name)
     {
         if (string.IsNullOrWhiteSpace(value))
