@@ -45,6 +45,8 @@ var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
 var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
+var worldGenBridgeTests = new WorldGenBridgeTests();
+worldGenBridgeTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 
@@ -252,6 +254,73 @@ internal sealed class CrossSystemStateTests
         if (condition)
         {
             throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class WorldGenBridgeTests
+{
+    public void RunAll()
+    {
+        GeneratedWorldBridgesToCoreWithoutLosingAnchors();
+        SameRequestProducesSameCoreWorldLayout();
+        GeneratedWorldCanStartAnExpedition();
+    }
+
+    private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+
+        AssertTrue(result.World.Map.Contains(result.BaseLocation), "Generated base exists on bridged map");
+        AssertTrue(result.World.Locations.Count > 0, "Generated specials bridge into Core locations");
+        AssertTrue(result.Factions.Count == 3, "Generated factions bridge into Core faction state");
+        foreach (var location in result.World.Locations)
+        {
+            foreach (var coord in location.Anchor.Coords)
+            {
+                AssertTrue(result.World.Map.Contains(coord), $"Location anchor {location.Id} exists on bridged map");
+            }
+        }
+    }
+
+    private static void SameRequestProducesSameCoreWorldLayout()
+    {
+        var bridge = new WorldGenBridge();
+        var first = bridge.Generate(Request());
+        var second = bridge.Generate(Request());
+
+        AssertEqual(first.BaseLocation, second.BaseLocation, "Same request keeps generated base stable");
+        AssertEqual(first.World.Locations.Count, second.World.Locations.Count, "Same request keeps location count stable");
+        AssertEqual(first.World.Paths.Count, second.World.Paths.Count, "Same request keeps path count stable");
+    }
+
+    private static void GeneratedWorldCanStartAnExpedition()
+    {
+        var game = new GameApplication().CreateGeneratedGame(Request());
+
+        AssertEqual(game.Base.Location, game.Expedition.Position, "Generated expedition starts at generated base");
+        AssertTrue(game.Knowledge.GetTileKnowledge(game.Base.Location) == KnowledgeLevel.Confirmed, "Generated base starts confirmed");
+        AssertEqual(3, game.Factions.Count, "Generated campaign carries generated factions");
+    }
+
+    private static WorldGenerationRequest Request()
+    {
+        return new WorldGenerationRequest { Seed = 20260712, Width = 24, Height = 18, FactionCount = 3 };
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
         }
     }
 }

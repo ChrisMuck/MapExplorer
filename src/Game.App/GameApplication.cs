@@ -34,6 +34,7 @@ public sealed class GameApplication
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
     private readonly ResolveLocationActionCommand resolveLocationActionCommand;
     private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
+    private readonly WorldGenBridge worldGenBridge = new WorldGenBridge();
 
     public GameApplication()
         : this(null)
@@ -68,6 +69,12 @@ public sealed class GameApplication
     public GameState CreateTutorialGame()
     {
         return TutorialGameFactory.Create(locationInstances);
+    }
+
+    /// <summary>Starts a campaign from an unseen generated world. Player-facing generation UI belongs in Unity.</summary>
+    public GameState CreateGeneratedGame(WorldGenerationRequest request)
+    {
+        return TutorialGameFactory.CreateGenerated(worldGenBridge.Generate(request));
     }
 
     private static LocationDataBundle? TryLoadDefaultLocationData()
