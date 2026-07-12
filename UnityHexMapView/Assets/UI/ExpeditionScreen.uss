@@ -1108,3 +1108,51 @@
     top: 62px;
     bottom: 64px;
 }
+
+/* Campaign creation is an opaque gate: player mode never previews a generated world. */
+.campaign-setup {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(20, 24, 22);
+    z-index: 100;
+}
+.campaign-card {
+    width: 760px;
+    max-width: 88%;
+    padding: 42px 48px 38px 48px;
+    border-width: 1px;
+    border-color: rgba(240, 207, 122, 0.34);
+    background-color: rgb(31, 37, 33);
+}
+.campaign-eyebrow { color: rgb(143, 174, 116); font-size: 13px; letter-spacing: 2.2px; -unity-font-style: bold; }
+.campaign-title { margin-top: 10px; color: rgb(240, 207, 122); font-size: 32px; }
+.campaign-copy { margin-top: 18px; color: rgb(201, 195, 180); font-size: 16px; line-height: 23px; white-space: normal; }
+.campaign-section { margin-top: 26px; color: rgb(178, 170, 151); }
+.campaign-row { flex-direction: row; margin-top: 9px; }
+.campaign-choice {
+    min-width: 104px;
+    margin-right: 10px;
+    padding: 10px 13px;
+    border-width: 1px;
+    border-color: rgba(201, 195, 180, 0.26);
+    color: rgb(232, 227, 214);
+    -unity-text-align: middle-center;
+}
+.campaign-choice:hover { background-color: rgba(143, 174, 116, 0.16); }
+.campaign-choice--selected { background-color: rgb(104, 154, 104); color: rgb(18, 25, 20); border-color: rgb(143, 174, 116); -unity-font-style: bold; }
+.campaign-message { margin-top: 28px; color: rgb(178, 170, 151); font-size: 14px; }
+.campaign-begin {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background-color: rgb(240, 207, 122);
+    color: rgb(28, 31, 25);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 1px;
+}
+.campaign-begin:hover { background-color: rgb(255, 225, 144); }
+.ui-narrow .campaign-card { width: 92%; padding: 28px; }
+.ui-narrow .campaign-title { font-size: 25px; }
+.ui-narrow .campaign-choice { min-width: 74px; margin-right: 6px; padding: 9px 7px; font-size: 13px; }

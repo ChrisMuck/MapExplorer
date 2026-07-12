@@ -1,0 +1,11 @@
+{
+  "documentType": "world-generation-presets",
+  "schemaVersion": 1,
+  "items": [
+    { "id": "small", "label": "Klein", "width": 30, "height": 22 },
+    { "id": "medium", "label": "Mittel", "width": 40, "height": 30 },
+    { "id": "large", "label": "Groß", "width": 52, "height": 38 },
+    { "id": "huge", "label": "Riesig", "width": 64, "height": 46 },
+    { "id": "gigantic", "label": "Gigantisch", "width": 78, "height": 56 }
+  ]
+}

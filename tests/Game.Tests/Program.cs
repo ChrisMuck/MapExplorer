@@ -51,6 +51,8 @@ var worldPhaseDataTests = new WorldPhaseDataTests();
 worldPhaseDataTests.RunAll();
 var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
+var worldGenerationPresetTests = new WorldGenerationPresetTests();
+worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 

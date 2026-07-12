@@ -300,6 +300,7 @@ public static class CrossSystemDataLoader
                 case "consequence-definitions": consequences.AddRange(items.ToObject<List<ConsequenceDefinitionDto>>()!); break;
                 case "faction-reaction-rules": factionReactionRules.AddRange(items.ToObject<List<FactionReactionRuleDto>>()!); break;
                 case "faction-territory-entry-rules": factionTerritoryEntryRules.AddRange(items.ToObject<List<FactionTerritoryEntryRuleDto>>()!); break;
+                case "world-generation-presets": break;
                 default: throw new LocationDataException($"Unsupported cross-system documentType '{(string?)envelope["documentType"]}'.");
             }
         }

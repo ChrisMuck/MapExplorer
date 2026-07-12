@@ -75,6 +75,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Transform cameraRig;
     private Camera strategyCamera;
     private GameState coreGameState;
+    private WorldGenerationRequest generatedCampaignRequest;
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly GameApplication gameApplication = CreateGameApplication();
     private Transform currentBuildRoot;
@@ -128,6 +129,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     };
 
     public GameState CurrentGameState => coreGameState;
+    public bool HasStartedCampaign => generatedCampaignRequest != null;
 
     public string CurrentInteractionMessage => interactionMessage;
 
@@ -619,10 +621,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData", "Locations");
             var bundle = LocationDataLoader.LoadFromDirectory(root);
-            if (bundle != null)
+            var gameDataRoot = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData");
+            var crossSystem = CrossSystemDataLoader.LoadFromDirectories(new[]
             {
-                return new GameApplication(bundle);
-            }
+                System.IO.Path.Combine(gameDataRoot, "World"),
+                System.IO.Path.Combine(gameDataRoot, "Factions")
+            });
+            return new GameApplication(bundle, crossSystem);
         }
         catch (System.Exception ex)
         {
@@ -630,6 +635,21 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         return new GameApplication();
+    }
+
+    /// <summary>Starts one unseen generated campaign. This path intentionally offers no map preview or reroll.</summary>
+    public void RequestStartGeneratedCampaignFromUi(WorldGenerationRequest request)
+    {
+        if (request == null)
+        {
+            return;
+        }
+
+        generatedCampaignRequest = request;
+        useCoreTutorialState = true;
+        Rebuild();
+        interactionMessage = "Eine unbekannte Welt wurde vorbereitet. Die Expedition beginnt an der Küste.";
+        RefreshToolkitHud();
     }
 
     public LocationInteractionQueryResult GetLocationInteractionForUi(string locationId)
@@ -1466,7 +1486,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         if (useCoreTutorialState)
         {
-            coreGameState = gameApplication.CreateTutorialGame();
+            coreGameState = generatedCampaignRequest == null
+                ? gameApplication.CreateTutorialGame()
+                : gameApplication.CreateGeneratedGame(generatedCampaignRequest);
             BuildMapFromCoreState(coreGameState.World.Map);
             selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
             return;
