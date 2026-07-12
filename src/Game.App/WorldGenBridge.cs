@@ -84,7 +84,10 @@ public sealed class WorldGenBridge
         var paths = BuildPaths(generated, ToCore);
         var world = new WorldState(new HexMapState(bounds, tiles), paths, locations);
         var factions = generated.Factions
-            .Select(faction => new FactionState(factionIds[faction.Id], faction.Name ?? factionIds[faction.Id]))
+            .Select(faction => new FactionState(
+                factionIds[faction.Id],
+                faction.Name ?? factionIds[faction.Id],
+                reactionProfileId: faction.Attitude ?? "neutral-cautious"))
             .ToList();
         return new WorldGenerationBridgeResult(world, ToCore(generated.Base), factions);
     }

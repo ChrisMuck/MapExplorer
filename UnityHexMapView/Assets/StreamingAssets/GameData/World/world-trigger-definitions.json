@@ -1,0 +1,12 @@
+{
+  "documentType": "world-trigger-definitions",
+  "schemaVersion": 1,
+  "items": [
+    { "id": "location-grave-disturbed", "consequenceId": "consequence-grave-disturbed" },
+    { "id": "location-infrastructure-repaired", "consequenceId": "consequence-route-restored" },
+    { "id": "location-grave-respected" },
+    { "id": "location-boundary-crossed-observed" },
+    { "id": "location-boundary-crossed" },
+    { "id": "location-boundary-crossed-hostile" }
+  ]
+}

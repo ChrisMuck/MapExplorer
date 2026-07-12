@@ -47,6 +47,10 @@ var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
 var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
 scoutLocationSurroundingsTests.RunAll();
+var worldPhaseDataTests = new WorldPhaseDataTests();
+worldPhaseDataTests.RunAll();
+var factionReactionDataTests = new FactionReactionDataTests();
+factionReactionDataTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 

@@ -11,6 +11,7 @@ public sealed class GameApplication
 {
     public HexMapBounds DefaultPrototypeBounds { get; } = new(40, 30);
     private readonly MovementCostService movementCostService = new MovementCostService();
+    private readonly MoveExpeditionCommand moveExpeditionCommand;
     private readonly LocationInteractionDefinitionSet locationInteractionDefinitions;
     private readonly IReadOnlyList<SpecialLocationState>? locationInstances;
     private readonly EndDayCommand endDayCommand;
@@ -22,7 +23,7 @@ public sealed class GameApplication
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
     private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
-    private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand = new AdvanceBaseTimeCommand();
+    private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand;
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
     private readonly StartBaseActionCommand startBaseActionCommand = new StartBaseActionCommand();
     private readonly StartUpgradeCommand startUpgradeCommand = new StartUpgradeCommand();
@@ -71,7 +72,15 @@ public sealed class GameApplication
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
-        endDayCommand = new EndDayCommand(scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence));
+        var worldPhaseService = new WorldPhaseService(crossSystemData);
+        moveExpeditionCommand = new MoveExpeditionCommand(
+            movementCostService,
+            new KnowledgeService(),
+            new FactionTerritoryEntryResolver(crossSystemData));
+        endDayCommand = new EndDayCommand(
+            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence),
+            worldPhaseService: worldPhaseService);
+        advanceBaseTimeCommand = new AdvanceBaseTimeCommand(worldPhaseService);
     }
 
     public GameState CreateTutorialGame()
@@ -103,7 +112,11 @@ public sealed class GameApplication
     {
         foreach (var root in CandidateGameDataRoots())
         {
-            var bundle = CrossSystemDataLoader.LoadFromDirectory(Path.Combine(root, "World"));
+            var bundle = CrossSystemDataLoader.LoadFromDirectories(new[]
+            {
+                Path.Combine(root, "World"),
+                Path.Combine(root, "Factions")
+            });
             if (bundle != null) return bundle;
         }
 
@@ -138,7 +151,7 @@ public sealed class GameApplication
 
     public MoveExpeditionResult MoveExpedition(GameState game, HexCoord destination)
     {
-        return new MoveExpeditionCommand(movementCostService).Execute(game, destination);
+        return moveExpeditionCommand.Execute(game, destination);
     }
 
     public EndDayResult EndDay(GameState game)

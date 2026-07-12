@@ -29,6 +29,21 @@
     {
       "id": "evidence-guard-routine",
       "scoutReportText": "Die Scouts fanden Sichtlinien, Wachspuren und Hinweise auf regelmaessige Kontrolle."
+    },
+    {
+      "id": "evidence-grave-disturbance-rumour",
+      "scoutReportText": "Die Scouts hoerten widerspruechliche Geruechte ueber eine gestoerte Grabstelle.",
+      "worldEventText": "Aus der Umgebung kommen Geruechte ueber eine gestoerte Grabstelle. Ob sie mit der Expedition zusammenhaengen, bleibt offen."
+    },
+    {
+      "id": "evidence-grave-disturbance-change",
+      "scoutReportText": "Die Scouts bemerkten, dass sich Wege und Verhalten um eine alte Grabstelle veraendert haben.",
+      "worldEventText": "Die spaeteren Spuren zeigen, dass sich Verhalten und Wege um die Grabstelle veraendert haben."
+    },
+    {
+      "id": "evidence-route-restored",
+      "scoutReportText": "Die Scouts bestaetigen, dass ein alter Uebergang wieder regelmaessig genutzt wird.",
+      "worldEventText": "Reifenspuren und frische Tritte zeigen: Ein alter Uebergang wird wieder benutzt."
     }
   ]
 }

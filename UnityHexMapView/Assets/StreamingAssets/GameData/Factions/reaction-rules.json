@@ -1,0 +1,81 @@
+{
+  "documentType": "faction-reaction-rules",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "reaction-disturbed-sacred-site",
+      "triggerId": "location-grave-disturbed",
+      "relationKinds": [ "Sacred", "Guarded" ],
+      "minimumAwareness": "Unaware",
+      "angerDelta": 8,
+      "fearDelta": 2,
+      "memoryId": "memory-sacred-site-disturbed",
+      "priority": 20,
+      "event": {
+        "title": "Eine Warnung bleibt zurück",
+        "body": "In der Nähe des Ortes erscheinen neue Zeichen. Jemand hat die Veränderung bemerkt und will, dass die Expedition es versteht.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "reaction-disturbed-claimed-site",
+      "triggerId": "location-grave-disturbed",
+      "relationKinds": [ "Claimed", "Watched" ],
+      "minimumAwareness": "Unaware",
+      "factionProfileId": "neutral-cautious",
+      "trustDelta": -2,
+      "angerDelta": 5,
+      "memoryId": "memory-claimed-site-disturbed",
+      "priority": 10,
+      "event": {
+        "title": "Der Ort wird offenbar nicht vergessen",
+        "body": "Frische Spuren und ein verändertes Zeichen lassen vermuten, dass jemand den Ort weiter beobachtet.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "reaction-route-restored-welcoming",
+      "triggerId": "location-infrastructure-repaired",
+      "relationKinds": [ "Claimed", "Watched" ],
+      "minimumAwareness": "Unaware",
+      "factionProfileId": "welcoming",
+      "trustDelta": 4,
+      "angerDelta": -2,
+      "memoryId": "memory-route-restored-welcome",
+      "event": {
+        "title": "Eine vorsichtige Anerkennung",
+        "body": "An der wiederhergestellten Route bleibt ein kleines Zeichen zurück. Es wirkt weniger wie eine Warnung als wie eine Prüfung des guten Willens.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "reaction-route-restored-hostile",
+      "triggerId": "location-infrastructure-repaired",
+      "relationKinds": [ "Claimed", "Guarded" ],
+      "minimumAwareness": "Suspicious",
+      "factionProfileId": "hostile",
+      "angerDelta": 7,
+      "fearDelta": 3,
+      "memoryId": "memory-route-restored-hostile",
+      "event": {
+        "title": "Die neue Passage wird beobachtet",
+        "body": "Die frischen Spuren an der Passage sind nicht die der Expedition. Jemand prüft, was sich hier verändert hat.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "reaction-boundary-crossed",
+      "triggerId": "location-boundary-crossed-observed",
+      "relationKinds": [ "Claimed", "Guarded" ],
+      "minimumAwareness": "Unaware",
+      "angerDelta": 6,
+      "fearDelta": 2,
+      "memoryId": "memory-boundary-crossing-observed",
+      "event": {
+        "title": "Ein Grenzzeichen wurde erneuert",
+        "body": "Ein bekanntes Zeichen wurde sichtbar verändert. Die Bedeutung ist noch unklar, aber es wirkt wie eine Antwort auf die Passage der Expedition.",
+        "revealsFaction": false
+      }
+    }
+  ]
+}

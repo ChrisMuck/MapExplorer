@@ -1,0 +1,43 @@
+{
+  "documentType": "consequence-definitions",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "consequence-grave-disturbed",
+      "stages": [
+        {
+          "id": "rumours-spread",
+          "delayDays": 2,
+          "evidenceId": "evidence-grave-disturbance-rumour",
+          "event": {
+            "title": "Unruhe bei einer alten Grabstelle",
+            "body": "Zwei Tage nach einem Eingriff erreichen die Expedition erste, widerspruechliche Geruechte aus der Umgebung."
+          }
+        },
+        {
+          "id": "local-pattern-changed",
+          "delayDays": 5,
+          "evidenceId": "evidence-grave-disturbance-change",
+          "event": {
+            "title": "Die Umgebung reagiert",
+            "body": "Erst spaeter werden veraenderte Wege und vorsichtige Bewegungen um den Ort sichtbar."
+          }
+        }
+      ]
+    },
+    {
+      "id": "consequence-route-restored",
+      "stages": [
+        {
+          "id": "traffic-returns",
+          "delayDays": 2,
+          "evidenceId": "evidence-route-restored",
+          "event": {
+            "title": "Spuren auf der wiederhergestellten Route",
+            "body": "Erst nach einigen Tagen zeigen frische Spuren, dass der veränderte Übergang auch von anderen bemerkt wurde."
+          }
+        }
+      ]
+    }
+  ]
+}
