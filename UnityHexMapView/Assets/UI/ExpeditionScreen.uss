@@ -1121,7 +1121,8 @@
 .campaign-card {
     width: 760px;
     max-width: 88%;
-    padding: 42px 48px 38px 48px;
+    max-height: 92%;
+    padding: 30px 48px 28px 48px;
     border-width: 1px;
     border-color: rgba(240, 207, 122, 0.34);
     background-color: rgb(31, 37, 33);
@@ -1129,7 +1130,7 @@
 .campaign-eyebrow { color: rgb(143, 174, 116); font-size: 13px; letter-spacing: 2.2px; -unity-font-style: bold; }
 .campaign-title { margin-top: 10px; color: rgb(240, 207, 122); font-size: 32px; }
 .campaign-copy { margin-top: 18px; color: rgb(201, 195, 180); font-size: 16px; line-height: 23px; white-space: normal; }
-.campaign-section { margin-top: 26px; color: rgb(178, 170, 151); }
+.campaign-section { margin-top: 16px; color: rgb(178, 170, 151); }
 .campaign-row { flex-direction: row; margin-top: 9px; }
 .campaign-choice {
     min-width: 104px;

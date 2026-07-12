@@ -18,10 +18,11 @@ public sealed class WorldGenerationRequest
     public string FactionMood { get; init; } = "Gemischt";
     public int FactionSalt { get; init; }
     public int LocationSalt { get; init; }
+    public IReadOnlyDictionary<string, double> GeneratorOverrides { get; init; } = new Dictionary<string, double>();
 
     public GenerationParams ToGeneratorParams()
     {
-        return new GenerationParams
+        var parameters = new GenerationParams
         {
             Seed = Seed,
             MapWidth = Width,
@@ -31,6 +32,21 @@ public sealed class WorldGenerationRequest
             FactionSalt = FactionSalt,
             LocationSalt = LocationSalt
         };
+        foreach (var value in GeneratorOverrides)
+        {
+            switch (value.Key)
+            {
+                case "islandFalloff": parameters.IslandFalloff = (float)value.Value; break;
+                case "warpStrength": parameters.WarpStrength = (float)value.Value; break;
+                case "mountainAmount": parameters.MountainAmount = (float)value.Value; break;
+                case "ridgeStrength": parameters.RidgeStrength = (float)value.Value; break;
+                case "locationDensity": parameters.LocationDensity = (float)value.Value; break;
+                case "territoryReach": parameters.TerritoryReach = (float)value.Value; break;
+                case "cellsPerTown": parameters.CellsPerTown = (int)value.Value; break;
+            }
+        }
+
+        return parameters;
     }
 }
 

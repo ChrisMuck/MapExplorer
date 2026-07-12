@@ -301,6 +301,7 @@ public static class CrossSystemDataLoader
                 case "faction-reaction-rules": factionReactionRules.AddRange(items.ToObject<List<FactionReactionRuleDto>>()!); break;
                 case "faction-territory-entry-rules": factionTerritoryEntryRules.AddRange(items.ToObject<List<FactionTerritoryEntryRuleDto>>()!); break;
                 case "world-generation-presets": break;
+                case "world-generation-option-presets": break;
                 default: throw new LocationDataException($"Unsupported cross-system documentType '{(string?)envelope["documentType"]}'.");
             }
         }
