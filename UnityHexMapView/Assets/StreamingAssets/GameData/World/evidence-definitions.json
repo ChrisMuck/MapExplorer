@@ -1,0 +1,49 @@
+{
+  "documentType": "evidence-definitions",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "evidence-location-surroundings-quiet",
+      "scoutReportText": "Die Scouts fanden keine eindeutigen Zeichen, dass jemand diesen Ort regelmaessig kontrolliert."
+    },
+    {
+      "id": "evidence-location-surroundings-signs",
+      "scoutReportText": "Die Scouts fanden wiederkehrende Zeichen, Wege oder Spuren. Jemand scheint diesen Ort zu beachten."
+    },
+    {
+      "id": "evidence-old-structure",
+      "scoutReportText": "Die Scouts beschreiben altes Mauerwerk und wiederverwendete Spuren, deren Bedeutung offen bleibt."
+    },
+    {
+      "id": "evidence-claim-markers",
+      "scoutReportText": "Die Scouts fanden wiederkehrende Markierungen und gepflegte Zugangswege. Der Ort wird offenbar beansprucht."
+    },
+    {
+      "id": "evidence-patrol-signs",
+      "scoutReportText": "Die Scouts fanden frische Trittspuren, Sichtzeichen und einen wiederkehrenden Kontrollweg."
+    },
+    {
+      "id": "evidence-ritual-signs",
+      "scoutReportText": "Die Scouts bemerkten geordnete Opfergaben und sorgfaeltig erneuerte Zeichen. Der Ort hat offenbar eine besondere Bedeutung."
+    },
+    {
+      "id": "evidence-guard-routine",
+      "scoutReportText": "Die Scouts fanden Sichtlinien, Wachspuren und Hinweise auf regelmaessige Kontrolle."
+    },
+    {
+      "id": "evidence-grave-disturbance-rumour",
+      "scoutReportText": "Die Scouts hoerten widerspruechliche Geruechte ueber eine gestoerte Grabstelle.",
+      "worldEventText": "Aus der Umgebung kommen Geruechte ueber eine gestoerte Grabstelle. Ob sie mit der Expedition zusammenhaengen, bleibt offen."
+    },
+    {
+      "id": "evidence-grave-disturbance-change",
+      "scoutReportText": "Die Scouts bemerkten, dass sich Wege und Verhalten um eine alte Grabstelle veraendert haben.",
+      "worldEventText": "Die spaeteren Spuren zeigen, dass sich Verhalten und Wege um die Grabstelle veraendert haben."
+    },
+    {
+      "id": "evidence-route-restored",
+      "scoutReportText": "Die Scouts bestaetigen, dass ein alter Uebergang wieder regelmaessig genutzt wird.",
+      "worldEventText": "Reifenspuren und frische Tritte zeigen: Ein alter Uebergang wird wieder benutzt."
+    }
+  ]
+}

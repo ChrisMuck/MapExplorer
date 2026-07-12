@@ -336,6 +336,32 @@ public sealed class ResolveLocationActionCommand
             case LocationEffectKind.ChangeFactionFear:
                 game.FindFaction(effect.FactionId ?? "")?.Adjust(fearDelta: effect.Amount);
                 return false;
+            case LocationEffectKind.AddEvidence:
+                game.Knowledge.AddEvidence(new EvidenceState(
+                    $"evidence-{game.Knowledge.Evidence.Count + 1}",
+                    effect.ReferenceId ?? effect.Id,
+                    EvidenceSourceKind.LocationInspection,
+                    EvidenceKnowledgeState.Reported,
+                    effect.Text,
+                    subjectLocationId: location.Id));
+                return false;
+            case LocationEffectKind.RaiseWorldTrigger:
+                game.World.QueueWorldTrigger(new WorldTriggerState(
+                    $"world-trigger-{game.World.WorldTriggers.Count + 1}",
+                    effect.ReferenceId ?? effect.Id,
+                    game.World.WorldDay,
+                    sourceLocationId: location.Id,
+                    sourceCoord: location.Coord));
+                return false;
+            case LocationEffectKind.ScheduleConsequence:
+                var delayDays = Math.Max(0, effect.DelayDays);
+                game.World.ScheduleConsequence(new ScheduledConsequenceState(
+                    $"scheduled-consequence-{game.World.ScheduledConsequences.Count + 1}",
+                    effect.ReferenceId ?? effect.Id,
+                    location.Id,
+                    game.World.WorldDay + delayDays,
+                    new[] { effect.Id }));
+                return false;
             default:
                 throw new InvalidOperationException($"Unsupported location effect kind {effect.Kind}.");
         }

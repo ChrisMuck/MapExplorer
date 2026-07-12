@@ -2,7 +2,8 @@
   "name": "Game.App",
   "rootNamespace": "Game.App",
   "references": [
-    "Game.Core"
+    "Game.Core",
+    "WorldGen"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

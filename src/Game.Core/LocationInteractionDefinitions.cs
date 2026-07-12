@@ -154,7 +154,10 @@ public enum LocationEffectKind
     InjureMember,
     ChangeFactionTrust,
     ChangeFactionAnger,
-    ChangeFactionFear
+    ChangeFactionFear,
+    AddEvidence,
+    RaiseWorldTrigger,
+    ScheduleConsequence
 }
 
 public sealed class LocationArchetypeDefinition
@@ -336,7 +339,9 @@ public sealed class LocationEffectDefinition
         string? factionId = null,
         string? memory = null,
         string? selection = null,
-        string? severity = null)
+        string? severity = null,
+        string? referenceId = null,
+        int delayDays = 0)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -348,6 +353,8 @@ public sealed class LocationEffectDefinition
         Memory = string.IsNullOrWhiteSpace(memory) ? null : memory;
         Selection = string.IsNullOrWhiteSpace(selection) ? null : selection;
         Severity = string.IsNullOrWhiteSpace(severity) ? null : severity;
+        ReferenceId = string.IsNullOrWhiteSpace(referenceId) ? null : referenceId;
+        DelayDays = delayDays;
     }
 
     public string Id { get; }
@@ -371,6 +378,12 @@ public sealed class LocationEffectDefinition
 
     /// <summary>Severity hint for member-targeting effects (e.g. "Wounded").</summary>
     public string? Severity { get; }
+
+    /// <summary>Stable evidence, trigger or consequence definition ID for cross-system effects.</summary>
+    public string? ReferenceId { get; }
+
+    /// <summary>World-day delay for a scheduled consequence. The resolved branch is stored immediately.</summary>
+    public int DelayDays { get; }
 
     private static string RequireText(string value, string name)
     {

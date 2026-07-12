@@ -135,7 +135,7 @@
       },
       "effectBundles": {
         "Success": [
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders respected a marked grave", "text": "Der respektvolle Umgang koennte erinnert werden." }
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-respected", "text": "Der respektvolle Umgang kann von Beobachtern bemerkt werden." }
         ]
       }
     },
@@ -154,15 +154,15 @@
         "SuccessWithCost": [
           { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." },
           { "kind": "ChangeMorale", "amount": -1, "text": "Die Gruppe ist sich uneins, ob dies richtig war." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ],
         "Failure": [
           { "kind": "ChangeMorale", "amount": -1, "text": "Der Eingriff misslingt und belastet die Gruppe." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ],
         "SevereFailure": [
           { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim gewaltsamen Oeffnen wird jemand verletzt." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ]
       }
     },
@@ -246,14 +246,13 @@
         ],
         "SuccessWithCost": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
-          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 6, "text": "Die Grenzwaechter registrieren den Uebertritt veraergert." }
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed-observed", "text": "Der Uebertritt wurde offenbar bemerkt." }
         ],
         "Failure": [
-          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 10, "text": "Die Grenzwaechter reagieren zurueckweisend auf den Uebertritt." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders crossed a warned border", "text": "Der Uebertritt koennte erinnert werden." }
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed", "text": "Der Uebertritt hinterlaesst eine Spur in der Umgebung." }
         ],
         "SevereFailure": [
-          { "kind": "ChangeFactionAnger", "factionId": "border-wardens", "amount": 15, "text": "Der Uebertritt provoziert eine feindselige Reaktion." },
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed-hostile", "text": "Der Uebertritt loest eine ernste Reaktion aus." },
           { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim Rueckzug wird jemand verletzt." }
         ]
       }

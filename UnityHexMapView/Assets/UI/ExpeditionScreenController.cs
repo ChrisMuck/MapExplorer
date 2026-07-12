@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Game.App;
 using Game.Core;
 using UnityEngine;
@@ -39,6 +42,15 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private int scoutDurationDays = 2;
     private ScoutMissionFocus scoutFocus = ScoutMissionFocus.Survey;
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
+    private readonly List<WorldGenerationPreset> campaignPresets = new List<WorldGenerationPreset>();
+    private readonly List<WorldGenerationOptionPreset> campaignOptionPresets = new List<WorldGenerationOptionPreset>();
+    private string campaignPresetId = "medium";
+    private int campaignFactionCount = 3;
+    private string campaignFactionMood = "Gemischt";
+    private string campaignCoastlineId = "balanced";
+    private string campaignTerrainId = "hilly";
+    private string campaignActivityId = "normal";
+    private string campaignSettlementId = "balanced";
 
     public void Initialize(UnityHexMapView view)
     {
@@ -120,6 +132,32 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
         RegisterClick("action-open-base", () => mapView?.RequestOpenBaseCampFromUi());
 
+        RegisterClick("campaign-size-small", () => SetCampaignPreset("small"));
+        RegisterClick("campaign-size-medium", () => SetCampaignPreset("medium"));
+        RegisterClick("campaign-size-large", () => SetCampaignPreset("large"));
+        RegisterClick("campaign-size-huge", () => SetCampaignPreset("huge"));
+        RegisterClick("campaign-size-gigantic", () => SetCampaignPreset("gigantic"));
+        RegisterClick("campaign-factions-2", () => SetCampaignFactionCount(2));
+        RegisterClick("campaign-factions-3", () => SetCampaignFactionCount(3));
+        RegisterClick("campaign-factions-4", () => SetCampaignFactionCount(4));
+        RegisterClick("campaign-mood-peaceful", () => SetCampaignFactionMood("Friedlich"));
+        RegisterClick("campaign-mood-mixed", () => SetCampaignFactionMood("Gemischt"));
+        RegisterClick("campaign-mood-hostile", () => SetCampaignFactionMood("Feindselig"));
+        RegisterClick("campaign-coast-compact", () => SetCampaignOption("coastline", "compact"));
+        RegisterClick("campaign-coast-balanced", () => SetCampaignOption("coastline", "balanced"));
+        RegisterClick("campaign-coast-rugged", () => SetCampaignOption("coastline", "rugged"));
+        RegisterClick("campaign-terrain-flat", () => SetCampaignOption("terrain", "flat"));
+        RegisterClick("campaign-terrain-hilly", () => SetCampaignOption("terrain", "hilly"));
+        RegisterClick("campaign-terrain-mountainous", () => SetCampaignOption("terrain", "mountainous"));
+        RegisterClick("campaign-activity-quiet", () => SetCampaignOption("activity", "quiet"));
+        RegisterClick("campaign-activity-normal", () => SetCampaignOption("activity", "normal"));
+        RegisterClick("campaign-activity-active", () => SetCampaignOption("activity", "active"));
+        RegisterClick("campaign-settlement-wilderness", () => SetCampaignOption("settlement", "wilderness"));
+        RegisterClick("campaign-settlement-balanced", () => SetCampaignOption("settlement", "balanced"));
+        RegisterClick("campaign-settlement-dense", () => SetCampaignOption("settlement", "dense"));
+        RegisterClick("campaign-begin", BeginGeneratedCampaign);
+        EnsureCampaignPresets();
+
         if (string.IsNullOrEmpty(openSection))
         {
             CloseSide();
@@ -193,6 +231,156 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshLocationInteractionPopup(state);
         RefreshFactionInteractionPopup(state);
         RefreshScoutMissionPopup(state);
+        RefreshCampaignSetup();
+    }
+
+    private void EnsureCampaignPresets()
+    {
+        if (campaignPresets.Count > 0)
+        {
+            return;
+        }
+
+        var rootPath = Path.Combine(Application.streamingAssetsPath, "GameData", "World");
+        try
+        {
+            var catalog = WorldGenerationPresetLoader.LoadCatalogFromDirectory(rootPath);
+            campaignPresets.AddRange(catalog.Sizes);
+            campaignOptionPresets.AddRange(catalog.Options);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"World generation presets could not be loaded: {ex.Message}");
+        }
+    }
+
+    private void SetCampaignPreset(string presetId)
+    {
+        if (campaignPresets.Any(preset => preset.Id == presetId))
+        {
+            campaignPresetId = presetId;
+            RefreshCampaignSetup();
+        }
+    }
+
+    private void SetCampaignFactionCount(int count)
+    {
+        campaignFactionCount = count;
+        RefreshCampaignSetup();
+    }
+
+    private void SetCampaignFactionMood(string mood)
+    {
+        campaignFactionMood = mood;
+        RefreshCampaignSetup();
+    }
+
+    private void SetCampaignOption(string categoryId, string optionId)
+    {
+        if (!campaignOptionPresets.Any(option => option.CategoryId == categoryId && option.Id == optionId))
+        {
+            return;
+        }
+
+        switch (categoryId)
+        {
+            case "coastline": campaignCoastlineId = optionId; break;
+            case "terrain": campaignTerrainId = optionId; break;
+            case "activity": campaignActivityId = optionId; break;
+            case "settlement": campaignSettlementId = optionId; break;
+        }
+
+        RefreshCampaignSetup();
+    }
+
+    private void BeginGeneratedCampaign()
+    {
+        if (mapView == null)
+        {
+            return;
+        }
+
+        var preset = campaignPresets.FirstOrDefault(item => item.Id == campaignPresetId);
+        if (preset == null)
+        {
+            SetText("campaign-message", "Die Weltvoreinstellungen konnten nicht geladen werden.");
+            return;
+        }
+
+        var seed = unchecked((uint)UnityEngine.Random.Range(1, int.MaxValue));
+        var overrides = new Dictionary<string, double>();
+        AddCampaignOverrides(overrides, "coastline", campaignCoastlineId);
+        AddCampaignOverrides(overrides, "terrain", campaignTerrainId);
+        AddCampaignOverrides(overrides, "activity", campaignActivityId);
+        AddCampaignOverrides(overrides, "settlement", campaignSettlementId);
+        mapView.RequestStartGeneratedCampaignFromUi(new WorldGenerationRequest
+        {
+            Seed = seed,
+            Width = preset.Width,
+            Height = preset.Height,
+            FactionCount = campaignFactionCount,
+            FactionMood = campaignFactionMood,
+            GeneratorOverrides = overrides
+        });
+    }
+
+    private void AddCampaignOverrides(IDictionary<string, double> target, string categoryId, string optionId)
+    {
+        var option = campaignOptionPresets.FirstOrDefault(item => item.CategoryId == categoryId && item.Id == optionId);
+        if (option == null)
+        {
+            return;
+        }
+
+        foreach (var pair in option.GeneratorOverrides)
+        {
+            target[pair.Key] = pair.Value;
+        }
+    }
+
+    private void RefreshCampaignSetup()
+    {
+        if (root == null || mapView == null)
+        {
+            return;
+        }
+
+        var visible = !mapView.HasStartedCampaign;
+        SetDisplay("campaign-setup", visible);
+        if (!visible)
+        {
+            return;
+        }
+
+        SetCampaignSelected("campaign-size-small", campaignPresetId == "small");
+        SetCampaignSelected("campaign-size-medium", campaignPresetId == "medium");
+        SetCampaignSelected("campaign-size-large", campaignPresetId == "large");
+        SetCampaignSelected("campaign-size-huge", campaignPresetId == "huge");
+        SetCampaignSelected("campaign-size-gigantic", campaignPresetId == "gigantic");
+        SetCampaignSelected("campaign-factions-2", campaignFactionCount == 2);
+        SetCampaignSelected("campaign-factions-3", campaignFactionCount == 3);
+        SetCampaignSelected("campaign-factions-4", campaignFactionCount == 4);
+        SetCampaignSelected("campaign-mood-peaceful", campaignFactionMood == "Friedlich");
+        SetCampaignSelected("campaign-mood-mixed", campaignFactionMood == "Gemischt");
+        SetCampaignSelected("campaign-mood-hostile", campaignFactionMood == "Feindselig");
+        SetCampaignSelected("campaign-coast-compact", campaignCoastlineId == "compact");
+        SetCampaignSelected("campaign-coast-balanced", campaignCoastlineId == "balanced");
+        SetCampaignSelected("campaign-coast-rugged", campaignCoastlineId == "rugged");
+        SetCampaignSelected("campaign-terrain-flat", campaignTerrainId == "flat");
+        SetCampaignSelected("campaign-terrain-hilly", campaignTerrainId == "hilly");
+        SetCampaignSelected("campaign-terrain-mountainous", campaignTerrainId == "mountainous");
+        SetCampaignSelected("campaign-activity-quiet", campaignActivityId == "quiet");
+        SetCampaignSelected("campaign-activity-normal", campaignActivityId == "normal");
+        SetCampaignSelected("campaign-activity-active", campaignActivityId == "active");
+        SetCampaignSelected("campaign-settlement-wilderness", campaignSettlementId == "wilderness");
+        SetCampaignSelected("campaign-settlement-balanced", campaignSettlementId == "balanced");
+        SetCampaignSelected("campaign-settlement-dense", campaignSettlementId == "dense");
+        SetText("campaign-message", "Die Karte bleibt bis zum Aufbruch unbekannt.");
+    }
+
+    private void SetCampaignSelected(string elementName, bool selected)
+    {
+        root?.Q<Label>(elementName)?.EnableInClassList("campaign-choice--selected", selected);
     }
 
     public void OpenLocationInteraction(string locationId)

@@ -5,11 +5,18 @@
       "depth": 0,
       "source": "local",
       "dependencies": {
-        "com.mapexplorer.game-core": "0.1.0"
+        "com.mapexplorer.game-core": "0.1.0",
+        "com.mapexplorer.world-gen": "0.1.0"
       }
     },
     "com.mapexplorer.game-core": {
       "version": "file:../../src/Game.Core",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.mapexplorer.world-gen": {
+      "version": "file:../../src/WorldGen",
       "depth": 0,
       "source": "local",
       "dependencies": {}

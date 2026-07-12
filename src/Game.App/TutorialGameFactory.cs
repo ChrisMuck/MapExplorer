@@ -81,6 +81,46 @@ public static class TutorialGameFactory
         return new GameState(world, knowledge, notes, expedition, baseState, factions: CreateTutorialFactions(), roster: roster);
     }
 
+    /// <summary>
+    /// Creates a playable campaign shell from a generated world. Expedition composition is intentionally
+    /// still the tutorial roster until campaign preparation receives its own command flow.
+    /// </summary>
+    public static GameState CreateGenerated(WorldGenerationBridgeResult generated)
+    {
+        if (generated == null)
+        {
+            throw new ArgumentNullException(nameof(generated));
+        }
+
+        var knowledge = new KnowledgeState();
+        new KnowledgeService().RevealFromExpedition(generated.World.Map, knowledge, generated.BaseLocation);
+        var expedition = new ExpeditionState(
+            expeditionNumber: 1,
+            position: generated.BaseLocation,
+            members: CreateTutorialMembers().ToList(),
+            movementPoints: 4,
+            supplies: 20,
+            medicine: 3,
+            morale: 70,
+            capacity: 20);
+        var baseState = new BaseState(
+            generated.BaseLocation,
+            new BaseUpgradesState(CreateTutorialUpgrades()),
+            new EvaluationQueueState(),
+            CreateTutorialUnitStock());
+        baseState.AddArchiveEntry("First expedition prepared at the generated coastal base.");
+        baseState.MarkExpeditionDepartureArchivePoint();
+
+        return new GameState(
+            generated.World,
+            knowledge,
+            new PlayerNotesState(),
+            expedition,
+            baseState,
+            factions: generated.Factions,
+            roster: new BaseRosterState(CreateTutorialRoster()));
+    }
+
     private static HexMapState GenerateTutorialMap(HexMapBounds bounds)
     {
         var tiles = new List<HexTileState>();

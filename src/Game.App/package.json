@@ -5,7 +5,8 @@
   "description": "Application use cases and tutorial setup for Map Explorer.",
   "unity": "6000.0",
   "dependencies": {
-    "com.mapexplorer.game-core": "0.1.0"
+    "com.mapexplorer.game-core": "0.1.0",
+    "com.mapexplorer.world-gen": "0.1.0"
   },
   "author": {
     "name": "Map Explorer"

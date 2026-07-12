@@ -43,6 +43,18 @@ var eventQueueTests = new EventQueueCommandTests();
 eventQueueTests.RunAll();
 var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
+var crossSystemStateTests = new CrossSystemStateTests();
+crossSystemStateTests.RunAll();
+var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
+scoutLocationSurroundingsTests.RunAll();
+var worldPhaseDataTests = new WorldPhaseDataTests();
+worldPhaseDataTests.RunAll();
+var factionReactionDataTests = new FactionReactionDataTests();
+factionReactionDataTests.RunAll();
+var worldGenerationPresetTests = new WorldGenerationPresetTests();
+worldGenerationPresetTests.RunAll();
+var worldGenBridgeTests = new WorldGenBridgeTests();
+worldGenBridgeTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 
@@ -143,6 +155,193 @@ internal sealed class HexCoordTests
         if (condition)
         {
             throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class CrossSystemStateTests
+{
+    public void RunAll()
+    {
+        EvidenceStaysInKnowledgeStateAndCanBeUpdated();
+        GeneratedFactionRelationsRemainRuntimeState();
+        TriggersAndConsequencesArePersistedByWorldState();
+    }
+
+    private static void EvidenceStaysInKnowledgeStateAndCanBeUpdated()
+    {
+        var knowledge = new KnowledgeState();
+        var evidence = new EvidenceState(
+            "evidence-bridge-cuts",
+            "structural-cuts",
+            EvidenceSourceKind.LocationInspection,
+            EvidenceKnowledgeState.Reported,
+            "Mehrere TrÃ¤ger wurden gezielt entfernt.",
+            subjectLocationId: "bridge-1",
+            confidence: 55);
+
+        AssertTrue(knowledge.AddEvidence(evidence), "First evidence item is stored");
+        AssertFalse(knowledge.AddEvidence(evidence), "Evidence id is not duplicated");
+        evidence.UpdateKnowledge(EvidenceKnowledgeState.Confirmed, 90);
+
+        var stored = knowledge.FindEvidence("evidence-bridge-cuts");
+        AssertTrue(stored != null, "Evidence can be found by stable id");
+        AssertEqual(EvidenceKnowledgeState.Confirmed, stored!.KnowledgeState, "Evidence keeps player knowledge state");
+        AssertEqual(90, stored.Confidence, "Evidence confidence can improve without changing World Truth");
+    }
+
+    private static void GeneratedFactionRelationsRemainRuntimeState()
+    {
+        var relation = new LocationFactionRelationState(
+            "border-wardens",
+            LocationFactionRelationKind.Watched,
+            new[] { "deliberate-destruction", "quarantine" });
+        var location = new SpecialLocationState(
+            "bridge-1",
+            LocationKind.BrokenRavine,
+            HexCoord.Zero,
+            "Broken Bridge",
+            LocationAnchor.Point(HexCoord.Zero),
+            archetypeId: "route-obstacle",
+            variantId: "broken-bridge",
+            factionRelations: new[] { relation });
+
+        AssertTrue(location.FactionIds.Contains("border-wardens"), "Legacy linked-faction view includes generated relation faction");
+        AssertEqual(1, location.FactionRelations.Count, "Generated relation is stored on location instance");
+        AssertTrue(location.FactionRelations[0].HasContextTag("quarantine"), "Generated context tags are preserved");
+    }
+
+    private static void TriggersAndConsequencesArePersistedByWorldState()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(2, 2), TerrainType.Grassland);
+        var world = new WorldState(map);
+        var trigger = new WorldTriggerState(
+            "trigger-1",
+            "location-seal-broken",
+            world.WorldDay,
+            new[] { "open", "disturb" },
+            sourceLocationId: "crypt-1");
+        var consequence = new ScheduledConsequenceState(
+            "consequence-1",
+            "seal-broken",
+            "crypt-1",
+            dueWorldDay: world.WorldDay + 3,
+            resolvedEffectIds: new[] { "create-local-hazard" });
+
+        world.QueueWorldTrigger(trigger);
+        world.ScheduleConsequence(consequence);
+        world.AdvanceDays(3);
+
+        AssertEqual(1, world.WorldTriggers.Count, "World stores neutral trigger instances");
+        AssertEqual(1, world.ScheduledConsequences.Count, "World stores resolved consequence instances");
+        AssertTrue(consequence.IsDue(world.WorldDay), "Consequence becomes due from world time without rerolling");
+        trigger.MarkResolved();
+        consequence.MarkApplied();
+        AssertTrue(trigger.IsResolved, "Trigger can be marked resolved by world phase");
+        AssertFalse(consequence.IsDue(world.WorldDay), "Applied consequence cannot run twice");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class WorldGenBridgeTests
+{
+    public void RunAll()
+    {
+        GeneratedWorldBridgesToCoreWithoutLosingAnchors();
+        SameRequestProducesSameCoreWorldLayout();
+        TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
+        GeneratedWorldCanStartAnExpedition();
+    }
+
+    private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+
+        AssertTrue(result.World.Map.Contains(result.BaseLocation), "Generated base exists on bridged map");
+        AssertTrue(result.World.Locations.Count > 0, "Generated specials bridge into Core locations");
+        AssertTrue(result.Factions.Count == 3, "Generated factions bridge into Core faction state");
+        foreach (var location in result.World.Locations)
+        {
+            foreach (var coord in location.Anchor.Coords)
+            {
+                AssertTrue(result.World.Map.Contains(coord), $"Location anchor {location.Id} exists on bridged map");
+            }
+        }
+    }
+
+    private static void SameRequestProducesSameCoreWorldLayout()
+    {
+        var bridge = new WorldGenBridge();
+        var first = bridge.Generate(Request());
+        var second = bridge.Generate(Request());
+
+        AssertEqual(first.BaseLocation, second.BaseLocation, "Same request keeps generated base stable");
+        AssertEqual(first.World.Locations.Count, second.World.Locations.Count, "Same request keeps location count stable");
+        AssertEqual(first.World.Paths.Count, second.World.Paths.Count, "Same request keeps path count stable");
+    }
+
+    private static void GeneratedWorldCanStartAnExpedition()
+    {
+        var game = new GameApplication().CreateGeneratedGame(Request());
+
+        AssertEqual(game.Base.Location, game.Expedition.Position, "Generated expedition starts at generated base");
+        AssertTrue(game.Knowledge.GetTileKnowledge(game.Base.Location) == KnowledgeLevel.Confirmed, "Generated base starts confirmed");
+        AssertEqual(3, game.Factions.Count, "Generated campaign carries generated factions");
+    }
+
+    private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        var territorialLocations = result.World.Locations
+            .Where(location => result.World.Map.GetTile(location.Coord).OwnerId != null)
+            .ToList();
+
+        AssertTrue(territorialLocations.Count > 0, "Generated world has locations inside faction territory");
+        AssertTrue(territorialLocations.Any(location => location.FactionRelations.Count == 0), "Territory does not automatically claim every location");
+        AssertTrue(result.World.Locations.Any(location => location.EvidenceSeedIds.Count > 0), "Generated locations carry neutral evidence seeds");
+    }
+
+    private static WorldGenerationRequest Request()
+    {
+        return new WorldGenerationRequest { Seed = 20260712, Width = 24, Height = 18, FactionCount = 3 };
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
         }
     }
 }

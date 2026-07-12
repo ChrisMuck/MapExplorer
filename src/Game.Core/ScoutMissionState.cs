@@ -19,7 +19,8 @@ public sealed class ScoutMissionState
         int expectedReturnWorldDay,
         ScoutMissionFocus focus,
         ScoutMissionBehavior behavior,
-        ScoutMissionStatus status = ScoutMissionStatus.Active)
+        ScoutMissionStatus status = ScoutMissionStatus.Active,
+        string? targetLocationId = null)
     {
         Id = RequireText(id, nameof(id));
         if (scoutMemberIds == null || scoutMemberIds.Count == 0)
@@ -44,6 +45,7 @@ public sealed class ScoutMissionState
         ExpectedReturnWorldDay = expectedReturnWorldDay;
         Focus = focus;
         Behavior = behavior;
+        TargetLocationId = string.IsNullOrWhiteSpace(targetLocationId) ? null : targetLocationId.Trim();
         Status = status;
     }
 
@@ -65,6 +67,8 @@ public sealed class ScoutMissionState
     public ScoutMissionFocus Focus { get; }
 
     public ScoutMissionBehavior Behavior { get; }
+
+    public string? TargetLocationId { get; }
 
     public ScoutMissionStatus Status { get; private set; }
 

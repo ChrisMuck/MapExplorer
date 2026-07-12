@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -7,6 +8,13 @@ namespace Game.App
 
 public sealed class ScoutMissionResolutionService
 {
+    private readonly EvidenceDefinitionSet? evidenceDefinitions;
+
+    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null)
+    {
+        this.evidenceDefinitions = evidenceDefinitions;
+    }
+
     public IReadOnlyList<ScoutMissionResolutionResult> ResolveDueMissions(GameState game)
     {
         if (game == null)
@@ -36,6 +44,7 @@ public sealed class ScoutMissionResolutionService
             {
                 report = CreateReport(game, mission, outcome);
                 game.Knowledge.AddScoutReport(report);
+                AddLocationSurroundingsEvidence(game, mission, report);
                 var reportedNewKnowledge = false;
                 foreach (var coord in report.RelatedCoords)
                 {
@@ -211,6 +220,43 @@ public sealed class ScoutMissionResolutionService
                 return "The scouts describe old stonework and sealed structures, but details are uncertain.";
             default:
                 return "The scouts sketched terrain and visibility from the route.";
+        }
+    }
+
+    private void AddLocationSurroundingsEvidence(GameState game, ScoutMissionState mission, ScoutReportState report)
+    {
+        if (string.IsNullOrWhiteSpace(mission.TargetLocationId))
+        {
+            return;
+        }
+
+        var location = game.World.Locations.FirstOrDefault(item => item.Id == mission.TargetLocationId);
+        if (location == null)
+        {
+            return;
+        }
+
+        var relation = location.FactionRelations.FirstOrDefault();
+        var definitionId = relation == null
+            ? "evidence-location-surroundings-quiet"
+            : location.EvidenceSeedIds.FirstOrDefault() ?? "evidence-location-surroundings-signs";
+        var fallbackText = relation == null
+            ? "Die Scouts fanden keine eindeutigen Zeichen, dass jemand diesen Ort regelmaessig kontrolliert."
+            : "Die Scouts fanden wiederkehrende Zeichen, Wege oder Spuren. Jemand scheint diesen Ort zu beachten.";
+        var text = evidenceDefinitions?.Find(definitionId)?.ScoutReportText ?? fallbackText;
+        var evidenceId = $"evidence-scout-{report.Id}-{location.Id}";
+        game.Knowledge.AddEvidence(new EvidenceState(
+            evidenceId,
+            definitionId,
+            EvidenceSourceKind.ScoutReport,
+            EvidenceKnowledgeState.Reported,
+            text,
+            subjectLocationId: location.Id,
+            confidence: report.Reliability));
+
+        if (relation != null)
+        {
+            game.World.EscalateFactionAwareness(relation.FactionId, $"location-region:{location.Id}");
         }
     }
 }

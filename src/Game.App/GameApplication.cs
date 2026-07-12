@@ -11,17 +11,19 @@ public sealed class GameApplication
 {
     public HexMapBounds DefaultPrototypeBounds { get; } = new(40, 30);
     private readonly MovementCostService movementCostService = new MovementCostService();
+    private readonly MoveExpeditionCommand moveExpeditionCommand;
     private readonly LocationInteractionDefinitionSet locationInteractionDefinitions;
     private readonly IReadOnlyList<SpecialLocationState>? locationInstances;
-    private readonly EndDayCommand endDayCommand = new EndDayCommand();
+    private readonly EndDayCommand endDayCommand;
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
     private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
+    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand();
     private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
     private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
-    private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand = new AdvanceBaseTimeCommand();
+    private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand;
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
     private readonly StartBaseActionCommand startBaseActionCommand = new StartBaseActionCommand();
     private readonly StartUpgradeCommand startUpgradeCommand = new StartUpgradeCommand();
@@ -34,9 +36,10 @@ public sealed class GameApplication
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
     private readonly ResolveLocationActionCommand resolveLocationActionCommand;
     private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
+    private readonly WorldGenBridge worldGenBridge = new WorldGenBridge();
 
     public GameApplication()
-        : this(null)
+        : this(null, null)
     {
     }
 
@@ -46,8 +49,14 @@ public sealed class GameApplication
     /// folder can be found on disk, and finally falls back to the in-code definitions (Section 17.10).
     /// </summary>
     public GameApplication(LocationDataBundle? locationData)
+        : this(locationData, null)
+    {
+    }
+
+    public GameApplication(LocationDataBundle? locationData, CrossSystemDataBundle? crossSystemData)
     {
         locationData ??= TryLoadDefaultLocationData();
+        crossSystemData ??= TryLoadDefaultCrossSystemData();
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -63,11 +72,26 @@ public sealed class GameApplication
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
+        var worldPhaseService = new WorldPhaseService(crossSystemData);
+        moveExpeditionCommand = new MoveExpeditionCommand(
+            movementCostService,
+            new KnowledgeService(),
+            new FactionTerritoryEntryResolver(crossSystemData));
+        endDayCommand = new EndDayCommand(
+            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence),
+            worldPhaseService: worldPhaseService);
+        advanceBaseTimeCommand = new AdvanceBaseTimeCommand(worldPhaseService);
     }
 
     public GameState CreateTutorialGame()
     {
         return TutorialGameFactory.Create(locationInstances);
+    }
+
+    /// <summary>Starts a campaign from an unseen generated world. Player-facing generation UI belongs in Unity.</summary>
+    public GameState CreateGeneratedGame(WorldGenerationRequest request)
+    {
+        return TutorialGameFactory.CreateGenerated(worldGenBridge.Generate(request));
     }
 
     private static LocationDataBundle? TryLoadDefaultLocationData()
@@ -79,6 +103,21 @@ public sealed class GameApplication
             {
                 return bundle;
             }
+        }
+
+        return null;
+    }
+
+    private static CrossSystemDataBundle? TryLoadDefaultCrossSystemData()
+    {
+        foreach (var root in CandidateGameDataRoots())
+        {
+            var bundle = CrossSystemDataLoader.LoadFromDirectories(new[]
+            {
+                Path.Combine(root, "World"),
+                Path.Combine(root, "Factions")
+            });
+            if (bundle != null) return bundle;
         }
 
         return null;
@@ -97,9 +136,22 @@ public sealed class GameApplication
         }
     }
 
+    private static IEnumerable<string> CandidateGameDataRoots()
+    {
+        const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData";
+        yield return Path.Combine(Directory.GetCurrentDirectory(), relative);
+
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+        {
+            yield return Path.Combine(dir, relative);
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+    }
+
     public MoveExpeditionResult MoveExpedition(GameState game, HexCoord destination)
     {
-        return new MoveExpeditionCommand(movementCostService).Execute(game, destination);
+        return moveExpeditionCommand.Execute(game, destination);
     }
 
     public EndDayResult EndDay(GameState game)
@@ -126,6 +178,11 @@ public sealed class GameApplication
         ScoutMissionBehavior behavior)
     {
         return sendScoutMissionCommand.Execute(game, scoutMemberIds, direction, durationDays, focus, behavior);
+    }
+
+    public SendScoutMissionResult ScoutLocationSurroundings(GameState game, string locationId, IReadOnlyList<string> scoutMemberIds)
+    {
+        return scoutLocationSurroundingsCommand.Execute(game, locationId, scoutMemberIds);
     }
 
     public InspectLocationResult InspectLocation(GameState game, HexCoord coord)

@@ -74,7 +74,12 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly Dictionary<string, Mesh> generatedMeshCache = new();
     private Transform cameraRig;
     private Camera strategyCamera;
+    private float activeZoomedOutSize;
     private GameState coreGameState;
+    private WorldGenerationRequest generatedCampaignRequest;
+    // Game.Core bounds require non-negative Q values. WorldGen axial coordinates are therefore
+    // shifted in the bridge; presentation restores that shift before placing hexes.
+    private int generatedCoreQOffset;
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly GameApplication gameApplication = CreateGameApplication();
     private Transform currentBuildRoot;
@@ -128,6 +133,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     };
 
     public GameState CurrentGameState => coreGameState;
+    public bool HasStartedCampaign => generatedCampaignRequest != null;
 
     public string CurrentInteractionMessage => interactionMessage;
 
@@ -619,10 +625,13 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData", "Locations");
             var bundle = LocationDataLoader.LoadFromDirectory(root);
-            if (bundle != null)
+            var gameDataRoot = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData");
+            var crossSystem = CrossSystemDataLoader.LoadFromDirectories(new[]
             {
-                return new GameApplication(bundle);
-            }
+                System.IO.Path.Combine(gameDataRoot, "World"),
+                System.IO.Path.Combine(gameDataRoot, "Factions")
+            });
+            return new GameApplication(bundle, crossSystem);
         }
         catch (System.Exception ex)
         {
@@ -630,6 +639,22 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         return new GameApplication();
+    }
+
+    /// <summary>Starts one unseen generated campaign. This path intentionally offers no map preview or reroll.</summary>
+    public void RequestStartGeneratedCampaignFromUi(WorldGenerationRequest request)
+    {
+        if (request == null)
+        {
+            return;
+        }
+
+        generatedCampaignRequest = request;
+        generatedCoreQOffset = 0;
+        useCoreTutorialState = true;
+        Rebuild();
+        interactionMessage = "Eine unbekannte Welt wurde vorbereitet. Die Expedition beginnt an der Küste.";
+        RefreshToolkitHud();
     }
 
     public LocationInteractionQueryResult GetLocationInteractionForUi(string locationId)
@@ -1466,7 +1491,12 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         if (useCoreTutorialState)
         {
-            coreGameState = gameApplication.CreateTutorialGame();
+            coreGameState = generatedCampaignRequest == null
+                ? gameApplication.CreateTutorialGame()
+                : gameApplication.CreateGeneratedGame(generatedCampaignRequest);
+            generatedCoreQOffset = generatedCampaignRequest == null
+                ? 0
+                : (coreGameState.World.Map.Bounds.Height - 1) >> 1;
             BuildMapFromCoreState(coreGameState.World.Map);
             selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
             return;
@@ -1539,6 +1569,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private Vector2Int CoreCoordToViewCoord(HexCoord coord)
     {
+        if (generatedCampaignRequest != null)
+        {
+            return new Vector2Int(coord.Q - generatedCoreQOffset, coord.R);
+        }
+
         return OffsetToCenteredAxial(coord.Q, coord.R);
     }
 
@@ -3822,6 +3857,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private HexCoord ViewCoordToCoreCoord(Vector2Int coord)
     {
+        if (generatedCampaignRequest != null)
+        {
+            return new HexCoord(coord.x + generatedCoreQOffset, coord.y);
+        }
+
         var row = coord.y + mapHeight / 2;
         var centeredColumn = coord.x + (coord.y - (coord.y & 1)) / 2;
         var column = centeredColumn + mapWidth / 2;
@@ -4774,7 +4814,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         strategyCamera = camera;
         camera.orthographic = true;
         var boardSize = BoardWorldSize();
-        camera.orthographicSize = Mathf.Clamp(Mathf.Max(boardSize.x * 0.31f, boardSize.y * 0.5f), zoomedInSize, zoomedOutSize);
+        var fittedSize = Mathf.Max(boardSize.x * 0.31f, boardSize.y * 0.5f);
+        activeZoomedOutSize = Mathf.Max(zoomedOutSize, fittedSize);
+        camera.orthographicSize = Mathf.Clamp(fittedSize, zoomedInSize, activeZoomedOutSize);
         camera.nearClipPlane = 0.05f;
         camera.farClipPlane = 180f;
         camera.backgroundColor = ColorFromHex("30383a");
@@ -4852,7 +4894,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var targetSize = strategyCamera.orthographicSize - input * zoomSpeed * Time.deltaTime * 12f;
-        strategyCamera.orthographicSize = Mathf.Clamp(targetSize, zoomedInSize, zoomedOutSize);
+        strategyCamera.orthographicSize = Mathf.Clamp(targetSize, zoomedInSize, activeZoomedOutSize);
     }
 
     private GameObject AddMesh(GameObject parent, string name, Mesh mesh, Material material)
@@ -5040,6 +5082,25 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private Vector2 BoardWorldSize()
     {
+        if (tiles.Count > 0)
+        {
+            var minX = float.PositiveInfinity;
+            var maxX = float.NegativeInfinity;
+            var minZ = float.PositiveInfinity;
+            var maxZ = float.NegativeInfinity;
+            foreach (var tile in tiles.Values)
+            {
+                minX = Mathf.Min(minX, tile.World.x);
+                maxX = Mathf.Max(maxX, tile.World.x);
+                minZ = Mathf.Min(minZ, tile.World.z);
+                maxZ = Mathf.Max(maxZ, tile.World.z);
+            }
+
+            return new Vector2(
+                maxX - minX + Sqrt3 * hexSize,
+                maxZ - minZ + 2f * hexSize);
+        }
+
         var width = Sqrt3 * hexSize * (mapWidth + 0.5f);
         var height = 1.5f * hexSize * (mapHeight + 0.5f);
         return new Vector2(width, height);

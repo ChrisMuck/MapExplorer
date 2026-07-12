@@ -482,6 +482,61 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- ======================= CAMPAIGN CREATION ======================= -->
+        <ui:VisualElement name="campaign-setup" class="campaign-setup">
+            <ui:VisualElement class="campaign-card">
+                <ui:Label text="NEUE EXPEDITION" class="campaign-eyebrow" />
+                <ui:Label text="Eine unbekannte Welt vorbereiten" class="campaign-title serif" />
+                <ui:Label text="Diese Auswahl beschreibt nur die Art der Reise. Die erzeugte Karte wird erst nach dem Aufbruch sichtbar und kann nicht neu gewürfelt werden." class="campaign-copy" />
+                <ui:Label text="WELTGRÖSSE" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-size-small" text="Klein" class="campaign-choice" />
+                    <ui:Label name="campaign-size-medium" text="Mittel" class="campaign-choice" />
+                    <ui:Label name="campaign-size-large" text="Groß" class="campaign-choice" />
+                    <ui:Label name="campaign-size-huge" text="Riesig" class="campaign-choice" />
+                    <ui:Label name="campaign-size-gigantic" text="Gigantisch" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="ANZAHL VÖLKER" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-factions-2" text="2" class="campaign-choice" />
+                    <ui:Label name="campaign-factions-3" text="3" class="campaign-choice" />
+                    <ui:Label name="campaign-factions-4" text="4" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="GRUNDSTIMMUNG" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-mood-peaceful" text="Friedlich" class="campaign-choice" />
+                    <ui:Label name="campaign-mood-mixed" text="Gemischt" class="campaign-choice" />
+                    <ui:Label name="campaign-mood-hostile" text="Feindselig" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="KÜSTENFORM" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-coast-compact" text="Kompakt" class="campaign-choice" />
+                    <ui:Label name="campaign-coast-balanced" text="Ausgewogen" class="campaign-choice" />
+                    <ui:Label name="campaign-coast-rugged" text="Zerklüftet" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="GELÄNDE" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-terrain-flat" text="Flach" class="campaign-choice" />
+                    <ui:Label name="campaign-terrain-hilly" text="Hügelig" class="campaign-choice" />
+                    <ui:Label name="campaign-terrain-mountainous" text="Gebirgig" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="BELEBTHEIT" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-activity-quiet" text="Ruhig" class="campaign-choice" />
+                    <ui:Label name="campaign-activity-normal" text="Normal" class="campaign-choice" />
+                    <ui:Label name="campaign-activity-active" text="Belebt" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label text="BESIEDLUNG" class="section-label campaign-section" />
+                <ui:VisualElement class="campaign-row">
+                    <ui:Label name="campaign-settlement-wilderness" text="Weite Wildnis" class="campaign-choice" />
+                    <ui:Label name="campaign-settlement-balanced" text="Ausgewogen" class="campaign-choice" />
+                    <ui:Label name="campaign-settlement-dense" text="Dicht" class="campaign-choice" />
+                </ui:VisualElement>
+                <ui:Label name="campaign-message" text="Die Karte bleibt bis zum Aufbruch unbekannt." class="campaign-message" />
+                <ui:Label name="campaign-begin" text="EXPEDITION BEGINNEN" class="campaign-begin" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- ======================= ACTION BAR ======================= -->
         <ui:VisualElement class="action-bar">
             <ui:Label name="action-move" text="↳ Bewegen" class="btn" />

@@ -1,0 +1,65 @@
+{
+  "documentType": "faction-territory-entry-rules",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "territory-warning",
+      "entryKind": "warning",
+      "angerDelta": 6,
+      "fearDelta": 3,
+      "event": {
+        "title": "Ein altes Zeichen wird verständlich",
+        "body": "Die Expedition überquert eine Linie aus Steinen, Kerben oder bewusst gesetzten Spuren. Jemand erwartet, dass sie respektiert wird.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "territory-welcoming",
+      "entryKind": "territory",
+      "factionProfileId": "welcoming",
+      "trustDelta": 2,
+      "promotesContact": true,
+      "event": {
+        "title": "Vorsichtige Beobachter",
+        "body": "Menschen in der Nähe bemerken die Expedition, weichen aber nicht sofort zurück. Ein vorsichtiger Kontakt könnte möglich sein.",
+        "revealsFaction": true,
+        "allowsInteraction": true
+      }
+    },
+    {
+      "id": "territory-cautious",
+      "entryKind": "territory",
+      "factionProfileId": "neutral-cautious",
+      "angerDelta": 2,
+      "fearDelta": 1,
+      "event": {
+        "title": "Beobachtetes Land",
+        "body": "Frische Spuren und ein verändertes Zeichen lassen erkennen: Dieses Gebiet wird auch abseits klarer Grenzmarkierungen beobachtet.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "territory-hostile",
+      "entryKind": "territory",
+      "factionProfileId": "hostile",
+      "angerDelta": 4,
+      "fearDelta": 6,
+      "event": {
+        "title": "Unsichtbare Augen",
+        "body": "Der Wald wird still. Niemand ist klar zu sehen, aber die Expedition weiß, dass sie zuerst gesehen wurde.",
+        "revealsFaction": false
+      }
+    },
+    {
+      "id": "territory-default",
+      "entryKind": "territory",
+      "fearDelta": 1,
+      "priority": -10,
+      "event": {
+        "title": "Fremdes Gebiet",
+        "body": "Die Expedition betritt ein Gebiet, das jemand anderem zugeordnet scheint. Die Reaktion bleibt vorerst undeutlich.",
+        "revealsFaction": false
+      }
+    }
+  ]
+}

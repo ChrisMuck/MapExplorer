@@ -7,6 +7,7 @@ namespace Game.App
 
 public sealed class AdvanceBaseTimeCommand
 {
+    private readonly WorldPhaseService worldPhaseService;
     // Authored, deterministic world reactions surfaced while base time passes. The world keeps
     // moving during preparation; the entry is chosen by world day so a rebuild is reproducible.
     private static readonly string[] WorldReactions =
@@ -17,6 +18,11 @@ public sealed class AdvanceBaseTimeCommand
         "The gray river ran high; a ford near the crossing washed out.",
         "The Hidden Ones' tracks were seen and then lost in the northwest."
     };
+
+    public AdvanceBaseTimeCommand(WorldPhaseService? worldPhaseService = null)
+    {
+        this.worldPhaseService = worldPhaseService ?? new WorldPhaseService();
+    }
 
     public AdvanceBaseTimeResult Execute(GameState game, int days = 1)
     {
@@ -37,6 +43,7 @@ public sealed class AdvanceBaseTimeCommand
 
         game.World.AdvanceDays(days);
         game.Base.EvaluationQueue.AdvanceDays(days);
+        worldPhaseService.Resolve(game);
 
         var reaction = WorldReactions[game.World.WorldDay % WorldReactions.Length];
         var reactionEntry = $"World day {game.World.WorldDay}: {reaction}";

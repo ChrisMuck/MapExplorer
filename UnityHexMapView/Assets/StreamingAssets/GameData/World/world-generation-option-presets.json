@@ -1,0 +1,18 @@
+{
+  "documentType": "world-generation-option-presets",
+  "schemaVersion": 1,
+  "items": [
+    { "categoryId": "coastline", "id": "compact", "label": "Kompakt", "generatorOverrides": { "islandFalloff": 0.82, "warpStrength": 0.55 } },
+    { "categoryId": "coastline", "id": "balanced", "label": "Ausgewogen", "generatorOverrides": { "islandFalloff": 0.60, "warpStrength": 1.20 } },
+    { "categoryId": "coastline", "id": "rugged", "label": "Zerklüftet", "generatorOverrides": { "islandFalloff": 0.35, "warpStrength": 1.80 } },
+    { "categoryId": "terrain", "id": "flat", "label": "Flach", "generatorOverrides": { "mountainAmount": 0.25, "ridgeStrength": 0.25 } },
+    { "categoryId": "terrain", "id": "hilly", "label": "Hügelig", "generatorOverrides": { "mountainAmount": 0.50, "ridgeStrength": 0.60 } },
+    { "categoryId": "terrain", "id": "mountainous", "label": "Gebirgig", "generatorOverrides": { "mountainAmount": 0.75, "ridgeStrength": 1.00 } },
+    { "categoryId": "activity", "id": "quiet", "label": "Ruhig", "generatorOverrides": { "locationDensity": 1.20 } },
+    { "categoryId": "activity", "id": "normal", "label": "Normal", "generatorOverrides": { "locationDensity": 2.20 } },
+    { "categoryId": "activity", "id": "active", "label": "Belebt", "generatorOverrides": { "locationDensity": 3.20 } },
+    { "categoryId": "settlement", "id": "wilderness", "label": "Weite Wildnis", "generatorOverrides": { "territoryReach": 0.30, "cellsPerTown": 45 } },
+    { "categoryId": "settlement", "id": "balanced", "label": "Ausgewogen", "generatorOverrides": { "territoryReach": 0.50, "cellsPerTown": 30 } },
+    { "categoryId": "settlement", "id": "dense", "label": "Dicht", "generatorOverrides": { "territoryReach": 0.70, "cellsPerTown": 18 } }
+  ]
+}

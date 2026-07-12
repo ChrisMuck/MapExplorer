@@ -11,6 +11,7 @@ public sealed class MoveExpeditionCommand
 
     private readonly MovementCostService movementCostService;
     private readonly KnowledgeService knowledgeService;
+    private readonly FactionTerritoryEntryResolver factionTerritoryEntryResolver;
 
     public MoveExpeditionCommand(MovementCostService movementCostService)
         : this(movementCostService, new KnowledgeService())
@@ -18,9 +19,18 @@ public sealed class MoveExpeditionCommand
     }
 
     public MoveExpeditionCommand(MovementCostService movementCostService, KnowledgeService knowledgeService)
+        : this(movementCostService, knowledgeService, null)
+    {
+    }
+
+    public MoveExpeditionCommand(
+        MovementCostService movementCostService,
+        KnowledgeService knowledgeService,
+        FactionTerritoryEntryResolver? factionTerritoryEntryResolver)
     {
         this.movementCostService = movementCostService ?? throw new ArgumentNullException(nameof(movementCostService));
         this.knowledgeService = knowledgeService ?? throw new ArgumentNullException(nameof(knowledgeService));
+        this.factionTerritoryEntryResolver = factionTerritoryEntryResolver ?? new FactionTerritoryEntryResolver(null);
     }
 
     public MoveExpeditionResult Execute(GameState game, HexCoord destination)
@@ -137,7 +147,7 @@ public sealed class MoveExpeditionCommand
             operationalStateId == LocationStateIds.Operational.Sealed;
     }
 
-    private static void ApplyFactionEntry(GameState game, HexTileState destinationTile, HexCoord destination)
+    private void ApplyFactionEntry(GameState game, HexTileState destinationTile, HexCoord destination)
     {
         if (string.IsNullOrWhiteSpace(destinationTile.OwnerId))
         {
@@ -152,7 +162,13 @@ public sealed class MoveExpeditionCommand
 
         ApplyFactionKnowledge(game, faction);
 
-        if (faction.IsWarningZone(destination))
+        var isWarningZone = faction.IsWarningZone(destination);
+        if (factionTerritoryEntryResolver.TryResolve(game, faction, destination, isWarningZone))
+        {
+            return;
+        }
+
+        if (isWarningZone)
         {
             ApplyFactionWarningZoneEntry(game, faction, destination);
             return;
