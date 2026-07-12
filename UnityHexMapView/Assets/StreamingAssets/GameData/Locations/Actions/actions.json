@@ -147,9 +147,10 @@
       "project": {
         "durationDays": 3,
         "completionEffects": [
-          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "repaired", "text": "Der operative Zustand wechselt zu: Repariert." },
-          { "kind": "OpenRoute", "text": "Die Bruecke oeffnet eine dauerhafte Route ueber die Schlucht." },
-          { "kind": "AddArchiveEntry", "text": "Die zerstoerte Bruecke wurde dauerhaft repariert." }
+            { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "repaired", "text": "Der operative Zustand wechselt zu: Repariert." },
+            { "kind": "OpenRoute", "text": "Die Bruecke oeffnet eine dauerhafte Route ueber die Schlucht." },
+            { "kind": "AddEvidence", "referenceId": "evidence-bridge-repaired", "text": "Die Reparatur bestaetigt, dass die Bruecke als dauerhafte Route nutzbar ist." },
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-infrastructure-repaired", "text": "Die Veraenderung am Uebergang kann in der Umgebung bemerkt werden." }
         ]
       }
     },

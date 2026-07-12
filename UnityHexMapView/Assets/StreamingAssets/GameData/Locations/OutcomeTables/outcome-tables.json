@@ -154,15 +154,15 @@
         "SuccessWithCost": [
           { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." },
           { "kind": "ChangeMorale", "amount": -1, "text": "Die Gruppe ist sich uneins, ob dies richtig war." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ],
         "Failure": [
           { "kind": "ChangeMorale", "amount": -1, "text": "Der Eingriff misslingt und belastet die Gruppe." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ],
         "SevereFailure": [
           { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim gewaltsamen Oeffnen wird jemand verletzt." },
-          { "kind": "AddFactionMemory", "factionId": "border-wardens", "memory": "outsiders disturbed a marked grave", "text": "Die Grenzwaechter koennten diese Stoerung erinnern." }
+            { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
         ]
       }
     },
