@@ -17,6 +17,7 @@ public sealed class GameApplication
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
     private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
+    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand();
     private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
     private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
@@ -133,6 +134,11 @@ public sealed class GameApplication
         ScoutMissionBehavior behavior)
     {
         return sendScoutMissionCommand.Execute(game, scoutMemberIds, direction, durationDays, focus, behavior);
+    }
+
+    public SendScoutMissionResult ScoutLocationSurroundings(GameState game, string locationId, IReadOnlyList<string> scoutMemberIds)
+    {
+        return scoutLocationSurroundingsCommand.Execute(game, locationId, scoutMemberIds);
     }
 
     public InspectLocationResult InspectLocation(GameState game, HexCoord coord)
