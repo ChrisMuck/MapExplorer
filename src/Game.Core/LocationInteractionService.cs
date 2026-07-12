@@ -175,7 +175,8 @@ public sealed class LocationInteractionService
             // Repeat policy (§7.6): an exhausted action is shown but locked, not farmed.
             var lockedReason = IsRepeatExhausted(action, location)
                 ? "Bereits durchgefuehrt."
-                : FirstUnmetRequirement(action, location, expedition, activeModifiers);
+                : FirstUnmetRequirement(action, location, expedition, activeModifiers)
+                    ?? FirstUnpayableCost(action, expedition);
             var rawRisk = CalculateRawRisk(action, location, activeModifiers, linkedFactions);
             options.Add(new LocationInteractionOption(
                 action,
@@ -293,6 +294,51 @@ public sealed class LocationInteractionService
             if (!IsRequirementMet(requirement, location, expedition, activeModifiers))
             {
                 return requirement.UnmetReason;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? FirstUnpayableCost(LocationActionDefinition action, ExpeditionState expedition)
+    {
+        foreach (var cost in action.Costs)
+        {
+            if (cost.Amount <= 0)
+            {
+                continue;
+            }
+
+            switch (cost.Kind)
+            {
+                case LocationCostKind.MovementPoints:
+                    if (expedition.MovementPoints < cost.Amount)
+                    {
+                        return "Nicht genug Bewegungspunkte.";
+                    }
+
+                    break;
+                case LocationCostKind.Supplies:
+                    if (expedition.Supplies < cost.Amount)
+                    {
+                        return "Nicht genug Vorraete.";
+                    }
+
+                    break;
+                case LocationCostKind.Medicine:
+                    if (expedition.Medicine < cost.Amount)
+                    {
+                        return "Nicht genug Medizin.";
+                    }
+
+                    break;
+                case LocationCostKind.Morale:
+                    if (expedition.Morale < cost.Amount)
+                    {
+                        return "Nicht genug Moral.";
+                    }
+
+                    break;
             }
         }
 

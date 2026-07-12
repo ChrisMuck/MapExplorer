@@ -26,6 +26,7 @@
       "effectBundles": {
         "Success": [
           { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Ein langsamer, aber nutzbarer Umweg wird notiert." },
+          { "kind": "OpenRoute", "text": "Der gefundene Umweg oeffnet eine nutzbare Route um das Hindernis." },
           { "kind": "AddArchiveEntry", "text": "Ein Umweg um die zerstoerte Bruecke wurde als Routenhypothese vermerkt." }
         ],
         "Failure": [
@@ -64,9 +65,11 @@
       },
       "effectBundles": {
         "Success": [
-          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition bestaetigt die Route ueber die Schlucht." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition bestaetigt die Route ueber die Schlucht." },
+          { "kind": "MoveExpeditionAcrossEdge", "text": "Die Expedition erreicht die andere Seite des Hindernisses." }
         ],
         "SuccessWithCost": [
+          { "kind": "MoveExpeditionAcrossEdge", "text": "Die Expedition erreicht die andere Seite des Hindernisses." },
           { "kind": "ConsumeSupplies", "amount": 1, "text": "Beim Uebergang geht Ausruestung verloren." },
           { "kind": "ChangeMorale", "amount": -1, "text": "Der Uebergang belastet die Gruppe." }
         ],

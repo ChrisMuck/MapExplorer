@@ -657,7 +657,14 @@ public sealed class UnityHexMapView : MonoBehaviour
             return result;
         }
 
-        if (result.Location != null)
+        if (result.ExpeditionMoved)
+        {
+            selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
+            hasInspectedHex = false;
+            inspectedLocation = null;
+            UpdateExpeditionMarkerPosition();
+        }
+        else if (result.Location != null)
         {
             inspectedHex = CoreCoordToViewCoord(result.Location.Coord);
             hasInspectedHex = true;
@@ -2984,7 +2991,8 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        if (!autoOpenedLocationInteractionIds.Add(location.Id))
+        if (!ShouldRepeatAutoOpenLocationInteraction(location) &&
+            !autoOpenedLocationInteractionIds.Add(location.Id))
         {
             return;
         }
@@ -3013,6 +3021,11 @@ public sealed class UnityHexMapView : MonoBehaviour
             return false;
         }
 
+        if (ShouldRepeatAutoOpenLocationInteraction(location))
+        {
+            return true;
+        }
+
         if (location.InteractionStateId != LocationStateIds.Interaction.Untouched)
         {
             return false;
@@ -3020,6 +3033,20 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         // Any archetype-driven location auto-opens its interaction screen on first arrival.
         return true;
+    }
+
+    private static bool ShouldRepeatAutoOpenLocationInteraction(SpecialLocationState location)
+    {
+        return location != null &&
+            location.ArchetypeId == LocationInteractionContent.ArchetypeRouteObstacle &&
+            IsUnresolvedRouteObstacleState(location.OperationalStateId);
+    }
+
+    private static bool IsUnresolvedRouteObstacleState(string operationalStateId)
+    {
+        return operationalStateId == LocationStateIds.Operational.Blocked ||
+            operationalStateId == LocationStateIds.Operational.RiskyPassage ||
+            operationalStateId == LocationStateIds.Operational.Destroyed;
     }
 
     private void EndCurrentDay()

@@ -110,6 +110,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
       "outcomeTableId": "outcome-find-bypass",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "repeatPolicy": "OncePerState"
     },
     {

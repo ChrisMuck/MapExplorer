@@ -1119,6 +1119,7 @@ Outcomes apply reusable effects, handled through a registry so new reusable effe
 - change location state
 - add or remove modifier
 - change edge traversal
+- move expedition across edge
 - reveal route
 - create location
 - create dynamic situation

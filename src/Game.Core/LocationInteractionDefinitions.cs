@@ -150,6 +150,7 @@ public enum LocationEffectKind
     AddFactionMemory,
     AddArchiveEntry,
     OpenRoute,
+    MoveExpeditionAcrossEdge,
     InjureMember,
     ChangeFactionTrust,
     ChangeFactionAnger,

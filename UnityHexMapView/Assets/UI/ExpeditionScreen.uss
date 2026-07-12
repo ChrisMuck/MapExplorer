@@ -499,11 +499,13 @@
 .bi-state-row { flex-direction: row; flex-wrap: wrap; margin-top: 18px; }
 .bi-state-pill {
     margin-right: 10px; margin-bottom: 8px;
+    min-height: 30px;
     padding: 7px 11px;
     border-radius: 6px;
     color: rgb(229, 221, 204);
     background-color: rgba(255, 255, 255, 0.06);
     font-size: 14px;
+    -unity-text-align: middle-center;
 }
 .bi-state-pill--alert {
     color: rgb(241, 138, 101);
@@ -513,12 +515,14 @@
 .bi-modifier-row { flex-direction: row; flex-wrap: wrap; margin-top: 10px; }
 .bi-modifier {
     margin-right: 9px; margin-bottom: 8px;
+    min-height: 28px;
     padding: 7px 14px;
     border-radius: 16px;
     border-width: 1px; border-color: rgba(255, 255, 255, 0.13);
     color: rgb(196, 187, 168);
     background-color: rgba(255, 255, 255, 0.04);
     font-size: 13px;
+    -unity-text-align: middle-center;
 }
 .bi-modifier--warn {
     color: rgb(241, 174, 141);
@@ -551,10 +555,12 @@
 .bi-body {
     flex-direction: row;
     min-height: 430px;
+    flex-grow: 1;
 }
 .bi-action-column {
     width: 490px;
     flex-shrink: 0;
+    min-height: 0;
     padding: 26px 32px 32px 32px;
     border-right-width: 1px; border-right-color: rgba(255, 255, 255, 0.08);
 }
@@ -563,7 +569,7 @@
     font-size: 13px;
     letter-spacing: 4px;
 }
-.bi-action-list { margin-top: 18px; }
+.bi-action-list { margin-top: 18px; flex-grow: 1; min-height: 0; }
 .bi-action-row {
     min-height: 72px;
     flex-direction: row;
@@ -628,6 +634,7 @@
 }
 .bi-detail-panel {
     flex-grow: 1;
+    min-height: 0;
     padding: 38px 44px 36px 44px;
 }
 .bi-detail-title {
@@ -979,6 +986,114 @@
 }
 .ui-compact .btn { padding: 11px 13px; margin-right: 7px; font-size: 15px; }
 .ui-compact .btn--primary { padding: 12px 19px; font-size: 15px; }
+.ui-compact .bi-root {
+    top: 62px;
+    bottom: 68px;
+}
+.ui-compact .bi-popup {
+    width: 1180px;
+    max-height: 100%;
+}
+.ui-compact .bi-header {
+    padding: 18px 24px 15px 24px;
+}
+.ui-compact .bi-icon {
+    width: 92px;
+    height: 92px;
+    margin-right: 22px;
+}
+.ui-compact .bi-title {
+    margin-top: 8px;
+    font-size: 30px;
+}
+.ui-compact .bi-subtitle {
+    margin-top: 8px;
+    font-size: 13px;
+}
+.ui-compact .bi-state-row {
+    margin-top: 12px;
+}
+.ui-compact .bi-state-pill {
+    min-height: 28px;
+    padding: 5px 10px;
+    font-size: 13px;
+}
+.ui-compact .bi-modifier-row {
+    margin-top: 6px;
+}
+.ui-compact .bi-modifier {
+    min-height: 26px;
+    padding: 5px 12px;
+    font-size: 12px;
+}
+.ui-compact .bi-close {
+    width: 38px;
+    height: 38px;
+}
+.ui-compact .bi-flavor-band {
+    padding: 18px 24px;
+}
+.ui-compact .bi-flavor {
+    font-size: 17px;
+}
+.ui-compact .bi-body {
+    min-height: 0;
+}
+.ui-compact .bi-action-column {
+    width: 420px;
+    padding: 22px 24px;
+}
+.ui-compact .bi-section-label {
+    font-size: 12px;
+    letter-spacing: 3px;
+}
+.ui-compact .bi-action-list {
+    margin-top: 14px;
+}
+.ui-compact .bi-action-row {
+    min-height: 64px;
+    margin-bottom: 10px;
+    padding: 11px 14px;
+}
+.ui-compact .bi-action-glyph {
+    width: 30px;
+    font-size: 18px;
+}
+.ui-compact .bi-action-title {
+    font-size: 16px;
+}
+.ui-compact .bi-action-note {
+    font-size: 11px;
+}
+.ui-compact .bi-risk-pill {
+    min-width: 72px;
+    padding: 5px 9px;
+    font-size: 12px;
+}
+.ui-compact .bi-detail-panel {
+    padding: 28px 34px;
+}
+.ui-compact .bi-detail-title {
+    font-size: 24px;
+}
+.ui-compact .bi-detail-description {
+    margin-top: 16px;
+    font-size: 16px;
+    line-height: 24px;
+}
+.ui-compact .bi-detail-meta {
+    margin-top: 18px;
+}
+.ui-compact .bi-primary-button {
+    width: 250px;
+    padding: 14px 16px;
+    font-size: 15px;
+}
+.ui-compact .bi-outcome-view,
+.ui-compact .bi-project-view {
+    min-height: 0;
+    padding: 28px 34px;
+}
 
 .ui-narrow .left-panel { width: 300px; padding: 17px; }
 .ui-narrow .alert { display: none; }
@@ -989,3 +1104,7 @@
 .ui-narrow .side-panel { width: 320px; }
 .ui-narrow .rail { width: 70px; }
 .ui-narrow .side-panel { right: 70px; }
+.ui-narrow .bi-root {
+    top: 62px;
+    bottom: 64px;
+}
