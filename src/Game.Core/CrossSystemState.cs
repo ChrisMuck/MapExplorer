@@ -136,6 +136,43 @@ public sealed class LocationFactionRelationState
     }
 }
 
+public enum FactionAwarenessLevel
+{
+    Unaware,
+    Suspicious,
+    Alert,
+    HostileResponse
+}
+
+/// <summary>Hidden regional attention caused by observed expedition or scout activity.</summary>
+public sealed class RegionFactionAwarenessState
+{
+    public RegionFactionAwarenessState(string factionId, string regionId, FactionAwarenessLevel level = FactionAwarenessLevel.Unaware)
+    {
+        FactionId = RequireText(factionId, nameof(factionId));
+        RegionId = RequireText(regionId, nameof(regionId));
+        Level = level;
+    }
+
+    public string FactionId { get; }
+    public string RegionId { get; }
+    public FactionAwarenessLevel Level { get; private set; }
+
+    public void Escalate()
+    {
+        if (Level < FactionAwarenessLevel.HostileResponse)
+        {
+            Level++;
+        }
+    }
+
+    private static string RequireText(string value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value must not be empty.", name);
+        return value.Trim();
+    }
+}
+
 /// <summary>A neutral, hidden runtime message raised by a world-changing action.</summary>
 public sealed class WorldTriggerState
 {

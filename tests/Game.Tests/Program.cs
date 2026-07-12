@@ -45,6 +45,8 @@ var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
 var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
+var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
+scoutLocationSurroundingsTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 
@@ -264,6 +266,7 @@ internal sealed class WorldGenBridgeTests
     {
         GeneratedWorldBridgesToCoreWithoutLosingAnchors();
         SameRequestProducesSameCoreWorldLayout();
+        TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
         GeneratedWorldCanStartAnExpedition();
     }
 
@@ -301,6 +304,18 @@ internal sealed class WorldGenBridgeTests
         AssertEqual(game.Base.Location, game.Expedition.Position, "Generated expedition starts at generated base");
         AssertTrue(game.Knowledge.GetTileKnowledge(game.Base.Location) == KnowledgeLevel.Confirmed, "Generated base starts confirmed");
         AssertEqual(3, game.Factions.Count, "Generated campaign carries generated factions");
+    }
+
+    private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        var territorialLocations = result.World.Locations
+            .Where(location => result.World.Map.GetTile(location.Coord).OwnerId != null)
+            .ToList();
+
+        AssertTrue(territorialLocations.Count > 0, "Generated world has locations inside faction territory");
+        AssertTrue(territorialLocations.Any(location => location.FactionRelations.Count == 0), "Territory does not automatically claim every location");
+        AssertTrue(result.World.Locations.Any(location => location.EvidenceSeedIds.Count > 0), "Generated locations carry neutral evidence seeds");
     }
 
     private static WorldGenerationRequest Request()

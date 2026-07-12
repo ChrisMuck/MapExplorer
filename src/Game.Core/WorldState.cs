@@ -12,6 +12,7 @@ public sealed class WorldState
     private readonly List<SpecialLocationState> locations;
     private readonly List<WorldTriggerState> worldTriggers;
     private readonly List<ScheduledConsequenceState> scheduledConsequences;
+    private readonly List<RegionFactionAwarenessState> factionAwareness;
 
     public WorldState(
         HexMapState map,
@@ -19,7 +20,8 @@ public sealed class WorldState
         IEnumerable<SpecialLocationState>? locations = null,
         int worldDay = 1,
         IEnumerable<WorldTriggerState>? worldTriggers = null,
-        IEnumerable<ScheduledConsequenceState>? scheduledConsequences = null)
+        IEnumerable<ScheduledConsequenceState>? scheduledConsequences = null,
+        IEnumerable<RegionFactionAwarenessState>? factionAwareness = null)
     {
         if (worldDay < 1)
         {
@@ -31,6 +33,7 @@ public sealed class WorldState
         this.locations = new List<SpecialLocationState>(locations ?? Enumerable.Empty<SpecialLocationState>());
         this.worldTriggers = new List<WorldTriggerState>(worldTriggers ?? Enumerable.Empty<WorldTriggerState>());
         this.scheduledConsequences = new List<ScheduledConsequenceState>(scheduledConsequences ?? Enumerable.Empty<ScheduledConsequenceState>());
+        this.factionAwareness = new List<RegionFactionAwarenessState>(factionAwareness ?? Enumerable.Empty<RegionFactionAwarenessState>());
         WorldDay = worldDay;
     }
 
@@ -57,6 +60,8 @@ public sealed class WorldState
     {
         get { return scheduledConsequences; }
     }
+
+    public IReadOnlyList<RegionFactionAwarenessState> FactionAwareness => factionAwareness;
 
     public void AddPath(WorldPathState path)
     {
@@ -111,6 +116,18 @@ public sealed class WorldState
         }
 
         scheduledConsequences.Add(consequence);
+    }
+
+    public void EscalateFactionAwareness(string factionId, string regionId)
+    {
+        var state = factionAwareness.FirstOrDefault(item => item.FactionId == factionId && item.RegionId == regionId);
+        if (state == null)
+        {
+            state = new RegionFactionAwarenessState(factionId, regionId);
+            factionAwareness.Add(state);
+        }
+
+        state.Escalate();
     }
 }
 }

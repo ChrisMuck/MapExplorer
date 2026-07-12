@@ -115,7 +115,9 @@ public sealed class WorldGenBridge
                 ArchetypeIdFor(source.Archetype),
                 VariantIdFor(source.Variant),
                 source.Modifiers.Select(ModifierIdFor),
-                factionRelations: relations));
+                factionRelations: relations,
+                contextTags: source.ContextTags,
+                evidenceSeedIds: source.EvidenceSeedIds));
         }
 
         return results;
@@ -123,13 +125,25 @@ public sealed class WorldGenBridge
 
     private static IEnumerable<LocationFactionRelationState> Relations(SpecialLocation source, IReadOnlyDictionary<int, string> factionIds)
     {
+        var relationFactionId = source.Owner >= 0 ? source.Owner : source.WatchedBy;
         if (source.Owner >= 0 && factionIds.TryGetValue(source.Owner, out var owner))
         {
-            yield return new LocationFactionRelationState(owner, LocationFactionRelationKind.Claimed);
+            yield return new LocationFactionRelationState(owner, LocationFactionRelationKind.Claimed, source.ContextTags);
         }
         if (source.WatchedBy >= 0 && factionIds.TryGetValue(source.WatchedBy, out var watcher))
         {
-            yield return new LocationFactionRelationState(watcher, LocationFactionRelationKind.Watched);
+            yield return new LocationFactionRelationState(watcher, LocationFactionRelationKind.Watched, source.ContextTags);
+        }
+        if (relationFactionId >= 0 && factionIds.TryGetValue(relationFactionId, out var relatedFaction))
+        {
+            if (source.Modifiers.Contains("Sacred"))
+            {
+                yield return new LocationFactionRelationState(relatedFaction, LocationFactionRelationKind.Sacred, source.ContextTags);
+            }
+            if (source.Modifiers.Contains("Guarded"))
+            {
+                yield return new LocationFactionRelationState(relatedFaction, LocationFactionRelationKind.Guarded, source.ContextTags);
+            }
         }
     }
 

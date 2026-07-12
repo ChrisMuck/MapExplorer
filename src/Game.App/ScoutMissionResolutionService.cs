@@ -8,6 +8,13 @@ namespace Game.App
 
 public sealed class ScoutMissionResolutionService
 {
+    private readonly EvidenceDefinitionSet? evidenceDefinitions;
+
+    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null)
+    {
+        this.evidenceDefinitions = evidenceDefinitions;
+    }
+
     public IReadOnlyList<ScoutMissionResolutionResult> ResolveDueMissions(GameState game)
     {
         if (game == null)
@@ -216,7 +223,7 @@ public sealed class ScoutMissionResolutionService
         }
     }
 
-    private static void AddLocationSurroundingsEvidence(GameState game, ScoutMissionState mission, ScoutReportState report)
+    private void AddLocationSurroundingsEvidence(GameState game, ScoutMissionState mission, ScoutReportState report)
     {
         if (string.IsNullOrWhiteSpace(mission.TargetLocationId))
         {
@@ -230,10 +237,13 @@ public sealed class ScoutMissionResolutionService
         }
 
         var relation = location.FactionRelations.FirstOrDefault();
-        var definitionId = relation == null ? "evidence-location-surroundings-quiet" : "evidence-location-surroundings-signs";
-        var text = relation == null
+        var definitionId = relation == null
+            ? "evidence-location-surroundings-quiet"
+            : location.EvidenceSeedIds.FirstOrDefault() ?? "evidence-location-surroundings-signs";
+        var fallbackText = relation == null
             ? "Die Scouts fanden keine eindeutigen Zeichen, dass jemand diesen Ort regelmaessig kontrolliert."
             : "Die Scouts fanden wiederkehrende Zeichen, Wege oder Spuren. Jemand scheint diesen Ort zu beachten.";
+        var text = evidenceDefinitions?.Find(definitionId)?.ScoutReportText ?? fallbackText;
         var evidenceId = $"evidence-scout-{report.Id}-{location.Id}";
         game.Knowledge.AddEvidence(new EvidenceState(
             evidenceId,
@@ -243,6 +253,11 @@ public sealed class ScoutMissionResolutionService
             text,
             subjectLocationId: location.Id,
             confidence: report.Reliability));
+
+        if (relation != null)
+        {
+            game.World.EscalateFactionAwareness(relation.FactionId, $"location-region:{location.Id}");
+        }
     }
 }
 }

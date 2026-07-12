@@ -13,7 +13,7 @@ public sealed class GameApplication
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly LocationInteractionDefinitionSet locationInteractionDefinitions;
     private readonly IReadOnlyList<SpecialLocationState>? locationInstances;
-    private readonly EndDayCommand endDayCommand = new EndDayCommand();
+    private readonly EndDayCommand endDayCommand;
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
     private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
@@ -38,7 +38,7 @@ public sealed class GameApplication
     private readonly WorldGenBridge worldGenBridge = new WorldGenBridge();
 
     public GameApplication()
-        : this(null)
+        : this(null, null)
     {
     }
 
@@ -48,8 +48,14 @@ public sealed class GameApplication
     /// folder can be found on disk, and finally falls back to the in-code definitions (Section 17.10).
     /// </summary>
     public GameApplication(LocationDataBundle? locationData)
+        : this(locationData, null)
+    {
+    }
+
+    public GameApplication(LocationDataBundle? locationData, CrossSystemDataBundle? crossSystemData)
     {
         locationData ??= TryLoadDefaultLocationData();
+        crossSystemData ??= TryLoadDefaultCrossSystemData();
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -65,6 +71,7 @@ public sealed class GameApplication
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
+        endDayCommand = new EndDayCommand(scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence));
     }
 
     public GameState CreateTutorialGame()
@@ -92,9 +99,33 @@ public sealed class GameApplication
         return null;
     }
 
+    private static CrossSystemDataBundle? TryLoadDefaultCrossSystemData()
+    {
+        foreach (var root in CandidateGameDataRoots())
+        {
+            var bundle = CrossSystemDataLoader.LoadFromDirectory(Path.Combine(root, "World"));
+            if (bundle != null) return bundle;
+        }
+
+        return null;
+    }
+
     private static IEnumerable<string> CandidateDataRoots()
     {
         const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData/Locations";
+        yield return Path.Combine(Directory.GetCurrentDirectory(), relative);
+
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+        {
+            yield return Path.Combine(dir, relative);
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+    }
+
+    private static IEnumerable<string> CandidateGameDataRoots()
+    {
+        const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData";
         yield return Path.Combine(Directory.GetCurrentDirectory(), relative);
 
         var dir = AppContext.BaseDirectory;

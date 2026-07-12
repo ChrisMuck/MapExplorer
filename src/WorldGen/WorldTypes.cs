@@ -43,6 +43,8 @@ namespace WorldGen
         public int Owner = -1;               // faction id if FactionOwned, else -1
         public int WatchedBy = -1;           // faction whose territory it sits in (neutral-in-origin)
         public List<string> Modifiers = new List<string>();
+        public List<string> ContextTags = new List<string>();
+        public List<string> EvidenceSeedIds = new List<string>();
         public bool Ancient;
         public Anchor Anchor;
     }

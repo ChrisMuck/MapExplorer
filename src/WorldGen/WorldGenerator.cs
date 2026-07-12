@@ -830,13 +830,57 @@ namespace WorldGen
             {
                 if (cell == null) return null;
                 used.Add(cell.I); placedCells.Add(cell);
-                int owner = -1, watchedBy = -1; var modifiers = new List<string>();
-                if (factionOwned.HasValue) { owner = factionOwned.Value; modifiers.Add("FactionOwned"); }
-                else if (neutral) { owner = -1; }
-                else if (cell.Faction >= 0)
+                int owner = -1, watchedBy = -1;
+                var modifiers = new List<string>();
+                var contextTags = new List<string>();
+                var evidenceSeedIds = new List<string>();
+                if (ancient)
                 {
-                    if (ancient) { owner = -1; watchedBy = cell.Faction; if (_rng.NextDouble() < 0.6) modifiers.Add(_rng.NextDouble() < 0.5 ? "Sacred" : "Watched"); }
-                    else { owner = cell.Faction; modifiers.Add("FactionOwned"); }
+                    contextTags.Add("ancient-origin");
+                    evidenceSeedIds.Add("evidence-old-structure");
+                }
+
+                // Territory does not equal ownership. A territory only gives this
+                // individual location a chance to be claimed, watched or ignored.
+                if (factionOwned.HasValue)
+                {
+                    owner = factionOwned.Value;
+                    modifiers.Add("FactionOwned");
+                    contextTags.Add("territorial-marker");
+                    evidenceSeedIds.Add("evidence-claim-markers");
+                }
+                else if (!neutral && cell.Faction >= 0)
+                {
+                    var relationRoll = _rng.NextDouble();
+                    var claimChance = ancient ? 0.18 : 0.45;
+                    var watchedChance = ancient ? 0.58 : 0.80;
+                    if (relationRoll < claimChance)
+                    {
+                        owner = cell.Faction;
+                        modifiers.Add("FactionOwned");
+                        contextTags.Add("territorial-claim");
+                        evidenceSeedIds.Add("evidence-claim-markers");
+                    }
+                    else if (relationRoll < watchedChance)
+                    {
+                        watchedBy = cell.Faction;
+                        modifiers.Add("Watched");
+                        contextTags.Add("territorial-observation");
+                        evidenceSeedIds.Add("evidence-patrol-signs");
+                    }
+
+                    if ((owner >= 0 || watchedBy >= 0) && ancient && _rng.NextDouble() < 0.30)
+                    {
+                        modifiers.Add("Sacred");
+                        contextTags.Add("sacred-site");
+                        evidenceSeedIds.Add("evidence-ritual-signs");
+                    }
+                    else if ((owner >= 0 || watchedBy >= 0) && !ancient && _rng.NextDouble() < 0.20)
+                    {
+                        modifiers.Add("Guarded");
+                        contextTags.Add("guarded-site");
+                        evidenceSeedIds.Add("evidence-guard-routine");
+                    }
                 }
                 List<HexCell> areaCells = null;
                 if (biome >= 0)
@@ -847,7 +891,8 @@ namespace WorldGen
                 cell.Special = variant;
                 var loc = new SpecialLocation
                 {
-                    Cell = cell, Archetype = archetype, Variant = variant, Owner = owner, WatchedBy = watchedBy, Modifiers = modifiers, Ancient = ancient,
+                    Cell = cell, Archetype = archetype, Variant = variant, Owner = owner, WatchedBy = watchedBy, Modifiers = modifiers,
+                    ContextTags = contextTags, EvidenceSeedIds = evidenceSeedIds, Ancient = ancient,
                     Anchor = anchor ?? (areaCells != null ? new Anchor(AnchorKind.Area, areaCells) : new Anchor(AnchorKind.Point, new List<HexCell> { cell }))
                 };
                 _specials.Add(loc); return loc;

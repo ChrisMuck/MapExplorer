@@ -10,6 +10,8 @@ public sealed class SpecialLocationState
     private readonly List<string> modifierIds = new();
     private readonly List<string> factionIds = new();
     private readonly List<LocationFactionRelationState> factionRelations = new();
+    private readonly List<string> contextTags = new();
+    private readonly List<string> evidenceSeedIds = new();
     private readonly HashSet<string> resolvedActionKeys = new();
     private readonly HashSet<string> flags = new();
 
@@ -44,7 +46,9 @@ public sealed class SpecialLocationState
         string operationalStateId = LocationStateIds.Operational.None,
         string presenceStateId = LocationStateIds.Presence.Unknown,
         IEnumerable<string>? factionIds = null,
-        IEnumerable<LocationFactionRelationState>? factionRelations = null)
+        IEnumerable<LocationFactionRelationState>? factionRelations = null,
+        IEnumerable<string>? contextTags = null,
+        IEnumerable<string>? evidenceSeedIds = null)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -81,6 +85,9 @@ public sealed class SpecialLocationState
                 AddFactionRelation(relation);
             }
         }
+
+        AddDistinct(contextTags, this.contextTags);
+        AddDistinct(evidenceSeedIds, this.evidenceSeedIds);
     }
 
     public string Id { get; }
@@ -117,6 +124,12 @@ public sealed class SpecialLocationState
         get { return factionRelations; }
     }
 
+    /// <summary>Generated neutral context used by evidence and reaction rules.</summary>
+    public IReadOnlyList<string> ContextTags => contextTags;
+
+    /// <summary>Evidence candidates seeded for this concrete generated location.</summary>
+    public IReadOnlyList<string> EvidenceSeedIds => evidenceSeedIds;
+
     public void AddFactionRelation(LocationFactionRelationState relation)
     {
         if (relation == null)
@@ -133,6 +146,23 @@ public sealed class SpecialLocationState
         if (!factionIds.Contains(relation.FactionId))
         {
             factionIds.Add(relation.FactionId);
+        }
+    }
+
+    private static void AddDistinct(IEnumerable<string>? values, List<string> target)
+    {
+        if (values == null)
+        {
+            return;
+        }
+
+        foreach (var value in values)
+        {
+            var normalized = NormalizeOptionalText(value);
+            if (normalized != null && !target.Contains(normalized))
+            {
+                target.Add(normalized);
+            }
         }
     }
 
