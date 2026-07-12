@@ -10,6 +10,7 @@ public sealed class EndDayCommand
     private readonly int suppliesPerDay;
     private readonly ScoutMissionResolutionService scoutMissionResolutionService;
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
+    private readonly WorldPhaseService worldPhaseService = new WorldPhaseService();
 
     public EndDayCommand(int suppliesPerDay = 2, ScoutMissionResolutionService? scoutMissionResolutionService = null)
     {
@@ -43,6 +44,7 @@ public sealed class EndDayCommand
 
         game.Expedition.AdvanceExpeditionDay();
         game.World.AdvanceDays(1);
+        worldPhaseService.Resolve(game);
         if (!isAtBase && suppliesPerDay > 0 && game.Expedition.Supplies == 0)
         {
             failExpeditionCommand.Execute(game, "Supplies exhausted before the expedition could return.");

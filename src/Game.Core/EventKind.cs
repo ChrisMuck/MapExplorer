@@ -12,6 +12,7 @@ public enum EventKind
     ScoutOverdue,
     WarningSign,
     FactionReaction,
-    FoundObject
+    FoundObject,
+    WorldConsequence
 }
 }
