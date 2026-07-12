@@ -164,7 +164,7 @@ public static class TutorialGameFactory
                 LocationKind.BrokenRavine,
                 new HexCoord(2, 15),
                 "Zerstoerte Bruecke",
-                LocationAnchor.Edge(BaseCoord(), new HexCoord(2, 15)),
+                LocationAnchor.Edge(new HexCoord(2, 15), new HexCoord(3, 15)),
                 "route-obstacle",
                 "broken-bridge",
                 new[] { "modifier-repairable", "modifier-unstable", "modifier-watched" },

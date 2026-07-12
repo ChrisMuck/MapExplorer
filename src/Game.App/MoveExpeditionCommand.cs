@@ -51,6 +51,11 @@ public sealed class MoveExpeditionCommand
             return MoveExpeditionResult.Rejected("Destination is outside the map.");
         }
 
+        if (IsBlockedByEdgeLocation(game, from, destination))
+        {
+            return MoveExpeditionResult.Rejected("The route is blocked by a location obstacle.");
+        }
+
         var cost = movementCostService.GetEntryCost(destinationTile);
         if (!cost.CanEnter)
         {
@@ -75,6 +80,61 @@ public sealed class MoveExpeditionCommand
         ApplyFactionEntry(game, destinationTile, destination);
 
         return MoveExpeditionResult.Moved(from, destination, cost.Cost);
+    }
+
+    private static bool IsBlockedByEdgeLocation(GameState game, HexCoord from, HexCoord to)
+    {
+        if (HasOpenedRouteAcrossEdge(game.World, from, to))
+        {
+            return false;
+        }
+
+        foreach (var location in game.World.Locations)
+        {
+            if (location.Anchor.Kind == LocationAnchorKind.Edge &&
+                location.Anchor.Coords.Count == 2 &&
+                EdgeMatches(location.Anchor.Coords[0], location.Anchor.Coords[1], from, to) &&
+                IsBlockingOperationalState(location.OperationalStateId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasOpenedRouteAcrossEdge(WorldState world, HexCoord from, HexCoord to)
+    {
+        foreach (var path in world.Paths)
+        {
+            if (path.Kind != WorldPathKind.Road)
+            {
+                continue;
+            }
+
+            for (var i = 0; i < path.Coords.Count - 1; i++)
+            {
+                if (EdgeMatches(path.Coords[i], path.Coords[i + 1], from, to))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool EdgeMatches(HexCoord a, HexCoord b, HexCoord from, HexCoord to)
+    {
+        return (a == from && b == to) || (a == to && b == from);
+    }
+
+    private static bool IsBlockingOperationalState(string operationalStateId)
+    {
+        return operationalStateId == LocationStateIds.Operational.Blocked ||
+            operationalStateId == LocationStateIds.Operational.RiskyPassage ||
+            operationalStateId == LocationStateIds.Operational.Destroyed ||
+            operationalStateId == LocationStateIds.Operational.Sealed;
     }
 
     private static void ApplyFactionEntry(GameState game, HexTileState destinationTile, HexCoord destination)

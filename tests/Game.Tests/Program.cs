@@ -1461,7 +1461,10 @@ internal sealed class LocationInteractionFrameworkTests
     {
         TutorialBridgeIsImmediateEdgeLocation();
         TutorialBridgeTileIsMovableFromBase();
+        TutorialBridgeBlocksForwardRouteUntilBypassOpensIt();
         BridgeActionsComeFromArchetypeAndModifiers();
+        LocationActionCostsLockWhenMovementIsMissing();
+        BridgeCrossingActionMovesExpeditionAcrossEdge();
         RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
         RebuildBridgeIsGenericLockedProject();
         MarkedGraveUsesSameInteractionFramework();
@@ -1474,8 +1477,8 @@ internal sealed class LocationInteractionFrameworkTests
 
         AssertEqual(new HexCoord(2, 15), bridge.Coord, "Bridge sits on first field after base");
         AssertEqual(LocationAnchorKind.Edge, bridge.Anchor.Kind, "Bridge uses edge anchor");
-        AssertEqual(game.Base.Location, bridge.Anchor.Coords[0], "Bridge edge starts at base");
-        AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[1], "Bridge edge ends at first field");
+        AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[0], "Bridge edge starts at bridge field");
+        AssertEqual(new HexCoord(3, 15), bridge.Anchor.Coords[1], "Bridge edge ends at field beyond bridge");
         AssertEqual("broken-ravine", game.World.Map.GetTile(new HexCoord(2, 15)).LocationId, "First field points to bridge location");
     }
 
@@ -1491,6 +1494,28 @@ internal sealed class LocationInteractionFrameworkTests
         AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Expedition reaches bridge test field");
         AssertTrue(interaction.Success, "Bridge interaction is available after arrival");
         AssertTrue(interaction.Interaction != null && interaction.Interaction.Options.Count > 0, "Bridge interaction has actions after arrival");
+    }
+
+    private static void TutorialBridgeBlocksForwardRouteUntilBypassOpensIt()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+
+        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        AssertTrue(arrival.Success, "Expedition reaches bridge field");
+
+        var blocked = app.MoveExpedition(game, new HexCoord(3, 15));
+        AssertFalse(blocked.Success, "Blocked bridge edge rejects forward map movement");
+        AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Blocked movement keeps position");
+
+        var beforeBypassMovement = game.Expedition.MovementPoints;
+        var bypass = app.ResolveLocationAction(game, "broken-ravine", LocationInteractionContent.ActionFindBypass, LocationOutcomeTier.Success);
+        AssertTrue(bypass.Success, "Bypass action resolves");
+        AssertEqual(beforeBypassMovement - 1, game.Expedition.MovementPoints, "Bypass spends declared movement cost");
+        AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "Bypass success opens a route over the blocked edge");
+
+        var opened = app.MoveExpedition(game, new HexCoord(3, 15));
+        AssertTrue(opened.Success, "Opened bypass allows forward movement");
     }
 
     private static void BridgeActionsComeFromArchetypeAndModifiers()
@@ -1513,6 +1538,50 @@ internal sealed class LocationInteractionFrameworkTests
         AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Route obstacle action is present");
         AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Repairable modifier adds rebuild action");
         AssertTrue(interaction.Options.All(option => option.Action.Id != LocationInteractionContent.ActionDisturb), "Investigation-site action is absent");
+    }
+
+    private static void LocationActionCostsLockWhenMovementIsMissing()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        AssertTrue(arrival.Success, "Expedition reaches bridge field");
+        game.SetExpedition(new ExpeditionState(
+            game.Expedition.ExpeditionNumber,
+            game.Expedition.Position,
+            game.Expedition.Members,
+            game.Expedition.ExpeditionDay,
+            movementPoints: 0,
+            maxMovementPoints: game.Expedition.MaxMovementPoints,
+            supplies: game.Expedition.Supplies,
+            medicine: game.Expedition.Medicine,
+            morale: game.Expedition.Morale,
+            capacity: game.Expedition.Capacity,
+            status: game.Expedition.Status,
+            unsecuredKnowledge: game.Expedition.UnsecuredKnowledge));
+
+        var interaction = app.GetLocationInteraction(game, "broken-ravine").Interaction;
+        var bypass = interaction?.FindOption(LocationInteractionContent.ActionFindBypass);
+
+        AssertTrue(bypass != null, "Bypass action exists");
+        AssertFalse(bypass!.IsAvailable, "Bypass locks without movement points");
+        AssertTrue(bypass.LockedReason != null && bypass.LockedReason.Contains("Bewegungspunkte"), "Bypass reports movement cost lock");
+    }
+
+    private static void BridgeCrossingActionMovesExpeditionAcrossEdge()
+    {
+        var game = TutorialGameFactory.Create();
+        var app = new GameApplication();
+        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        AssertTrue(arrival.Success, "Expedition reaches bridge field");
+
+        var beforeCrossingMovement = game.Expedition.MovementPoints;
+        var crossing = app.ResolveLocationAction(game, "broken-ravine", LocationInteractionContent.ActionAttemptCrossing, LocationOutcomeTier.Success);
+
+        AssertTrue(crossing.Success, "Crossing action resolves");
+        AssertTrue(crossing.ExpeditionMoved, "Crossing result reports expedition movement");
+        AssertEqual(new HexCoord(3, 15), game.Expedition.Position, "Crossing moves expedition to the far side");
+        AssertEqual(beforeCrossingMovement - 1, game.Expedition.MovementPoints, "Crossing spends declared movement cost");
     }
 
     private static void RopeCrossingChangesStateAndRiskWithoutVariantSwitch()

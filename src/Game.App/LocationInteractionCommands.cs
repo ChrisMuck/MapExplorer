@@ -118,30 +118,50 @@ public sealed class ResolveLocationActionCommand
         // Consumed-action key must reflect the state the action ran in, before any effect changes it (§7.6).
         var repeatKey = LocationInteractionService.RepeatKey(option.Action, location);
 
+        LocationOutcomeResolution? resolution = null;
+        if (!option.Action.StartsProject)
+        {
+            resolution = interactionService.ResolveOutcome(option.Action, option.RiskBand, forcedTier);
+            if (resolution == null)
+            {
+                return LocationActionResult.Rejected("This action has no outcome table yet.");
+            }
+        }
+
+        var costError = FirstUnpayableCost(option.Action, game.Expedition);
+        if (costError != null)
+        {
+            return LocationActionResult.Rejected(costError);
+        }
+
+        var costTexts = SpendCosts(game.Expedition, option.Action);
+
         if (option.Action.StartsProject)
         {
             location.StartProject(option.Action.Id, option.Action.ProjectDurationDays);
             location.MarkActionResolved(repeatKey);
             game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: project started at {location.Name}: {option.Action.Label}.");
-            return LocationActionResult.Resolved(location, option.Action, null, null, new[] { $"Project started: {option.Action.Label}." });
+            var projectTexts = new List<string>(costTexts) { $"Project started: {option.Action.Label}." };
+            return LocationActionResult.Resolved(location, option.Action, null, null, projectTexts);
         }
 
-        var resolution = interactionService.ResolveOutcome(option.Action, option.RiskBand, forcedTier);
+        // Recovery Check (§9.9): a member-ending effect gets a softer roll before it is applied.
+        LocationRecoveryOutcome? recovery = null;
         if (resolution == null)
         {
             return LocationActionResult.Rejected("This action has no outcome table yet.");
         }
 
-        // Recovery Check (§9.9): a member-ending effect gets a softer roll before it is applied.
-        LocationRecoveryOutcome? recovery = null;
         if (resolution.Effects.Any(effect => IsMemberEndingEffect(effect.Kind)))
         {
             recovery = interactionService.RollRecovery(HasMedic(game.Expedition), forcedRecovery);
         }
 
-        var texts = ApplyEffects(game, location, resolution.Effects, recovery);
+        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved);
+        var texts = new List<string>(costTexts);
+        texts.AddRange(effectTexts);
         location.MarkActionResolved(repeatKey);
-        return LocationActionResult.Resolved(location, option.Action, resolution.Tier, resolution.Label, texts);
+        return LocationActionResult.Resolved(location, option.Action, resolution.Tier, resolution.Label, texts, expeditionMoved);
     }
 
     private static bool IsMemberEndingEffect(LocationEffectKind kind)
@@ -157,13 +177,101 @@ public sealed class ResolveLocationActionCommand
             member.Status != ExpeditionMemberStatus.Dead);
     }
 
+    private static string? FirstUnpayableCost(LocationActionDefinition action, ExpeditionState expedition)
+    {
+        foreach (var cost in action.Costs)
+        {
+            if (cost.Amount <= 0)
+            {
+                continue;
+            }
+
+            switch (cost.Kind)
+            {
+                case LocationCostKind.MovementPoints:
+                    if (expedition.MovementPoints < cost.Amount)
+                    {
+                        return "Not enough movement points.";
+                    }
+
+                    break;
+                case LocationCostKind.Supplies:
+                    if (expedition.Supplies < cost.Amount)
+                    {
+                        return "Not enough supplies.";
+                    }
+
+                    break;
+                case LocationCostKind.Medicine:
+                    if (expedition.Medicine < cost.Amount)
+                    {
+                        return "Not enough medicine.";
+                    }
+
+                    break;
+                case LocationCostKind.Morale:
+                    if (expedition.Morale < cost.Amount)
+                    {
+                        return "Not enough morale.";
+                    }
+
+                    break;
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> SpendCosts(ExpeditionState expedition, LocationActionDefinition action)
+    {
+        var texts = new List<string>();
+        foreach (var cost in action.Costs)
+        {
+            if (cost.Amount <= 0)
+            {
+                continue;
+            }
+
+            switch (cost.Kind)
+            {
+                case LocationCostKind.MovementPoints:
+                    expedition.SpendMovementPoints(cost.Amount);
+                    texts.Add(CostText(cost.Amount, "Bewegungspunkt", "Bewegungspunkte"));
+                    break;
+                case LocationCostKind.Supplies:
+                    expedition.ConsumeSupplies(cost.Amount);
+                    texts.Add(CostText(cost.Amount, "Vorrat", "Vorraete"));
+                    break;
+                case LocationCostKind.Medicine:
+                    expedition.ConsumeMedicine(cost.Amount);
+                    texts.Add(CostText(cost.Amount, "Medizin", "Medizin"));
+                    break;
+                case LocationCostKind.Morale:
+                    expedition.AdjustMorale(-cost.Amount);
+                    texts.Add(CostText(cost.Amount, "Moral", "Moral"));
+                    break;
+            }
+        }
+
+        return texts;
+    }
+
+    private static string CostText(int amount, string singular, string plural)
+    {
+        return amount == 1
+            ? $"Kosten bezahlt: 1 {singular}."
+            : $"Kosten bezahlt: {amount} {plural}.";
+    }
+
     internal static IReadOnlyList<string> ApplyEffects(
         GameState game,
         SpecialLocationState location,
         IReadOnlyList<LocationEffectDefinition> effects,
-        LocationRecoveryOutcome? recovery = null)
+        LocationRecoveryOutcome? recovery,
+        out bool expeditionMoved)
     {
         var texts = new List<string>();
+        expeditionMoved = false;
         foreach (var effect in effects)
         {
             if (IsMemberEndingEffect(effect.Kind) && recovery == LocationRecoveryOutcome.Preserved)
@@ -172,14 +280,14 @@ public sealed class ResolveLocationActionCommand
                 continue;
             }
 
-            ApplyEffect(game, location, effect);
+            expeditionMoved |= ApplyEffect(game, location, effect);
             texts.Add(effect.Text);
         }
 
         return texts;
     }
 
-    private static void ApplyEffect(GameState game, SpecialLocationState location, LocationEffectDefinition effect)
+    private static bool ApplyEffect(GameState game, SpecialLocationState location, LocationEffectDefinition effect)
     {
         switch (effect.Kind)
         {
@@ -190,16 +298,16 @@ public sealed class ResolveLocationActionCommand
                 }
 
                 location.SetState(effect.StateChannel, effect.StateId);
-                break;
+                return false;
             case LocationEffectKind.AddUnsecuredKnowledge:
                 game.Expedition.AddUnsecuredKnowledge(Math.Max(0, effect.Amount));
-                break;
+                return false;
             case LocationEffectKind.ConsumeSupplies:
                 game.Expedition.ConsumeSupplies(Math.Max(0, effect.Amount));
-                break;
+                return false;
             case LocationEffectKind.ChangeMorale:
                 game.Expedition.AdjustMorale(effect.Amount);
-                break;
+                return false;
             case LocationEffectKind.AddFactionMemory:
                 if (effect.FactionId != null && effect.Memory != null)
                 {
@@ -207,25 +315,27 @@ public sealed class ResolveLocationActionCommand
                     faction?.AddMemory(effect.Memory);
                 }
 
-                break;
+                return false;
             case LocationEffectKind.AddArchiveEntry:
                 game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: {effect.Text}");
-                break;
+                return false;
             case LocationEffectKind.OpenRoute:
                 OpenRoute(game, location);
-                break;
+                return false;
+            case LocationEffectKind.MoveExpeditionAcrossEdge:
+                return MoveExpeditionAcrossEdge(game, location);
             case LocationEffectKind.InjureMember:
                 InjureMember(game);
-                break;
+                return false;
             case LocationEffectKind.ChangeFactionTrust:
                 game.FindFaction(effect.FactionId ?? "")?.Adjust(trustDelta: effect.Amount);
-                break;
+                return false;
             case LocationEffectKind.ChangeFactionAnger:
                 game.FindFaction(effect.FactionId ?? "")?.Adjust(angerDelta: effect.Amount);
-                break;
+                return false;
             case LocationEffectKind.ChangeFactionFear:
                 game.FindFaction(effect.FactionId ?? "")?.Adjust(fearDelta: effect.Amount);
-                break;
+                return false;
             default:
                 throw new InvalidOperationException($"Unsupported location effect kind {effect.Kind}.");
         }
@@ -257,6 +367,46 @@ public sealed class ResolveLocationActionCommand
             $"route-opened-{location.Id}",
             WorldPathKind.Road,
             location.Anchor.Coords));
+    }
+
+    private static bool MoveExpeditionAcrossEdge(GameState game, SpecialLocationState location)
+    {
+        if (location.Anchor.Kind != LocationAnchorKind.Edge || location.Anchor.Coords.Count != 2)
+        {
+            return false;
+        }
+
+        var from = game.Expedition.Position;
+        var a = location.Anchor.Coords[0];
+        var b = location.Anchor.Coords[1];
+        HexCoord destination;
+        if (from == a)
+        {
+            destination = b;
+        }
+        else if (from == b)
+        {
+            destination = a;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (!game.World.Map.TryGetTile(destination, out var destinationTile) || destinationTile == null)
+        {
+            return false;
+        }
+
+        var destinationWasConfirmed = game.Knowledge.GetTileKnowledge(destination) == KnowledgeLevel.Confirmed;
+        game.Expedition.SetPosition(destination);
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, destination);
+        if (!destinationWasConfirmed && game.Knowledge.ClaimKnowledgeSource($"confirmed-hex:{destination.Q}:{destination.R}"))
+        {
+            game.Expedition.AddUnsecuredKnowledge(1);
+        }
+
+        return true;
     }
 
     private static SpecialLocationState? FindLocation(GameState game, string locationId)
@@ -311,9 +461,9 @@ public sealed class AdvanceLocationProjectCommand
             return LocationActionResult.Resolved(location, action, null, null, new[] { $"Project progress: {location.ActiveProject.Progress}/{location.ActiveProject.RequiredProgress}." });
         }
 
-        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects);
+        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved);
         location.ClearProject();
-        return LocationActionResult.Resolved(location, action, null, null, texts);
+        return LocationActionResult.Resolved(location, action, null, null, texts, expeditionMoved);
     }
 }
 }

@@ -41,6 +41,7 @@ public sealed class LocationActionResult
         LocationOutcomeTier? resolvedTier,
         string? outcomeLabel,
         IReadOnlyList<string> effectTexts,
+        bool expeditionMoved,
         string? error)
     {
         Success = success;
@@ -49,6 +50,7 @@ public sealed class LocationActionResult
         ResolvedTier = resolvedTier;
         OutcomeLabel = outcomeLabel;
         EffectTexts = effectTexts;
+        ExpeditionMoved = expeditionMoved;
         Error = error;
     }
 
@@ -66,6 +68,8 @@ public sealed class LocationActionResult
 
     public IReadOnlyList<string> EffectTexts { get; }
 
+    public bool ExpeditionMoved { get; }
+
     public string? Error { get; }
 
     public static LocationActionResult Resolved(
@@ -73,14 +77,15 @@ public sealed class LocationActionResult
         LocationActionDefinition action,
         LocationOutcomeTier? resolvedTier,
         string? outcomeLabel,
-        IReadOnlyList<string> effectTexts)
+        IReadOnlyList<string> effectTexts,
+        bool expeditionMoved = false)
     {
-        return new LocationActionResult(true, location, action, resolvedTier, outcomeLabel, effectTexts, null);
+        return new LocationActionResult(true, location, action, resolvedTier, outcomeLabel, effectTexts, expeditionMoved, null);
     }
 
     public static LocationActionResult Rejected(string error)
     {
-        return new LocationActionResult(false, null, null, null, null, Array.Empty<string>(), error);
+        return new LocationActionResult(false, null, null, null, null, Array.Empty<string>(), false, error);
     }
 }
 }

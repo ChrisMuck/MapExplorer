@@ -1149,11 +1149,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         EnsureSelectedLocationAction(interaction);
-        actionList.Clear();
+        var actionListContent = actionList is ScrollView scrollView ? scrollView.contentContainer : actionList;
+        actionListContent.Clear();
 
         foreach (var option in interaction.Options)
         {
-            actionList.Add(CreateLocationActionRow(option));
+            actionListContent.Add(CreateLocationActionRow(option));
         }
 
         RenderLocationActionDetail(detailPanel, interaction, FindSelectedLocationOption(interaction));
@@ -1335,6 +1336,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         if (selectedLocationActionId == LocationInteractionContent.ActionLeave &&
             latestLocationActionResult != null &&
             latestLocationActionResult.Success)
+        {
+            CloseLocationInteractionPopup();
+            return;
+        }
+
+        if (latestLocationActionResult != null &&
+            latestLocationActionResult.Success &&
+            latestLocationActionResult.ExpeditionMoved)
         {
             CloseLocationInteractionPopup();
             return;
@@ -1831,9 +1840,9 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return result.Error ?? "Aktion abgelehnt.";
         }
 
-        var text = result.Outcome == null
+        var text = string.IsNullOrEmpty(result.OutcomeLabel)
             ? result.Action?.Label ?? "Aktion ausgefuehrt"
-            : $"{result.Action?.Label}: {result.Outcome.Label}";
+            : $"{result.Action?.Label}: {result.OutcomeLabel}";
         if (result.EffectTexts.Count == 0)
         {
             return text;

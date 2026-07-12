@@ -133,6 +133,7 @@ public static class LocationInteractionContent
                 hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(15, confidence: LocationEstimateConfidence.Guess),
                 outcomeTableId: "outcome-find-bypass",
+                costs: new[] { new LocationCostDefinition(LocationCostKind.MovementPoints, 1) },
                 repeatPolicy: LocationActionRepeatPolicy.OncePerState),
 
             new LocationActionDefinition(
@@ -222,6 +223,7 @@ public static class LocationInteractionContent
                     Row(LocationRiskBand.Moderate, W(LocationOutcomeTier.Success, 60), W(LocationOutcomeTier.Failure, 40))),
                 Bundle(LocationOutcomeTier.Success,
                     Knowledge(3, "Ein langsamer, aber nutzbarer Umweg wird notiert."),
+                    OpenRoute("Der gefundene Umweg oeffnet eine nutzbare Route um das Hindernis."),
                     Archive("Ein Umweg um die zerstoerte Bruecke wurde als Routenhypothese vermerkt.")),
                 Bundle(LocationOutcomeTier.Failure,
                     ConsumeSupplies(1, "Die Suche verbraucht zusaetzliche Vorraete, ohne einen sicheren Weg zu finden."))),
@@ -246,8 +248,10 @@ public static class LocationInteractionContent
                     Row(LocationRiskBand.High, W(LocationOutcomeTier.Success, 30), W(LocationOutcomeTier.SuccessWithCost, 30), W(LocationOutcomeTier.Failure, 25), W(LocationOutcomeTier.SevereFailure, 15)),
                     Row(LocationRiskBand.Extreme, W(LocationOutcomeTier.Success, 15), W(LocationOutcomeTier.SuccessWithCost, 25), W(LocationOutcomeTier.Failure, 35), W(LocationOutcomeTier.SevereFailure, 25))),
                 Bundle(LocationOutcomeTier.Success,
-                    Knowledge(2, "Die Expedition bestaetigt die Route ueber die Schlucht.")),
+                    Knowledge(2, "Die Expedition bestaetigt die Route ueber die Schlucht."),
+                    MoveAcrossEdge("Die Expedition erreicht die andere Seite des Hindernisses.")),
                 Bundle(LocationOutcomeTier.SuccessWithCost,
+                    MoveAcrossEdge("Die Expedition erreicht die andere Seite des Hindernisses."),
                     ConsumeSupplies(1, "Beim Uebergang geht Ausruestung verloren."),
                     ChangeMorale(-1, "Der Uebergang belastet die Gruppe.")),
                 Bundle(LocationOutcomeTier.Failure,
@@ -465,6 +469,11 @@ public static class LocationInteractionContent
     private static LocationEffectDefinition OpenRoute(string text)
     {
         return new LocationEffectDefinition("effect-open-route", LocationEffectKind.OpenRoute, text);
+    }
+
+    private static LocationEffectDefinition MoveAcrossEdge(string text)
+    {
+        return new LocationEffectDefinition("effect-move-across-edge", LocationEffectKind.MoveExpeditionAcrossEdge, text);
     }
 
     private static LocationEffectDefinition Injure(string text)

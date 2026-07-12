@@ -142,6 +142,16 @@ public sealed class ExpeditionState
         Supplies = Math.Max(0, Supplies - amount);
     }
 
+    public void ConsumeMedicine(int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Medicine consumption must not be negative.");
+        }
+
+        Medicine = Math.Max(0, Medicine - amount);
+    }
+
     public void AddSupplies(int amount)
     {
         if (amount < 0)

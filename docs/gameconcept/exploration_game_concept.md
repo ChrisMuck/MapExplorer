@@ -16,6 +16,7 @@ Detailed systems are maintained in the linked specialist documents. AI coding ag
 - [`expedition_and_members_concept.md`](expedition_and_members_concept.md): day loop, movement, resources in the field, team composition, outcomes, partial return, members, camps and conflict
 - [`knowledge_base_and_analysis_concept.md`](knowledge_base_and_analysis_concept.md): knowledge economy, findings, analysis, archive, Base Phase and upgrades
 - [`factions_and_trade_concept.md`](factions_and_trade_concept.md): faction logic, territories, contact, memory, trade and the three MVP factions
+- [`cross_system_integration_concept.md`](cross_system_integration_concept.md): shared contract connecting locations, scouts, factions, evidence, triggers and delayed consequences
 - [`world_locations_and_events_concept.md`](world_locations_and_events_concept.md): world generation, persistence, special locations, mysteries, events, consequences and tone
 - [`ui_and_visual_communication_concept.md`](ui_and_visual_communication_concept.md): information UI, reports, portraits, discovery images and archive presentation
 - [`mvp_vertical_slice_concept.md`](mvp_vertical_slice_concept.md): goal system, MVP scope, required slice content and explicit non-goals

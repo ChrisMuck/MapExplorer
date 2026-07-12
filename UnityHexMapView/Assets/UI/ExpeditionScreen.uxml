@@ -361,7 +361,7 @@
                 <ui:VisualElement name="view-actions" class="bi-body">
                     <ui:VisualElement class="bi-action-column">
                         <ui:Label text="VERFUEGBARE AKTIONEN" class="bi-section-label mono" />
-                        <ui:VisualElement name="action-list" class="bi-action-list" />
+                        <ui:ScrollView name="action-list" class="bi-action-list" />
                     </ui:VisualElement>
                     <ui:VisualElement name="detail-panel" class="bi-detail-panel" />
                 </ui:VisualElement>
