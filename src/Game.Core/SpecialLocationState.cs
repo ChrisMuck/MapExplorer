@@ -9,6 +9,7 @@ public sealed class SpecialLocationState
 {
     private readonly List<string> modifierIds = new();
     private readonly List<string> factionIds = new();
+    private readonly List<LocationFactionRelationState> factionRelations = new();
     private readonly HashSet<string> resolvedActionKeys = new();
     private readonly HashSet<string> flags = new();
 
@@ -42,7 +43,8 @@ public sealed class SpecialLocationState
         string interactionStateId = LocationStateIds.Interaction.Untouched,
         string operationalStateId = LocationStateIds.Operational.None,
         string presenceStateId = LocationStateIds.Presence.Unknown,
-        IEnumerable<string>? factionIds = null)
+        IEnumerable<string>? factionIds = null,
+        IEnumerable<LocationFactionRelationState>? factionRelations = null)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -71,6 +73,14 @@ public sealed class SpecialLocationState
                 this.factionIds.Add(RequireText(factionId, nameof(factionIds)));
             }
         }
+
+        if (factionRelations != null)
+        {
+            foreach (var relation in factionRelations)
+            {
+                AddFactionRelation(relation);
+            }
+        }
     }
 
     public string Id { get; }
@@ -96,6 +106,34 @@ public sealed class SpecialLocationState
     public IReadOnlyList<string> FactionIds
     {
         get { return factionIds; }
+    }
+
+    /// <summary>
+    /// Generated runtime relationships that explain why a faction may care about this concrete location.
+    /// Static location definitions must not populate these relations.
+    /// </summary>
+    public IReadOnlyList<LocationFactionRelationState> FactionRelations
+    {
+        get { return factionRelations; }
+    }
+
+    public void AddFactionRelation(LocationFactionRelationState relation)
+    {
+        if (relation == null)
+        {
+            throw new ArgumentNullException(nameof(relation));
+        }
+
+        if (!factionRelations.Any(existing =>
+                existing.FactionId == relation.FactionId && existing.Kind == relation.Kind))
+        {
+            factionRelations.Add(relation);
+        }
+
+        if (!factionIds.Contains(relation.FactionId))
+        {
+            factionIds.Add(relation.FactionId);
+        }
     }
 
     public string? ContentProfileId { get; }

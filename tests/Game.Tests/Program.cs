@@ -43,6 +43,8 @@ var eventQueueTests = new EventQueueCommandTests();
 eventQueueTests.RunAll();
 var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
+var crossSystemStateTests = new CrossSystemStateTests();
+crossSystemStateTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 
@@ -120,6 +122,113 @@ internal sealed class HexCoordTests
         AssertFalse(bounds.Contains(new HexCoord(40, 29)), "Bounds reject q outside");
         AssertFalse(bounds.Contains(new HexCoord(39, 30)), "Bounds reject r outside");
         AssertEqual(1200, bounds.AllCoords().Count(), "Bounds coordinate count");
+    }
+
+    private static void AssertEqual<T>(T expected, T actual, string message)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+        }
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"{message}: expected true.");
+        }
+    }
+
+    private static void AssertFalse(bool condition, string message)
+    {
+        if (condition)
+        {
+            throw new InvalidOperationException($"{message}: expected false.");
+        }
+    }
+}
+
+internal sealed class CrossSystemStateTests
+{
+    public void RunAll()
+    {
+        EvidenceStaysInKnowledgeStateAndCanBeUpdated();
+        GeneratedFactionRelationsRemainRuntimeState();
+        TriggersAndConsequencesArePersistedByWorldState();
+    }
+
+    private static void EvidenceStaysInKnowledgeStateAndCanBeUpdated()
+    {
+        var knowledge = new KnowledgeState();
+        var evidence = new EvidenceState(
+            "evidence-bridge-cuts",
+            "structural-cuts",
+            EvidenceSourceKind.LocationInspection,
+            EvidenceKnowledgeState.Reported,
+            "Mehrere TrÃ¤ger wurden gezielt entfernt.",
+            subjectLocationId: "bridge-1",
+            confidence: 55);
+
+        AssertTrue(knowledge.AddEvidence(evidence), "First evidence item is stored");
+        AssertFalse(knowledge.AddEvidence(evidence), "Evidence id is not duplicated");
+        evidence.UpdateKnowledge(EvidenceKnowledgeState.Confirmed, 90);
+
+        var stored = knowledge.FindEvidence("evidence-bridge-cuts");
+        AssertTrue(stored != null, "Evidence can be found by stable id");
+        AssertEqual(EvidenceKnowledgeState.Confirmed, stored!.KnowledgeState, "Evidence keeps player knowledge state");
+        AssertEqual(90, stored.Confidence, "Evidence confidence can improve without changing World Truth");
+    }
+
+    private static void GeneratedFactionRelationsRemainRuntimeState()
+    {
+        var relation = new LocationFactionRelationState(
+            "border-wardens",
+            LocationFactionRelationKind.Watched,
+            new[] { "deliberate-destruction", "quarantine" });
+        var location = new SpecialLocationState(
+            "bridge-1",
+            LocationKind.BrokenRavine,
+            HexCoord.Zero,
+            "Broken Bridge",
+            LocationAnchor.Point(HexCoord.Zero),
+            archetypeId: "route-obstacle",
+            variantId: "broken-bridge",
+            factionRelations: new[] { relation });
+
+        AssertTrue(location.FactionIds.Contains("border-wardens"), "Legacy linked-faction view includes generated relation faction");
+        AssertEqual(1, location.FactionRelations.Count, "Generated relation is stored on location instance");
+        AssertTrue(location.FactionRelations[0].HasContextTag("quarantine"), "Generated context tags are preserved");
+    }
+
+    private static void TriggersAndConsequencesArePersistedByWorldState()
+    {
+        var map = HexMapState.CreateFilled(new HexMapBounds(2, 2), TerrainType.Grassland);
+        var world = new WorldState(map);
+        var trigger = new WorldTriggerState(
+            "trigger-1",
+            "location-seal-broken",
+            world.WorldDay,
+            new[] { "open", "disturb" },
+            sourceLocationId: "crypt-1");
+        var consequence = new ScheduledConsequenceState(
+            "consequence-1",
+            "seal-broken",
+            "crypt-1",
+            dueWorldDay: world.WorldDay + 3,
+            resolvedEffectIds: new[] { "create-local-hazard" });
+
+        world.QueueWorldTrigger(trigger);
+        world.ScheduleConsequence(consequence);
+        world.AdvanceDays(3);
+
+        AssertEqual(1, world.WorldTriggers.Count, "World stores neutral trigger instances");
+        AssertEqual(1, world.ScheduledConsequences.Count, "World stores resolved consequence instances");
+        AssertTrue(consequence.IsDue(world.WorldDay), "Consequence becomes due from world time without rerolling");
+        trigger.MarkResolved();
+        consequence.MarkApplied();
+        AssertTrue(trigger.IsResolved, "Trigger can be marked resolved by world phase");
+        AssertFalse(consequence.IsDue(world.WorldDay), "Applied consequence cannot run twice");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

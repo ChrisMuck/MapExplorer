@@ -10,12 +10,16 @@ public sealed class WorldState
 {
     private readonly List<WorldPathState> paths;
     private readonly List<SpecialLocationState> locations;
+    private readonly List<WorldTriggerState> worldTriggers;
+    private readonly List<ScheduledConsequenceState> scheduledConsequences;
 
     public WorldState(
         HexMapState map,
         IEnumerable<WorldPathState>? paths = null,
         IEnumerable<SpecialLocationState>? locations = null,
-        int worldDay = 1)
+        int worldDay = 1,
+        IEnumerable<WorldTriggerState>? worldTriggers = null,
+        IEnumerable<ScheduledConsequenceState>? scheduledConsequences = null)
     {
         if (worldDay < 1)
         {
@@ -25,6 +29,8 @@ public sealed class WorldState
         Map = map ?? throw new ArgumentNullException(nameof(map));
         this.paths = new List<WorldPathState>(paths ?? Enumerable.Empty<WorldPathState>());
         this.locations = new List<SpecialLocationState>(locations ?? Enumerable.Empty<SpecialLocationState>());
+        this.worldTriggers = new List<WorldTriggerState>(worldTriggers ?? Enumerable.Empty<WorldTriggerState>());
+        this.scheduledConsequences = new List<ScheduledConsequenceState>(scheduledConsequences ?? Enumerable.Empty<ScheduledConsequenceState>());
         WorldDay = worldDay;
     }
 
@@ -41,6 +47,16 @@ public sealed class WorldState
     }
 
     public int WorldDay { get; private set; }
+
+    public IReadOnlyList<WorldTriggerState> WorldTriggers
+    {
+        get { return worldTriggers; }
+    }
+
+    public IReadOnlyList<ScheduledConsequenceState> ScheduledConsequences
+    {
+        get { return scheduledConsequences; }
+    }
 
     public void AddPath(WorldPathState path)
     {
@@ -65,6 +81,36 @@ public sealed class WorldState
         }
 
         WorldDay += days;
+    }
+
+    public void QueueWorldTrigger(WorldTriggerState trigger)
+    {
+        if (trigger == null)
+        {
+            throw new ArgumentNullException(nameof(trigger));
+        }
+
+        if (worldTriggers.Any(existing => existing.Id == trigger.Id))
+        {
+            return;
+        }
+
+        worldTriggers.Add(trigger);
+    }
+
+    public void ScheduleConsequence(ScheduledConsequenceState consequence)
+    {
+        if (consequence == null)
+        {
+            throw new ArgumentNullException(nameof(consequence));
+        }
+
+        if (scheduledConsequences.Any(existing => existing.Id == consequence.Id))
+        {
+            return;
+        }
+
+        scheduledConsequences.Add(consequence);
     }
 }
 }

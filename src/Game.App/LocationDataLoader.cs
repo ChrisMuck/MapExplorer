@@ -286,7 +286,9 @@ public static class LocationDataLoader
             dto.FactionId,
             dto.Memory,
             dto.Selection,
-            dto.Severity);
+            dto.Severity,
+            dto.ReferenceId,
+            dto.DelayDays);
     }
 
     private static LocationContentProfileDefinition BuildContentProfile(ContentProfileDto dto)
@@ -592,6 +594,8 @@ public static class LocationDataLoader
         public string? Memory { get; set; }
         public string? Selection { get; set; }
         public string? Severity { get; set; }
+        public string? ReferenceId { get; set; }
+        public int DelayDays { get; set; }
     }
 
     private sealed class ContentProfileDto
