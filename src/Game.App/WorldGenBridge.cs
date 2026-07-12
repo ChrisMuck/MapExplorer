@@ -11,14 +11,14 @@ namespace Game.App
 /// <summary>Player-facing campaign choices. Technical generator tuning remains in editor-only settings.</summary>
 public sealed class WorldGenerationRequest
 {
-    public uint Seed { get; init; } = 42;
-    public int Width { get; init; } = 40;
-    public int Height { get; init; } = 30;
-    public int FactionCount { get; init; } = 3;
-    public string FactionMood { get; init; } = "Gemischt";
-    public int FactionSalt { get; init; }
-    public int LocationSalt { get; init; }
-    public IReadOnlyDictionary<string, double> GeneratorOverrides { get; init; } = new Dictionary<string, double>();
+    public uint Seed { get; set; } = 42;
+    public int Width { get; set; } = 40;
+    public int Height { get; set; } = 30;
+    public int FactionCount { get; set; } = 3;
+    public string FactionMood { get; set; } = "Gemischt";
+    public int FactionSalt { get; set; }
+    public int LocationSalt { get; set; }
+    public IReadOnlyDictionary<string, double> GeneratorOverrides { get; set; } = new Dictionary<string, double>();
 
     public GenerationParams ToGeneratorParams()
     {
