@@ -124,7 +124,8 @@ public static class LocationInteractionContent
                 hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(0, confidence: LocationEstimateConfidence.Assessed),
                 outcomeTableId: "outcome-assess-crossing",
-                repeatPolicy: LocationActionRepeatPolicy.OncePerLocation),
+                repeatPolicy: LocationActionRepeatPolicy.OncePerLocation,
+                actionTags: new[] { "assess", "cross" }),
 
             new LocationActionDefinition(
                 ActionFindBypass,
@@ -134,7 +135,8 @@ public static class LocationInteractionContent
                 riskProfile: new LocationRiskProfileDefinition(15, confidence: LocationEstimateConfidence.Guess),
                 outcomeTableId: "outcome-find-bypass",
                 costs: new[] { new LocationCostDefinition(LocationCostKind.MovementPoints, 1) },
-                repeatPolicy: LocationActionRepeatPolicy.OncePerState),
+                repeatPolicy: LocationActionRepeatPolicy.OncePerState,
+                actionTags: new[] { "route", "bypass" }),
 
             new LocationActionDefinition(
                 ActionConstructTemporaryPassage,
@@ -147,7 +149,8 @@ public static class LocationInteractionContent
                 riskProfile: new LocationRiskProfileDefinition(20, confidence: LocationEstimateConfidence.Assessed),
                 outcomeTableId: "outcome-construct-temporary-passage",
                 costs: new[] { new LocationCostDefinition(LocationCostKind.Supplies, 1) },
-                repeatPolicy: LocationActionRepeatPolicy.RepeatableWithCost),
+                repeatPolicy: LocationActionRepeatPolicy.RepeatableWithCost,
+                actionTags: new[] { "repair", "infrastructure" }),
 
             new LocationActionDefinition(
                 ActionAttemptCrossing,
@@ -165,7 +168,8 @@ public static class LocationInteractionContent
                     LocationEstimateConfidence.Assessed),
                 outcomeTableId: "outcome-attempt-crossing",
                 costs: new[] { new LocationCostDefinition(LocationCostKind.MovementPoints, 1) },
-                repeatPolicy: LocationActionRepeatPolicy.RepeatableWithCost),
+                repeatPolicy: LocationActionRepeatPolicy.RepeatableWithCost,
+                actionTags: new[] { "cross" }),
 
             new LocationActionDefinition(
                 ActionRebuildBridge,
@@ -181,6 +185,7 @@ public static class LocationInteractionContent
                 repeatPolicy: LocationActionRepeatPolicy.OncePerLocation,
                 startsProject: true,
                 projectDurationDays: 3,
+                actionTags: new[] { "repair", "infrastructure" },
                 projectCompletionEffects: new[]
                 {
                     ChangeOperational(LocationStateIds.Operational.Repaired, "Der operative Zustand wechselt zu: Repariert."),
@@ -190,20 +195,20 @@ public static class LocationInteractionContent
 
             new LocationActionDefinition(ActionInspect, "Inspizieren", "Den Ort betrachten, ohne etwas zu veraendern.", hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(5, confidence: LocationEstimateConfidence.Assessed),
-                outcomeTableId: "outcome-inspect"),
+                outcomeTableId: "outcome-inspect", actionTags: new[] { "inspect" }),
             new LocationActionDefinition(ActionDocument, "Dokumentieren", "Zeichen, Lage und Zustand fuer spaetere Auswertung festhalten.", hardRequirements: Adjacent(),
-                outcomeTableId: "outcome-document"),
+                outcomeTableId: "outcome-document", actionTags: new[] { "document", "map" }),
             new LocationActionDefinition(ActionInvestigate, "Untersuchen", "Den Ort eingehender untersuchen und eine Deutung versuchen.", hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(25, confidence: LocationEstimateConfidence.Guess),
-                outcomeTableId: "outcome-investigate"),
+                outcomeTableId: "outcome-investigate", actionTags: new[] { "investigate" }),
             new LocationActionDefinition(ActionLeaveOffering, "Opfergabe hinterlassen", "Den Ort respektvoll behandeln, bevor weitere Schritte unternommen werden.", hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(5, confidence: LocationEstimateConfidence.Assessed),
-                outcomeTableId: "outcome-leave-offering"),
+                outcomeTableId: "outcome-leave-offering", actionTags: new[] { "respect", "offer" }),
             new LocationActionDefinition(ActionDisturb, "Stoeren", "Das Grab oder Siegel trotz Warnzeichen oeffnen.", hardRequirements: Adjacent(),
                 riskProfile: new LocationRiskProfileDefinition(45, confidence: LocationEstimateConfidence.Assessed),
-                outcomeTableId: "outcome-disturb"),
-            new LocationActionDefinition(ActionMark, "Markieren", "Eine eigene Kartenmarkierung anlegen.", outcomeTableId: "outcome-mark"),
-            new LocationActionDefinition(ActionLeave, "Verlassen", "Die Fundstelle unangetastet lassen.", outcomeTableId: "outcome-leave")
+                outcomeTableId: "outcome-disturb", actionTags: new[] { "disturb", "open" }),
+            new LocationActionDefinition(ActionMark, "Markieren", "Eine eigene Kartenmarkierung anlegen.", outcomeTableId: "outcome-mark", actionTags: new[] { "mark", "map" }),
+            new LocationActionDefinition(ActionLeave, "Verlassen", "Die Fundstelle unangetastet lassen.", outcomeTableId: "outcome-leave", actionTags: new[] { "leave", "restraint" })
         };
     }
 

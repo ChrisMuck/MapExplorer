@@ -1915,6 +1915,7 @@ internal sealed class LocationDataJsonTests
     public void RunAll()
     {
         AllTenArchetypesLoadAndAreRepresentable();
+        AllLocationActionsCarrySemanticTags();
         ContentProfileSurfacesTitleAndFlavor();
         WeightedOutcomeStaysWithinAuthoredBandRow();
         ForcedTierAppliesAuthoredEffectBundle();
@@ -1960,6 +1961,16 @@ internal sealed class LocationDataJsonTests
                 }
             }
         }
+    }
+
+    private static void AllLocationActionsCarrySemanticTags()
+    {
+        var missing = LoadBundle().Definitions.Actions.Values
+            .Where(action => action.ActionTags.Count == 0)
+            .Select(action => action.Id)
+            .ToList();
+
+        AssertEqual(0, missing.Count, "Every JSON-authored location action has at least one semantic action tag");
     }
 
     private static void ContentProfileSurfacesTitleAndFlavor()
