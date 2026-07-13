@@ -1,0 +1,21 @@
+{
+  "documentType": "faction-signatures",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "signature-carved-boundary-posts",
+      "profileId": "carved-boundaries",
+      "label": "Drei gekerbte Pfosten"
+    },
+    {
+      "id": "signature-stacked-stone-watchmarks",
+      "profileId": "stone-watchmarks",
+      "label": "Geschichtete Wachsteine"
+    },
+    {
+      "id": "signature-woven-offering-bands",
+      "profileId": "woven-offerings",
+      "label": "Geflochtene Opferbaender"
+    }
+  ]
+}

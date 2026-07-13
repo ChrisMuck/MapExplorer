@@ -44,8 +44,12 @@ internal sealed class ScoutLocationSurroundingsTests
 
     private static void JsonEvidenceDefinitionDrivesScoutReportText()
     {
-        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData", "World");
-        var data = CrossSystemDataLoader.LoadFromDirectory(dataRoot);
+        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
+        var data = CrossSystemDataLoader.LoadFromDirectories(new[]
+        {
+            Path.Combine(dataRoot, "World"),
+            Path.Combine(dataRoot, "Factions")
+        });
         var game = CreateGame(new HexCoord(1, 1), "evidence-patrol-signs");
         var app = new GameApplication(null, data);
 
@@ -55,6 +59,8 @@ internal sealed class ScoutLocationSurroundingsTests
         AssertTrue(data != null, "World evidence JSON is loaded");
         AssertTrue(data!.Evidence.Find("evidence-patrol-signs") != null, "Patrol evidence definition is available by stable id");
         AssertTrue(game.Knowledge.Evidence[0].PlayerText.Contains("Trittspuren", StringComparison.Ordinal), "Scout report text comes from evidence JSON");
+        AssertEqual("signature-woven-offering-bands", game.Knowledge.Evidence[0].SymbolId, "Scout evidence uses the generated faction's signature profile");
+        AssertTrue(data.FactionSignatures.Find(game.Knowledge.Evidence[0].SymbolId) != null, "Signature metadata is loaded without exposing a faction");
     }
 
     private static GameState CreateGame(HexCoord expeditionPosition, params string[] evidenceSeedIds)
@@ -84,7 +90,14 @@ internal sealed class ScoutLocationSurroundingsTests
             new KnowledgeState(),
             new PlayerNotesState(),
             expedition,
-            new BaseState(HexCoord.Zero));
+            new BaseState(HexCoord.Zero),
+            factions: new[]
+            {
+                new FactionState(
+                    "border-wardens",
+                    "Unknown Watchers",
+                    signatureProfileId: "woven-offerings")
+            });
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

@@ -58,8 +58,12 @@ internal sealed class WorldPhaseDataTests
 
     private static CrossSystemDataBundle LoadContent()
     {
-        var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData", "World");
-        return CrossSystemDataLoader.LoadFromDirectory(root) ?? throw new InvalidOperationException("World content was not loaded.");
+        var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
+        return CrossSystemDataLoader.LoadFromDirectories(new[]
+        {
+            Path.Combine(root, "World"),
+            Path.Combine(root, "Factions")
+        }) ?? throw new InvalidOperationException("World content was not loaded.");
     }
 
     private static GameState CreateGame()

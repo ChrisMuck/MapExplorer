@@ -36,7 +36,7 @@ public sealed class GameApplication
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
     private readonly ResolveLocationActionCommand resolveLocationActionCommand;
     private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
-    private readonly WorldGenBridge worldGenBridge = new WorldGenBridge();
+    private readonly WorldGenBridge worldGenBridge;
 
     public GameApplication()
         : this(null, null)
@@ -57,6 +57,7 @@ public sealed class GameApplication
     {
         locationData ??= TryLoadDefaultLocationData();
         crossSystemData ??= TryLoadDefaultCrossSystemData();
+        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures);
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -78,7 +79,7 @@ public sealed class GameApplication
             new KnowledgeService(),
             new FactionTerritoryEntryResolver(crossSystemData));
         endDayCommand = new EndDayCommand(
-            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence),
+            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures),
             worldPhaseService: worldPhaseService);
         advanceBaseTimeCommand = new AdvanceBaseTimeCommand(worldPhaseService);
     }

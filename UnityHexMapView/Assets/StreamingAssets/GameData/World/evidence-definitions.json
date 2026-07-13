@@ -16,19 +16,23 @@
     },
     {
       "id": "evidence-claim-markers",
-      "scoutReportText": "Die Scouts fanden wiederkehrende Markierungen und gepflegte Zugangswege. Der Ort wird offenbar beansprucht."
+      "scoutReportText": "Die Scouts fanden wiederkehrende Markierungen und gepflegte Zugangswege. Der Ort wird offenbar beansprucht.",
+      "symbolId": "signature-carved-boundary-posts"
     },
     {
       "id": "evidence-patrol-signs",
-      "scoutReportText": "Die Scouts fanden frische Trittspuren, Sichtzeichen und einen wiederkehrenden Kontrollweg."
+      "scoutReportText": "Die Scouts fanden frische Trittspuren, Sichtzeichen und einen wiederkehrenden Kontrollweg.",
+      "symbolId": "signature-stacked-stone-watchmarks"
     },
     {
       "id": "evidence-ritual-signs",
-      "scoutReportText": "Die Scouts bemerkten geordnete Opfergaben und sorgfaeltig erneuerte Zeichen. Der Ort hat offenbar eine besondere Bedeutung."
+      "scoutReportText": "Die Scouts bemerkten geordnete Opfergaben und sorgfaeltig erneuerte Zeichen. Der Ort hat offenbar eine besondere Bedeutung.",
+      "symbolId": "signature-woven-offering-bands"
     },
     {
       "id": "evidence-guard-routine",
-      "scoutReportText": "Die Scouts fanden Sichtlinien, Wachspuren und Hinweise auf regelmaessige Kontrolle."
+      "scoutReportText": "Die Scouts fanden Sichtlinien, Wachspuren und Hinweise auf regelmaessige Kontrolle.",
+      "symbolId": "signature-stacked-stone-watchmarks"
     },
     {
       "id": "evidence-grave-disturbance-rumour",

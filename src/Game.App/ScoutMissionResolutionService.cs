@@ -9,10 +9,12 @@ namespace Game.App
 public sealed class ScoutMissionResolutionService
 {
     private readonly EvidenceDefinitionSet? evidenceDefinitions;
+    private readonly FactionSignatureDefinitionSet? factionSignatures;
 
-    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null)
+    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null, FactionSignatureDefinitionSet? factionSignatures = null)
     {
         this.evidenceDefinitions = evidenceDefinitions;
+        this.factionSignatures = factionSignatures;
     }
 
     public IReadOnlyList<ScoutMissionResolutionResult> ResolveDueMissions(GameState game)
@@ -243,7 +245,14 @@ public sealed class ScoutMissionResolutionService
         var fallbackText = relation == null
             ? "Die Scouts fanden keine eindeutigen Zeichen, dass jemand diesen Ort regelmaessig kontrolliert."
             : "Die Scouts fanden wiederkehrende Zeichen, Wege oder Spuren. Jemand scheint diesen Ort zu beachten.";
-        var text = evidenceDefinitions?.Find(definitionId)?.ScoutReportText ?? fallbackText;
+        var definition = evidenceDefinitions?.Find(definitionId);
+        var text = definition?.ScoutReportText ?? fallbackText;
+        var signatureId = definition?.SymbolId;
+        if (relation != null)
+        {
+            var faction = game.FindFaction(relation.FactionId);
+            signatureId = factionSignatures?.FindForProfile(faction?.SignatureProfileId)?.Id ?? signatureId;
+        }
         var evidenceId = $"evidence-scout-{report.Id}-{location.Id}";
         game.Knowledge.AddEvidence(new EvidenceState(
             evidenceId,
@@ -252,6 +261,7 @@ public sealed class ScoutMissionResolutionService
             EvidenceKnowledgeState.Reported,
             text,
             subjectLocationId: location.Id,
+            symbolId: signatureId,
             confidence: report.Reliability));
 
         if (relation != null)

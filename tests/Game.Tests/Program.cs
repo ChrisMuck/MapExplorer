@@ -274,6 +274,7 @@ internal sealed class WorldGenBridgeTests
         SameRequestProducesSameCoreWorldLayout();
         TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
         GeneratedWorldCanStartAnExpedition();
+        GeneratedFactionsReceiveStableHiddenSignatureProfiles();
     }
 
     private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
@@ -310,6 +311,18 @@ internal sealed class WorldGenBridgeTests
         AssertEqual(game.Base.Location, game.Expedition.Position, "Generated expedition starts at generated base");
         AssertTrue(game.Knowledge.GetTileKnowledge(game.Base.Location) == KnowledgeLevel.Confirmed, "Generated base starts confirmed");
         AssertEqual(3, game.Factions.Count, "Generated campaign carries generated factions");
+    }
+
+    private static void GeneratedFactionsReceiveStableHiddenSignatureProfiles()
+    {
+        var first = new GameApplication().CreateGeneratedGame(Request());
+        var second = new GameApplication().CreateGeneratedGame(Request());
+
+        AssertTrue(first.Factions.All(faction => faction.SignatureProfileId != "unassigned"), "Generated factions receive a signature profile from content");
+        AssertEqual(
+            string.Join("|", first.Factions.Select(faction => faction.SignatureProfileId)),
+            string.Join("|", second.Factions.Select(faction => faction.SignatureProfileId)),
+            "Same generation request keeps hidden signature assignments stable");
     }
 
     private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()
