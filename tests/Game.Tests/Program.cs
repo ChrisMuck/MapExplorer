@@ -53,6 +53,8 @@ var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
 var factionTerritorialPolicyTests = new FactionTerritorialPolicyTests();
 factionTerritorialPolicyTests.RunAll();
+var crossSystemIntegrationProofTests = new CrossSystemIntegrationProofTests();
+crossSystemIntegrationProofTests.RunAll();
 var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
 crossSystemContentValidationTests.RunAll();
 var worldGenerationPresetTests = new WorldGenerationPresetTests();

@@ -43,6 +43,7 @@
     {
       "id": "modifier-sealed",
       "label": "Versiegelt",
+      "addedActionIds": ["action-open-seal"],
       "compatibleArchetypeIds": ["investigation-site", "containment-site"],
       "incompatibleModifierIds": ["modifier-collapsed"]
     },

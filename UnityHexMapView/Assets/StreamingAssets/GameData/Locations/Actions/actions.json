@@ -180,6 +180,16 @@
       "actionTags": [ "inspect", "seal" ]
     },
     {
+      "id": "action-open-seal",
+      "label": "Siegel oeffnen",
+      "description": "Den Verschluss bewusst brechen oder loesen und den dahinterliegenden Bereich zugaenglich machen.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 35, "confidence": "Guess" },
+      "outcomeTableId": "outcome-open-seal",
+      "repeatPolicy": "OncePerLocation",
+      "actionTags": [ "open", "seal", "disturb" ]
+    },
+    {
       "id": "action-approach-cautiously",
       "label": "Vorsichtig naehern",
       "description": "Sich dem Ort behutsam naehern und die Lage einschaetzen.",

@@ -53,6 +53,20 @@
       "id": "evidence-bridge-repaired",
       "scoutReportText": "Die reparierte Bruecke ist wieder dauerhaft passierbar; frische Befestigungen zeigen die neue Stabilitaet.",
       "worldEventText": "Die Expedition hat einen dauerhaften Uebergang wiederhergestellt."
+    },
+    {
+      "id": "evidence-seal-opened",
+      "scoutReportText": "Die Expedition hält die gebrochene Versiegelung und ihre Warnzeichen als unmittelbaren Befund fest."
+    },
+    {
+      "id": "evidence-seal-disturbance",
+      "scoutReportText": "Rund um einen zuvor verschlossenen Ort häufen sich unklare Spuren und veränderte Geräusche.",
+      "worldEventText": "Um den geöffneten Ort zeigen sich neue Spuren und eine Unruhe, deren Ursache unklar bleibt."
+    },
+    {
+      "id": "evidence-seal-consequence",
+      "scoutReportText": "Die späteren Zeichen bestätigen, dass sich nach dem Öffnen etwas im Umfeld verändert hat.",
+      "worldEventText": "Die anhaltenden Veränderungen um den geöffneten Ort lassen sich nicht länger als Zufall abtun."
     }
   ]
 }
