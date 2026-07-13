@@ -48,6 +48,11 @@
       "id": "evidence-route-restored",
       "scoutReportText": "Die Scouts bestaetigen, dass ein alter Uebergang wieder regelmaessig genutzt wird.",
       "worldEventText": "Reifenspuren und frische Tritte zeigen: Ein alter Uebergang wird wieder benutzt."
+    },
+    {
+      "id": "evidence-bridge-repaired",
+      "scoutReportText": "Die reparierte Bruecke ist wieder dauerhaft passierbar; frische Befestigungen zeigen die neue Stabilitaet.",
+      "worldEventText": "Die Expedition hat einen dauerhaften Uebergang wiederhergestellt."
     }
   ]
 }
