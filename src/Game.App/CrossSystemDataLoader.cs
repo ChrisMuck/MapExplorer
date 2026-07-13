@@ -265,11 +265,81 @@ public sealed class FactionSignatureDefinitionSet
     public IReadOnlyCollection<FactionSignatureDefinition> All => definitions.Values;
 }
 
+public sealed class ScoutOutcomeRuleDefinition
+{
+    public ScoutOutcomeRuleDefinition(ScoutMissionBehavior behavior, ScoutMissionStatus whenStatus, ScoutMissionStatus outcome, ScoutMissionFocus? focus = null, string? missionTypeId = null)
+    {
+        Behavior = behavior;
+        WhenStatus = whenStatus;
+        Outcome = outcome;
+        Focus = focus;
+        MissionTypeId = string.IsNullOrWhiteSpace(missionTypeId) ? null : missionTypeId.Trim();
+    }
+
+    public ScoutMissionBehavior Behavior { get; }
+    public ScoutMissionStatus WhenStatus { get; }
+    public ScoutMissionStatus Outcome { get; }
+    public ScoutMissionFocus? Focus { get; }
+    public string? MissionTypeId { get; }
+    public bool Matches(ScoutMissionState mission) => Behavior == mission.Behavior && WhenStatus == mission.Status && (!Focus.HasValue || Focus.Value == mission.Focus) && (MissionTypeId == null || MissionTypeId == mission.MissionTypeId);
+}
+
+public sealed class ScoutReportTemplateDefinition
+{
+    public ScoutReportTemplateDefinition(ScoutMissionFocus focus, ScoutMissionStatus outcome, string title, string body, string hint, string? missionTypeId = null)
+    {
+        Focus = focus;
+        Outcome = outcome;
+        Title = Require(title, nameof(title));
+        Body = Require(body, nameof(body));
+        Hint = Require(hint, nameof(hint));
+        MissionTypeId = string.IsNullOrWhiteSpace(missionTypeId) ? null : missionTypeId.Trim();
+    }
+
+    public ScoutMissionFocus Focus { get; }
+    public ScoutMissionStatus Outcome { get; }
+    public string Title { get; }
+    public string Body { get; }
+    public string Hint { get; }
+    public string? MissionTypeId { get; }
+
+    private static string Require(string value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value must not be empty.", name);
+        return value.Trim();
+    }
+}
+
+public sealed class ScoutContentDefinitionSet
+{
+    private readonly List<ScoutOutcomeRuleDefinition> outcomeRules;
+    private readonly List<ScoutReportTemplateDefinition> reportTemplates;
+
+    public ScoutContentDefinitionSet(IEnumerable<ScoutOutcomeRuleDefinition>? outcomeRules = null, IEnumerable<ScoutReportTemplateDefinition>? reportTemplates = null)
+    {
+        this.outcomeRules = (outcomeRules ?? Enumerable.Empty<ScoutOutcomeRuleDefinition>()).ToList();
+        this.reportTemplates = (reportTemplates ?? Enumerable.Empty<ScoutReportTemplateDefinition>()).ToList();
+    }
+
+    public ScoutOutcomeRuleDefinition? FindOutcome(ScoutMissionState mission)
+    {
+        return outcomeRules.FirstOrDefault(rule => rule.Matches(mission) && rule.Focus.HasValue)
+            ?? outcomeRules.FirstOrDefault(rule => rule.Matches(mission));
+    }
+
+    public ScoutReportTemplateDefinition? FindReport(ScoutMissionState mission, ScoutMissionStatus outcome)
+    {
+        return reportTemplates.FirstOrDefault(template => template.Focus == mission.Focus && template.Outcome == outcome && template.MissionTypeId == mission.MissionTypeId)
+            ?? reportTemplates.FirstOrDefault(template => template.Focus == mission.Focus && template.Outcome == outcome && template.MissionTypeId == null);
+    }
+}
+
 public sealed class CrossSystemDataBundle
 {
     public CrossSystemDataBundle(
         EvidenceDefinitionSet evidence,
         IEnumerable<FactionSignatureDefinition>? factionSignatures = null,
+        ScoutContentDefinitionSet? scoutContent = null,
         IEnumerable<WorldTriggerDefinition>? triggers = null,
         IEnumerable<ConsequenceDefinition>? consequences = null,
         IEnumerable<FactionReactionRuleDefinition>? factionReactionRules = null,
@@ -277,6 +347,7 @@ public sealed class CrossSystemDataBundle
     {
         Evidence = evidence ?? throw new ArgumentNullException(nameof(evidence));
         FactionSignatures = new FactionSignatureDefinitionSet(factionSignatures ?? Enumerable.Empty<FactionSignatureDefinition>());
+        ScoutContent = scoutContent ?? new ScoutContentDefinitionSet();
         Triggers = (triggers ?? Enumerable.Empty<WorldTriggerDefinition>()).ToDictionary(trigger => trigger.Id, StringComparer.Ordinal);
         Consequences = (consequences ?? Enumerable.Empty<ConsequenceDefinition>()).ToDictionary(consequence => consequence.Id, StringComparer.Ordinal);
         FactionReactionRules = (factionReactionRules ?? Enumerable.Empty<FactionReactionRuleDefinition>()).ToList();
@@ -285,6 +356,7 @@ public sealed class CrossSystemDataBundle
 
     public EvidenceDefinitionSet Evidence { get; }
     public FactionSignatureDefinitionSet FactionSignatures { get; }
+    public ScoutContentDefinitionSet ScoutContent { get; }
     public IReadOnlyDictionary<string, WorldTriggerDefinition> Triggers { get; }
     public IReadOnlyDictionary<string, ConsequenceDefinition> Consequences { get; }
     public IReadOnlyList<FactionReactionRuleDefinition> FactionReactionRules { get; }
@@ -329,6 +401,8 @@ public static class CrossSystemDataLoader
         var factionSignatures = new List<FactionSignatureDefinitionDto>();
         var factionReactionRules = new List<FactionReactionRuleDto>();
         var factionTerritoryEntryRules = new List<FactionTerritoryEntryRuleDto>();
+        var scoutOutcomeRules = new List<ScoutOutcomeRuleDto>();
+        var scoutReportTemplates = new List<ScoutReportTemplateDto>();
 
         foreach (var json in jsonDocuments)
         {
@@ -357,6 +431,8 @@ public static class CrossSystemDataLoader
                 case "faction-signatures": factionSignatures.AddRange(items.ToObject<List<FactionSignatureDefinitionDto>>()!); break;
                 case "faction-reaction-rules": factionReactionRules.AddRange(items.ToObject<List<FactionReactionRuleDto>>()!); break;
                 case "faction-territory-entry-rules": factionTerritoryEntryRules.AddRange(items.ToObject<List<FactionTerritoryEntryRuleDto>>()!); break;
+                case "scout-outcome-rules": scoutOutcomeRules.AddRange(items.ToObject<List<ScoutOutcomeRuleDto>>()!); break;
+                case "scout-report-templates": scoutReportTemplates.AddRange(items.ToObject<List<ScoutReportTemplateDto>>()!); break;
                 case "world-generation-presets": break;
                 case "world-generation-option-presets": break;
                 default: throw new LocationDataException($"Unsupported cross-system documentType '{(string?)envelope["documentType"]}'.");
@@ -421,7 +497,17 @@ public static class CrossSystemDataLoader
             throw new LocationDataException("Faction territory entry rule IDs must be unique.");
         }
 
-        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
+        var builtScoutOutcomes = scoutOutcomeRules.Select(item => new ScoutOutcomeRuleDefinition(
+            ParseEnum<ScoutMissionBehavior>(Require(item.Behavior, "scoutOutcome.behavior"), "scoutOutcome.behavior"),
+            ParseEnum<ScoutMissionStatus>(Require(item.WhenStatus, "scoutOutcome.whenStatus"), "scoutOutcome.whenStatus"),
+            ParseEnum<ScoutMissionStatus>(Require(item.Outcome, "scoutOutcome.outcome"), "scoutOutcome.outcome"),
+            string.IsNullOrWhiteSpace(item.Focus) ? null : ParseEnum<ScoutMissionFocus>(Require(item.Focus, "scoutOutcome.focus"), "scoutOutcome.focus"), item.MissionTypeId)).ToList();
+        var builtScoutReports = scoutReportTemplates.Select(item => new ScoutReportTemplateDefinition(
+            ParseEnum<ScoutMissionFocus>(Require(item.Focus, "scoutReport.focus"), "scoutReport.focus"),
+            ParseEnum<ScoutMissionStatus>(Require(item.Outcome, "scoutReport.outcome"), "scoutReport.outcome"),
+            Require(item.Title, "scoutReport.title"), Require(item.Body, "scoutReport.body"), Require(item.Hint, "scoutReport.hint"), item.MissionTypeId)).ToList();
+
+        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -565,6 +651,25 @@ public static class CrossSystemDataLoader
         public string? Body { get; set; }
         public bool RevealsFaction { get; set; }
         public bool AllowsInteraction { get; set; }
+    }
+
+    private sealed class ScoutOutcomeRuleDto
+    {
+        public string? Behavior { get; set; }
+        public string? WhenStatus { get; set; }
+        public string? Outcome { get; set; }
+        public string? Focus { get; set; }
+        public string? MissionTypeId { get; set; }
+    }
+
+    private sealed class ScoutReportTemplateDto
+    {
+        public string? Focus { get; set; }
+        public string? MissionTypeId { get; set; }
+        public string? Outcome { get; set; }
+        public string? Title { get; set; }
+        public string? Body { get; set; }
+        public string? Hint { get; set; }
     }
 }
 }

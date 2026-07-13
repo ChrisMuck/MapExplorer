@@ -79,7 +79,7 @@ public sealed class GameApplication
             new KnowledgeService(),
             new FactionTerritoryEntryResolver(crossSystemData));
         endDayCommand = new EndDayCommand(
-            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures),
+            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures, crossSystemData?.ScoutContent),
             worldPhaseService: worldPhaseService);
         advanceBaseTimeCommand = new AdvanceBaseTimeCommand(worldPhaseService);
     }
@@ -116,7 +116,8 @@ public sealed class GameApplication
             var bundle = CrossSystemDataLoader.LoadFromDirectories(new[]
             {
                 Path.Combine(root, "World"),
-                Path.Combine(root, "Factions")
+                Path.Combine(root, "Factions"),
+                Path.Combine(root, "Scouting")
             });
             if (bundle != null) return bundle;
         }

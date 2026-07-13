@@ -13,6 +13,7 @@ internal sealed class ScoutLocationSurroundingsTests
         ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness();
         ScoutingRequiresAnAvailableScoutAtTheLocation();
         JsonEvidenceDefinitionDrivesScoutReportText();
+        DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt();
     }
 
     private static void ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness()
@@ -48,7 +49,8 @@ internal sealed class ScoutLocationSurroundingsTests
         var data = CrossSystemDataLoader.LoadFromDirectories(new[]
         {
             Path.Combine(dataRoot, "World"),
-            Path.Combine(dataRoot, "Factions")
+            Path.Combine(dataRoot, "Factions"),
+            Path.Combine(dataRoot, "Scouting")
         });
         var game = CreateGame(new HexCoord(1, 1), "evidence-patrol-signs");
         var app = new GameApplication(null, data);
@@ -61,6 +63,25 @@ internal sealed class ScoutLocationSurroundingsTests
         AssertTrue(game.Knowledge.Evidence[0].PlayerText.Contains("Trittspuren", StringComparison.Ordinal), "Scout report text comes from evidence JSON");
         AssertEqual("signature-woven-offering-bands", game.Knowledge.Evidence[0].SymbolId, "Scout evidence uses the generated faction's signature profile");
         AssertTrue(data.FactionSignatures.Find(game.Knowledge.Evidence[0].SymbolId) != null, "Signature metadata is loaded without exposing a faction");
+        AssertEqual("Bericht: Zeichen in der Umgebung", game.Knowledge.ScoutReports[0].Title, "Scout report presentation comes from JSON");
+    }
+
+    private static void DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt()
+    {
+        var game = CreateGame(HexCoord.Zero);
+        var sent = new SendScoutMissionCommand().Execute(
+            game,
+            new[] { "scout-1" },
+            ScoutDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Cautious);
+
+        new EndDayCommand(suppliesPerDay: 0).Execute(game);
+
+        AssertTrue(sent.Success, "Directional reconnaissance can be sent away from a location");
+        AssertEqual("directional-recon", sent.Mission!.MissionTypeId, "Directional reconnaissance has its own mission type");
+        AssertTrue(game.Knowledge.ScoutReports[0].Hints.Any(hint => hint.Contains("auffaellige Struktur", StringComparison.Ordinal)), "Directional reconnaissance reports a nearby unknown location as an unconfirmed sighting");
     }
 
     private static GameState CreateGame(HexCoord expeditionPosition, params string[] evidenceSeedIds)

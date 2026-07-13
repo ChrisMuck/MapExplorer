@@ -20,7 +20,8 @@ public sealed class ScoutMissionState
         ScoutMissionFocus focus,
         ScoutMissionBehavior behavior,
         ScoutMissionStatus status = ScoutMissionStatus.Active,
-        string? targetLocationId = null)
+        string? targetLocationId = null,
+        string missionTypeId = "directional-recon")
     {
         Id = RequireText(id, nameof(id));
         if (scoutMemberIds == null || scoutMemberIds.Count == 0)
@@ -46,6 +47,7 @@ public sealed class ScoutMissionState
         Focus = focus;
         Behavior = behavior;
         TargetLocationId = string.IsNullOrWhiteSpace(targetLocationId) ? null : targetLocationId.Trim();
+        MissionTypeId = RequireText(missionTypeId, nameof(missionTypeId));
         Status = status;
     }
 
@@ -69,6 +71,9 @@ public sealed class ScoutMissionState
     public ScoutMissionBehavior Behavior { get; }
 
     public string? TargetLocationId { get; }
+
+    /// <summary>Content-defined order type; target location and directional reconnaissance stay distinct.</summary>
+    public string MissionTypeId { get; }
 
     public ScoutMissionStatus Status { get; private set; }
 

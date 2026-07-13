@@ -78,7 +78,8 @@ public sealed class SendScoutMissionCommand
             durationDays,
             game.World.WorldDay + durationDays,
             focus,
-            behavior);
+            behavior,
+            missionTypeId: "directional-recon");
 
         foreach (var memberId in distinctIds)
         {

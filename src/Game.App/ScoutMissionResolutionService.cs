@@ -10,11 +10,13 @@ public sealed class ScoutMissionResolutionService
 {
     private readonly EvidenceDefinitionSet? evidenceDefinitions;
     private readonly FactionSignatureDefinitionSet? factionSignatures;
+    private readonly ScoutContentDefinitionSet? scoutContent;
 
-    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null, FactionSignatureDefinitionSet? factionSignatures = null)
+    public ScoutMissionResolutionService(EvidenceDefinitionSet? evidenceDefinitions = null, FactionSignatureDefinitionSet? factionSignatures = null, ScoutContentDefinitionSet? scoutContent = null)
     {
         this.evidenceDefinitions = evidenceDefinitions;
         this.factionSignatures = factionSignatures;
+        this.scoutContent = scoutContent;
     }
 
     public IReadOnlyList<ScoutMissionResolutionResult> ResolveDueMissions(GameState game)
@@ -69,8 +71,14 @@ public sealed class ScoutMissionResolutionService
         return results;
     }
 
-    private static ScoutMissionStatus DetermineOutcome(ScoutMissionState mission, int worldDay)
+    private ScoutMissionStatus DetermineOutcome(ScoutMissionState mission, int worldDay)
     {
+        var configured = scoutContent?.FindOutcome(mission);
+        if (configured != null)
+        {
+            return configured.Outcome;
+        }
+
         if (mission.Status == ScoutMissionStatus.Overdue)
         {
             return worldDay > mission.ExpectedReturnWorldDay
@@ -121,20 +129,22 @@ public sealed class ScoutMissionResolutionService
         }
     }
 
-    private static ScoutReportState CreateReport(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome)
+    private ScoutReportState CreateReport(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome)
     {
         var relatedCoords = BuildRelatedCoords(game, mission);
         var reliability = ReliabilityFor(mission, outcome);
-        var title = $"Scout report: {mission.Direction} {mission.Focus}";
-        var body = outcome == ScoutMissionStatus.ReturnedInjured
+        var template = scoutContent?.FindReport(mission, outcome);
+        var title = template?.Title ?? $"Scout report: {mission.Direction} {mission.Focus}";
+        var body = template?.Body ?? (outcome == ScoutMissionStatus.ReturnedInjured
             ? "The scouts returned hurt and shaken. Their notes are incomplete, but they marked signs worth checking."
-            : "The scouts returned with a cautious account of terrain, signs and possible routes. Treat it as useful, not certain.";
+            : "The scouts returned with a cautious account of terrain, signs and possible routes. Treat it as useful, not certain.");
 
         var hints = new List<string>
         {
-            HintFor(mission),
+            template?.Hint ?? HintFor(mission),
             $"Reliability {reliability}/100. Confirm on foot before trusting it fully."
         };
+        AddDirectionalDiscoveryHints(game, mission, relatedCoords, hints);
 
         return new ScoutReportState(
             $"scout-report-{game.Knowledge.ScoutReports.Count + 1}",
@@ -144,6 +154,25 @@ public sealed class ScoutMissionResolutionService
             reliability,
             relatedCoords,
             hints);
+    }
+
+    private static void AddDirectionalDiscoveryHints(GameState game, ScoutMissionState mission, IReadOnlyList<HexCoord> relatedCoords, ICollection<string> hints)
+    {
+        if (mission.MissionTypeId != "directional-recon")
+        {
+            return;
+        }
+
+        foreach (var location in game.World.Locations)
+        {
+            if (!location.Anchor.Coords.Any(relatedCoords.Contains) || game.Knowledge.GetTileKnowledge(location.Coord) == KnowledgeLevel.Confirmed)
+            {
+                continue;
+            }
+
+            hints.Add($"In Richtung {mission.Direction} wurde bei Feld {location.Coord} eine auffaellige Struktur oder Spur gesehen. Sie ist nicht bestaetigt.");
+            return;
+        }
     }
 
     private static IReadOnlyList<HexCoord> BuildRelatedCoords(GameState game, ScoutMissionState mission)

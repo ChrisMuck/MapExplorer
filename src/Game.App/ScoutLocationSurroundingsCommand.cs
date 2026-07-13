@@ -29,7 +29,7 @@ public sealed class ScoutLocationSurroundingsCommand
             }
         }
         var mission = new ScoutMissionState($"scout-mission-{game.Expedition.ScoutMissions.Count + 1}", scoutMemberIds, game.Expedition.Position,
-            ScoutDirection.North, 1, game.World.WorldDay + 1, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Cautious, targetLocationId: locationId);
+            ScoutDirection.North, 1, game.World.WorldDay + 1, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Cautious, targetLocationId: locationId, missionTypeId: "location-surroundings");
         foreach (var id in scoutMemberIds) game.Expedition.FindMember(id)!.SetStatus(ExpeditionMemberStatus.Assigned);
         game.Expedition.AddScoutMission(mission);
         return SendScoutMissionResult.Sent(mission);
