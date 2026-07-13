@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Game.App;
 using Game.Core;
 using UnityEngine;
@@ -8,37 +8,6 @@ using UnityEngine.Rendering.Universal;
 [ExecuteAlways]
 public sealed class UnityHexMapView : MonoBehaviour
 {
-    private enum TerrainKind
-    {
-        Water,
-        Coast,
-        Grass,
-        Forest,
-        Hills,
-        Mountain,
-        Snow
-    }
-
-    private enum ForestType
-    {
-        Coniferous,
-        Deciduous,
-        Mixed
-    }
-
-    private enum TreeKind
-    {
-        Pine,
-        Broadleaf
-    }
-
-    private struct TileData
-    {
-        public TerrainKind Terrain;
-        public float Elevation;
-        public Vector3 World;
-    }
-
     [Range(4, 80)] public int mapWidth = 40;
     [Range(4, 60)] public int mapHeight = 30;
     [Range(0.5f, 2f)] public float hexSize = 1f;
@@ -64,12 +33,9 @@ public sealed class UnityHexMapView : MonoBehaviour
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
     private const float VisualTileBottomY = -0.035f;
-    private readonly Dictionary<Vector2Int, TileData> tiles = new();
+    private readonly Dictionary<Vector2Int, HexTileVisual> tiles = new();
     private readonly Dictionary<Vector2Int, List<GameObject>> featureObjectsByCoord = new();
     private readonly Dictionary<GameObject, List<Vector2Int>> featureObjectsByPath = new();
-    private readonly Dictionary<TerrainKind, Material> topMaterials = new();
-    private readonly Dictionary<TerrainKind, Material[]> topMaterialVariants = new();
-    private readonly Dictionary<TerrainKind, Material> sideMaterials = new();
     private readonly Dictionary<string, Material> featureMaterials = new();
     private readonly Dictionary<string, Mesh> generatedMeshCache = new();
     private Transform cameraRig;
@@ -83,13 +49,16 @@ public sealed class UnityHexMapView : MonoBehaviour
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly GameApplication gameApplication = CreateGameApplication();
     private Transform currentBuildRoot;
-    private HexMapWindSway windSway;
+    private Material hexTerrainMaterial;
+    private Material hexNatureMaterialTemplate;
+    private Texture2D hexTerrainNoiseTexture;
+    private HexDecorationLibrary hexDecorationLibrary;
+    private HexMapChunkRenderer hexMapChunkRenderer;
     private Transform terrainRoot;
     private Transform featureRoot;
     private Transform systemsRoot;
     private Transform lightingRoot;
     private Transform hudRoot;
-    private Transform knowledgeOverlayRoot;
     private Transform overlayRoot;
     private Transform playerAnnotationRoot;
     private Transform expeditionMarker;
@@ -852,6 +821,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void Update()
     {
+        // Decoration is manually GPU-instanced (not real MeshRenderers), so it must be resubmitted
+        // every frame/repaint regardless of play mode, the same way terrain/feature GameObjects are
+        // already rendered passively by Unity in Edit mode.
+        hexMapChunkRenderer?.Present(strategyCamera);
+
         if (!Application.isPlaying)
         {
             return;
@@ -910,6 +884,11 @@ public sealed class UnityHexMapView : MonoBehaviour
     [ContextMenu("Rebuild Hex Map")]
     public void Rebuild()
     {
+        // The renderer's root is a generated child and is cleaned up together with
+        // the rest of the presentation below. Dropping this reference first keeps
+        // a subsequent rebuild from trying to refresh an old world.
+        hexMapChunkRenderer?.Dispose();
+        hexMapChunkRenderer = null;
         ClearGeneratedChildren();
         ClearGeneratedRuntimeAssets();
         tiles.Clear();
@@ -918,14 +897,12 @@ public sealed class UnityHexMapView : MonoBehaviour
         strategyCamera = null;
         cameraRig = null;
         currentBuildRoot = null;
-        windSway = null;
         terrainRoot = null;
         featureRoot = null;
         systemsRoot = null;
         lightingRoot = null;
         hudRoot = null;
         overlayRoot = null;
-        knowledgeOverlayRoot = null;
         playerAnnotationRoot = null;
         expeditionMarker = null;
         expeditionScreenController = null;
@@ -941,17 +918,28 @@ public sealed class UnityHexMapView : MonoBehaviour
         currentBuildRoot = terrainRoot;
         BuildMap();
 
+        hexDecorationLibrary = new HexDecorationLibrary();
+        hexMapChunkRenderer = new HexMapChunkRenderer(
+            terrainRoot,
+            prefabLibrary,
+            usePrefabOverrides,
+            hexDecorationLibrary,
+            hexTerrainMaterial,
+            featureMaterials["UnknownFog"],
+            featureMaterials["ReportedFog"],
+            hexNatureMaterialTemplate,
+            hexSize,
+            VisualTileTopY,
+            VisualTileTopY + 0.115f,
+            zoomedOutSize * 0.6f);
+        hexMapChunkRenderer.Build(tiles, ActiveVisualSeed(), IsDecorationVisibleForCoord, FogStateForCoord);
+
         featureRoot = NewRootGroup("Features");
         currentBuildRoot = featureRoot;
-        windSway = NewChild("Wind").AddComponent<HexMapWindSway>();
-        BuildTerrainObjectGroups();
         BuildFeatures();
+        BuildCoastFlags();
         BuildExpeditionMarker();
         UpdateFeatureVisibility();
-
-        knowledgeOverlayRoot = NewRootGroup("Knowledge Fog");
-        currentBuildRoot = knowledgeOverlayRoot;
-        BuildKnowledgeOverlays();
 
         overlayRoot = NewRootGroup("Hex Overlays");
         currentBuildRoot = overlayRoot;
@@ -1060,18 +1048,15 @@ public sealed class UnityHexMapView : MonoBehaviour
     private void ClearGeneratedRuntimeAssets()
     {
         var materials = new HashSet<Material>();
-        CollectMaterials(topMaterials.Values, materials);
-        CollectMaterials(sideMaterials.Values, materials);
         CollectMaterials(featureMaterials.Values, materials);
-        foreach (var variants in topMaterialVariants.Values)
-        {
-            CollectMaterials(variants, materials);
-        }
 
         var textures = new HashSet<Texture>();
         foreach (var material in materials)
         {
-            if (material == null)
+            // Custom shaders (Hex/HexTerrain, Hex/HexNatureInstanced) don't have a "_MainTex"-named
+            // property, so accessing .mainTexture on them logs a Unity warning even though it's
+            // harmless; guard with HasProperty so only shaders that actually have one are queried.
+            if (material == null || !material.HasProperty("_MainTex"))
             {
                 continue;
             }
@@ -1099,11 +1084,16 @@ public sealed class UnityHexMapView : MonoBehaviour
             }
         }
 
-        topMaterials.Clear();
-        topMaterialVariants.Clear();
-        sideMaterials.Clear();
         featureMaterials.Clear();
         generatedMeshCache.Clear();
+        hexTerrainMaterial = null;
+        hexNatureMaterialTemplate = null;
+        if (hexTerrainNoiseTexture != null)
+        {
+            DestroyGeneratedObject(hexTerrainNoiseTexture);
+        }
+
+        hexTerrainNoiseTexture = null;
     }
 
     private static void CollectMaterials(IEnumerable<Material> source, HashSet<Material> target)
@@ -1162,27 +1152,11 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void CreateMaterials()
     {
-        topMaterials[TerrainKind.Water] = Material("Water", "3f7180", "355f6c", "527f88", 11, 0.18f);
-        topMaterials[TerrainKind.Coast] = Material("Coast", "b49463", "9a7c50", "c0a472", 12, 0.18f);
-        topMaterials[TerrainKind.Grass] = Material("Grass", "70864d", "586f3c", "97a860", 13, 0.34f);
-        topMaterials[TerrainKind.Forest] = Material("Forest", "355741", "233d2e", "4c6d4d", 14, 0.22f);
-        topMaterials[TerrainKind.Hills] = Material("Hills", "827a52", "685f3f", "9c9268", 15, 0.24f);
-        topMaterials[TerrainKind.Mountain] = Material("Mountain", "777972", "62655f", "888a83", 16, 0.14f);
-        topMaterials[TerrainKind.Snow] = Material("Snow", "c9cec6", "b8beb6", "d9ddd4", 17, 0.1f);
-
-        sideMaterials[TerrainKind.Water] = Material("Water Side", "2f535d", 0.7f);
-        sideMaterials[TerrainKind.Coast] = Material("Coast Side", "7e6748", 0.85f);
-        sideMaterials[TerrainKind.Grass] = Material("Grass Side", "465c37", 0.9f);
-        sideMaterials[TerrainKind.Forest] = Material("Forest Side", "223829", 0.92f);
-        sideMaterials[TerrainKind.Hills] = Material("Hills Side", "514d3b", 0.94f);
-        sideMaterials[TerrainKind.Mountain] = Material("Mountain Side", "4f524d", 0.94f);
-        sideMaterials[TerrainKind.Snow] = Material("Snow Side", "878e87", 0.86f);
-
         featureMaterials["DebugHex"] = TransparentMaterial("Debug Hex", "101916", 0.32f);
         featureMaterials["FactionOwnerCoastal"] = TransparentMaterial("Debug Faction Coastal", "4f94a8", 0.34f);
         featureMaterials["FactionOwnerWardens"] = TransparentMaterial("Debug Faction Wardens", "b76857", 0.34f);
         featureMaterials["FactionOwnerHidden"] = TransparentMaterial("Debug Faction Hidden", "6f5a9d", 0.36f);
-        featureMaterials["FactionOwnerDefault"] = TransparentMaterial("Debug Faction Default", "9070a8", 0.34f);
+        CreateFactionOwnerPalette();
         featureMaterials["UnknownFog"] = TransparentMaterial("Unknown Fog", "151817", 0.74f);
         featureMaterials["ReportedFog"] = TransparentMaterial("Reported Fog", "303432", 0.52f);
         featureMaterials["ReachableHex"] = TransparentMaterial("Reachable Hex", "a8c884", 0.24f);
@@ -1246,54 +1220,95 @@ public sealed class UnityHexMapView : MonoBehaviour
         AssignWaterRipple("WaterPlane", ripple, new Vector2(8f, 8f));
         AssignWaterRipple("DeepWater", ripple, new Vector2(10f, 10f));
 
-        BuildTopVariants(TerrainKind.Grass);
-        BuildTopVariants(TerrainKind.Hills);
-        BuildTopVariants(TerrainKind.Forest);
+        CreateHexTerrainMaterial();
+        CreateHexNatureMaterialTemplate();
     }
 
-    // Pre-bake a handful of subtly tinted variants per open terrain so neighbouring
-    // tiles are not identical, without breaking material batching (fixed set of shared
-    // materials, deterministically assigned per tile).
-    private void BuildTopVariants(TerrainKind terrain)
+    // Distinct, well-separated hues for the faction-ownership debug overlay. The three tutorial-map
+    // factions keep their own tuned colors (FactionOwnerCoastal/Wardens/Hidden); anything else
+    // (e.g. a generated campaign's dynamic "faction-0", "faction-1", ... ids) is deterministically
+    // hashed into this broader palette instead of collapsing into one shared fallback color.
+    private static readonly string[] FactionOwnerPaletteHex =
     {
-        if (!topMaterials.TryGetValue(terrain, out var baseMat))
+        "4f94a8", "b76857", "6f5a9d", "6f9d5a", "c2984a", "9d5a7a", "5a7a9d", "9d9d5a"
+    };
+
+    private void CreateFactionOwnerPalette()
+    {
+        for (var i = 0; i < FactionOwnerPaletteHex.Length; i++)
         {
-            return;
+            featureMaterials[$"FactionOwnerPalette{i}"] = TransparentMaterial($"Debug Faction Palette {i}", FactionOwnerPaletteHex[i], 0.34f);
+        }
+    }
+
+    // One shared material for the entire chunked terrain layer (HexMapChunkRenderer); per-tile
+    // color variety is baked into vertex color instead of picking among per-terrain materials.
+    private void CreateHexTerrainMaterial()
+    {
+        var shader = Shader.Find("Hex/HexTerrain");
+        if (shader == null)
+        {
+            Debug.LogWarning("Hex/HexTerrain shader not found; terrain will fall back to vertex-color-less URP Lit.");
+            shader = Shader.Find("Universal Render Pipeline/Lit");
         }
 
-        const int count = 6;
-        var variants = new Material[count];
-        Color.RGBToHSV(baseMat.color, out var baseH, out var baseS, out var baseV);
-        for (var i = 0; i < count; i++)
+        hexTerrainNoiseTexture = TileableNoiseTexture();
+        hexTerrainMaterial = new Material(shader)
         {
-            var t = i / (float)(count - 1) - 0.5f; // -0.5 .. 0.5
-            var h = Mathf.Repeat(baseH + t * 0.02f, 1f);
-            var s = Mathf.Clamp01(baseS + t * 0.06f);
-            var v = Mathf.Clamp01(baseV + t * 0.13f);
-            var tint = Color.HSVToRGB(h, s, v);
-            tint.a = baseMat.color.a;
+            name = "Hex Terrain",
+            hideFlags = HideFlags.DontSave
+        };
+        if (hexTerrainMaterial.HasProperty("_NoiseTex"))
+        {
+            hexTerrainMaterial.SetTexture("_NoiseTex", hexTerrainNoiseTexture);
+        }
 
-            var variant = new Material(baseMat)
+        featureMaterials["HexTerrain"] = hexTerrainMaterial;
+    }
+
+    // Template for HexMapChunkRenderer's ground-scatter materials (grass/flowers/pebbles); the
+    // renderer clones this per color category and enables GPU instancing.
+    private void CreateHexNatureMaterialTemplate()
+    {
+        var shader = Shader.Find("Hex/HexNatureInstanced");
+        if (shader == null)
+        {
+            Debug.LogWarning("Hex/HexNatureInstanced shader not found; ground scatter will fall back to URP Lit (no wind sway).");
+            shader = Shader.Find("Universal Render Pipeline/Lit");
+        }
+
+        hexNatureMaterialTemplate = new Material(shader)
+        {
+            name = "Hex Nature Template",
+            hideFlags = HideFlags.DontSave,
+            enableInstancing = true
+        };
+        featureMaterials["HexNatureTemplate"] = hexNatureMaterialTemplate;
+    }
+
+    // Seamless grayscale value noise for the terrain shader's micro-variation, reusing the same
+    // periodic-noise technique as the cloud cookie texture.
+    private Texture2D TileableNoiseTexture()
+    {
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+        {
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.DontSave
+        };
+
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
             {
-                name = baseMat.name + "_v" + i,
-                hideFlags = HideFlags.DontSave,
-                color = tint
-            };
-            variants[i] = variant;
+                var v = TileableNoise(x, y, size, 3.4f, 12.9f);
+                texture.SetPixel(x, y, new Color(v, v, v, 1f));
+            }
         }
 
-        topMaterialVariants[terrain] = variants;
-    }
-
-    private Material TileTopMaterial(TerrainKind terrain, Vector2Int coord)
-    {
-        if (topMaterialVariants.TryGetValue(terrain, out var variants) && variants.Length > 0)
-        {
-            var index = Mathf.Clamp(Mathf.FloorToInt(Hash01(coord.x, coord.y, 40011) * variants.Length), 0, variants.Length - 1);
-            return variants[index];
-        }
-
-        return topMaterials[terrain];
+        texture.Apply(true, false);
+        return texture;
     }
 
     private Material Material(string name, string hex, float smoothness)
@@ -1522,24 +1537,19 @@ public sealed class UnityHexMapView : MonoBehaviour
                 var mountainRange = MountainRangeStrength(coord);
                 if (mountainRange > 0.82f)
                 {
-                    terrain = TerrainKind.Snow;
+                    terrain = HexTerrainKind.Snow;
                 }
                 else if (mountainRange > 0.48f)
                 {
-                    terrain = TerrainKind.Mountain;
+                    terrain = HexTerrainKind.Mountain;
                 }
-                else if (mountainRange > 0.26f && terrain != TerrainKind.Water)
+                else if (mountainRange > 0.26f && terrain != HexTerrainKind.Water)
                 {
-                    terrain = TerrainKind.Hills;
+                    terrain = HexTerrainKind.Hills;
                 }
 
                 var elevation = TerrainElevation(terrain, heightNoise);
-                tiles[coord] = new TileData { Terrain = terrain, Elevation = elevation, World = world };
-
-                var tile = NewChild($"Hex_{column}_{row}_{terrain}");
-                tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
-                AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), TileTopMaterial(terrain, coord));
-                AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
+                tiles[coord] = new HexTileVisual { Terrain = terrain, Elevation = elevation, World = world };
             }
         }
     }
@@ -1558,12 +1568,7 @@ public sealed class UnityHexMapView : MonoBehaviour
                 ? coreTile.Elevation * 0.18f
                 : TerrainElevation(terrain, Noise(coord.x * 0.18f, coord.y * 0.18f, 0));
 
-            tiles[coord] = new TileData { Terrain = terrain, Elevation = elevation, World = world };
-
-            var tile = NewChild($"Hex_{coreTile.Coord.Q}_{coreTile.Coord.R}_{terrain}");
-            tile.transform.localPosition = new Vector3(world.x, 0f, world.z);
-            AddMesh(tile, "Top", HexTopMesh(hexSize, VisualTileTopY), TileTopMaterial(terrain, coord));
-            AddTileDetails(tile.transform, terrain, VisualTileTopY, coord);
+            tiles[coord] = new HexTileVisual { Terrain = terrain, Elevation = elevation, World = world };
         }
     }
 
@@ -1577,42 +1582,47 @@ public sealed class UnityHexMapView : MonoBehaviour
         return OffsetToCenteredAxial(coord.Q, coord.R);
     }
 
-    private static TerrainKind TerrainFromCore(TerrainType terrain)
+    private Vector3 CoreCoordToWorld(HexCoord coord)
+    {
+        return AxialToWorld(CoreCoordToViewCoord(coord));
+    }
+
+    private static HexTerrainKind TerrainFromCore(TerrainType terrain)
     {
         switch (terrain)
         {
             case TerrainType.Water:
-                return TerrainKind.Water;
+                return HexTerrainKind.Water;
             case TerrainType.Coast:
-                return TerrainKind.Coast;
+                return HexTerrainKind.Coast;
             case TerrainType.Forest:
-                return TerrainKind.Forest;
+                return HexTerrainKind.Forest;
             case TerrainType.Hills:
             case TerrainType.Swamp:
-                return TerrainKind.Hills;
+                return HexTerrainKind.Hills;
             case TerrainType.Mountain:
-                return TerrainKind.Mountain;
+                return HexTerrainKind.Mountain;
             case TerrainType.Snow:
-                return TerrainKind.Snow;
+                return HexTerrainKind.Snow;
             case TerrainType.Grassland:
             case TerrainType.DryPlains:
             case TerrainType.Desert:
-                return TerrainKind.Grass;
+                return HexTerrainKind.Grass;
             default:
-                return TerrainKind.Grass;
+                return HexTerrainKind.Grass;
         }
     }
 
-    private TerrainKind PickTerrain(float value, Vector2Int coord)
+    private HexTerrainKind PickTerrain(float value, Vector2Int coord)
     {
         var h = value + Mathf.Sin(coord.x * 0.53f) * 0.04f + Mathf.Cos(coord.y * 0.71f) * 0.03f;
-        if (h < -0.38f) return TerrainKind.Water;
-        if (h < -0.24f) return TerrainKind.Coast;
-        if (h < 0.12f) return TerrainKind.Grass;
-        if (h < 0.29f) return TerrainKind.Forest;
-        if (h < 0.46f) return TerrainKind.Hills;
-        if (h < 0.62f) return TerrainKind.Mountain;
-        return TerrainKind.Snow;
+        if (h < -0.38f) return HexTerrainKind.Water;
+        if (h < -0.24f) return HexTerrainKind.Coast;
+        if (h < 0.12f) return HexTerrainKind.Grass;
+        if (h < 0.29f) return HexTerrainKind.Forest;
+        if (h < 0.46f) return HexTerrainKind.Hills;
+        if (h < 0.62f) return HexTerrainKind.Mountain;
+        return HexTerrainKind.Snow;
     }
 
     private float MountainRangeStrength(Vector2Int coord)
@@ -1630,752 +1640,38 @@ public sealed class UnityHexMapView : MonoBehaviour
         return Mathf.Clamp01(1f - distance / 3.1f + ruggedness - pass);
     }
 
-    private static float TerrainElevation(TerrainKind terrain, float value)
+    private static float TerrainElevation(HexTerrainKind terrain, float value)
     {
-        if (terrain == TerrainKind.Water) return 0.06f;
-        if (terrain == TerrainKind.Coast) return 0.18f;
+        if (terrain == HexTerrainKind.Water) return 0.06f;
+        if (terrain == HexTerrainKind.Coast) return 0.18f;
 
         var raw = terrain switch
         {
-            TerrainKind.Grass => 0.34f + Mathf.Max(value, 0f) * 0.28f,
-            TerrainKind.Forest => 0.48f + Mathf.Max(value, 0f) * 0.34f,
-            TerrainKind.Hills => 0.76f + value * 0.36f,
-            TerrainKind.Mountain => 1.08f + value * 0.48f,
-            TerrainKind.Snow => 1.36f + value * 0.48f,
+            HexTerrainKind.Grass => 0.34f + Mathf.Max(value, 0f) * 0.28f,
+            HexTerrainKind.Forest => 0.48f + Mathf.Max(value, 0f) * 0.34f,
+            HexTerrainKind.Hills => 0.76f + value * 0.36f,
+            HexTerrainKind.Mountain => 1.08f + value * 0.48f,
+            HexTerrainKind.Snow => 1.36f + value * 0.48f,
             _ => 0.3f
         };
         return Mathf.Round(raw / 0.18f) * 0.18f;
     }
 
-    private void AddTileDetails(Transform parent, TerrainKind terrain, float elevation, Vector2Int coord)
+    // Occasional coast-marker flag; low count, so it stays a plain GameObject like settlements
+    // rather than going through the chunk-instanced decoration path.
+    private void BuildCoastFlags()
     {
-        if (terrain == TerrainKind.Coast && Mathf.Abs(coord.x * 3 + coord.y * 5) % 7 == 0)
-        {
-            var flag = AddFlag(parent, elevation);
-            RegisterFeatureObject(coord, flag);
-        }
-    }
-
-    private void BuildTerrainObjectGroups()
-    {
-        BuildForestRegions();
-        BuildMountainRanges();
-        BuildMountainTransitionDetails();
-        BuildGroundScatter();
-    }
-
-    private void BuildGroundScatter()
-    {
-        var root = NewChild("GroundScatter");
         foreach (var pair in tiles)
         {
-            var coord = pair.Key;
-            var terrain = pair.Value.Terrain;
-            if (terrain != TerrainKind.Grass && terrain != TerrainKind.Hills)
+            if (pair.Value.Terrain != HexTerrainKind.Coast || Mathf.Abs(pair.Key.x * 3 + pair.Key.y * 5) % 7 != 0)
             {
                 continue;
             }
 
-            // Deterministic, sparse: only decorate a fraction of open tiles so plains stay readable.
-            var density = Hash01(coord.x, coord.y, 30011);
-            if (density > 0.62f)
-            {
-                continue;
-            }
-
-            var group = NewChild($"Scatter_{coord.x}_{coord.y}", root.transform);
-            RegisterFeatureObject(coord, group);
-            AddGroundScatterCluster(group.transform, coord, terrain);
-        }
-    }
-
-    private void AddGroundScatterCluster(Transform parent, Vector2Int coord, TerrainKind terrain)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var baseY = VisualTileTopY + 0.01f;
-        var tuftCount = terrain == TerrainKind.Hills ? 2 : 3;
-        for (var i = 0; i < tuftCount; i++)
-        {
-            var angle = Hash01(coord.x, coord.y, 30100 + i) * Mathf.PI * 2f;
-            var radius = Mathf.Lerp(0.12f, 0.62f, Hash01(coord.y, coord.x, 30200 + i)) * hexSize;
-            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
-            AddGrassTuft(parent, pos, coord, 30300 + i);
-        }
-
-        // Occasional flower patch, mostly on grassy meadows.
-        if (terrain == TerrainKind.Grass && Hash01(coord.x, coord.y, 31000) < 0.34f)
-        {
-            var angle = Hash01(coord.x, coord.y, 31100) * Mathf.PI * 2f;
-            var radius = Mathf.Lerp(0.1f, 0.5f, Hash01(coord.y, coord.x, 31200)) * hexSize;
-            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
-            AddFlowerPatch(parent, pos, coord, 31300);
-        }
-
-        // Occasional small pebble to break up the ground plane.
-        if (Hash01(coord.x, coord.y, 32000) < 0.28f)
-        {
-            var angle = Hash01(coord.x, coord.y, 32100) * Mathf.PI * 2f;
-            var radius = Mathf.Lerp(0.14f, 0.58f, Hash01(coord.y, coord.x, 32200)) * hexSize;
-            var pos = tile.World + new Vector3(Mathf.Cos(angle) * radius, baseY, Mathf.Sin(angle) * radius);
-            AddPebble(parent, pos, coord, 32300);
-        }
-    }
-
-    private void AddGrassTuft(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
-    {
-        var root = NewChild("GrassTuft", parent);
-        root.transform.localPosition = localPosition;
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
-        var scale = Mathf.Lerp(0.8f, 1.25f, Hash01(coord.y, coord.x, seedOffset + 3)) * hexSize;
-        if (windSway != null)
-        {
-            var amplitude = Mathf.Lerp(4f, 8f, Hash01(coord.y, coord.x, seedOffset + 5));
-            var speed = Mathf.Lerp(1.4f, 2.4f, Hash01(coord.x, coord.y, seedOffset + 7));
-            var phase = Hash01(coord.x, coord.y, seedOffset + 9) * Mathf.PI * 2f;
-            windSway.Register(root.transform, amplitude, speed, phase);
-        }
-
-        var blades = 3;
-        for (var i = 0; i < blades; i++)
-        {
-            var bladeAngle = i * Mathf.PI * 2f / blades + Hash01(coord.x, coord.y, seedOffset + 10 + i);
-            var lean = Mathf.Lerp(6f, 20f, Hash01(coord.y, coord.x, seedOffset + 20 + i));
-            var height = Mathf.Lerp(0.08f, 0.15f, Hash01(coord.x, coord.y, seedOffset + 30 + i)) * scale;
-            var material = i == 1 ? featureMaterials["GrassTuftDark"] : featureMaterials["GrassTuftLight"];
-            var blade = CreateCone("Blade", 0.02f * scale, 0.004f * scale, height, material);
-            blade.transform.SetParent(root.transform, false);
-            blade.transform.localPosition = new Vector3(Mathf.Cos(bladeAngle) * 0.02f * scale, height * 0.5f, Mathf.Sin(bladeAngle) * 0.02f * scale);
-            blade.transform.localRotation = Quaternion.Euler(lean * Mathf.Cos(bladeAngle), bladeAngle * Mathf.Rad2Deg, lean * Mathf.Sin(bladeAngle));
-        }
-    }
-
-    private void AddFlowerPatch(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
-    {
-        var root = NewChild("FlowerPatch", parent);
-        root.transform.localPosition = localPosition;
-        var scale = Mathf.Lerp(0.85f, 1.2f, Hash01(coord.x, coord.y, seedOffset + 1)) * hexSize;
-        var colorRoll = Hash01(coord.x, coord.y, seedOffset + 2);
-        var headMaterial = colorRoll < 0.4f
-            ? featureMaterials["FlowerWhite"]
-            : colorRoll < 0.75f ? featureMaterials["FlowerYellow"] : featureMaterials["FlowerRed"];
-
-        var flowers = 2 + Mathf.FloorToInt(Hash01(coord.y, coord.x, seedOffset + 3) * 2f);
-        for (var i = 0; i < flowers; i++)
-        {
-            var angle = Hash01(coord.x, coord.y, seedOffset + 10 + i) * Mathf.PI * 2f;
-            var dist = Hash01(coord.y, coord.x, seedOffset + 20 + i) * 0.08f * scale;
-            var stemHeight = Mathf.Lerp(0.08f, 0.13f, Hash01(coord.x, coord.y, seedOffset + 30 + i)) * scale;
-            var offset = new Vector3(Mathf.Cos(angle) * dist, 0f, Mathf.Sin(angle) * dist);
-
-            var stem = CreateCone("Stem", 0.008f * scale, 0.004f * scale, stemHeight, featureMaterials["GrassTuftDark"]);
-            stem.transform.SetParent(root.transform, false);
-            stem.transform.localPosition = offset + Vector3.up * (stemHeight * 0.5f);
-
-            var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            head.name = "Bloom";
-            head.transform.SetParent(root.transform, false);
-            head.transform.localPosition = offset + Vector3.up * (stemHeight + 0.015f * scale);
-            head.transform.localScale = Vector3.one * 0.045f * scale;
-            head.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 45f);
-            head.GetComponent<MeshRenderer>().sharedMaterial = headMaterial;
-        }
-    }
-
-    private void AddPebble(Transform parent, Vector3 localPosition, Vector2Int coord, int seedOffset)
-    {
-        var pebble = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        pebble.name = "Pebble";
-        pebble.transform.SetParent(parent, false);
-        var size = Mathf.Lerp(0.05f, 0.1f, Hash01(coord.x, coord.y, seedOffset)) * hexSize;
-        pebble.transform.localPosition = localPosition + Vector3.up * (size * 0.3f);
-        pebble.transform.localScale = new Vector3(size, size * 0.55f, size * 1.2f);
-        pebble.transform.localRotation = Quaternion.Euler(6f, Hash01(coord.y, coord.x, seedOffset + 1) * 360f, -4f);
-        pebble.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Pebble"];
-    }
-
-    private void BuildForestRegions()
-    {
-        var regions = FindTerrainRegions(IsForestTerrain);
-        for (var regionIndex = 0; regionIndex < regions.Count; regionIndex++)
-        {
-            var region = regions[regionIndex];
-            var forestType = ClassifyForest(region);
-            var root = NewChild($"ForestRegion_{regionIndex:D2}_{forestType}");
-
-            for (var i = 0; i < region.Count; i++)
-            {
-                var coord = region[i];
-                AddForestHexCluster(root.transform, coord, regionIndex * 1000 + i, forestType);
-            }
-        }
-    }
-
-    // Deterministic forest type per region. Keyed off a region-stable coordinate (not the
-    // BFS/enumeration order) so the fixed playtest map always classifies the same way.
-    // Higher / mountain-adjacent stands lean coniferous; open lowland stands lean deciduous.
-    private ForestType ClassifyForest(IReadOnlyList<Vector2Int> region)
-    {
-        var rep = region[0];
-        var mountainTouch = 0;
-        foreach (var coord in region)
-        {
-            if (coord.x < rep.x || (coord.x == rep.x && coord.y < rep.y))
-            {
-                rep = coord;
-            }
-
-            if (CountMatchingNeighbors(coord, IsMountainTerrain) > 0)
-            {
-                mountainTouch++;
-            }
-        }
-
-        var roll = Hash01(rep.x, rep.y, 52000);
-        var mountainBias = region.Count > 0 ? mountainTouch / (float)region.Count : 0f;
-        roll -= mountainBias * 0.35f; // mountain-adjacent forests skew coniferous
-
-        if (roll < 0.42f) return ForestType.Coniferous;
-        if (roll < 0.74f) return ForestType.Deciduous;
-        return ForestType.Mixed;
-    }
-
-    private GameObject[] ForestClusterPrefabsFor(ForestType forestType)
-    {
-        var typed = forestType switch
-        {
-            ForestType.Coniferous => Prefabs.coniferousForestClusterPrefabs,
-            ForestType.Deciduous => Prefabs.deciduousForestClusterPrefabs,
-            _ => Prefabs.mixedForestClusterPrefabs
-        };
-
-        return HasPrefab(typed) ? typed : Prefabs.forestClusterPrefabs;
-    }
-
-    private TreeKind TreeKindForForest(ForestType forestType, Vector2Int coord, int seedOffset)
-    {
-        switch (forestType)
-        {
-            case ForestType.Coniferous:
-                return TreeKind.Pine;
-            case ForestType.Deciduous:
-                return TreeKind.Broadleaf;
-            default:
-                return Hash01(coord.x, coord.y, seedOffset + 431) < 0.5f ? TreeKind.Pine : TreeKind.Broadleaf;
-        }
-    }
-
-    private void AddForestHexCluster(Transform parent, Vector2Int coord, int seedOffset, ForestType forestType)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var group = NewChild($"ForestHex_{coord.x}_{coord.y}", parent);
-        RegisterFeatureObject(coord, group);
-        var interior = CountMatchingNeighbors(coord, IsForestTerrain) >= 4;
-
-        // Grid-aligned forest floor under the trees. Added for both the prefab and the
-        // procedural path so the ground reads as a lit forest floor rather than deep shadow.
-        var cover = NewChild($"ForestCover_{coord.x}_{coord.y}", group.transform);
-        cover.transform.localPosition = tile.World;
-        AddMesh(cover, "Cover", HexTopMesh(hexSize * 0.995f, VisualTileTopY + 0.006f), featureMaterials["ForestCover"]);
-
-        if (TryPlacePrefab(ForestClusterPrefabsFor(forestType), group.transform, $"ForestCluster_{coord.x}_{coord.y}", tile.World + Vector3.up * (VisualTileTopY + 0.02f), Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f), Vector3.one * hexSize * (interior ? 1.12f : 1f), coord.x, coord.y, seedOffset, out _))
-        {
-            return;
-        }
-
-        var treeCount = interior ? 8 : 6;
-        for (var i = 0; i < treeCount; i++)
-        {
-            var angle = i * Mathf.PI * 2f / treeCount + Mathf.Lerp(-0.2f, 0.2f, Hash01(coord.x, coord.y, seedOffset + i));
-            var ring = i == 0 ? 0.08f : Mathf.Lerp(0.34f, 0.78f, Hash01(coord.y, coord.x, seedOffset + 80 + i));
-            if (i == treeCount - 1 && interior)
-            {
-                ring = 0.92f;
-            }
-
-            var neighborPull = ForestNeighborOffset(coord, i) * (interior ? 0.18f : 0.28f);
-            var offset = new Vector3(Mathf.Cos(angle) * ring * hexSize, 0f, Mathf.Sin(angle) * ring * hexSize) + neighborPull;
-            var position = tile.World + offset + Vector3.up * (VisualTileTopY + 0.07f);
-            var treeKind = TreeKindForForest(forestType, coord, seedOffset + i);
-            AddTreeAt(group.transform, position, coord, seedOffset + i, interior ? 1.28f : 1.12f, treeKind);
-        }
-    }
-
-    private Vector3 ForestNeighborOffset(Vector2Int coord, int index)
-    {
-        for (var i = 0; i < Directions.Length; i++)
-        {
-            var direction = Directions[(i + index) % Directions.Length];
-            var neighbor = coord + direction;
-            if (tiles.TryGetValue(neighbor, out var tile) && IsForestTerrain(tile.Terrain))
-            {
-                var neighborWorld = AxialToWorld(neighbor);
-                var centerWorld = AxialToWorld(coord);
-                return (neighborWorld - centerWorld).normalized * hexSize;
-            }
-        }
-
-        return Vector3.zero;
-    }
-
-    private void BuildMountainRanges()
-    {
-        var regions = FindTerrainRegions(IsMountainTerrain);
-        for (var regionIndex = 0; regionIndex < regions.Count; regionIndex++)
-        {
-            var region = regions[regionIndex];
-            var root = NewChild($"MountainRange_{regionIndex:D2}");
-
-            for (var i = 0; i < region.Count; i++)
-            {
-                var coord = region[i];
-                if (!tiles.TryGetValue(coord, out var tile))
-                {
-                    continue;
-                }
-
-                var mountainNeighbors = CountMatchingNeighbors(coord, IsMountainTerrain);
-                // Snow only in the core of a range (a hex ringed by other mountains), so the
-                // centre is snow-capped while the surrounding peaks stay bare and smaller.
-                var core = mountainNeighbors >= 5;
-                var peakSnowy = core || tile.Terrain == TerrainKind.Snow;
-                var ridgeSnowy = tile.Terrain == TerrainKind.Snow;
-                // Size driven by centrality (core biggest, edge smallest) with a little jitter.
-                var strength = Mathf.Clamp01(mountainNeighbors / 6f + (Hash01(coord.x, coord.y, 7777) - 0.5f) * 0.12f);
-                // Almost every mountain hex becomes a (small) peak so the massif reads as a
-                // continuous ridge; only truly peripheral hexes stay as loose rock blocks.
-                if (mountainNeighbors >= 2)
-                {
-                    AddMountainPeakAsset(root.transform, coord, peakSnowy, strength, regionIndex * 1000 + i);
-                }
-                else
-                {
-                    AddRockyRidgeAsset(root.transform, coord, ridgeSnowy, strength, regionIndex * 1000 + i);
-                }
-            }
-        }
-    }
-
-    private void BuildMountainTransitionDetails()
-    {
-        var root = NewChild("Foothills");
-        foreach (var pair in tiles)
-        {
-            var terrain = pair.Value.Terrain;
-            if (IsMountainTerrain(terrain) || terrain == TerrainKind.Water || terrain == TerrainKind.Coast)
-            {
-                continue;
-            }
-
-            var mountainNeighbors = CountMatchingNeighbors(pair.Key, IsMountainTerrain);
-            if (terrain == TerrainKind.Hills || mountainNeighbors > 0)
-            {
-                AddFoothillsAsset(root.transform, pair.Key, terrain == TerrainKind.Hills, mountainNeighbors);
-            }
-        }
-    }
-
-    private List<List<Vector2Int>> FindTerrainRegions(TerrainMatcher matcher)
-    {
-        var regions = new List<List<Vector2Int>>();
-        var visited = new HashSet<Vector2Int>();
-
-        foreach (var pair in tiles)
-        {
-            if (visited.Contains(pair.Key) || !matcher(pair.Value.Terrain))
-            {
-                continue;
-            }
-
-            var region = new List<Vector2Int>();
-            var frontier = new Queue<Vector2Int>();
-            frontier.Enqueue(pair.Key);
-            visited.Add(pair.Key);
-
-            while (frontier.Count > 0)
-            {
-                var coord = frontier.Dequeue();
-                region.Add(coord);
-
-                foreach (var direction in Directions)
-                {
-                    var neighbor = coord + direction;
-                    if (visited.Contains(neighbor) || !tiles.TryGetValue(neighbor, out var neighborTile) || !matcher(neighborTile.Terrain))
-                    {
-                        continue;
-                    }
-
-                    visited.Add(neighbor);
-                    frontier.Enqueue(neighbor);
-                }
-            }
-
-            regions.Add(region);
-        }
-
-        return regions;
-    }
-
-    private int CountMatchingNeighbors(Vector2Int coord, TerrainMatcher matcher)
-    {
-        var count = 0;
-        foreach (var direction in Directions)
-        {
-            if (tiles.TryGetValue(coord + direction, out var tile) && matcher(tile.Terrain))
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private void AddMountainPeakAsset(Transform parent, Vector2Int coord, bool snowy, float strength, int seedOffset)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var root = NewChild($"MountainPeak_{coord.x}_{coord.y}", parent);
-        RegisterFeatureObject(coord, root);
-        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.015f);
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
-        var peakPrefabs = snowy && HasPrefab(Prefabs.snowyMountainPeakPrefabs) ? Prefabs.snowyMountainPeakPrefabs : Prefabs.mountainPeakPrefabs;
-        if (TryPlacePrefab(peakPrefabs, root.transform, "MountainPeakPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.62f, 1.32f, strength), coord.x, coord.y, seedOffset, out _))
-        {
-            return;
-        }
-
-        var baseHeight = Mathf.Lerp(0.12f, 0.2f, strength) * hexSize;
-        var baseSockel = CreateFacetedMound("PeakSockel", 0.78f * hexSize, 0.58f * hexSize, baseHeight, featureMaterials["MountainBase"], seedOffset);
-        baseSockel.transform.SetParent(root.transform, false);
-        baseSockel.transform.localPosition = Vector3.zero;
-        baseSockel.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
-
-        var peakHeight = Mathf.Lerp(0.78f, 1.24f, strength) * hexSize;
-        var peak = CreateFacetedPeak("HighPeak", 0.52f * hexSize, 0.34f * hexSize, 0.055f * hexSize, peakHeight, featureMaterials["Rock"], seedOffset + 11);
-        peak.transform.SetParent(root.transform, false);
-        peak.transform.localPosition = new Vector3(-0.04f * hexSize, baseHeight * 0.45f, 0.02f * hexSize);
-        peak.transform.localRotation = Quaternion.Euler(0f, 18f, 0f);
-
-        var cap = CreateFacetedPeak("SnowCap", 0.22f * hexSize, 0.14f * hexSize, 0.02f * hexSize, peakHeight * 0.24f, snowy ? featureMaterials["SnowCap"] : featureMaterials["Rock"], seedOffset + 12);
-        cap.transform.SetParent(root.transform, false);
-        cap.transform.localPosition = peak.transform.localPosition + Vector3.up * (peakHeight * 0.74f);
-        cap.transform.localRotation = peak.transform.localRotation;
-
-        var secondaryCount = strength > 0.74f ? 2 : 1;
-        for (var i = 0; i < secondaryCount; i++)
-        {
-            var angle = i * Mathf.PI * 1.25f + Hash01(coord.x, coord.y, seedOffset + 20 + i) * 0.55f;
-            var secondaryHeight = peakHeight * Mathf.Lerp(0.42f, 0.58f, Hash01(coord.y, coord.x, seedOffset + 40 + i));
-            var secondary = CreateFacetedPeak("SidePeak", 0.34f * hexSize, 0.22f * hexSize, 0.035f * hexSize, secondaryHeight, i == 0 ? featureMaterials["DarkRock"] : featureMaterials["Rock"], seedOffset + 41 + i);
-            secondary.transform.SetParent(root.transform, false);
-            secondary.transform.localPosition = new Vector3(Mathf.Cos(angle) * 0.32f * hexSize, baseHeight * 0.35f, Mathf.Sin(angle) * 0.32f * hexSize);
-            secondary.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 0f);
-        }
-    }
-
-    private void AddRockyRidgeAsset(Transform parent, Vector2Int coord, bool snowy, float strength, int seedOffset)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var root = NewChild($"RockyRidge_{coord.x}_{coord.y}", parent);
-        RegisterFeatureObject(coord, root);
-        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.012f);
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seedOffset) * 360f, 0f);
-        var ridgePrefabs = snowy && HasPrefab(Prefabs.snowyRockyRidgePrefabs) ? Prefabs.snowyRockyRidgePrefabs : Prefabs.rockyRidgePrefabs;
-        if (TryPlacePrefab(ridgePrefabs, root.transform, "RockyRidgePrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * Mathf.Lerp(0.88f, 1.08f, strength), coord.x, coord.y, seedOffset, out _))
-        {
-            return;
-        }
-
-        var baseHeight = 0.1f * hexSize;
-        var baseRock = CreateFacetedMound("RidgeSockel", 0.58f * hexSize, 0.44f * hexSize, baseHeight, featureMaterials["MountainBase"], seedOffset + 100);
-        baseRock.transform.SetParent(root.transform, false);
-        baseRock.transform.localPosition = Vector3.zero;
-
-        var count = strength > 0.52f ? 3 : 2;
-        for (var i = 0; i < count; i++)
-        {
-            var angle = i * Mathf.PI * 2f / count + Hash01(coord.x, coord.y, seedOffset + i) * 0.35f;
-            var height = Mathf.Lerp(0.26f, 0.52f, Hash01(coord.y, coord.x, seedOffset + 60 + i)) * hexSize;
-            var radius = Mathf.Lerp(0.22f, 0.34f, Hash01(coord.x, coord.y, seedOffset + 80 + i)) * hexSize;
-            var ridge = CreateFacetedPeak("SmallPeak", radius, radius * 0.62f, 0.035f * hexSize, height, i == 1 ? featureMaterials["DarkRock"] : featureMaterials["Rock"], seedOffset + 81 + i);
-            ridge.transform.SetParent(root.transform, false);
-            ridge.transform.localPosition = new Vector3(Mathf.Cos(angle) * 0.28f * hexSize, baseHeight * 0.35f, Mathf.Sin(angle) * 0.28f * hexSize);
-            ridge.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 20f, 0f);
-
-            if (snowy && i == 0)
-            {
-                var cap = CreateFacetedPeak("SmallSnowCap", radius * 0.46f, radius * 0.26f, 0.012f * hexSize, height * 0.2f, featureMaterials["SnowCap"], seedOffset + 91 + i);
-                cap.transform.SetParent(root.transform, false);
-                cap.transform.localPosition = ridge.transform.localPosition + Vector3.up * (height * 0.7f);
-                cap.transform.localRotation = ridge.transform.localRotation;
-            }
-        }
-    }
-
-    private void AddFoothillsAsset(Transform parent, Vector2Int coord, bool hillHex, int mountainNeighbors)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var root = NewChild($"Foothills_{coord.x}_{coord.y}", parent);
-        RegisterFeatureObject(coord, root);
-        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.025f);
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, 25000) * 360f, 0f);
-        if (TryPlacePrefab(Prefabs.foothillsPrefabs, root.transform, "FoothillsPrefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize * (hillHex ? 1f : 0.82f), coord.x, coord.y, 25000 + mountainNeighbors, out _))
-        {
-            return;
-        }
-
-        var count = Mathf.Clamp((hillHex ? 3 : 1) + mountainNeighbors, 2, 6);
-        for (var i = 0; i < count; i++)
-        {
-            var angle = i * Mathf.PI * 2f / count + Hash01(coord.x, coord.y, 25100 + i) * 0.45f;
-            var distance = Mathf.Lerp(0.16f, 0.58f, Hash01(coord.y, coord.x, 25200 + i)) * hexSize;
-            var height = Mathf.Lerp(0.12f, hillHex ? 0.34f : 0.24f, Hash01(coord.x, coord.y, 25300 + i)) * hexSize;
-            if (TryPlacePrefab(Prefabs.foothillRockPrefabs, root.transform, "FoothillRockPrefab", new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance), Quaternion.Euler(8f, angle * Mathf.Rad2Deg + 25f, -5f), Vector3.one * hexSize * Mathf.Lerp(0.65f, 1f, height / Mathf.Max(0.01f, 0.34f * hexSize)), coord.x, coord.y, 25300 + i, out _))
-            {
-                continue;
-            }
-
-            var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rock.name = "FoothillRock";
-            rock.transform.SetParent(root.transform, false);
-            rock.transform.localPosition = new Vector3(Mathf.Cos(angle) * distance, height * 0.5f, Mathf.Sin(angle) * distance);
-            rock.transform.localScale = new Vector3(0.18f * hexSize, height, 0.22f * hexSize);
-            rock.transform.localRotation = Quaternion.Euler(8f, angle * Mathf.Rad2Deg + 25f, -5f);
-            rock.GetComponent<MeshRenderer>().sharedMaterial = i % 2 == 0 ? featureMaterials["Foothill"] : featureMaterials["Rock"];
-        }
-    }
-
-    private delegate bool TerrainMatcher(TerrainKind terrain);
-
-    private static bool IsForestTerrain(TerrainKind terrain)
-    {
-        return terrain == TerrainKind.Forest;
-    }
-
-    private static bool IsMountainTerrain(TerrainKind terrain)
-    {
-        return terrain == TerrainKind.Mountain || terrain == TerrainKind.Snow;
-    }
-
-    // Per-tree crown tint: mostly greens with a few gold/autumn accents so forests
-    // read as varied stands rather than cloned trees.
-    private Material PickCrownMaterial(Vector2Int coord, int index)
-    {
-        var roll = Hash01(coord.x, coord.y, index + 211);
-        if (roll < 0.05f) return featureMaterials["TreeCrownAutumn"];
-        if (roll < 0.11f) return featureMaterials["TreeCrownGold"];
-        if (roll < 0.42f) return featureMaterials["TreeCrownDark"];
-        if (roll < 0.68f) return featureMaterials["TreeCrownMid"];
-        if (roll < 0.86f) return featureMaterials["TreeCrown"];
-        return featureMaterials["TreeCrownLight"];
-    }
-
-    private void RegisterTreeSway(Transform treeTransform, Vector2Int coord, int index)
-    {
-        if (windSway == null || treeTransform == null)
-        {
-            return;
-        }
-
-        var amplitude = Mathf.Lerp(1.8f, 3.6f, Hash01(coord.x, coord.y, index + 611));
-        var speed = Mathf.Lerp(0.8f, 1.6f, Hash01(coord.y, coord.x, index + 613));
-        var phase = Hash01(coord.x, coord.y, index + 617) * Mathf.PI * 2f;
-        windSway.Register(treeTransform, amplitude, speed, phase);
-    }
-
-    private void AddTree(Transform parent, float elevation, Vector2Int coord, int index)
-    {
-        var angle = index * 2.1f + (Hash01(coord.x, coord.y, index) - 0.5f) * 0.7f;
-        var distance = Mathf.Lerp(0.18f, 0.52f, Hash01(coord.y, coord.x, index + 31)) * hexSize;
-        AddTreeAt(parent, new Vector3(Mathf.Cos(angle) * distance, elevation + 0.04f, Mathf.Sin(angle) * distance), coord, index);
-    }
-
-    private void AddTreeAt(Transform parent, Vector3 localPosition, Vector2Int coord, int index, float scaleMultiplier = 1f, TreeKind kind = TreeKind.Pine)
-    {
-        var rotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, index + 91) * 360f, 0f);
-        var scale = Mathf.Lerp(0.78f, 1.28f, Hash01(coord.x, coord.y, index + 151));
-        if (TryPlacePrefab(TreePrefabsFor(kind), parent, "Tree", localPosition, rotation, Vector3.one * scale * scaleMultiplier, coord.x, coord.y, index, out var treeInstance))
-        {
-            RegisterTreeSway(treeInstance.transform, coord, index);
-            return;
-        }
-
-        var root = NewChild("Tree", parent);
-        root.transform.localPosition = localPosition;
-        root.transform.localRotation = rotation;
-        root.transform.localScale = Vector3.one * scale * scaleMultiplier;
-        RegisterTreeSway(root.transform, coord, index);
-
-        var crownMaterial = PickCrownMaterial(coord, index);
-        if (kind == TreeKind.Broadleaf)
-        {
-            BuildBroadleafTree(root.transform, coord, index, crownMaterial);
-        }
-        else
-        {
-            BuildPineTree(root.transform, index, crownMaterial);
-        }
-    }
-
-    private GameObject[] TreePrefabsFor(TreeKind kind)
-    {
-        var typed = kind == TreeKind.Broadleaf ? Prefabs.broadleafTreePrefabs : Prefabs.pineTreePrefabs;
-        return HasPrefab(typed) ? typed : Prefabs.treePrefabs;
-    }
-
-    // Pine: stacked cones tapering to real points (topRadius ~0.01) so there is no flat cap
-    // catching the light as a ring.
-    private void BuildPineTree(Transform root, int index, Material crownMaterial)
-    {
-        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        trunk.name = "Trunk";
-        trunk.transform.SetParent(root, false);
-        trunk.transform.localPosition = new Vector3(0f, 0.12f, 0f);
-        trunk.transform.localScale = new Vector3(0.065f, 0.12f, 0.065f);
-        trunk.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["TreeTrunk"];
-
-        var dark = featureMaterials["TreeCrownDark"];
-        var lower = CreateCone("LowerCrown", 0.32f, 0.012f, 0.4f, dark);
-        lower.transform.SetParent(root, false);
-        lower.transform.localPosition = new Vector3(0f, 0.36f, 0f);
-        lower.transform.localRotation = Quaternion.Euler(-3f, 30f + index * 17f, 3f);
-
-        var mid = CreateCone("MidCrown", 0.22f, 0.01f, 0.34f, crownMaterial);
-        mid.transform.SetParent(root, false);
-        mid.transform.localPosition = new Vector3(0f, 0.58f, 0f);
-        mid.transform.localRotation = Quaternion.Euler(2f, 10f + index * 29f, -2f);
-
-        var top = CreateCone("TopCrown", 0.14f, 0.008f, 0.26f, dark);
-        top.transform.SetParent(root, false);
-        top.transform.localPosition = new Vector3(0f, 0.78f, 0f);
-        top.transform.localRotation = Quaternion.Euler(-2f, -18f + index * 13f, 2f);
-    }
-
-    // Broadleaf: faceted bipyramid crowns (apex up + apex down), so the silhouette reads round
-    // with no flat top.
-    private void BuildBroadleafTree(Transform root, Vector2Int coord, int index, Material crownMaterial)
-    {
-        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        trunk.name = "Trunk";
-        trunk.transform.SetParent(root, false);
-        trunk.transform.localPosition = new Vector3(0f, 0.11f, 0f);
-        trunk.transform.localScale = new Vector3(0.08f, 0.11f, 0.08f);
-        trunk.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["TreeTrunk"];
-
-        var puffOffset = Mathf.Lerp(-0.08f, 0.12f, Hash01(coord.x, coord.y, index + 321));
-        AddBipyramidCrown(root, "Crown", crownMaterial, 0.32f, 0.42f, 0.3f, new Vector3(0f, 0.42f, 0f), index);
-        AddBipyramidCrown(root, "CrownPuff", featureMaterials["TreeCrownDark"], 0.2f, 0.26f, 0.2f, new Vector3(puffOffset, 0.54f, -0.05f), index + 7);
-    }
-
-    private void AddBipyramidCrown(Transform parent, string objectName, Material material, float radius, float upperHeight, float lowerHeight, Vector3 center, int index)
-    {
-        var holder = NewChild(objectName, parent);
-        holder.transform.localPosition = center;
-        holder.transform.localRotation = Quaternion.Euler(0f, 20f + index * 11f, 0f);
-
-        var upper = CreateCone("Upper", radius, 0.02f, upperHeight, material);
-        upper.transform.SetParent(holder.transform, false);
-        upper.transform.localPosition = new Vector3(0f, upperHeight * 0.5f, 0f);
-
-        var lower = CreateCone("Lower", radius, 0.02f, lowerHeight, material);
-        lower.transform.SetParent(holder.transform, false);
-        lower.transform.localPosition = new Vector3(0f, -lowerHeight * 0.5f, 0f);
-        lower.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);
-    }
-
-    private void AddRock(Transform parent, float elevation, float x, float z, int index)
-    {
-        if (TryPlacePrefab(Prefabs.rockPrefabs, parent, "RockPrefab", new Vector3(x, elevation + 0.06f + index * 0.02f, z), Quaternion.Euler(7f, 25f + index * 40f, 4f), new Vector3(0.22f, 0.14f + index * 0.06f, 0.28f), index, Mathf.RoundToInt(x * 100f), 8101, out _))
-        {
-            return;
-        }
-
-        var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        rock.name = "Rock";
-        rock.transform.SetParent(parent, false);
-        rock.transform.localPosition = new Vector3(x, elevation + 0.09f + index * 0.03f, z);
-        rock.transform.localScale = new Vector3(0.22f, 0.14f + index * 0.06f, 0.28f);
-        rock.transform.localRotation = Quaternion.Euler(7f, 25f + index * 40f, 4f);
-        rock.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Rock"];
-    }
-
-    private void AddMountain(Transform parent, float elevation, bool snowy, Vector2Int coord)
-    {
-        AddMountainAt(parent, Vector3.zero, coord, snowy, Mathf.Max(0.38f, MountainRangeStrength(coord)), elevation);
-    }
-
-    private void AddMountainAt(Transform parent, Vector3 localPosition, Vector2Int coord, bool snowy, float ridgeStrength)
-    {
-        AddMountainAt(parent, localPosition, coord, snowy, ridgeStrength, VisualTileTopY);
-    }
-
-    private void AddMountainAt(Transform parent, Vector3 localPosition, Vector2Int coord, bool snowy, float ridgeStrength, float elevation)
-    {
-        ridgeStrength = Mathf.Clamp01(Mathf.Max(0.32f, ridgeStrength));
-        var rotation = Hash01(coord.x, coord.y, 5021) * 360f;
-        var height = Mathf.Lerp(0.82f, 1.55f, ridgeStrength) * hexSize;
-        var baseRadius = Mathf.Lerp(0.42f, 0.64f, ridgeStrength) * hexSize;
-        var capHeight = height * 0.28f;
-
-        var root = NewChild("Mountain", parent);
-        root.transform.localPosition = localPosition;
-        root.transform.localRotation = Quaternion.Euler(0f, rotation, 0f);
-
-        var baseCone = CreateCone("MountainBase", baseRadius, 0.06f * hexSize, height, featureMaterials["Rock"]);
-        baseCone.transform.SetParent(root.transform, false);
-        baseCone.transform.localPosition = new Vector3(0f, elevation + height * 0.5f, 0f);
-        baseCone.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
-
-        var cap = CreateCone("Peak", baseRadius * 0.44f, 0.01f * hexSize, capHeight, snowy ? featureMaterials["SnowCap"] : featureMaterials["Rock"]);
-        cap.transform.SetParent(root.transform, false);
-        cap.transform.localPosition = new Vector3(0f, elevation + height - capHeight * 0.5f, 0f);
-        cap.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
-
-        if (ridgeStrength < 0.55f)
-        {
-            return;
-        }
-
-        for (var i = 0; i < 2; i++)
-        {
-            var angle = i * Mathf.PI + Hash01(coord.x, coord.y, 6200 + i) * 0.9f;
-            var spurHeight = height * Mathf.Lerp(0.45f, 0.68f, Hash01(coord.y, coord.x, 6400 + i));
-            var spurRadius = baseRadius * Mathf.Lerp(0.38f, 0.5f, Hash01(coord.x, coord.y, 6600 + i));
-            var spurMaterial = i == 0 ? featureMaterials["Rock"] : featureMaterials["DarkRock"];
-            var spur = CreateCone("RidgePeak", spurRadius, 0.04f * hexSize, spurHeight, spurMaterial);
-            spur.transform.SetParent(root.transform, false);
-            spur.transform.localPosition = new Vector3(Mathf.Cos(angle) * baseRadius * 0.52f, elevation + spurHeight * 0.5f, Mathf.Sin(angle) * baseRadius * 0.52f);
-            spur.transform.localRotation = Quaternion.Euler(0f, 20f + i * 50f, 0f);
-        }
-
-        for (var i = 0; i < 3; i++)
-        {
-            var angle = i * Mathf.PI * 2f / 3f + Hash01(coord.x, coord.y, 6800 + i) * 0.35f;
-            var boulder = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            boulder.name = "MountainBoulder";
-            boulder.transform.SetParent(root.transform, false);
-            boulder.transform.localPosition = new Vector3(Mathf.Cos(angle) * baseRadius * 0.72f, elevation + 0.07f, Mathf.Sin(angle) * baseRadius * 0.72f);
-            boulder.transform.localScale = new Vector3(baseRadius * 0.28f, baseRadius * 0.18f, baseRadius * 0.34f);
-            boulder.transform.localRotation = Quaternion.Euler(8f, angle * Mathf.Rad2Deg + 23f, -5f);
-            boulder.GetComponent<MeshRenderer>().sharedMaterial = i == 1 ? featureMaterials["DarkRock"] : featureMaterials["Rock"];
+            var anchor = NewChild($"CoastMarkerAnchor_{pair.Key.x}_{pair.Key.y}", featureRoot);
+            anchor.transform.localPosition = pair.Value.World;
+            var flag = AddFlag(anchor.transform, VisualTileTopY);
+            RegisterFeatureObject(pair.Key, flag);
         }
     }
 
@@ -2605,49 +1901,40 @@ public sealed class UnityHexMapView : MonoBehaviour
     private void BuildKnowledgeOverlays()
     {
         UpdateFeatureVisibility();
-
-        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
-        {
-            return;
-        }
-
-        foreach (var pair in tiles)
-        {
-            var coreCoord = ViewCoordToCoreCoord(pair.Key);
-            var knowledge = coreGameState.Knowledge.GetTileKnowledge(coreCoord);
-            if (knowledge == KnowledgeLevel.Confirmed)
-            {
-                continue;
-            }
-
-            var materialKey = knowledge == KnowledgeLevel.Reported ? "ReportedFog" : "UnknownFog";
-            AddKnowledgeOverlay(pair.Key, materialKey);
-        }
+        RefreshKnowledgeOverlays();
     }
 
     private void RefreshKnowledgeOverlays()
     {
-        if (knowledgeOverlayRoot != null)
-        {
-            DestroyGeneratedObject(knowledgeOverlayRoot.gameObject);
-        }
-
-        knowledgeOverlayRoot = NewRootGroup("Knowledge Fog");
-        currentBuildRoot = knowledgeOverlayRoot;
-        BuildKnowledgeOverlays();
-        currentBuildRoot = null;
+        hexMapChunkRenderer?.RefreshKnowledge(IsDecorationVisibleForCoord, FogStateForCoord);
     }
 
-    private void AddKnowledgeOverlay(Vector2Int coord, string materialKey)
+    // Whether decoration (forest/mountain/foothill/ground-scatter instances) should render for this
+    // hex right now. Mirrors the pre-rewrite IsFeatureVisible gate used for settlements etc.
+    private bool IsDecorationVisibleForCoord(Vector2Int coord)
     {
-        if (!tiles.TryGetValue(coord, out var tile))
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
         {
-            return;
+            return true;
         }
 
-        var overlay = NewChild($"{materialKey}_{coord.x}_{coord.y}", knowledgeOverlayRoot);
-        overlay.transform.localPosition = tile.World;
-        AddMesh(overlay, materialKey, HexTopMesh(hexSize * 0.996f, VisualTileTopY + 0.115f), featureMaterials[materialKey]);
+        return coreGameState.Knowledge.GetTileKnowledge(ViewCoordToCoreCoord(coord)) == KnowledgeLevel.Confirmed;
+    }
+
+    private HexFogState FogStateForCoord(Vector2Int coord)
+    {
+        if (!useCoreTutorialState || coreGameState == null || !showKnowledgeFog || showDebugHexGrid)
+        {
+            return HexFogState.None;
+        }
+
+        var knowledge = coreGameState.Knowledge.GetTileKnowledge(ViewCoordToCoreCoord(coord));
+        if (knowledge == KnowledgeLevel.Confirmed)
+        {
+            return HexFogState.None;
+        }
+
+        return knowledge == KnowledgeLevel.Reported ? HexFogState.Reported : HexFogState.Unknown;
     }
 
     private void RegisterFeatureObject(Vector2Int coord, GameObject obj)
@@ -2822,7 +2109,30 @@ public sealed class UnityHexMapView : MonoBehaviour
             return featureMaterials["FactionOwnerHidden"];
         }
 
-        return featureMaterials["FactionOwnerDefault"];
+        // Generated campaigns mint their own faction ids (e.g. "faction-0", "faction-1", ...) that
+        // don't match the tutorial map's fixed three above; give each a stable, distinct color from
+        // the broader palette instead of collapsing every non-tutorial faction into one fallback hue.
+        // (Modulo, not Mathf.Abs, so int.MinValue can never produce a negative index.)
+        var length = FactionOwnerPaletteHex.Length;
+        var index = ((StableStringHash(ownerId) % length) + length) % length;
+        return featureMaterials[$"FactionOwnerPalette{index}"];
+    }
+
+    // string.GetHashCode() is randomized per-process in modern .NET, so it can't be used here (the
+    // same faction would get a different color every time the game runs). FNV-1a is a simple,
+    // stable, order-sensitive hash that gives every distinct faction id its own consistent color.
+    private static int StableStringHash(string value)
+    {
+        unchecked
+        {
+            var hash = (int)2166136261;
+            foreach (var c in value)
+            {
+                hash = (hash ^ c) * 16777619;
+            }
+
+            return hash;
+        }
     }
 
     private void RefreshHexOverlays()
@@ -4532,6 +3842,22 @@ public sealed class UnityHexMapView : MonoBehaviour
         return cone;
     }
 
+    private void AddRock(Transform parent, float elevation, float x, float z, int index)
+    {
+        if (TryPlacePrefab(Prefabs.rockPrefabs, parent, "RockPrefab", new Vector3(x, elevation + 0.06f + index * 0.02f, z), Quaternion.Euler(7f, 25f + index * 40f, 4f), new Vector3(0.22f, 0.14f + index * 0.06f, 0.28f), index, Mathf.RoundToInt(x * 100f), 8101, out _))
+        {
+            return;
+        }
+
+        var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        rock.name = "Rock";
+        rock.transform.SetParent(parent, false);
+        rock.transform.localPosition = new Vector3(x, elevation + 0.09f + index * 0.03f, z);
+        rock.transform.localScale = new Vector3(0.22f, 0.14f + index * 0.06f, 0.28f);
+        rock.transform.localRotation = Quaternion.Euler(7f, 25f + index * 40f, 4f);
+        rock.GetComponent<MeshRenderer>().sharedMaterial = featureMaterials["Rock"];
+    }
+
     private GameObject CreateFacetedPeak(string name, float baseRadius, float shoulderRadius, float tipRadius, float height, Material material, int seedOffset)
     {
         var peak = new GameObject(name);
@@ -5127,14 +4453,14 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private float Hash01(int a, int b, int c)
     {
-        unchecked
-        {
-            var h = mapSeed;
-            h = h * 73856093 ^ a * 19349663;
-            h = h * 83492791 ^ b * 297121507;
-            h = h * 1103515245 ^ c * 12345;
-            return (h & 0x7fffffff) / (float)int.MaxValue;
-        }
+        return HexVisualHash.Value01(ActiveVisualSeed(), a, b, c);
+    }
+
+    // Generated campaigns use their own world-gen seed for visual variety; the tutorial map (and
+    // any other non-generated game) falls back to the inspector-exposed mapSeed.
+    private int ActiveVisualSeed()
+    {
+        return generatedCampaignRequest != null ? unchecked((int)generatedCampaignRequest.Seed) : mapSeed;
     }
 
     private static Color ColorFromHex(string hex)
