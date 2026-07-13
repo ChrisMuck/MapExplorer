@@ -1,0 +1,28 @@
+{
+  "documentType": "scout-report-templates",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "focus": "FactionSigns",
+      "outcome": "Returned",
+      "missionTypeId": "location-surroundings",
+      "title": "Bericht: Zeichen in der Umgebung",
+      "body": "Die Scouts kehrten mit einer vorsichtigen Skizze von Spuren, Wegen und wiederkehrenden Zeichen zurueck.",
+      "hint": "Die Zeichen koennten zusammenhaengen. Ihre Bedeutung bleibt ohne weitere Sichtungen offen."
+    },
+    {
+      "focus": "Route",
+      "outcome": "Returned",
+      "title": "Bericht: moegliche Route",
+      "body": "Die Scouts vermerkten einen moeglichen Weg, konnten seine Sicherheit aber nicht bestaetigen.",
+      "hint": "Die Route sollte von der Expedition selbst bestaetigt werden."
+    },
+    {
+      "focus": "Ruins",
+      "outcome": "ReturnedInjured",
+      "title": "Bericht: verletzt aus den Ruinen zurueck",
+      "body": "Die Scouts kamen verletzt zurueck. Ihre Notizen nennen altes Mauerwerk und etwas, das sie lieber nicht weiter untersucht haetten.",
+      "hint": "Die Angaben sind lueckenhaft; eine erneute Untersuchung waere riskant."
+    }
+  ]
+}

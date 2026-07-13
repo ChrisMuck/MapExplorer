@@ -1,0 +1,36 @@
+{
+  "documentType": "scout-focuses",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "Survey",
+      "label": "Ueberblick",
+      "description": "Auffaellige Gelaendeformen, Strukturen und moegliche Ansatzpunkte erfassen.",
+      "compatibleMissionTypeIds": [ "directional-recon" ]
+    },
+    {
+      "id": "Route",
+      "label": "Route",
+      "description": "Nach begehbaren Wegen, Uebergaengen und Hindernissen suchen.",
+      "compatibleMissionTypeIds": [ "directional-recon" ]
+    },
+    {
+      "id": "Resources",
+      "label": "Ressourcen",
+      "description": "Wasser, Vorratsquellen und verwertbare Materialien beobachten.",
+      "compatibleMissionTypeIds": [ "directional-recon" ]
+    },
+    {
+      "id": "FactionSigns",
+      "label": "Zeichen und Spuren",
+      "description": "Grenzzeichen, Wege, Patrouillen und wiederkehrende Symbole suchen.",
+      "compatibleMissionTypeIds": [ "directional-recon", "location-surroundings" ]
+    },
+    {
+      "id": "Ruins",
+      "label": "Ruinen und Orte",
+      "description": "Alte Bauwerke, verschlossene Orte und auffaellige Strukturen suchen.",
+      "compatibleMissionTypeIds": [ "directional-recon" ]
+    }
+  ]
+}

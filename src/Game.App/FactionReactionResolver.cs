@@ -37,8 +37,9 @@ public sealed class FactionReactionResolver
             var awareness = game.World.FactionAwareness
                 .FirstOrDefault(item => item.FactionId == faction.Id && item.RegionId == $"location-region:{location.Id}")?.Level
                 ?? FactionAwarenessLevel.Unaware;
+            var profile = content.FactionProfiles.Find(faction.ReactionProfileId);
             var rule = content.FactionReactionRules
-                .Where(item => item.TriggerId == trigger.TriggerId && item.Matches(faction, relation, awareness))
+                .Where(item => item.TriggerId == trigger.TriggerId && item.Matches(faction, profile, relation, awareness, trigger))
                 .OrderByDescending(item => item.Priority)
                 .ThenBy(item => item.Id, StringComparer.Ordinal)
                 .FirstOrDefault();

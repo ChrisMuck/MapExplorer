@@ -274,6 +274,7 @@ public static class TutorialGameFactory
                 trust: 18,
                 anger: 0,
                 fear: 12,
+                reactionProfileId: "welcoming",
                 memories: new[] { "Coastal People warned the expedition not to camp beyond the black stones." }),
             new FactionState(
                 "border-wardens",
@@ -282,6 +283,7 @@ public static class TutorialGameFactory
                 trust: 0,
                 anger: 8,
                 fear: 20,
+                reactionProfileId: "neutral-cautious",
                 warningZones: CreateBorderWardenWarningZones(),
                 memories: new[] { "Their borders are inferred from graves, carved posts and renewed warning markers." }),
             new FactionState(
@@ -291,6 +293,7 @@ public static class TutorialGameFactory
                 trust: 0,
                 anger: 12,
                 fear: 35,
+                reactionProfileId: "hostile",
                 warningZones: CreateHiddenOnesWarningZones(),
                 memories: new[] { "Scouts speak of erased tracks and silent forest markers in the northwest." })
         };

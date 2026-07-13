@@ -20,8 +20,9 @@ public sealed class FactionTerritoryEntryResolver
     {
         if (content == null) return false;
         var entryKind = isWarningZone ? "warning" : "territory";
+        var profile = content.FactionProfiles.Find(faction.ReactionProfileId);
         var rule = content.FactionTerritoryEntryRules
-            .Where(item => item.Matches(faction, entryKind))
+            .Where(item => item.Matches(faction, profile, entryKind))
             .OrderByDescending(item => item.Priority)
             .ThenBy(item => item.Id, StringComparer.Ordinal)
             .FirstOrDefault();

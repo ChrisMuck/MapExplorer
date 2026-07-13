@@ -68,6 +68,15 @@ public sealed class WorldGenerationBridgeResult
 /// <summary>Translates pure WorldGen output into immutable-at-the-boundary Game.Core state.</summary>
 public sealed class WorldGenBridge
 {
+    private readonly FactionSignatureDefinitionSet? factionSignatures;
+    private readonly FactionProfileDefinitionSet? factionProfiles;
+
+    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null, FactionProfileDefinitionSet? factionProfiles = null)
+    {
+        this.factionSignatures = factionSignatures;
+        this.factionProfiles = factionProfiles;
+    }
+
     public WorldGenerationBridgeResult Generate(WorldGenerationRequest request)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
@@ -81,6 +90,7 @@ public sealed class WorldGenBridge
         var qOffset = (generated.Grid.H - 1) >> 1;
         HexCoord ToCore(HexCell cell) => new(cell.AX + qOffset, cell.AZ);
         var factionIds = generated.Factions.ToDictionary(faction => faction.Id, faction => $"faction-{faction.Id}");
+        var signatureProfiles = AssignSignatureProfiles(generated);
         var locations = BuildLocations(generated, ToCore, factionIds);
         var locationByCell = locations
             .Where(location => location.Anchor.Kind == LocationAnchorKind.Point)
@@ -103,9 +113,45 @@ public sealed class WorldGenBridge
             .Select(faction => new FactionState(
                 factionIds[faction.Id],
                 faction.Name ?? factionIds[faction.Id],
-                reactionProfileId: faction.Attitude ?? "neutral-cautious"))
+                reactionProfileId: ResolveReactionProfileId(faction.Attitude),
+                signatureProfileId: signatureProfiles.TryGetValue(faction.Id, out var profileId) ? profileId : "unassigned"))
             .ToList();
         return new WorldGenerationBridgeResult(world, ToCore(generated.Base), factions);
+    }
+
+    private string ResolveReactionProfileId(string? generatedProfileId)
+    {
+        var profileId = string.IsNullOrWhiteSpace(generatedProfileId) ? "neutral-cautious" : generatedProfileId.Trim();
+        if (factionProfiles != null && factionProfiles.All.Count > 0 && factionProfiles.Find(profileId) == null)
+        {
+            throw new InvalidOperationException($"Generated faction references unknown reaction profile '{profileId}'.");
+        }
+
+        return profileId;
+    }
+
+    private IReadOnlyDictionary<int, string> AssignSignatureProfiles(GeneratedWorld generated)
+    {
+        var profiles = factionSignatures?.ProfileIds.ToList() ?? new List<string>();
+        if (profiles.Count == 0)
+        {
+            return new Dictionary<int, string>();
+        }
+
+        // This assignment is campaign truth. It uses the world seed but is not exposed in the
+        // campaign UI, so a familiar sign cannot be mapped to a faction before it is discovered.
+        var state = unchecked((int)generated.Params.Seed ^ generated.Params.FactionSalt * 486187739);
+        for (var index = profiles.Count - 1; index > 0; index--)
+        {
+            state = unchecked(state * 1103515245 + 12345);
+            var swapIndex = (state & int.MaxValue) % (index + 1);
+            (profiles[index], profiles[swapIndex]) = (profiles[swapIndex], profiles[index]);
+        }
+
+        return generated.Factions
+            .OrderBy(faction => faction.Id)
+            .Select((faction, index) => new { faction.Id, ProfileId = profiles[index % profiles.Count] })
+            .ToDictionary(item => item.Id, item => item.ProfileId);
     }
 
     private static IReadOnlyList<SpecialLocationState> BuildLocations(

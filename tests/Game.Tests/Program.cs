@@ -51,6 +51,12 @@ var worldPhaseDataTests = new WorldPhaseDataTests();
 worldPhaseDataTests.RunAll();
 var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
+var factionTerritorialPolicyTests = new FactionTerritorialPolicyTests();
+factionTerritorialPolicyTests.RunAll();
+var crossSystemIntegrationProofTests = new CrossSystemIntegrationProofTests();
+crossSystemIntegrationProofTests.RunAll();
+var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
+crossSystemContentValidationTests.RunAll();
 var worldGenerationPresetTests = new WorldGenerationPresetTests();
 worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
@@ -274,6 +280,7 @@ internal sealed class WorldGenBridgeTests
         SameRequestProducesSameCoreWorldLayout();
         TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
         GeneratedWorldCanStartAnExpedition();
+        GeneratedFactionsReceiveStableHiddenSignatureProfiles();
     }
 
     private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
@@ -310,6 +317,18 @@ internal sealed class WorldGenBridgeTests
         AssertEqual(game.Base.Location, game.Expedition.Position, "Generated expedition starts at generated base");
         AssertTrue(game.Knowledge.GetTileKnowledge(game.Base.Location) == KnowledgeLevel.Confirmed, "Generated base starts confirmed");
         AssertEqual(3, game.Factions.Count, "Generated campaign carries generated factions");
+    }
+
+    private static void GeneratedFactionsReceiveStableHiddenSignatureProfiles()
+    {
+        var first = new GameApplication().CreateGeneratedGame(Request());
+        var second = new GameApplication().CreateGeneratedGame(Request());
+
+        AssertTrue(first.Factions.All(faction => faction.SignatureProfileId != "unassigned"), "Generated factions receive a signature profile from content");
+        AssertEqual(
+            string.Join("|", first.Factions.Select(faction => faction.SignatureProfileId)),
+            string.Join("|", second.Factions.Select(faction => faction.SignatureProfileId)),
+            "Same generation request keeps hidden signature assignments stable");
     }
 
     private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()
@@ -1845,6 +1864,9 @@ internal sealed class LocationInteractionFrameworkTests
         AssertTrue(complete.Success, "Project completion succeeds");
         AssertEqual(LocationStateIds.Operational.Repaired, bridge.OperationalStateId, "Bridge is repaired after project completion");
         AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "OpenRoute effect creates persistent route");
+        AssertTrue(game.World.WorldTriggers.Any(trigger =>
+            trigger.TriggerId == "location-infrastructure-repaired" && trigger.ActionTags.Contains("repair")),
+            "Project trigger retains the JSON-authored repair action tag");
     }
 
     private static void MarkedGraveUsesSameInteractionFramework()
@@ -1899,6 +1921,7 @@ internal sealed class LocationDataJsonTests
     public void RunAll()
     {
         AllTenArchetypesLoadAndAreRepresentable();
+        AllLocationActionsCarrySemanticTags();
         ContentProfileSurfacesTitleAndFlavor();
         WeightedOutcomeStaysWithinAuthoredBandRow();
         ForcedTierAppliesAuthoredEffectBundle();
@@ -1944,6 +1967,16 @@ internal sealed class LocationDataJsonTests
                 }
             }
         }
+    }
+
+    private static void AllLocationActionsCarrySemanticTags()
+    {
+        var missing = LoadBundle().Definitions.Actions.Values
+            .Where(action => action.ActionTags.Count == 0)
+            .Select(action => action.Id)
+            .ToList();
+
+        AssertEqual(0, missing.Count, "Every JSON-authored location action has at least one semantic action tag");
     }
 
     private static void ContentProfileSurfacesTitleAndFlavor()

@@ -12,7 +12,30 @@ internal sealed class ScoutLocationSurroundingsTests
     {
         ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness();
         ScoutingRequiresAnAvailableScoutAtTheLocation();
+        MissionTypeJsonControlsLocalScoutTeamSize();
         JsonEvidenceDefinitionDrivesScoutReportText();
+        DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt();
+    }
+
+    private static void MissionTypeJsonControlsLocalScoutTeamSize()
+    {
+        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
+        var data = CrossSystemDataLoader.LoadFromDirectories(new[]
+        {
+            Path.Combine(dataRoot, "World"),
+            Path.Combine(dataRoot, "Factions"),
+            Path.Combine(dataRoot, "Scouting")
+        }) ?? throw new InvalidOperationException("Scout JSON content was not loaded.");
+        var localMission = data.ScoutContent.FindMissionType("location-surroundings");
+        AssertEqual(1, localMission!.MaxScouts, "Local surroundings mission limit comes from JSON");
+        AssertTrue(localMission.Allows(ScoutMissionFocus.FactionSigns), "Local surroundings permits faction-sign focus from JSON");
+        AssertFalse(localMission.Allows(ScoutMissionFocus.Ruins), "Local surroundings excludes unrelated focus from JSON");
+
+        var game = CreateGame(new HexCoord(1, 1));
+        AddSecondAvailableScout(game);
+        var result = new GameApplication(null, data).ScoutLocationSurroundings(game, "location-1", new[] { "scout-1", "scout-2" });
+
+        AssertFalse(result.Success, "Local surroundings mission rejects a two-scout team by JSON limit");
     }
 
     private static void ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness()
@@ -44,8 +67,13 @@ internal sealed class ScoutLocationSurroundingsTests
 
     private static void JsonEvidenceDefinitionDrivesScoutReportText()
     {
-        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData", "World");
-        var data = CrossSystemDataLoader.LoadFromDirectory(dataRoot);
+        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
+        var data = CrossSystemDataLoader.LoadFromDirectories(new[]
+        {
+            Path.Combine(dataRoot, "World"),
+            Path.Combine(dataRoot, "Factions"),
+            Path.Combine(dataRoot, "Scouting")
+        });
         var game = CreateGame(new HexCoord(1, 1), "evidence-patrol-signs");
         var app = new GameApplication(null, data);
 
@@ -55,6 +83,27 @@ internal sealed class ScoutLocationSurroundingsTests
         AssertTrue(data != null, "World evidence JSON is loaded");
         AssertTrue(data!.Evidence.Find("evidence-patrol-signs") != null, "Patrol evidence definition is available by stable id");
         AssertTrue(game.Knowledge.Evidence[0].PlayerText.Contains("Trittspuren", StringComparison.Ordinal), "Scout report text comes from evidence JSON");
+        AssertEqual("signature-woven-offering-bands", game.Knowledge.Evidence[0].SymbolId, "Scout evidence uses the generated faction's signature profile");
+        AssertTrue(data.FactionSignatures.Find(game.Knowledge.Evidence[0].SymbolId) != null, "Signature metadata is loaded without exposing a faction");
+        AssertEqual("Bericht: Zeichen in der Umgebung", game.Knowledge.ScoutReports[0].Title, "Scout report presentation comes from JSON");
+    }
+
+    private static void DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt()
+    {
+        var game = CreateGame(HexCoord.Zero);
+        var sent = new SendScoutMissionCommand().Execute(
+            game,
+            new[] { "scout-1" },
+            ScoutDirection.East,
+            1,
+            ScoutMissionFocus.Survey,
+            ScoutMissionBehavior.Cautious);
+
+        new EndDayCommand(suppliesPerDay: 0).Execute(game);
+
+        AssertTrue(sent.Success, "Directional reconnaissance can be sent away from a location");
+        AssertEqual("directional-recon", sent.Mission!.MissionTypeId, "Directional reconnaissance has its own mission type");
+        AssertTrue(game.Knowledge.ScoutReports[0].Hints.Any(hint => hint.Contains("auffaellige Struktur", StringComparison.Ordinal)), "Directional reconnaissance reports a nearby unknown location as an unconfirmed sighting");
     }
 
     private static GameState CreateGame(HexCoord expeditionPosition, params string[] evidenceSeedIds)
@@ -84,7 +133,34 @@ internal sealed class ScoutLocationSurroundingsTests
             new KnowledgeState(),
             new PlayerNotesState(),
             expedition,
-            new BaseState(HexCoord.Zero));
+            new BaseState(HexCoord.Zero),
+            factions: new[]
+            {
+                new FactionState(
+                    "border-wardens",
+                    "Unknown Watchers",
+                    signatureProfileId: "woven-offerings")
+            });
+    }
+
+    private static void AddSecondAvailableScout(GameState game)
+    {
+        var members = game.Expedition.Members
+            .Concat(new[] { new ExpeditionMemberState("scout-2", "Tovin", ExpeditionMemberRole.Scout) })
+            .ToList();
+        game.SetExpedition(new ExpeditionState(
+            game.Expedition.ExpeditionNumber,
+            game.Expedition.Position,
+            members,
+            game.Expedition.ExpeditionDay,
+            game.Expedition.MovementPoints,
+            game.Expedition.MaxMovementPoints,
+            game.Expedition.Supplies,
+            game.Expedition.Medicine,
+            game.Expedition.Morale,
+            game.Expedition.Capacity,
+            game.Expedition.Status,
+            game.Expedition.UnsecuredKnowledge));
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

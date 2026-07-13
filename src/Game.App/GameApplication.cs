@@ -17,8 +17,8 @@ public sealed class GameApplication
     private readonly EndDayCommand endDayCommand;
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
-    private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
-    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand();
+    private readonly SendScoutMissionCommand sendScoutMissionCommand;
+    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand;
     private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
     private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
@@ -36,7 +36,7 @@ public sealed class GameApplication
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
     private readonly ResolveLocationActionCommand resolveLocationActionCommand;
     private readonly AdvanceLocationProjectCommand advanceLocationProjectCommand;
-    private readonly WorldGenBridge worldGenBridge = new WorldGenBridge();
+    private readonly WorldGenBridge worldGenBridge;
 
     public GameApplication()
         : this(null, null)
@@ -57,6 +57,12 @@ public sealed class GameApplication
     {
         locationData ??= TryLoadDefaultLocationData();
         crossSystemData ??= TryLoadDefaultCrossSystemData();
+        if (locationData != null && crossSystemData != null)
+        {
+            CrossSystemContentValidator.Validate(locationData, crossSystemData);
+        }
+
+        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -69,6 +75,8 @@ public sealed class GameApplication
         }
 
         var locationInteractionService = new LocationInteractionService(locationInteractionDefinitions);
+        sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
+        scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(crossSystemData?.ScoutContent);
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
@@ -78,7 +86,7 @@ public sealed class GameApplication
             new KnowledgeService(),
             new FactionTerritoryEntryResolver(crossSystemData));
         endDayCommand = new EndDayCommand(
-            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence),
+            scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures, crossSystemData?.ScoutContent),
             worldPhaseService: worldPhaseService);
         advanceBaseTimeCommand = new AdvanceBaseTimeCommand(worldPhaseService);
     }
@@ -115,7 +123,8 @@ public sealed class GameApplication
             var bundle = CrossSystemDataLoader.LoadFromDirectories(new[]
             {
                 Path.Combine(root, "World"),
-                Path.Combine(root, "Factions")
+                Path.Combine(root, "Factions"),
+                Path.Combine(root, "Scouting")
             });
             if (bundle != null) return bundle;
         }

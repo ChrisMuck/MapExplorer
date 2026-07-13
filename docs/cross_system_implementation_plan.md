@@ -250,6 +250,49 @@ evidence/event -> danger becomes player-visible
 
 ---
 
+## Deferred Independent Block — Active Delayed Consequences
+
+**Status: explicitly deferred. This is not part of the current cross-system integration block.**
+
+The current scheduler can make a delayed consequence player-visible through evidence and an event.
+Before delayed consequences may change gameplay state, their possible effects and player-facing
+interpretation must be designed as a separate concept and implementation block.
+
+### Design Work Required First
+
+1. Define the reusable consequence-stage effects and their boundaries. Candidates include:
+   - change a source location's runtime state
+   - create or update a dynamic situation
+   - alter a route, regional danger or access condition
+   - raise a follow-up neutral world trigger
+   - change generated faction awareness or create a contact/warning opportunity
+   - reveal, move, consume or end a generated opportunity
+2. Define which effects are objective World State, which only create evidence/report knowledge,
+   and which require a player decision through the event queue.
+3. Define how a stage chooses and stores its branch at trigger time so that save/load and later
+   world-time advancement never reroll a consequence.
+4. Define the initial consequence families and their possible long-term outcomes. A broken seal,
+   for example, may lead to a released threat, contamination, a valuable discovery, renewed
+   faction attention or no further escalation; these remain authored/generated outcomes, not a
+   hardcoded "crypt" rule.
+5. Decide the player-facing escalation pattern: hints, confirmation, countermeasures, expiry,
+   recovery and persistent world changes.
+
+### Later Implementation Scope
+
+- Extend the consequence-stage JSON contract with typed, generic runtime effects.
+- Add a scheduler resolver for those effects in `Game.App`; keep the simulation outside Unity.
+- Add persistence and validation for every new stable ID and branch result.
+- Add generic tests for each effect category, then add representative content examples.
+
+### Guardrail
+
+Do not add beasts, diseases, hazards, treasures or other concrete aftermaths directly to the
+current sealed-location content until this block is designed and approved. The existing delayed
+evidence/event stages are intentionally only the presentation foundation.
+
+---
+
 ## Human Review Gates
 
 Human approval is required before merging changes to:
@@ -259,4 +302,3 @@ Human approval is required before merging changes to:
 - save compatibility for generated-world metadata or scheduled consequences
 - faction reaction semantics
 - final presentation of unexplored map information
-

@@ -20,7 +20,8 @@ public sealed class FactionState
         int fear = 0,
         IEnumerable<HexCoord>? warningZones = null,
         IEnumerable<string>? memories = null,
-        string reactionProfileId = "neutral-cautious")
+        string reactionProfileId = "neutral-cautious",
+        string signatureProfileId = "unassigned")
     {
         Id = RequireText(id, nameof(id));
         Name = RequireText(name, nameof(name));
@@ -29,6 +30,7 @@ public sealed class FactionState
         Anger = ClampMetric(anger);
         Fear = ClampMetric(fear);
         ReactionProfileId = RequireText(reactionProfileId, nameof(reactionProfileId));
+        SignatureProfileId = RequireText(signatureProfileId, nameof(signatureProfileId));
         this.warningZones.AddRange(warningZones ?? Enumerable.Empty<HexCoord>());
         this.memories.AddRange(memories ?? Enumerable.Empty<string>());
     }
@@ -47,6 +49,9 @@ public sealed class FactionState
 
     /// <summary>Generated or authored behavior profile used by data-driven reaction rules.</summary>
     public string ReactionProfileId { get; }
+
+    /// <summary>Generated runtime assignment of a neutral recognition-sign profile.</summary>
+    public string SignatureProfileId { get; }
 
     public IReadOnlyList<HexCoord> WarningZones
     {

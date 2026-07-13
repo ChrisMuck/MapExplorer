@@ -157,7 +157,9 @@ public sealed class ResolveLocationActionCommand
             recovery = interactionService.RollRecovery(HasMedic(game.Expedition), forcedRecovery);
         }
 
-        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved);
+        var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
+        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags);
+        QueueGenericActionTriggerIfNeeded(game, location, option.Action, triggerCountBeforeEffects);
         var texts = new List<string>(costTexts);
         texts.AddRange(effectTexts);
         location.MarkActionResolved(repeatKey);
@@ -263,12 +265,33 @@ public sealed class ResolveLocationActionCommand
             : $"Kosten bezahlt: {amount} {plural}.";
     }
 
+    internal static void QueueGenericActionTriggerIfNeeded(
+        GameState game,
+        SpecialLocationState location,
+        LocationActionDefinition action,
+        int triggerCountBeforeAction)
+    {
+        if (action.ActionTags.Count == 0 || game.World.WorldTriggers.Count > triggerCountBeforeAction)
+        {
+            return;
+        }
+
+        game.World.QueueWorldTrigger(new WorldTriggerState(
+            $"world-trigger-{game.World.WorldTriggers.Count + 1}",
+            FactionTerritorialPolicyResolver.LocationActionCompletedTriggerId,
+            game.World.WorldDay,
+            action.ActionTags,
+            location.Id,
+            location.Coord));
+    }
+
     internal static IReadOnlyList<string> ApplyEffects(
         GameState game,
         SpecialLocationState location,
         IReadOnlyList<LocationEffectDefinition> effects,
         LocationRecoveryOutcome? recovery,
-        out bool expeditionMoved)
+        out bool expeditionMoved,
+        IReadOnlyList<string>? actionTags = null)
     {
         var texts = new List<string>();
         expeditionMoved = false;
@@ -280,14 +303,18 @@ public sealed class ResolveLocationActionCommand
                 continue;
             }
 
-            expeditionMoved |= ApplyEffect(game, location, effect);
+            expeditionMoved |= ApplyEffect(game, location, effect, actionTags);
             texts.Add(effect.Text);
         }
 
         return texts;
     }
 
-    private static bool ApplyEffect(GameState game, SpecialLocationState location, LocationEffectDefinition effect)
+    private static bool ApplyEffect(
+        GameState game,
+        SpecialLocationState location,
+        LocationEffectDefinition effect,
+        IReadOnlyList<string>? actionTags)
     {
         switch (effect.Kind)
         {
@@ -350,6 +377,7 @@ public sealed class ResolveLocationActionCommand
                     $"world-trigger-{game.World.WorldTriggers.Count + 1}",
                     effect.ReferenceId ?? effect.Id,
                     game.World.WorldDay,
+                    actionTags: actionTags,
                     sourceLocationId: location.Id,
                     sourceCoord: location.Coord));
                 return false;
@@ -487,7 +515,9 @@ public sealed class AdvanceLocationProjectCommand
             return LocationActionResult.Resolved(location, action, null, null, new[] { $"Project progress: {location.ActiveProject.Progress}/{location.ActiveProject.RequiredProgress}." });
         }
 
-        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved);
+        var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
+        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags);
+        ResolveLocationActionCommand.QueueGenericActionTriggerIfNeeded(game, location, action, triggerCountBeforeEffects);
         location.ClearProject();
         return LocationActionResult.Resolved(location, action, null, null, texts, expeditionMoved);
     }

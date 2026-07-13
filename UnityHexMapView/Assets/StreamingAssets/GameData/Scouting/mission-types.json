@@ -1,0 +1,22 @@
+{
+  "documentType": "scout-mission-types",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "directional-recon",
+      "label": "Richtungsaufklaerung",
+      "minDurationDays": 1,
+      "maxDurationDays": 5,
+      "maxScouts": 2,
+      "allowedFocuses": [ "Survey", "Route", "Resources", "FactionSigns", "Ruins" ]
+    },
+    {
+      "id": "location-surroundings",
+      "label": "Umgebung erkunden",
+      "minDurationDays": 1,
+      "maxDurationDays": 1,
+      "maxScouts": 1,
+      "allowedFocuses": [ "FactionSigns" ]
+    }
+  ]
+}

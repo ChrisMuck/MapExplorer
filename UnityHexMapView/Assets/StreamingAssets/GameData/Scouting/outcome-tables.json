@@ -1,0 +1,12 @@
+{
+  "documentType": "scout-outcome-rules",
+  "schemaVersion": 1,
+  "items": [
+    { "behavior": "Cautious", "whenStatus": "Active", "outcome": "Returned", "missionTypeId": "location-surroundings" },
+    { "behavior": "Cautious", "whenStatus": "Active", "outcome": "Returned", "missionTypeId": "directional-recon" },
+    { "behavior": "Balanced", "whenStatus": "Active", "outcome": "Overdue" },
+    { "behavior": "Balanced", "whenStatus": "Overdue", "outcome": "Returned" },
+    { "behavior": "Bold", "whenStatus": "Active", "focus": "Ruins", "outcome": "Missing" },
+    { "behavior": "Bold", "whenStatus": "Active", "outcome": "ReturnedInjured" }
+  ]
+}

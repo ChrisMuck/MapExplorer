@@ -38,6 +38,29 @@
           }
         }
       ]
+    },
+    {
+      "id": "consequence-seal-broken",
+      "stages": [
+        {
+          "id": "first-disturbance",
+          "delayDays": 2,
+          "evidenceId": "evidence-seal-disturbance",
+          "event": {
+            "title": "Unruhe am geöffneten Verschluss",
+            "body": "Erst nach einiger Zeit zeigen sich veränderte Spuren und eine Unruhe um den geöffneten Ort. Was sie verursacht, bleibt offen."
+          }
+        },
+        {
+          "id": "later-consequence",
+          "delayDays": 5,
+          "evidenceId": "evidence-seal-consequence",
+          "event": {
+            "title": "Etwas hat sich verändert",
+            "body": "Die spätere Entwicklung bestätigt nur, dass der geöffnete Verschluss nicht folgenlos blieb. Die Expedition muss die Zeichen weiter deuten."
+          }
+        }
+      ]
     }
   ]
 }

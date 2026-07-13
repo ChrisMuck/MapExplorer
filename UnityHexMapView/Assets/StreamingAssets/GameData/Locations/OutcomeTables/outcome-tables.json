@@ -95,6 +95,35 @@
       }
     },
     {
+      "id": "outcome-open-seal",
+      "appliesTo": { "actionId": "action-open-seal" },
+      "tiers": {
+        "Low": [ { "tier": "Success", "weight": 75 }, { "tier": "SuccessWithCost", "weight": 25 } ],
+        "Moderate": [ { "tier": "Success", "weight": 45 }, { "tier": "SuccessWithCost", "weight": 35 }, { "tier": "Failure", "weight": 20 } ],
+        "High": [ { "tier": "SuccessWithCost", "weight": 40 }, { "tier": "Failure", "weight": 35 }, { "tier": "SevereFailure", "weight": 25 } ]
+      },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "opened", "text": "Der Verschluss ist geoeffnet." },
+          { "kind": "AddEvidence", "referenceId": "evidence-seal-opened", "text": "Die Expedition dokumentiert, wie der Verschluss geoeffnet wurde." },
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-seal-broken", "text": "Das Oeffnen des Siegels kann die Umgebung langfristig veraendern." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "opened", "text": "Der Verschluss gibt nach, doch der Zugang bleibt gefaehrlich." },
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Werkzeug und Material werden beim Oeffnen beschaedigt." },
+          { "kind": "AddEvidence", "referenceId": "evidence-seal-opened", "text": "Die Expedition dokumentiert die gebrochene Versiegelung." },
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-seal-broken", "text": "Das Oeffnen des Siegels kann die Umgebung langfristig veraendern." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Der Versuch scheitert; die Warnzeichen wirken nun bedrohlicher." }
+        ],
+        "SevereFailure": [
+          { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim gewaltsamen Oeffnen wird jemand verletzt." },
+          { "kind": "RaiseWorldTrigger", "referenceId": "location-seal-broken", "text": "Der beschaedigte Verschluss kann die Umgebung langfristig veraendern." }
+        ]
+      }
+    },
+    {
       "id": "outcome-document",
       "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-document" },
       "tiers": {
