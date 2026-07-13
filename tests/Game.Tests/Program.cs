@@ -1858,6 +1858,9 @@ internal sealed class LocationInteractionFrameworkTests
         AssertTrue(complete.Success, "Project completion succeeds");
         AssertEqual(LocationStateIds.Operational.Repaired, bridge.OperationalStateId, "Bridge is repaired after project completion");
         AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "OpenRoute effect creates persistent route");
+        AssertTrue(game.World.WorldTriggers.Any(trigger =>
+            trigger.TriggerId == "location-infrastructure-repaired" && trigger.ActionTags.Contains("repair")),
+            "Project trigger retains the JSON-authored repair action tag");
     }
 
     private static void MarkedGraveUsesSameInteractionFramework()

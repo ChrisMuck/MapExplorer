@@ -101,6 +101,7 @@ public sealed class ConsequenceDefinition
 public sealed class FactionReactionRuleDefinition
 {
     private readonly HashSet<LocationFactionRelationKind> relationKinds;
+    private readonly HashSet<string> requiredActionTags;
 
     public FactionReactionRuleDefinition(
         string id,
@@ -117,7 +118,8 @@ public sealed class FactionReactionRuleDefinition
         string? eventTitle,
         string? eventBody,
         bool revealsFaction,
-        int priority = 0)
+        int priority = 0,
+        IEnumerable<string>? requiredActionTags = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Reaction rule id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(triggerId)) throw new ArgumentException("Reaction rule trigger id must not be empty.", nameof(triggerId));
@@ -125,6 +127,9 @@ public sealed class FactionReactionRuleDefinition
         TriggerId = triggerId.Trim();
         this.relationKinds = new HashSet<LocationFactionRelationKind>(relationKinds ?? throw new ArgumentNullException(nameof(relationKinds)));
         if (this.relationKinds.Count == 0) throw new ArgumentException("Reaction rule needs at least one relation kind.", nameof(relationKinds));
+        this.requiredActionTags = new HashSet<string>((requiredActionTags ?? Enumerable.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim()), StringComparer.Ordinal);
         MinimumAwareness = minimumAwareness;
         FactionProfileId = string.IsNullOrWhiteSpace(factionProfileId) ? null : factionProfileId.Trim();
         MinimumAnger = minimumAnger;
@@ -142,6 +147,7 @@ public sealed class FactionReactionRuleDefinition
     public string Id { get; }
     public string TriggerId { get; }
     public IReadOnlyCollection<LocationFactionRelationKind> RelationKinds => relationKinds;
+    public IReadOnlyCollection<string> RequiredActionTags => requiredActionTags;
     public FactionAwarenessLevel MinimumAwareness { get; }
     public string? FactionProfileId { get; }
     public int? MinimumAnger { get; }
@@ -155,13 +161,14 @@ public sealed class FactionReactionRuleDefinition
     public bool RevealsFaction { get; }
     public int Priority { get; }
 
-    public bool Matches(FactionState faction, LocationFactionRelationState relation, FactionAwarenessLevel awareness)
+    public bool Matches(FactionState faction, LocationFactionRelationState relation, FactionAwarenessLevel awareness, WorldTriggerState trigger)
     {
         return relationKinds.Contains(relation.Kind)
             && awareness >= MinimumAwareness
             && (FactionProfileId == null || FactionProfileId == faction.ReactionProfileId)
             && (!MinimumAnger.HasValue || faction.Anger >= MinimumAnger.Value)
-            && (!MaximumTrust.HasValue || faction.Trust <= MaximumTrust.Value);
+            && (!MaximumTrust.HasValue || faction.Trust <= MaximumTrust.Value)
+            && requiredActionTags.All(tag => trigger.ActionTags.Contains(tag, StringComparer.Ordinal));
     }
 }
 
@@ -528,7 +535,8 @@ public static class CrossSystemDataLoader
             dto.Event?.Title,
             dto.Event?.Body,
             dto.Event?.RevealsFaction ?? false,
-            dto.Priority);
+            dto.Priority,
+            dto.RequiredActionTags);
     }
 
     private static FactionTerritoryEntryRuleDefinition BuildFactionTerritoryEntryRule(FactionTerritoryEntryRuleDto dto)
@@ -623,6 +631,7 @@ public static class CrossSystemDataLoader
         public string? MemoryId { get; set; }
         public FactionReactionEventDto? Event { get; set; }
         public int Priority { get; set; }
+        public List<string>? RequiredActionTags { get; set; }
     }
 
     private sealed class FactionReactionEventDto

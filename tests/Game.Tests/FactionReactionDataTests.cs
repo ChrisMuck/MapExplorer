@@ -10,6 +10,7 @@ internal sealed class FactionReactionDataTests
     public void RunAll()
     {
         GeneratedSacredRelationCanReactWithoutRevealingFactionIdentity();
+        SemanticActionTagsGateReactions();
         NeutralLocationDoesNotCreateAFactionReaction();
         AttentionCanGateAHostileReaction();
         GameApplicationUsesJsonForTerritoryEntry();
@@ -18,13 +19,27 @@ internal sealed class FactionReactionDataTests
     private static void GeneratedSacredRelationCanReactWithoutRevealingFactionIdentity()
     {
         var game = CreateGame(new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Sacred));
-        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-1", "location-grave-disturbed", 1, sourceLocationId: "location-1"));
+        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-1", "location-grave-disturbed", 1, new[] { "disturb" }, sourceLocationId: "location-1"));
 
         new WorldPhaseService(LoadContent()).Resolve(game);
 
         AssertEqual(8, game.FindFaction("faction-1")!.Anger, "Sacred relation applies its JSON anger delta");
         AssertEqual(1, game.Events.PendingCount, "Reaction is surfaced through the event queue");
         AssertEqual(null, game.Events.Current!.FactionId, "Unknown reaction does not reveal faction identity");
+    }
+
+    private static void SemanticActionTagsGateReactions()
+    {
+        var game = CreateGame(new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Sacred));
+        var resolver = new WorldPhaseService(LoadContent());
+
+        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-no-tag", "location-grave-disturbed", 1, sourceLocationId: "location-1"));
+        resolver.Resolve(game);
+        AssertEqual(0, game.FindFaction("faction-1")!.Anger, "A trigger without the required action tag does not react");
+
+        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-disturb", "location-grave-disturbed", 1, new[] { "disturb" }, sourceLocationId: "location-1"));
+        resolver.Resolve(game);
+        AssertEqual(8, game.FindFaction("faction-1")!.Anger, "The same trigger reacts once its semantic action tag is present");
     }
 
     private static void NeutralLocationDoesNotCreateAFactionReaction()
@@ -42,13 +57,13 @@ internal sealed class FactionReactionDataTests
     {
         var game = CreateGame(new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Claimed), reactionProfileId: "hostile");
         var resolver = new WorldPhaseService(LoadContent());
-        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-1", "location-infrastructure-repaired", 1, sourceLocationId: "location-1"));
+        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-1", "location-infrastructure-repaired", 1, new[] { "repair" }, sourceLocationId: "location-1"));
         resolver.Resolve(game);
 
         AssertEqual(0, game.FindFaction("faction-1")!.Anger, "Hostile rule waits until the faction becomes suspicious");
 
         game.World.EscalateFactionAwareness("faction-1", "location-region:location-1");
-        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-2", "location-infrastructure-repaired", 1, sourceLocationId: "location-1"));
+        game.World.QueueWorldTrigger(new WorldTriggerState("trigger-2", "location-infrastructure-repaired", 1, new[] { "repair" }, sourceLocationId: "location-1"));
         resolver.Resolve(game);
 
         AssertEqual(7, game.FindFaction("faction-1")!.Anger, "Suspicious awareness unlocks the hostile JSON reaction");

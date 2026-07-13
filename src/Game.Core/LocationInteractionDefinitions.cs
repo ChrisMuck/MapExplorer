@@ -412,7 +412,8 @@ public sealed class LocationActionDefinition
         IEnumerable<LocationEffectDefinition>? projectCompletionEffects = null,
         string? icon = null,
         string? primaryButtonLabel = null,
-        bool socialRisk = false)
+        bool socialRisk = false,
+        IEnumerable<string>? actionTags = null)
     {
         Id = RequireText(id, nameof(id));
         Label = RequireText(label, nameof(label));
@@ -428,6 +429,11 @@ public sealed class LocationActionDefinition
         Icon = string.IsNullOrWhiteSpace(icon) ? null : icon;
         PrimaryButtonLabel = string.IsNullOrWhiteSpace(primaryButtonLabel) ? null : primaryButtonLabel;
         SocialRisk = socialRisk;
+        ActionTags = (actionTags ?? Enumerable.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
         if (StartsProject && ProjectDurationDays < 1)
         {
@@ -464,6 +470,9 @@ public sealed class LocationActionDefinition
 
     /// <summary>When true, risk is driven by faction attitude rather than physical danger (§9.4B).</summary>
     public bool SocialRisk { get; }
+
+    /// <summary>Neutral semantic tags such as repair, disturb or map, used by world and faction rules.</summary>
+    public IReadOnlyList<string> ActionTags { get; }
 
     private static string RequireText(string value, string name)
     {

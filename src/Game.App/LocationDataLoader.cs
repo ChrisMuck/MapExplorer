@@ -190,7 +190,8 @@ public static class LocationDataLoader
             projectCompletionEffects: project?.CompletionEffects?.Select(BuildEffect),
             icon: dto.Presentation?.Icon,
             primaryButtonLabel: dto.Presentation?.PrimaryButtonLabel,
-            socialRisk: dto.SocialRisk);
+            socialRisk: dto.SocialRisk,
+            actionTags: dto.ActionTags);
     }
 
     private static LocationRequirementDefinition BuildRequirement(RequirementDto dto)
@@ -536,6 +537,7 @@ public static class LocationDataLoader
         public ProjectDto? Project { get; set; }
         public PresentationDto? Presentation { get; set; }
         public bool SocialRisk { get; set; }
+        public List<string>? ActionTags { get; set; }
     }
 
     private sealed class RequirementDto

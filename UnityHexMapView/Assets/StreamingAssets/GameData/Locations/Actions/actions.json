@@ -9,7 +9,8 @@
       "description": "Den Ort aus sicherer Naehe betrachten, ohne einzugreifen.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-observe"
+      "outcomeTableId": "outcome-generic-observe",
+      "actionTags": [ "observe" ]
     },
     {
       "id": "action-inspect",
@@ -17,7 +18,8 @@
       "description": "Den Ort betrachten, ohne etwas zu veraendern.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-inspect"
+      "outcomeTableId": "outcome-inspect",
+      "actionTags": [ "inspect" ]
     },
     {
       "id": "action-search",
@@ -42,7 +44,8 @@
       "description": "Zeichen, Lage und Zustand fuer spaetere Auswertung festhalten.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-document"
+      "outcomeTableId": "outcome-document",
+      "actionTags": [ "document", "map" ]
     },
     {
       "id": "action-collect",
@@ -75,7 +78,8 @@
       "description": "Den Ort respektvoll behandeln, bevor weitere Schritte unternommen werden.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-leave-offering"
+      "outcomeTableId": "outcome-leave-offering",
+      "actionTags": [ "respect", "offer" ]
     },
     {
       "id": "action-disturb",
@@ -83,7 +87,8 @@
       "description": "Das Grab oder Siegel trotz Warnzeichen oeffnen.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 45, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-disturb"
+      "outcomeTableId": "outcome-disturb",
+      "actionTags": [ "disturb", "open" ]
     },
     {
       "id": "action-cross-boundary",
@@ -92,7 +97,8 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
       "outcomeTableId": "outcome-cross-boundary",
-      "socialRisk": true
+      "socialRisk": true,
+      "actionTags": [ "cross", "ignore-warning" ]
     },
     {
       "id": "action-assess-crossing",
@@ -121,7 +127,8 @@
       "riskProfile": { "baseRisk": 20, "confidence": "Assessed" },
       "outcomeTableId": "outcome-construct-temporary-passage",
       "costs": [ { "kind": "Supplies", "amount": 1, "timing": "onCommit" } ],
-      "repeatPolicy": "RepeatableWithCost"
+      "repeatPolicy": "RepeatableWithCost",
+      "actionTags": [ "repair", "infrastructure" ]
     },
     {
       "id": "action-attempt-crossing",
@@ -144,6 +151,7 @@
       ],
       "riskProfile": { "baseRisk": 25, "confidence": "Assessed" },
       "repeatPolicy": "OncePerLocation",
+      "actionTags": [ "repair", "infrastructure" ],
       "project": {
         "durationDays": 3,
         "completionEffects": [
@@ -219,7 +227,8 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-observe",
-      "repeatPolicy": "OncePerState"
+      "repeatPolicy": "OncePerState",
+      "actionTags": [ "harvest", "restraint" ]
     },
     {
       "id": "action-harvest-fully",
@@ -228,7 +237,8 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-observe",
-      "repeatPolicy": "OncePerLocation"
+      "repeatPolicy": "OncePerLocation",
+      "actionTags": [ "harvest", "exploit" ]
     },
     {
       "id": "action-assess-risk",
@@ -290,7 +300,8 @@
       "description": "Die weitere Umgebung aufnehmen und als Kartenwissen sichern.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-note"
+      "outcomeTableId": "outcome-generic-note",
+      "actionTags": [ "map", "document" ]
     },
     {
       "id": "action-assist",
