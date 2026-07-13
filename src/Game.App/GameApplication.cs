@@ -57,7 +57,7 @@ public sealed class GameApplication
     {
         locationData ??= TryLoadDefaultLocationData();
         crossSystemData ??= TryLoadDefaultCrossSystemData();
-        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures);
+        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;

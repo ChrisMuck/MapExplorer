@@ -16,7 +16,7 @@
     {
       "id": "territory-welcoming",
       "entryKind": "territory",
-      "factionProfileId": "welcoming",
+      "requiredFactionValues": [ "curiosity" ],
       "trustDelta": 2,
       "promotesContact": true,
       "event": {
@@ -29,7 +29,7 @@
     {
       "id": "territory-cautious",
       "entryKind": "territory",
-      "factionProfileId": "neutral-cautious",
+      "requiredFactionValues": [ "restraint" ],
       "angerDelta": 2,
       "fearDelta": 1,
       "event": {
@@ -41,7 +41,7 @@
     {
       "id": "territory-hostile",
       "entryKind": "territory",
-      "factionProfileId": "hostile",
+      "requiredFactionValues": [ "territory" ],
       "angerDelta": 4,
       "fearDelta": 6,
       "event": {

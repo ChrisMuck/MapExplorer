@@ -1,0 +1,45 @@
+{
+  "documentType": "faction-profiles",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "welcoming",
+      "label": "Aufgeschlossen",
+      "values": [ "trade", "help", "curiosity" ],
+      "tabooActionTags": [ "disturb", "exploit" ],
+      "territorialPolicy": {
+        "permittedActionTags": [ "trade", "communicate", "request-passage" ],
+        "restrictedActionTags": [ "exploit", "disturb" ],
+        "warningActionTags": [ "harvest" ]
+      },
+      "contactStyle": "open",
+      "leadershipStyle": "council"
+    },
+    {
+      "id": "neutral-cautious",
+      "label": "Vorsichtig",
+      "values": [ "restraint", "knowledge", "secrecy" ],
+      "tabooActionTags": [ "disturb", "ignore-warning", "map" ],
+      "territorialPolicy": {
+        "permittedActionTags": [ "request-passage", "offer", "restraint" ],
+        "restrictedActionTags": [ "cross", "map", "harvest" ],
+        "warningActionTags": [ "cross", "map", "ignore-warning" ]
+      },
+      "contactStyle": "guarded",
+      "leadershipStyle": "border-commander"
+    },
+    {
+      "id": "hostile",
+      "label": "Abwehrend",
+      "values": [ "territory", "strength", "secrecy" ],
+      "tabooActionTags": [ "cross", "disturb", "map" ],
+      "territorialPolicy": {
+        "permittedActionTags": [ "withdraw", "leave" ],
+        "restrictedActionTags": [ "cross", "map", "harvest", "repair" ],
+        "warningActionTags": [ "approach", "cross", "repair" ]
+      },
+      "contactStyle": "indirect",
+      "leadershipStyle": "hidden-command"
+    }
+  ]
+}

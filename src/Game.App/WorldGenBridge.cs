@@ -69,10 +69,12 @@ public sealed class WorldGenerationBridgeResult
 public sealed class WorldGenBridge
 {
     private readonly FactionSignatureDefinitionSet? factionSignatures;
+    private readonly FactionProfileDefinitionSet? factionProfiles;
 
-    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null)
+    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null, FactionProfileDefinitionSet? factionProfiles = null)
     {
         this.factionSignatures = factionSignatures;
+        this.factionProfiles = factionProfiles;
     }
 
     public WorldGenerationBridgeResult Generate(WorldGenerationRequest request)
@@ -111,10 +113,21 @@ public sealed class WorldGenBridge
             .Select(faction => new FactionState(
                 factionIds[faction.Id],
                 faction.Name ?? factionIds[faction.Id],
-                reactionProfileId: faction.Attitude ?? "neutral-cautious",
+                reactionProfileId: ResolveReactionProfileId(faction.Attitude),
                 signatureProfileId: signatureProfiles.TryGetValue(faction.Id, out var profileId) ? profileId : "unassigned"))
             .ToList();
         return new WorldGenerationBridgeResult(world, ToCore(generated.Base), factions);
+    }
+
+    private string ResolveReactionProfileId(string? generatedProfileId)
+    {
+        var profileId = string.IsNullOrWhiteSpace(generatedProfileId) ? "neutral-cautious" : generatedProfileId.Trim();
+        if (factionProfiles != null && factionProfiles.All.Count > 0 && factionProfiles.Find(profileId) == null)
+        {
+            throw new InvalidOperationException($"Generated faction references unknown reaction profile '{profileId}'.");
+        }
+
+        return profileId;
     }
 
     private IReadOnlyDictionary<int, string> AssignSignatureProfiles(GeneratedWorld generated)

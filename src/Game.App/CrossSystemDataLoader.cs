@@ -48,6 +48,101 @@ public sealed class FactionSignatureDefinition
     public string Label { get; }
 }
 
+/// <summary>
+/// Reusable faction behaviour profile. It describes a generated faction's values without ever
+/// assigning that profile to a concrete location or generated faction instance in static content.
+/// </summary>
+public sealed class FactionProfileDefinition
+{
+    private readonly List<string> values;
+    private readonly List<string> tabooActionTags;
+
+    public FactionProfileDefinition(
+        string id,
+        string label,
+        IEnumerable<string>? values = null,
+        IEnumerable<string>? tabooActionTags = null,
+        FactionTerritorialPolicyDefinition? territorialPolicy = null,
+        string? contactStyle = null,
+        string? leadershipStyle = null)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Faction profile id must not be empty.", nameof(id));
+        if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Faction profile label must not be empty.", nameof(label));
+        Id = id.Trim();
+        Label = label.Trim();
+        this.values = (values ?? Enumerable.Empty<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        this.tabooActionTags = (tabooActionTags ?? Enumerable.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        TerritorialPolicy = territorialPolicy ?? new FactionTerritorialPolicyDefinition();
+        ContactStyle = string.IsNullOrWhiteSpace(contactStyle) ? null : contactStyle.Trim();
+        LeadershipStyle = string.IsNullOrWhiteSpace(leadershipStyle) ? null : leadershipStyle.Trim();
+    }
+
+    public string Id { get; }
+    public string Label { get; }
+    public IReadOnlyList<string> Values => values;
+    public IReadOnlyList<string> TabooActionTags => tabooActionTags;
+    public FactionTerritorialPolicyDefinition TerritorialPolicy { get; }
+    public string? ContactStyle { get; }
+    public string? LeadershipStyle { get; }
+}
+
+/// <summary>Discoverable conduct preferences. Concrete territories and locations remain generated runtime state.</summary>
+public sealed class FactionTerritorialPolicyDefinition
+{
+    private readonly List<string> permittedActionTags;
+    private readonly List<string> restrictedActionTags;
+    private readonly List<string> warningActionTags;
+
+    public FactionTerritorialPolicyDefinition(
+        IEnumerable<string>? permittedActionTags = null,
+        IEnumerable<string>? restrictedActionTags = null,
+        IEnumerable<string>? warningActionTags = null)
+    {
+        this.permittedActionTags = Normalize(permittedActionTags);
+        this.restrictedActionTags = Normalize(restrictedActionTags);
+        this.warningActionTags = Normalize(warningActionTags);
+    }
+
+    public IReadOnlyList<string> PermittedActionTags => permittedActionTags;
+    public IReadOnlyList<string> RestrictedActionTags => restrictedActionTags;
+    public IReadOnlyList<string> WarningActionTags => warningActionTags;
+
+    private static List<string> Normalize(IEnumerable<string>? tags)
+    {
+        return (tags ?? Enumerable.Empty<string>())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
+}
+
+public sealed class FactionProfileDefinitionSet
+{
+    private readonly Dictionary<string, FactionProfileDefinition> definitions;
+
+    public FactionProfileDefinitionSet(IEnumerable<FactionProfileDefinition> definitions)
+    {
+        this.definitions = (definitions ?? throw new ArgumentNullException(nameof(definitions)))
+            .ToDictionary(definition => definition.Id, StringComparer.Ordinal);
+    }
+
+    public FactionProfileDefinition? Find(string? id)
+    {
+        return !string.IsNullOrWhiteSpace(id) && definitions.TryGetValue(id, out var definition) ? definition : null;
+    }
+
+    public IReadOnlyCollection<FactionProfileDefinition> All => definitions.Values;
+}
+
 public sealed class WorldTriggerDefinition
 {
     public WorldTriggerDefinition(string id, string? consequenceId = null)
@@ -102,6 +197,8 @@ public sealed class FactionReactionRuleDefinition
 {
     private readonly HashSet<LocationFactionRelationKind> relationKinds;
     private readonly HashSet<string> requiredActionTags;
+    private readonly HashSet<string> requiredFactionValues;
+    private readonly HashSet<string> requiredFactionTabooTags;
 
     public FactionReactionRuleDefinition(
         string id,
@@ -119,7 +216,9 @@ public sealed class FactionReactionRuleDefinition
         string? eventBody,
         bool revealsFaction,
         int priority = 0,
-        IEnumerable<string>? requiredActionTags = null)
+        IEnumerable<string>? requiredActionTags = null,
+        IEnumerable<string>? requiredFactionValues = null,
+        IEnumerable<string>? requiredFactionTabooTags = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Reaction rule id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(triggerId)) throw new ArgumentException("Reaction rule trigger id must not be empty.", nameof(triggerId));
@@ -130,6 +229,8 @@ public sealed class FactionReactionRuleDefinition
         this.requiredActionTags = new HashSet<string>((requiredActionTags ?? Enumerable.Empty<string>())
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Select(tag => tag.Trim()), StringComparer.Ordinal);
+        this.requiredFactionValues = NormalizeTags(requiredFactionValues);
+        this.requiredFactionTabooTags = NormalizeTags(requiredFactionTabooTags);
         MinimumAwareness = minimumAwareness;
         FactionProfileId = string.IsNullOrWhiteSpace(factionProfileId) ? null : factionProfileId.Trim();
         MinimumAnger = minimumAnger;
@@ -148,6 +249,8 @@ public sealed class FactionReactionRuleDefinition
     public string TriggerId { get; }
     public IReadOnlyCollection<LocationFactionRelationKind> RelationKinds => relationKinds;
     public IReadOnlyCollection<string> RequiredActionTags => requiredActionTags;
+    public IReadOnlyCollection<string> RequiredFactionValues => requiredFactionValues;
+    public IReadOnlyCollection<string> RequiredFactionTabooTags => requiredFactionTabooTags;
     public FactionAwarenessLevel MinimumAwareness { get; }
     public string? FactionProfileId { get; }
     public int? MinimumAnger { get; }
@@ -161,19 +264,35 @@ public sealed class FactionReactionRuleDefinition
     public bool RevealsFaction { get; }
     public int Priority { get; }
 
-    public bool Matches(FactionState faction, LocationFactionRelationState relation, FactionAwarenessLevel awareness, WorldTriggerState trigger)
+    public bool Matches(
+        FactionState faction,
+        FactionProfileDefinition? profile,
+        LocationFactionRelationState relation,
+        FactionAwarenessLevel awareness,
+        WorldTriggerState trigger)
     {
         return relationKinds.Contains(relation.Kind)
             && awareness >= MinimumAwareness
             && (FactionProfileId == null || FactionProfileId == faction.ReactionProfileId)
             && (!MinimumAnger.HasValue || faction.Anger >= MinimumAnger.Value)
             && (!MaximumTrust.HasValue || faction.Trust <= MaximumTrust.Value)
-            && requiredActionTags.All(tag => trigger.ActionTags.Contains(tag, StringComparer.Ordinal));
+            && requiredActionTags.All(tag => trigger.ActionTags.Contains(tag, StringComparer.Ordinal))
+            && requiredFactionValues.All(value => profile != null && profile.Values.Contains(value, StringComparer.Ordinal))
+            && requiredFactionTabooTags.All(tag => profile != null && profile.TabooActionTags.Contains(tag, StringComparer.Ordinal));
+    }
+
+    private static HashSet<string> NormalizeTags(IEnumerable<string>? values)
+    {
+        return new HashSet<string>((values ?? Enumerable.Empty<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()), StringComparer.Ordinal);
     }
 }
 
 public sealed class FactionTerritoryEntryRuleDefinition
 {
+    private readonly HashSet<string> requiredFactionValues;
+
     public FactionTerritoryEntryRuleDefinition(
         string id,
         string entryKind,
@@ -186,7 +305,8 @@ public sealed class FactionTerritoryEntryRuleDefinition
         bool allowsInteraction,
         string? eventTitle,
         string? eventBody,
-        int priority = 0)
+        int priority = 0,
+        IEnumerable<string>? requiredFactionValues = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Territory entry rule id must not be empty.", nameof(id));
         if (entryKind != "territory" && entryKind != "warning") throw new ArgumentException("Entry kind must be territory or warning.", nameof(entryKind));
@@ -202,6 +322,9 @@ public sealed class FactionTerritoryEntryRuleDefinition
         EventTitle = string.IsNullOrWhiteSpace(eventTitle) ? null : eventTitle.Trim();
         EventBody = string.IsNullOrWhiteSpace(eventBody) ? null : eventBody.Trim();
         Priority = priority;
+        this.requiredFactionValues = new HashSet<string>((requiredFactionValues ?? Enumerable.Empty<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()), StringComparer.Ordinal);
     }
 
     public string Id { get; }
@@ -216,10 +339,13 @@ public sealed class FactionTerritoryEntryRuleDefinition
     public string? EventTitle { get; }
     public string? EventBody { get; }
     public int Priority { get; }
+    public IReadOnlyCollection<string> RequiredFactionValues => requiredFactionValues;
 
-    public bool Matches(FactionState faction, string entryKind)
+    public bool Matches(FactionState faction, FactionProfileDefinition? profile, string entryKind)
     {
-        return EntryKind == entryKind && (FactionProfileId == null || FactionProfileId == faction.ReactionProfileId);
+        return EntryKind == entryKind
+            && (FactionProfileId == null || FactionProfileId == faction.ReactionProfileId)
+            && requiredFactionValues.All(value => profile != null && profile.Values.Contains(value, StringComparer.Ordinal));
     }
 }
 
@@ -346,6 +472,7 @@ public sealed class CrossSystemDataBundle
     public CrossSystemDataBundle(
         EvidenceDefinitionSet evidence,
         IEnumerable<FactionSignatureDefinition>? factionSignatures = null,
+        IEnumerable<FactionProfileDefinition>? factionProfiles = null,
         ScoutContentDefinitionSet? scoutContent = null,
         IEnumerable<WorldTriggerDefinition>? triggers = null,
         IEnumerable<ConsequenceDefinition>? consequences = null,
@@ -354,6 +481,7 @@ public sealed class CrossSystemDataBundle
     {
         Evidence = evidence ?? throw new ArgumentNullException(nameof(evidence));
         FactionSignatures = new FactionSignatureDefinitionSet(factionSignatures ?? Enumerable.Empty<FactionSignatureDefinition>());
+        FactionProfiles = new FactionProfileDefinitionSet(factionProfiles ?? Enumerable.Empty<FactionProfileDefinition>());
         ScoutContent = scoutContent ?? new ScoutContentDefinitionSet();
         Triggers = (triggers ?? Enumerable.Empty<WorldTriggerDefinition>()).ToDictionary(trigger => trigger.Id, StringComparer.Ordinal);
         Consequences = (consequences ?? Enumerable.Empty<ConsequenceDefinition>()).ToDictionary(consequence => consequence.Id, StringComparer.Ordinal);
@@ -363,6 +491,7 @@ public sealed class CrossSystemDataBundle
 
     public EvidenceDefinitionSet Evidence { get; }
     public FactionSignatureDefinitionSet FactionSignatures { get; }
+    public FactionProfileDefinitionSet FactionProfiles { get; }
     public ScoutContentDefinitionSet ScoutContent { get; }
     public IReadOnlyDictionary<string, WorldTriggerDefinition> Triggers { get; }
     public IReadOnlyDictionary<string, ConsequenceDefinition> Consequences { get; }
@@ -406,6 +535,7 @@ public static class CrossSystemDataLoader
         var triggers = new List<WorldTriggerDefinitionDto>();
         var consequences = new List<ConsequenceDefinitionDto>();
         var factionSignatures = new List<FactionSignatureDefinitionDto>();
+        var factionProfiles = new List<FactionProfileDefinitionDto>();
         var factionReactionRules = new List<FactionReactionRuleDto>();
         var factionTerritoryEntryRules = new List<FactionTerritoryEntryRuleDto>();
         var scoutOutcomeRules = new List<ScoutOutcomeRuleDto>();
@@ -436,6 +566,7 @@ public static class CrossSystemDataLoader
                 case "world-trigger-definitions": triggers.AddRange(items.ToObject<List<WorldTriggerDefinitionDto>>()!); break;
                 case "consequence-definitions": consequences.AddRange(items.ToObject<List<ConsequenceDefinitionDto>>()!); break;
                 case "faction-signatures": factionSignatures.AddRange(items.ToObject<List<FactionSignatureDefinitionDto>>()!); break;
+                case "faction-profiles": factionProfiles.AddRange(items.ToObject<List<FactionProfileDefinitionDto>>()!); break;
                 case "faction-reaction-rules": factionReactionRules.AddRange(items.ToObject<List<FactionReactionRuleDto>>()!); break;
                 case "faction-territory-entry-rules": factionTerritoryEntryRules.AddRange(items.ToObject<List<FactionTerritoryEntryRuleDto>>()!); break;
                 case "scout-outcome-rules": scoutOutcomeRules.AddRange(items.ToObject<List<ScoutOutcomeRuleDto>>()!); break;
@@ -462,6 +593,21 @@ public static class CrossSystemDataLoader
         if (definitions.Any(definition => definition.SymbolId != null && !builtSignatures.Any(signature => signature.Id == definition.SymbolId)))
         {
             throw new LocationDataException("Evidence references an unknown faction signature.");
+        }
+
+        var builtFactionProfiles = factionProfiles
+            .Select(item => new FactionProfileDefinition(
+                Require(item.Id, "factionProfile.id"),
+                Require(item.Label, "factionProfile.label"),
+                item.Values,
+                item.TabooActionTags,
+                BuildTerritorialPolicy(item.TerritorialPolicy),
+                item.ContactStyle,
+                item.LeadershipStyle))
+            .ToList();
+        if (builtFactionProfiles.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        {
+            throw new LocationDataException("Faction profile IDs must be unique.");
         }
 
         var builtConsequences = consequences.Select(item => new ConsequenceDefinition(
@@ -497,11 +643,31 @@ public static class CrossSystemDataLoader
         {
             throw new LocationDataException("A faction reaction rule references an unknown world trigger.");
         }
+        if (builtReactionRules.Any(rule => rule.FactionProfileId != null && !builtFactionProfiles.Any(profile => profile.Id == rule.FactionProfileId)))
+        {
+            throw new LocationDataException("A faction reaction rule references an unknown faction profile.");
+        }
+        if (builtReactionRules.Any(rule => rule.RequiredFactionValues.Any(value => !builtFactionProfiles.Any(profile => profile.Values.Contains(value, StringComparer.Ordinal)))))
+        {
+            throw new LocationDataException("A faction reaction rule references an unknown faction value.");
+        }
+        if (builtReactionRules.Any(rule => rule.RequiredFactionTabooTags.Any(tag => !builtFactionProfiles.Any(profile => profile.TabooActionTags.Contains(tag, StringComparer.Ordinal)))))
+        {
+            throw new LocationDataException("A faction reaction rule references an unknown faction taboo action tag.");
+        }
 
         var builtTerritoryEntryRules = factionTerritoryEntryRules.Select(BuildFactionTerritoryEntryRule).ToList();
         if (builtTerritoryEntryRules.GroupBy(rule => rule.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
             throw new LocationDataException("Faction territory entry rule IDs must be unique.");
+        }
+        if (builtTerritoryEntryRules.Any(rule => rule.FactionProfileId != null && !builtFactionProfiles.Any(profile => profile.Id == rule.FactionProfileId)))
+        {
+            throw new LocationDataException("A faction territory entry rule references an unknown faction profile.");
+        }
+        if (builtTerritoryEntryRules.Any(rule => rule.RequiredFactionValues.Any(value => !builtFactionProfiles.Any(profile => profile.Values.Contains(value, StringComparer.Ordinal)))))
+        {
+            throw new LocationDataException("A faction territory entry rule references an unknown faction value.");
         }
 
         var builtScoutOutcomes = scoutOutcomeRules.Select(item => new ScoutOutcomeRuleDefinition(
@@ -514,7 +680,7 @@ public static class CrossSystemDataLoader
             ParseEnum<ScoutMissionStatus>(Require(item.Outcome, "scoutReport.outcome"), "scoutReport.outcome"),
             Require(item.Title, "scoutReport.title"), Require(item.Body, "scoutReport.body"), Require(item.Hint, "scoutReport.hint"), item.MissionTypeId)).ToList();
 
-        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
+        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtFactionProfiles, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -536,7 +702,9 @@ public static class CrossSystemDataLoader
             dto.Event?.Body,
             dto.Event?.RevealsFaction ?? false,
             dto.Priority,
-            dto.RequiredActionTags);
+            dto.RequiredActionTags,
+            dto.RequiredFactionValues,
+            dto.RequiredFactionTabooTags);
     }
 
     private static FactionTerritoryEntryRuleDefinition BuildFactionTerritoryEntryRule(FactionTerritoryEntryRuleDto dto)
@@ -553,7 +721,16 @@ public static class CrossSystemDataLoader
             dto.Event?.AllowsInteraction ?? false,
             dto.Event?.Title,
             dto.Event?.Body,
-            dto.Priority);
+            dto.Priority,
+            dto.RequiredFactionValues);
+    }
+
+    private static FactionTerritorialPolicyDefinition BuildTerritorialPolicy(FactionTerritorialPolicyDto? dto)
+    {
+        return new FactionTerritorialPolicyDefinition(
+            dto?.PermittedActionTags,
+            dto?.RestrictedActionTags,
+            dto?.WarningActionTags);
     }
 
     private static string Require(string? value, string field)
@@ -588,6 +765,24 @@ public static class CrossSystemDataLoader
         public string? Id { get; set; }
         public string? ProfileId { get; set; }
         public string? Label { get; set; }
+    }
+
+    private sealed class FactionProfileDefinitionDto
+    {
+        public string? Id { get; set; }
+        public string? Label { get; set; }
+        public List<string>? Values { get; set; }
+        public List<string>? TabooActionTags { get; set; }
+        public FactionTerritorialPolicyDto? TerritorialPolicy { get; set; }
+        public string? ContactStyle { get; set; }
+        public string? LeadershipStyle { get; set; }
+    }
+
+    private sealed class FactionTerritorialPolicyDto
+    {
+        public List<string>? PermittedActionTags { get; set; }
+        public List<string>? RestrictedActionTags { get; set; }
+        public List<string>? WarningActionTags { get; set; }
     }
 
     private sealed class WorldTriggerDefinitionDto
@@ -632,6 +827,8 @@ public static class CrossSystemDataLoader
         public FactionReactionEventDto? Event { get; set; }
         public int Priority { get; set; }
         public List<string>? RequiredActionTags { get; set; }
+        public List<string>? RequiredFactionValues { get; set; }
+        public List<string>? RequiredFactionTabooTags { get; set; }
     }
 
     private sealed class FactionReactionEventDto
@@ -652,6 +849,7 @@ public static class CrossSystemDataLoader
         public bool PromotesContact { get; set; }
         public FactionTerritoryEntryEventDto? Event { get; set; }
         public int Priority { get; set; }
+        public List<string>? RequiredFactionValues { get; set; }
     }
 
     private sealed class FactionTerritoryEntryEventDto

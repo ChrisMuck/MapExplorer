@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Game.App;
 using Game.Core;
 
@@ -10,10 +11,35 @@ internal sealed class FactionReactionDataTests
     public void RunAll()
     {
         GeneratedSacredRelationCanReactWithoutRevealingFactionIdentity();
+        FactionProfilesAreLoadedAndUsedByGeneratedCampaigns();
         SemanticActionTagsGateReactions();
         NeutralLocationDoesNotCreateAFactionReaction();
         AttentionCanGateAHostileReaction();
         GameApplicationUsesJsonForTerritoryEntry();
+    }
+
+    private static void FactionProfilesAreLoadedAndUsedByGeneratedCampaigns()
+    {
+        var content = LoadContent();
+        AssertTrue(content.FactionProfiles.Find("welcoming") != null, "Welcoming faction profile loads from JSON");
+        AssertTrue(content.FactionProfiles.Find("hostile")!.Values.Contains("territory"), "Faction profile exposes authored values");
+        var cautious = content.FactionProfiles.Find("neutral-cautious")!;
+        AssertTrue(cautious.TabooActionTags.Contains("map"), "Faction profile exposes authored action taboos");
+        AssertTrue(cautious.TerritorialPolicy.RestrictedActionTags.Contains("cross"), "Faction profile exposes territorial conduct rules");
+        AssertEqual("guarded", cautious.ContactStyle, "Faction profile exposes its contact style");
+        AssertEqual("border-commander", cautious.LeadershipStyle, "Faction profile exposes its leadership style");
+
+        var game = new GameApplication(null, content).CreateGeneratedGame(new WorldGenerationRequest
+        {
+            Seed = 20260713,
+            Width = 30,
+            Height = 20,
+            FactionCount = 3
+        });
+        foreach (var faction in game.Factions)
+        {
+            AssertTrue(content.FactionProfiles.Find(faction.ReactionProfileId) != null, "Generated faction profile is defined by JSON content");
+        }
     }
 
     private static void GeneratedSacredRelationCanReactWithoutRevealingFactionIdentity()
