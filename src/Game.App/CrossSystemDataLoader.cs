@@ -104,16 +104,22 @@ public sealed class FactionTerritorialPolicyDefinition
     public FactionTerritorialPolicyDefinition(
         IEnumerable<string>? permittedActionTags = null,
         IEnumerable<string>? restrictedActionTags = null,
-        IEnumerable<string>? warningActionTags = null)
+        IEnumerable<string>? warningActionTags = null,
+        FactionTerritorialPolicyResponseDefinition? warningResponse = null,
+        FactionTerritorialPolicyResponseDefinition? restrictedResponse = null)
     {
         this.permittedActionTags = Normalize(permittedActionTags);
         this.restrictedActionTags = Normalize(restrictedActionTags);
         this.warningActionTags = Normalize(warningActionTags);
+        WarningResponse = warningResponse ?? new FactionTerritorialPolicyResponseDefinition();
+        RestrictedResponse = restrictedResponse ?? new FactionTerritorialPolicyResponseDefinition();
     }
 
     public IReadOnlyList<string> PermittedActionTags => permittedActionTags;
     public IReadOnlyList<string> RestrictedActionTags => restrictedActionTags;
     public IReadOnlyList<string> WarningActionTags => warningActionTags;
+    public FactionTerritorialPolicyResponseDefinition WarningResponse { get; }
+    public FactionTerritorialPolicyResponseDefinition RestrictedResponse { get; }
 
     private static List<string> Normalize(IEnumerable<string>? tags)
     {
@@ -123,6 +129,38 @@ public sealed class FactionTerritorialPolicyDefinition
             .Distinct(StringComparer.Ordinal)
             .ToList();
     }
+}
+
+/// <summary>Player-facing and simulation consequences for a generic territorial policy level.</summary>
+public sealed class FactionTerritorialPolicyResponseDefinition
+{
+    public FactionTerritorialPolicyResponseDefinition(
+        int trustDelta = 0,
+        int angerDelta = 0,
+        int fearDelta = 0,
+        int awarenessIncrease = 0,
+        string? eventTitle = null,
+        string? eventBody = null,
+        bool revealsFaction = false)
+    {
+        if (awarenessIncrease < 0) throw new ArgumentOutOfRangeException(nameof(awarenessIncrease));
+        TrustDelta = trustDelta;
+        AngerDelta = angerDelta;
+        FearDelta = fearDelta;
+        AwarenessIncrease = awarenessIncrease;
+        EventTitle = string.IsNullOrWhiteSpace(eventTitle) ? null : eventTitle.Trim();
+        EventBody = string.IsNullOrWhiteSpace(eventBody) ? null : eventBody.Trim();
+        RevealsFaction = revealsFaction;
+    }
+
+    public int TrustDelta { get; }
+    public int AngerDelta { get; }
+    public int FearDelta { get; }
+    public int AwarenessIncrease { get; }
+    public string? EventTitle { get; }
+    public string? EventBody { get; }
+    public bool RevealsFaction { get; }
+    public bool HasEffect => TrustDelta != 0 || AngerDelta != 0 || FearDelta != 0 || AwarenessIncrease != 0 || (EventTitle != null && EventBody != null);
 }
 
 public sealed class FactionProfileDefinitionSet
@@ -861,7 +899,21 @@ public static class CrossSystemDataLoader
         return new FactionTerritorialPolicyDefinition(
             dto?.PermittedActionTags,
             dto?.RestrictedActionTags,
-            dto?.WarningActionTags);
+            dto?.WarningActionTags,
+            BuildTerritorialPolicyResponse(dto?.WarningResponse),
+            BuildTerritorialPolicyResponse(dto?.RestrictedResponse));
+    }
+
+    private static FactionTerritorialPolicyResponseDefinition BuildTerritorialPolicyResponse(FactionTerritorialPolicyResponseDto? dto)
+    {
+        return new FactionTerritorialPolicyResponseDefinition(
+            dto?.TrustDelta ?? 0,
+            dto?.AngerDelta ?? 0,
+            dto?.FearDelta ?? 0,
+            dto?.AwarenessIncrease ?? 0,
+            dto?.Event?.Title,
+            dto?.Event?.Body,
+            dto?.Event?.RevealsFaction ?? false);
     }
 
     private static string Require(string? value, string field)
@@ -914,6 +966,17 @@ public static class CrossSystemDataLoader
         public List<string>? PermittedActionTags { get; set; }
         public List<string>? RestrictedActionTags { get; set; }
         public List<string>? WarningActionTags { get; set; }
+        public FactionTerritorialPolicyResponseDto? WarningResponse { get; set; }
+        public FactionTerritorialPolicyResponseDto? RestrictedResponse { get; set; }
+    }
+
+    private sealed class FactionTerritorialPolicyResponseDto
+    {
+        public int? TrustDelta { get; set; }
+        public int? AngerDelta { get; set; }
+        public int? FearDelta { get; set; }
+        public int? AwarenessIncrease { get; set; }
+        public FactionReactionEventDto? Event { get; set; }
     }
 
     private sealed class WorldTriggerDefinitionDto

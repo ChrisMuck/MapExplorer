@@ -10,7 +10,26 @@
       "territorialPolicy": {
         "permittedActionTags": [ "trade", "communicate", "request-passage" ],
         "restrictedActionTags": [ "exploit", "disturb" ],
-        "warningActionTags": [ "harvest" ]
+        "warningActionTags": [ "harvest" ],
+        "warningResponse": {
+          "angerDelta": 1,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Eine Bitte um Rücksicht",
+            "body": "Am Rand des Ortes liegt eine einfache Bitte zurück: Was hier wächst, wird von jemandem genutzt. Die Expedition sollte nicht mehr nehmen, als sie braucht.",
+            "revealsFaction": false
+          }
+        },
+        "restrictedResponse": {
+          "angerDelta": 4,
+          "fearDelta": 1,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Eine freundliche Grenze wird deutlich",
+            "body": "Jemand hat die Veränderung bemerkt. Die neuen Zeichen bleiben höflich, lassen aber keinen Zweifel daran, dass dieser Ort nicht beliebig behandelt werden soll.",
+            "revealsFaction": false
+          }
+        }
       },
       "contactStyle": "open",
       "leadershipStyle": "council"
@@ -23,7 +42,27 @@
       "territorialPolicy": {
         "permittedActionTags": [ "request-passage", "offer", "restraint" ],
         "restrictedActionTags": [ "cross", "map", "harvest" ],
-        "warningActionTags": [ "cross", "map", "ignore-warning" ]
+        "warningActionTags": [ "cross", "map", "ignore-warning" ],
+        "warningResponse": {
+          "angerDelta": 2,
+          "fearDelta": 1,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Die Beobachtung wird spürbar",
+            "body": "Ein Zeichen am Ort wurde frisch ergänzt. Es ist keine offene Drohung, aber die Expedition versteht: Ihr Verhalten wird hier wahrgenommen.",
+            "revealsFaction": false
+          }
+        },
+        "restrictedResponse": {
+          "angerDelta": 5,
+          "fearDelta": 2,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Ein Anspruch wird bekräftigt",
+            "body": "Sorgfältig gesetzte Spuren machen deutlich, dass die Handlung nicht unbeobachtet blieb. Wer diesen Ort kontrolliert, erwartet Zurückhaltung.",
+            "revealsFaction": false
+          }
+        }
       },
       "contactStyle": "guarded",
       "leadershipStyle": "border-commander"
@@ -36,7 +75,27 @@
       "territorialPolicy": {
         "permittedActionTags": [ "withdraw", "leave" ],
         "restrictedActionTags": [ "cross", "map", "harvest", "repair" ],
-        "warningActionTags": [ "approach", "cross", "repair" ]
+        "warningActionTags": [ "approach", "cross", "repair" ],
+        "warningResponse": {
+          "angerDelta": 3,
+          "fearDelta": 2,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Die Stille antwortet",
+            "body": "Die Umgebung wird stiller als zuvor. Nichts zeigt sich offen, doch die Expedition spürt, dass ihre Annäherung registriert wurde.",
+            "revealsFaction": false
+          }
+        },
+        "restrictedResponse": {
+          "angerDelta": 7,
+          "fearDelta": 3,
+          "awarenessIncrease": 1,
+          "event": {
+            "title": "Eine Grenze wird nicht übersehen",
+            "body": "Neue Spuren um den Ort machen klar: Jemand bewertet die Veränderung als Eingriff. Die Expedition sollte mit einer weiteren Antwort rechnen.",
+            "revealsFaction": false
+          }
+        }
       },
       "contactStyle": "indirect",
       "leadershipStyle": "hidden-command"

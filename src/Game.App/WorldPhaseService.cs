@@ -12,11 +12,13 @@ public sealed class WorldPhaseService
 {
     private readonly CrossSystemDataBundle? content;
     private readonly FactionReactionResolver factionReactionResolver;
+    private readonly FactionTerritorialPolicyResolver territorialPolicyResolver;
 
     public WorldPhaseService(CrossSystemDataBundle? content = null)
     {
         this.content = content;
         factionReactionResolver = new FactionReactionResolver(content);
+        territorialPolicyResolver = new FactionTerritorialPolicyResolver(content);
     }
 
     public IReadOnlyList<string> Resolve(GameState game)
@@ -45,6 +47,7 @@ public sealed class WorldPhaseService
                 }
             }
             factionReactionResolver.Resolve(game, trigger);
+            territorialPolicyResolver.Resolve(game, trigger);
             trigger.MarkResolved();
             messages.Add($"World trigger resolved: {trigger.TriggerId}.");
         }

@@ -2,6 +2,7 @@
   "documentType": "world-trigger-definitions",
   "schemaVersion": 1,
   "items": [
+    { "id": "location-action-completed" },
     { "id": "location-grave-disturbed", "consequenceId": "consequence-grave-disturbed" },
     { "id": "location-infrastructure-repaired", "consequenceId": "consequence-route-restored" },
     { "id": "location-grave-respected" },
