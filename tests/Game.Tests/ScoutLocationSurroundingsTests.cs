@@ -12,8 +12,30 @@ internal sealed class ScoutLocationSurroundingsTests
     {
         ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness();
         ScoutingRequiresAnAvailableScoutAtTheLocation();
+        MissionTypeJsonControlsLocalScoutTeamSize();
         JsonEvidenceDefinitionDrivesScoutReportText();
         DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt();
+    }
+
+    private static void MissionTypeJsonControlsLocalScoutTeamSize()
+    {
+        var dataRoot = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
+        var data = CrossSystemDataLoader.LoadFromDirectories(new[]
+        {
+            Path.Combine(dataRoot, "World"),
+            Path.Combine(dataRoot, "Factions"),
+            Path.Combine(dataRoot, "Scouting")
+        }) ?? throw new InvalidOperationException("Scout JSON content was not loaded.");
+        var localMission = data.ScoutContent.FindMissionType("location-surroundings");
+        AssertEqual(1, localMission!.MaxScouts, "Local surroundings mission limit comes from JSON");
+        AssertTrue(localMission.Allows(ScoutMissionFocus.FactionSigns), "Local surroundings permits faction-sign focus from JSON");
+        AssertFalse(localMission.Allows(ScoutMissionFocus.Ruins), "Local surroundings excludes unrelated focus from JSON");
+
+        var game = CreateGame(new HexCoord(1, 1));
+        AddSecondAvailableScout(game);
+        var result = new GameApplication(null, data).ScoutLocationSurroundings(game, "location-1", new[] { "scout-1", "scout-2" });
+
+        AssertFalse(result.Success, "Local surroundings mission rejects a two-scout team by JSON limit");
     }
 
     private static void ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness()
@@ -119,6 +141,26 @@ internal sealed class ScoutLocationSurroundingsTests
                     "Unknown Watchers",
                     signatureProfileId: "woven-offerings")
             });
+    }
+
+    private static void AddSecondAvailableScout(GameState game)
+    {
+        var members = game.Expedition.Members
+            .Concat(new[] { new ExpeditionMemberState("scout-2", "Tovin", ExpeditionMemberRole.Scout) })
+            .ToList();
+        game.SetExpedition(new ExpeditionState(
+            game.Expedition.ExpeditionNumber,
+            game.Expedition.Position,
+            members,
+            game.Expedition.ExpeditionDay,
+            game.Expedition.MovementPoints,
+            game.Expedition.MaxMovementPoints,
+            game.Expedition.Supplies,
+            game.Expedition.Medicine,
+            game.Expedition.Morale,
+            game.Expedition.Capacity,
+            game.Expedition.Status,
+            game.Expedition.UnsecuredKnowledge));
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

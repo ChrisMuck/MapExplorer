@@ -17,8 +17,8 @@ public sealed class GameApplication
     private readonly EndDayCommand endDayCommand;
     private readonly AddMapMarkerCommand addMapMarkerCommand = new AddMapMarkerCommand();
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
-    private readonly SendScoutMissionCommand sendScoutMissionCommand = new SendScoutMissionCommand();
-    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand();
+    private readonly SendScoutMissionCommand sendScoutMissionCommand;
+    private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand;
     private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
     private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
@@ -70,6 +70,8 @@ public sealed class GameApplication
         }
 
         var locationInteractionService = new LocationInteractionService(locationInteractionDefinitions);
+        sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
+        scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(crossSystemData?.ScoutContent);
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);

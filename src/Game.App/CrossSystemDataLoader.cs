@@ -417,6 +417,66 @@ public sealed class ScoutOutcomeRuleDefinition
     public bool Matches(ScoutMissionState mission) => Behavior == mission.Behavior && WhenStatus == mission.Status && (!Focus.HasValue || Focus.Value == mission.Focus) && (MissionTypeId == null || MissionTypeId == mission.MissionTypeId);
 }
 
+/// <summary>JSON-authored order constraints for a scout mission category.</summary>
+public sealed class ScoutMissionTypeDefinition
+{
+    private readonly HashSet<ScoutMissionFocus> allowedFocuses;
+
+    public ScoutMissionTypeDefinition(
+        string id,
+        string label,
+        int minDurationDays,
+        int maxDurationDays,
+        int maxScouts,
+        IEnumerable<ScoutMissionFocus> allowedFocuses)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Scout mission type id must not be empty.", nameof(id));
+        if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Scout mission type label must not be empty.", nameof(label));
+        if (minDurationDays < 1 || maxDurationDays < minDurationDays) throw new ArgumentOutOfRangeException(nameof(maxDurationDays));
+        if (maxScouts < 1) throw new ArgumentOutOfRangeException(nameof(maxScouts));
+        Id = id.Trim();
+        Label = label.Trim();
+        MinDurationDays = minDurationDays;
+        MaxDurationDays = maxDurationDays;
+        MaxScouts = maxScouts;
+        this.allowedFocuses = new HashSet<ScoutMissionFocus>(allowedFocuses ?? throw new ArgumentNullException(nameof(allowedFocuses)));
+        if (this.allowedFocuses.Count == 0) throw new ArgumentException("Scout mission type needs at least one focus.", nameof(allowedFocuses));
+    }
+
+    public string Id { get; }
+    public string Label { get; }
+    public int MinDurationDays { get; }
+    public int MaxDurationDays { get; }
+    public int MaxScouts { get; }
+    public IReadOnlyCollection<ScoutMissionFocus> AllowedFocuses => allowedFocuses;
+    public bool Allows(ScoutMissionFocus focus) => allowedFocuses.Contains(focus);
+}
+
+/// <summary>Presentation and compatibility metadata for one reusable scout focus.</summary>
+public sealed class ScoutFocusDefinition
+{
+    private readonly HashSet<string> compatibleMissionTypeIds;
+
+    public ScoutFocusDefinition(ScoutMissionFocus focus, string label, string description, IEnumerable<string>? compatibleMissionTypeIds = null)
+    {
+        if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Scout focus label must not be empty.", nameof(label));
+        if (string.IsNullOrWhiteSpace(description)) throw new ArgumentException("Scout focus description must not be empty.", nameof(description));
+        Focus = focus;
+        Label = label.Trim();
+        Description = description.Trim();
+        compatibleMissionTypeIds = compatibleMissionTypeIds ?? Enumerable.Empty<string>();
+        this.compatibleMissionTypeIds = new HashSet<string>(compatibleMissionTypeIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim()), StringComparer.Ordinal);
+    }
+
+    public ScoutMissionFocus Focus { get; }
+    public string Label { get; }
+    public string Description { get; }
+    public IReadOnlyCollection<string> CompatibleMissionTypeIds => compatibleMissionTypeIds;
+    public bool Allows(string missionTypeId) => compatibleMissionTypeIds.Count == 0 || compatibleMissionTypeIds.Contains(missionTypeId);
+}
+
 public sealed class ScoutReportTemplateDefinition
 {
     public ScoutReportTemplateDefinition(ScoutMissionFocus focus, ScoutMissionStatus outcome, string title, string body, string hint, string? missionTypeId = null)
@@ -447,11 +507,19 @@ public sealed class ScoutContentDefinitionSet
 {
     private readonly List<ScoutOutcomeRuleDefinition> outcomeRules;
     private readonly List<ScoutReportTemplateDefinition> reportTemplates;
+    private readonly Dictionary<string, ScoutMissionTypeDefinition> missionTypes;
+    private readonly Dictionary<ScoutMissionFocus, ScoutFocusDefinition> focuses;
 
-    public ScoutContentDefinitionSet(IEnumerable<ScoutOutcomeRuleDefinition>? outcomeRules = null, IEnumerable<ScoutReportTemplateDefinition>? reportTemplates = null)
+    public ScoutContentDefinitionSet(
+        IEnumerable<ScoutOutcomeRuleDefinition>? outcomeRules = null,
+        IEnumerable<ScoutReportTemplateDefinition>? reportTemplates = null,
+        IEnumerable<ScoutMissionTypeDefinition>? missionTypes = null,
+        IEnumerable<ScoutFocusDefinition>? focuses = null)
     {
         this.outcomeRules = (outcomeRules ?? Enumerable.Empty<ScoutOutcomeRuleDefinition>()).ToList();
         this.reportTemplates = (reportTemplates ?? Enumerable.Empty<ScoutReportTemplateDefinition>()).ToList();
+        this.missionTypes = (missionTypes ?? Enumerable.Empty<ScoutMissionTypeDefinition>()).ToDictionary(definition => definition.Id, StringComparer.Ordinal);
+        this.focuses = (focuses ?? Enumerable.Empty<ScoutFocusDefinition>()).ToDictionary(definition => definition.Focus);
     }
 
     public ScoutOutcomeRuleDefinition? FindOutcome(ScoutMissionState mission)
@@ -465,6 +533,20 @@ public sealed class ScoutContentDefinitionSet
         return reportTemplates.FirstOrDefault(template => template.Focus == mission.Focus && template.Outcome == outcome && template.MissionTypeId == mission.MissionTypeId)
             ?? reportTemplates.FirstOrDefault(template => template.Focus == mission.Focus && template.Outcome == outcome && template.MissionTypeId == null);
     }
+
+    public ScoutMissionTypeDefinition? FindMissionType(string? id)
+    {
+        return !string.IsNullOrWhiteSpace(id) && missionTypes.TryGetValue(id, out var definition) ? definition : null;
+    }
+
+    public ScoutFocusDefinition? FindFocus(ScoutMissionFocus focus)
+    {
+        return focuses.TryGetValue(focus, out var definition) ? definition : null;
+    }
+
+    public bool HasMissionTypeDefinitions => missionTypes.Count > 0;
+    public IReadOnlyCollection<ScoutMissionTypeDefinition> MissionTypes => missionTypes.Values;
+    public IReadOnlyCollection<ScoutFocusDefinition> Focuses => focuses.Values;
 }
 
 public sealed class CrossSystemDataBundle
@@ -538,6 +620,8 @@ public static class CrossSystemDataLoader
         var factionProfiles = new List<FactionProfileDefinitionDto>();
         var factionReactionRules = new List<FactionReactionRuleDto>();
         var factionTerritoryEntryRules = new List<FactionTerritoryEntryRuleDto>();
+        var scoutMissionTypes = new List<ScoutMissionTypeDto>();
+        var scoutFocuses = new List<ScoutFocusDto>();
         var scoutOutcomeRules = new List<ScoutOutcomeRuleDto>();
         var scoutReportTemplates = new List<ScoutReportTemplateDto>();
 
@@ -569,6 +653,8 @@ public static class CrossSystemDataLoader
                 case "faction-profiles": factionProfiles.AddRange(items.ToObject<List<FactionProfileDefinitionDto>>()!); break;
                 case "faction-reaction-rules": factionReactionRules.AddRange(items.ToObject<List<FactionReactionRuleDto>>()!); break;
                 case "faction-territory-entry-rules": factionTerritoryEntryRules.AddRange(items.ToObject<List<FactionTerritoryEntryRuleDto>>()!); break;
+                case "scout-mission-types": scoutMissionTypes.AddRange(items.ToObject<List<ScoutMissionTypeDto>>()!); break;
+                case "scout-focuses": scoutFocuses.AddRange(items.ToObject<List<ScoutFocusDto>>()!); break;
                 case "scout-outcome-rules": scoutOutcomeRules.AddRange(items.ToObject<List<ScoutOutcomeRuleDto>>()!); break;
                 case "scout-report-templates": scoutReportTemplates.AddRange(items.ToObject<List<ScoutReportTemplateDto>>()!); break;
                 case "world-generation-presets": break;
@@ -670,6 +756,45 @@ public static class CrossSystemDataLoader
             throw new LocationDataException("A faction territory entry rule references an unknown faction value.");
         }
 
+        var builtScoutMissionTypes = scoutMissionTypes.Select(item => new ScoutMissionTypeDefinition(
+            Require(item.Id, "scoutMissionType.id"),
+            Require(item.Label, "scoutMissionType.label"),
+            item.MinDurationDays,
+            item.MaxDurationDays,
+            item.MaxScouts,
+            (item.AllowedFocuses ?? new List<string>())
+                .Select(focus => ParseEnum<ScoutMissionFocus>(focus, "scoutMissionType.allowedFocuses")))).ToList();
+        if (builtScoutMissionTypes.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        {
+            throw new LocationDataException("Scout mission type IDs must be unique.");
+        }
+
+        var builtScoutFocuses = scoutFocuses.Select(item => new ScoutFocusDefinition(
+            ParseEnum<ScoutMissionFocus>(Require(item.Id, "scoutFocus.id"), "scoutFocus.id"),
+            Require(item.Label, "scoutFocus.label"),
+            Require(item.Description, "scoutFocus.description"),
+            item.CompatibleMissionTypeIds)).ToList();
+        if (builtScoutFocuses.GroupBy(item => item.Focus).Any(group => group.Count() > 1))
+        {
+            throw new LocationDataException("Scout focus IDs must be unique.");
+        }
+        if (builtScoutMissionTypes.Count > 0 && builtScoutFocuses.Count == 0)
+        {
+            throw new LocationDataException("Scout mission types require scout focus definitions.");
+        }
+        if (builtScoutMissionTypes.Any(mission => mission.AllowedFocuses.Any(focus => !builtScoutFocuses.Any(definition => definition.Focus == focus))))
+        {
+            throw new LocationDataException("Scout mission type references an unknown scout focus.");
+        }
+        if (builtScoutFocuses.Any(focus => focus.CompatibleMissionTypeIds.Any(id => !builtScoutMissionTypes.Any(mission => mission.Id == id))))
+        {
+            throw new LocationDataException("Scout focus references an unknown scout mission type.");
+        }
+        if (builtScoutMissionTypes.Any(mission => mission.AllowedFocuses.Any(focus => !builtScoutFocuses.First(definition => definition.Focus == focus).Allows(mission.Id))))
+        {
+            throw new LocationDataException("Scout mission type and scout focus compatibility disagree.");
+        }
+
         var builtScoutOutcomes = scoutOutcomeRules.Select(item => new ScoutOutcomeRuleDefinition(
             ParseEnum<ScoutMissionBehavior>(Require(item.Behavior, "scoutOutcome.behavior"), "scoutOutcome.behavior"),
             ParseEnum<ScoutMissionStatus>(Require(item.WhenStatus, "scoutOutcome.whenStatus"), "scoutOutcome.whenStatus"),
@@ -680,7 +805,13 @@ public static class CrossSystemDataLoader
             ParseEnum<ScoutMissionStatus>(Require(item.Outcome, "scoutReport.outcome"), "scoutReport.outcome"),
             Require(item.Title, "scoutReport.title"), Require(item.Body, "scoutReport.body"), Require(item.Hint, "scoutReport.hint"), item.MissionTypeId)).ToList();
 
-        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtFactionProfiles, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
+        if (builtScoutMissionTypes.Count > 0 && (builtScoutOutcomes.Any(rule => rule.MissionTypeId != null && !builtScoutMissionTypes.Any(mission => mission.Id == rule.MissionTypeId))
+            || builtScoutReports.Any(template => template.MissionTypeId != null && !builtScoutMissionTypes.Any(mission => mission.Id == template.MissionTypeId))))
+        {
+            throw new LocationDataException("Scout content references an unknown scout mission type.");
+        }
+
+        return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtFactionProfiles, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports, builtScoutMissionTypes, builtScoutFocuses), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -867,6 +998,24 @@ public static class CrossSystemDataLoader
         public string? Outcome { get; set; }
         public string? Focus { get; set; }
         public string? MissionTypeId { get; set; }
+    }
+
+    private sealed class ScoutMissionTypeDto
+    {
+        public string? Id { get; set; }
+        public string? Label { get; set; }
+        public int MinDurationDays { get; set; }
+        public int MaxDurationDays { get; set; }
+        public int MaxScouts { get; set; }
+        public List<string>? AllowedFocuses { get; set; }
+    }
+
+    private sealed class ScoutFocusDto
+    {
+        public string? Id { get; set; }
+        public string? Label { get; set; }
+        public string? Description { get; set; }
+        public List<string>? CompatibleMissionTypeIds { get; set; }
     }
 
     private sealed class ScoutReportTemplateDto

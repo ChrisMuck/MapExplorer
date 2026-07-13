@@ -11,6 +11,12 @@ public sealed class SendScoutMissionCommand
 {
     private const int MinDurationDays = 1;
     private const int MaxDurationDays = 5;
+    private readonly ScoutContentDefinitionSet? scoutContent;
+
+    public SendScoutMissionCommand(ScoutContentDefinitionSet? scoutContent = null)
+    {
+        this.scoutContent = scoutContent;
+    }
 
     public SendScoutMissionResult Execute(
         GameState game,
@@ -41,14 +47,34 @@ public sealed class SendScoutMissionCommand
             return SendScoutMissionResult.Rejected("Scout selection contains duplicate or empty member ids.");
         }
 
-        if (distinctIds.Count > 2)
+        var missionDefinition = FindMissionDefinition("directional-recon");
+        if (missionDefinition == null && scoutContent?.HasMissionTypeDefinitions == true)
         {
-            return SendScoutMissionResult.Rejected("A scout mission can use at most two scouts.");
+            return SendScoutMissionResult.Rejected("Directional reconnaissance is not configured.");
         }
 
-        if (durationDays < MinDurationDays || durationDays > MaxDurationDays)
+        var maxScouts = missionDefinition?.MaxScouts ?? 2;
+        if (distinctIds.Count > maxScouts)
         {
-            return SendScoutMissionResult.Rejected($"Scout mission duration must be between {MinDurationDays} and {MaxDurationDays} days.");
+            return SendScoutMissionResult.Rejected($"This scout mission can use at most {maxScouts} scouts.");
+        }
+
+        var minDuration = missionDefinition?.MinDurationDays ?? MinDurationDays;
+        var maxDuration = missionDefinition?.MaxDurationDays ?? MaxDurationDays;
+        if (durationDays < minDuration || durationDays > maxDuration)
+        {
+            return SendScoutMissionResult.Rejected($"Scout mission duration must be between {minDuration} and {maxDuration} days.");
+        }
+
+        if (missionDefinition != null && !missionDefinition.Allows(focus))
+        {
+            return SendScoutMissionResult.Rejected("This focus is not available for directional reconnaissance.");
+        }
+
+        var focusDefinition = scoutContent?.FindFocus(focus);
+        if (focusDefinition != null && !focusDefinition.Allows("directional-recon"))
+        {
+            return SendScoutMissionResult.Rejected("This focus is not compatible with directional reconnaissance.");
         }
 
         foreach (var memberId in distinctIds)
@@ -88,6 +114,11 @@ public sealed class SendScoutMissionCommand
 
         game.Expedition.AddScoutMission(mission);
         return SendScoutMissionResult.Sent(mission);
+    }
+
+    private ScoutMissionTypeDefinition? FindMissionDefinition(string missionTypeId)
+    {
+        return scoutContent?.FindMissionType(missionTypeId);
     }
 }
 }
