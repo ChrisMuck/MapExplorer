@@ -67,6 +67,8 @@ public sealed class ScoutReportState
 
     public IReadOnlyList<ScoutLeadState> Leads => leads;
 
+    public bool HasExactCoordinates => false;
+
     private static string RequireText(string value, string name)
     {
         if (string.IsNullOrWhiteSpace(value))

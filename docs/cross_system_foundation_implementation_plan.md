@@ -333,6 +333,9 @@ changing its intended player-facing presentation.
    World Truth.
 5. Add Unity integration checks for catalog-load failure messaging and representative location
    panels; Core correctness remains covered outside Unity.
+6. Replace the legacy scout-report coordinate focus and marker shortcuts with structured
+   `ScoutLeadState` presentation: show direction, scope, confidence and wording, but never derive
+   a target hex from a report.
 
 **Acceptance tests**
 

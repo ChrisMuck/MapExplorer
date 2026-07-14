@@ -1,0 +1,24 @@
+{
+  "id": "scenario-directional-lead",
+  "seed": 41027,
+  "worldKind": "generated",
+  "width": 24,
+  "height": 18,
+  "factionCount": 3,
+  "commands": [
+    {
+      "kind": "send-directional-scout",
+      "scoutMemberIds": [ "scout-1" ],
+      "direction": "East",
+      "durationDays": 1,
+      "focus": "Survey",
+      "behavior": "Cautious"
+    },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-soft-connections" },
+    { "kind": "has-directional-lead" },
+    { "kind": "no-exact-scout-coordinates" }
+  ]
+}

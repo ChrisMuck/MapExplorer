@@ -59,6 +59,8 @@ var worldPhaseDataTests = new WorldPhaseDataTests();
 worldPhaseDataTests.RunAll();
 var worldProcessEffectTests = new WorldProcessEffectTests();
 worldProcessEffectTests.RunAll();
+var simulationSessionTests = new SimulationSessionTests();
+simulationSessionTests.RunAll();
 var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
 var factionTerritorialPolicyTests = new FactionTerritorialPolicyTests();
