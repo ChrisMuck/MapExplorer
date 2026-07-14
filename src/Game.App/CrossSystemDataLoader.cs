@@ -56,6 +56,7 @@ public sealed class FactionProfileDefinition
 {
     private readonly List<string> values;
     private readonly List<string> tabooActionTags;
+    private readonly List<string> observationChannels;
 
     public FactionProfileDefinition(
         string id,
@@ -64,7 +65,9 @@ public sealed class FactionProfileDefinition
         IEnumerable<string>? tabooActionTags = null,
         FactionTerritorialPolicyDefinition? territorialPolicy = null,
         string? contactStyle = null,
-        string? leadershipStyle = null)
+        string? leadershipStyle = null,
+        int observationRange = 0,
+        IEnumerable<string>? observationChannels = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Faction profile id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Faction profile label must not be empty.", nameof(label));
@@ -80,9 +83,16 @@ public sealed class FactionProfileDefinition
             .Select(tag => tag.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        if (observationRange < 0) throw new ArgumentOutOfRangeException(nameof(observationRange));
+        this.observationChannels = (observationChannels ?? new[] { "territory", "watch" })
+            .Where(channel => !string.IsNullOrWhiteSpace(channel))
+            .Select(channel => channel.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
         TerritorialPolicy = territorialPolicy ?? new FactionTerritorialPolicyDefinition();
         ContactStyle = string.IsNullOrWhiteSpace(contactStyle) ? null : contactStyle.Trim();
         LeadershipStyle = string.IsNullOrWhiteSpace(leadershipStyle) ? null : leadershipStyle.Trim();
+        ObservationRange = observationRange;
     }
 
     public string Id { get; }
@@ -92,6 +102,8 @@ public sealed class FactionProfileDefinition
     public FactionTerritorialPolicyDefinition TerritorialPolicy { get; }
     public string? ContactStyle { get; }
     public string? LeadershipStyle { get; }
+    public int ObservationRange { get; }
+    public IReadOnlyList<string> ObservationChannels => observationChannels;
 }
 
 /// <summary>Discoverable conduct preferences. Concrete territories and locations remain generated runtime state.</summary>
@@ -197,6 +209,7 @@ public sealed class WorldTriggerDefinition
 public sealed class ConsequenceStageDefinition
 {
     private readonly List<string> situationDefinitionIds;
+    private readonly List<WorldStageEffectDefinition> effects;
 
     public ConsequenceStageDefinition(
         string id,
@@ -204,7 +217,9 @@ public sealed class ConsequenceStageDefinition
         string? evidenceId,
         string? eventTitle,
         string? eventBody,
-        IEnumerable<string>? situationDefinitionIds = null)
+        IEnumerable<string>? situationDefinitionIds = null,
+        IEnumerable<WorldStageEffectDefinition>? effects = null,
+        WorldConsequenceSeverity severity = WorldConsequenceSeverity.Informational)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence stage id must not be empty.", nameof(id));
         if (delayDays < 0) throw new ArgumentOutOfRangeException(nameof(delayDays));
@@ -218,6 +233,10 @@ public sealed class ConsequenceStageDefinition
             .Select(value => value.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        this.effects = (effects ?? Enumerable.Empty<WorldStageEffectDefinition>()).ToList();
+        if (this.effects.Select(effect => effect.Id).Distinct(StringComparer.Ordinal).Count() != this.effects.Count)
+            throw new ArgumentException("World-stage effect IDs must be unique within one stage.", nameof(effects));
+        Severity = severity;
     }
 
     public string Id { get; }
@@ -226,6 +245,75 @@ public sealed class ConsequenceStageDefinition
     public string? EventTitle { get; }
     public string? EventBody { get; }
     public IReadOnlyList<string> SituationDefinitionIds => situationDefinitionIds;
+    public IReadOnlyList<WorldStageEffectDefinition> Effects => effects;
+    public WorldConsequenceSeverity Severity { get; }
+}
+
+/// <summary>How urgent a process stage is. Serious stages require a preceding warning situation.</summary>
+public enum WorldConsequenceSeverity
+{
+    Informational,
+    Serious
+}
+
+/// <summary>Neutral, runtime-targeted world change authored by a consequence stage.</summary>
+public enum WorldStageEffectKind
+{
+    AddEvidence,
+    ChangeLocationState,
+    SetLocationFlag,
+    SetTilePassability,
+    RaiseWorldTrigger,
+    CreateSituation,
+    EscalateRelatedFactionAwareness,
+    CreateConnection
+}
+
+/// <summary>
+/// Generic effect schema. It never contains a concrete faction or location ID: targets are the
+/// source runtime location/coordinate or a generated relation attached to it.
+/// </summary>
+public sealed class WorldStageEffectDefinition
+{
+    private readonly List<string> actionTags;
+    private readonly List<string> suppressIfSituationResponseTags;
+
+    public WorldStageEffectDefinition(
+        string id,
+        WorldStageEffectKind kind,
+        string? referenceId = null,
+        string? stateChannel = null,
+        string? stateId = null,
+        bool? isBlocked = null,
+        IEnumerable<string>? actionTags = null,
+        int dueDays = 0,
+        string? connectionKind = null,
+        IEnumerable<string>? suppressIfSituationResponseTags = null)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("World-stage effect id must not be empty.", nameof(id));
+        if (dueDays < 0) throw new ArgumentOutOfRangeException(nameof(dueDays));
+        Id = id.Trim();
+        Kind = kind;
+        ReferenceId = string.IsNullOrWhiteSpace(referenceId) ? null : referenceId.Trim();
+        StateChannel = string.IsNullOrWhiteSpace(stateChannel) ? null : stateChannel.Trim();
+        StateId = string.IsNullOrWhiteSpace(stateId) ? null : stateId.Trim();
+        IsBlocked = isBlocked;
+        this.actionTags = (actionTags ?? Enumerable.Empty<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        DueDays = dueDays;
+        ConnectionKind = string.IsNullOrWhiteSpace(connectionKind) ? null : connectionKind.Trim();
+        this.suppressIfSituationResponseTags = (suppressIfSituationResponseTags ?? Enumerable.Empty<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    public string Id { get; }
+    public WorldStageEffectKind Kind { get; }
+    public string? ReferenceId { get; }
+    public string? StateChannel { get; }
+    public string? StateId { get; }
+    public bool? IsBlocked { get; }
+    public IReadOnlyList<string> ActionTags => actionTags;
+    public int DueDays { get; }
+    public string? ConnectionKind { get; }
+    public IReadOnlyList<string> SuppressIfSituationResponseTags => suppressIfSituationResponseTags;
 }
 
 /// <summary>An authored possible history. Its weight is read only once at process scheduling time.</summary>
@@ -821,7 +909,9 @@ public static class CrossSystemDataLoader
                 item.TabooActionTags,
                 BuildTerritorialPolicy(item.TerritorialPolicy),
                 item.ContactStyle,
-                item.LeadershipStyle))
+                item.LeadershipStyle,
+                item.ObservationRange,
+                item.ObservationChannels))
             .ToList();
         if (builtFactionProfiles.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
@@ -839,6 +929,21 @@ public static class CrossSystemDataLoader
             .Any(stage => stage.EvidenceId != null && !definitions.Any(evidenceDefinition => evidenceDefinition.Id == stage.EvidenceId)))
         {
             throw new LocationDataException("A consequence stage references an unknown evidence definition.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.AddEvidence && (effect.ReferenceId == null || !definitions.Any(evidenceDefinition => evidenceDefinition.Id == effect.ReferenceId))))
+        {
+            throw new LocationDataException("A world-stage evidence effect references an unknown evidence definition.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.ChangeLocationState && (effect.StateChannel == null || effect.StateId == null)))
+        {
+            throw new LocationDataException("A location-state world-stage effect requires stateChannel and stateId.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.SetTilePassability && !effect.IsBlocked.HasValue))
+        {
+            throw new LocationDataException("A tile-passability world-stage effect requires isBlocked.");
         }
 
         var builtTriggers = triggers.Select(item => new WorldTriggerDefinition(Require(item.Id, "trigger.id"), item.ConsequenceId)).ToList();
@@ -969,14 +1074,47 @@ public static class CrossSystemDataLoader
     private static IReadOnlyList<ConsequenceStageDefinition> BuildConsequenceStages(IEnumerable<ConsequenceStageDto>? stages)
     {
         return (stages ?? Enumerable.Empty<ConsequenceStageDto>())
-            .Select(stage => new ConsequenceStageDefinition(
-                Require(stage.Id, "consequence.stage.id"),
-                stage.DelayDays,
-                stage.EvidenceId,
-                stage.Event?.Title,
-                stage.Event?.Body,
-                stage.SituationCandidateIds))
+            .Select(stage =>
+            {
+                var stageId = Require(stage.Id, "consequence.stage.id");
+                var effects = (stage.Effects ?? new List<WorldStageEffectDto>())
+                    .Select((effect, index) => BuildWorldStageEffect(effect, stageId, index))
+                    .ToList();
+
+                // Schema-v1 fields remain a concise authoring form and are translated into the
+                // same generic effect pipeline as schema-v2 effect objects.
+                if (!string.IsNullOrWhiteSpace(stage.EvidenceId))
+                    effects.Add(new WorldStageEffectDefinition($"legacy-evidence:{stageId}", WorldStageEffectKind.AddEvidence, stage.EvidenceId));
+                foreach (var situationId in stage.SituationCandidateIds ?? new List<string>())
+                    effects.Add(new WorldStageEffectDefinition($"legacy-situation:{stageId}:{situationId}", WorldStageEffectKind.CreateSituation, situationId));
+
+                return new ConsequenceStageDefinition(
+                    stageId,
+                    stage.DelayDays,
+                    stage.EvidenceId,
+                    stage.Event?.Title,
+                    stage.Event?.Body,
+                    stage.SituationCandidateIds,
+                    effects,
+                    ParseEnum(stage.Severity, WorldConsequenceSeverity.Informational));
+            })
             .ToList();
+    }
+
+    private static WorldStageEffectDefinition BuildWorldStageEffect(WorldStageEffectDto dto, string stageId, int index)
+    {
+        var id = string.IsNullOrWhiteSpace(dto.Id) ? $"effect:{stageId}:{index + 1}" : dto.Id;
+        return new WorldStageEffectDefinition(
+            id,
+            ParseEnum<WorldStageEffectKind>(Require(dto.Kind, "consequence.stage.effect.kind"), "consequence.stage.effect.kind"),
+            dto.ReferenceId,
+            dto.StateChannel,
+            dto.StateId,
+            dto.IsBlocked,
+            dto.ActionTags,
+            dto.DueDays,
+            dto.ConnectionKind,
+            dto.SuppressIfSituationResponseTags);
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -1086,6 +1224,8 @@ public static class CrossSystemDataLoader
         public FactionTerritorialPolicyDto? TerritorialPolicy { get; set; }
         public string? ContactStyle { get; set; }
         public string? LeadershipStyle { get; set; }
+        public int ObservationRange { get; set; }
+        public List<string>? ObservationChannels { get; set; }
     }
 
     private sealed class FactionTerritorialPolicyDto
@@ -1133,6 +1273,22 @@ public static class CrossSystemDataLoader
         public string? EvidenceId { get; set; }
         public ConsequenceEventDto? Event { get; set; }
         public List<string>? SituationCandidateIds { get; set; }
+        public List<WorldStageEffectDto>? Effects { get; set; }
+        public string? Severity { get; set; }
+    }
+
+    private sealed class WorldStageEffectDto
+    {
+        public string? Id { get; set; }
+        public string? Kind { get; set; }
+        public string? ReferenceId { get; set; }
+        public string? StateChannel { get; set; }
+        public string? StateId { get; set; }
+        public bool? IsBlocked { get; set; }
+        public List<string>? ActionTags { get; set; }
+        public int DueDays { get; set; }
+        public string? ConnectionKind { get; set; }
+        public List<string>? SuppressIfSituationResponseTags { get; set; }
     }
 
     private sealed class ConsequenceEventDto

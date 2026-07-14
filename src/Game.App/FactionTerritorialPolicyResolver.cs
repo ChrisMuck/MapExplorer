@@ -58,7 +58,11 @@ public sealed class FactionTerritorialPolicyResolver
                     .Select(trace => trace.TraceId)
                     .Take(1),
                 new[] { faction.Id, trigger.Id, location.Id });
-            for (var i = 0; i < response.AwarenessIncrease; i++)
+            // Observation has already established the initial regional attention in this phase.
+            // A policy response may establish attention when none existed, but must not turn one
+            // witnessed action into two arbitrary awareness steps.
+            var awarenessIncrease = awareness < FactionAwarenessLevel.Suspicious ? response.AwarenessIncrease : 0;
+            for (var i = 0; i < awarenessIncrease; i++)
             {
                 game.World.EscalateFactionAwareness(faction.Id, $"location-region:{location.Id}");
             }

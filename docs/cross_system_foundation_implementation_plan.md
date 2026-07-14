@@ -226,7 +226,7 @@ is not used by the catalog-backed gameplay path.
   pipeline.
 - A finding becomes Knowledge Points only through the base-analysis path.
 
-### Block 5 — World Processes, Observation and Faction Reactions
+### Block 5 — World Processes, Observation and Faction Reactions — Complete
 
 **Purpose:** replace presentation-only delayed outcomes with generic, fair and spatially grounded
 world development.
@@ -253,6 +253,15 @@ world development.
 - A watched/claimed action can produce different reactions from the same generic action.
 - A severe process provides at least one valid warning and response path before its serious stage.
 - Spatial effects update only logical coordinates/relations; no Unity map dependency is introduced.
+
+**Implemented contract:** consequence stages use typed neutral effect objects for location state,
+logical tile access, evidence, follow-up triggers, situations, generated-faction awareness and
+logical connections. Legacy stage fields are translated into the same pipeline. Serious stages
+require an earlier authored warning situation with at least one response action; a command records
+the response and may suppress explicitly authored later effects. Faction observation stays hidden
+and requires generated watch/sacred context or a configured, bounded territory/route channel.
+Concurrent processes are capped at eight and direct faction situations are limited to one open
+instance per generated faction.
 
 ### Block 6 — Both Scout Paths and Generated Soft Connections
 

@@ -171,6 +171,36 @@ public enum WorldSituationStatus
     Expired
 }
 
+/// <summary>A logical relationship discovered or created by a world process; presentation chooses how to show it.</summary>
+public sealed class WorldConnectionState
+{
+    private readonly List<string> tags;
+
+    public WorldConnectionState(string id, string sourceId, string targetId, string kind, int createdWorldDay, IEnumerable<string>? tags = null)
+    {
+        if (createdWorldDay < 1) throw new ArgumentOutOfRangeException(nameof(createdWorldDay));
+        Id = RequireText(id, nameof(id));
+        SourceId = RequireText(sourceId, nameof(sourceId));
+        TargetId = RequireText(targetId, nameof(targetId));
+        Kind = RequireText(kind, nameof(kind));
+        CreatedWorldDay = createdWorldDay;
+        this.tags = (tags ?? Enumerable.Empty<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    public string Id { get; }
+    public string SourceId { get; }
+    public string TargetId { get; }
+    public string Kind { get; }
+    public int CreatedWorldDay { get; }
+    public IReadOnlyList<string> Tags => tags;
+
+    private static string RequireText(string value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value must not be empty.", name);
+        return value.Trim();
+    }
+}
+
 /// <summary>A concrete generated pressure, request or warning. It is not a static quest definition.</summary>
 public sealed class WorldSituationState
 {
@@ -181,7 +211,9 @@ public sealed class WorldSituationState
         string? sourceProcessId = null,
         string? sourceLocationId = null,
         int? dueWorldDay = null,
-        WorldSituationStatus status = WorldSituationStatus.Dormant)
+        WorldSituationStatus status = WorldSituationStatus.Dormant,
+        string? factionId = null,
+        string? resolutionActionTag = null)
     {
         if (createdWorldDay < 1) throw new ArgumentOutOfRangeException(nameof(createdWorldDay));
         if (dueWorldDay.HasValue && dueWorldDay.Value < createdWorldDay) throw new ArgumentOutOfRangeException(nameof(dueWorldDay));
@@ -192,6 +224,8 @@ public sealed class WorldSituationState
         SourceLocationId = Normalize(sourceLocationId);
         DueWorldDay = dueWorldDay;
         Status = status;
+        FactionId = Normalize(factionId);
+        ResolutionActionTag = Normalize(resolutionActionTag);
     }
 
     public string Id { get; }
@@ -201,9 +235,19 @@ public sealed class WorldSituationState
     public string? SourceLocationId { get; }
     public int? DueWorldDay { get; }
     public WorldSituationStatus Status { get; private set; }
+    /// <summary>Optional concrete runtime faction affected by this direct request or warning.</summary>
+    public string? FactionId { get; }
+    /// <summary>Recorded player response tag; it can suppress later authored process effects.</summary>
+    public string? ResolutionActionTag { get; private set; }
 
     public void Activate() { if (Status == WorldSituationStatus.Dormant) Status = WorldSituationStatus.Active; }
     public void Resolve() { if (Status == WorldSituationStatus.Active || Status == WorldSituationStatus.Dormant) Status = WorldSituationStatus.Resolved; }
+    public void Resolve(string responseActionTag)
+    {
+        if (string.IsNullOrWhiteSpace(responseActionTag)) throw new ArgumentException("Response action tag must not be empty.", nameof(responseActionTag));
+        Resolve();
+        if (Status == WorldSituationStatus.Resolved) ResolutionActionTag = responseActionTag.Trim();
+    }
     public void Expire(int worldDay)
     {
         if (DueWorldDay.HasValue && worldDay >= DueWorldDay.Value && Status == WorldSituationStatus.Active) Status = WorldSituationStatus.Expired;

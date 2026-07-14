@@ -10,10 +10,13 @@ namespace Game.App
 /// <summary>Processes persistent world work after time advances; presentation remains in EventQueueState.</summary>
 public sealed class WorldPhaseService
 {
+    public const int MaximumConcurrentWorldProcesses = 8;
     private readonly CrossSystemDataBundle? content;
     private readonly CrossSystemAuthoringBundle? authoring;
     private readonly FactionReactionResolver factionReactionResolver;
     private readonly FactionTerritorialPolicyResolver territorialPolicyResolver;
+    private readonly WorldStageEffectResolver stageEffectResolver;
+    private readonly FactionObservationResolver factionObservationResolver;
 
     public WorldPhaseService(CrossSystemDataBundle? content = null, CrossSystemAuthoringBundle? authoring = null)
     {
@@ -21,6 +24,8 @@ public sealed class WorldPhaseService
         this.authoring = authoring;
         factionReactionResolver = new FactionReactionResolver(content);
         territorialPolicyResolver = new FactionTerritorialPolicyResolver(content);
+        stageEffectResolver = new WorldStageEffectResolver(content, authoring);
+        factionObservationResolver = new FactionObservationResolver(content);
     }
 
     public IReadOnlyList<string> Resolve(GameState game)
@@ -28,7 +33,7 @@ public sealed class WorldPhaseService
         if (game == null) throw new ArgumentNullException(nameof(game));
         var messages = new List<string>();
 
-        foreach (var trigger in game.World.WorldTriggers)
+        foreach (var trigger in game.World.WorldTriggers.OrderBy(item => item.RaisedWorldDay).ThenBy(item => item.Id, StringComparer.Ordinal))
         {
             if (trigger.IsResolved) continue;
             var triggerTrace = game.World.RecordTrace(
@@ -42,6 +47,12 @@ public sealed class WorldPhaseService
                 var consequence = content!.FindConsequence(definition.ConsequenceId);
                 if (consequence != null)
                 {
+                    if (game.World.ScheduledConsequences.Count(item => !item.IsCompleted) >= MaximumConcurrentWorldProcesses)
+                    {
+                        messages.Add($"World trigger deferred: {trigger.TriggerId}; process capacity reached.");
+                        continue;
+                    }
+
                     var branch = consequence.SelectBranch(new WorldDeterministicRandomSource(game.World));
                     var stages = branch.Stages
                         .OrderBy(stage => stage.DelayDays)
@@ -49,7 +60,7 @@ public sealed class WorldPhaseService
                         .Select(stage => new ScheduledConsequenceStageState(
                             stage.Id,
                             trigger.RaisedWorldDay + stage.DelayDays,
-                            new[] { stage.Id }))
+                            EffectiveEffects(stage).Select(effect => effect.Id)))
                         .ToList();
                     var process = new ScheduledConsequenceState(
                         game.World.RuntimeIds.Allocate("world-process"),
@@ -67,6 +78,7 @@ public sealed class WorldPhaseService
                         new[] { process.Id, consequence.Id });
                 }
             }
+            factionObservationResolver.Resolve(game, trigger);
             factionReactionResolver.Resolve(game, trigger);
             territorialPolicyResolver.Resolve(game, trigger);
             trigger.MarkResolved();
@@ -94,60 +106,48 @@ public sealed class WorldPhaseService
                         .Take(1),
                     new[] { consequence.Id, appliedStage.StageId, consequence.SourceLocationId });
 
-                if (stage?.EvidenceId != null)
+                foreach (var effect in stage == null ? Array.Empty<WorldStageEffectDefinition>() : EffectiveEffects(stage))
                 {
-                    var text = content?.Evidence.Find(stage.EvidenceId)?.WorldEventText ?? stage.EventBody ?? "A past expedition action has begun to change the surrounding world.";
-                    game.Knowledge.AddEvidence(new EvidenceState(
-                        game.World.RuntimeIds.Allocate("evidence-world"),
-                        stage.EvidenceId,
-                        EvidenceSourceKind.WorldEvent,
-                        EvidenceKnowledgeState.Reported,
-                        text,
-                        subjectLocationId: location?.Id));
-                    game.World.RecordTrace(
-                        SimulationTraceKind.KnowledgeObserved,
-                        $"World process stage '{appliedStage.StageId}' created evidence '{stage.EvidenceId}'.",
-                        new[] { stageTrace.TraceId },
-                        new[] { stage.EvidenceId, consequence.Id });
+                    stageEffectResolver.Apply(game, consequence, location, effect, stageTrace.TraceId);
                 }
 
-                foreach (var situationDefinitionId in stage?.SituationDefinitionIds ?? Array.Empty<string>())
+                if (stage?.EventTitle != null && stage.EventBody != null)
                 {
-                    if (authoring == null || !authoring.Situations.ContainsKey(situationDefinitionId))
-                    {
-                        continue;
-                    }
-
-                    var situation = new WorldSituationState(
-                        game.World.RuntimeIds.Allocate("situation"),
-                        situationDefinitionId,
-                        game.World.WorldDay,
-                        sourceProcessId: consequence.Id,
-                        sourceLocationId: location?.Id);
-                    situation.Activate();
-                    game.World.AddSituation(situation);
-                    game.World.RecordTrace(
-                        SimulationTraceKind.SituationChanged,
-                        $"World process stage '{appliedStage.StageId}' activated situation '{situationDefinitionId}'.",
-                        new[] { stageTrace.TraceId },
-                        new[] { situation.Id, situationDefinitionId, consequence.Id });
+                    game.Events.Enqueue(new EventState(
+                        game.World.RuntimeIds.Allocate("world-consequence"),
+                        EventKind.WorldConsequence,
+                        stage.EventTitle,
+                        "World",
+                        stage.EventBody,
+                        new[] { new EventOptionState("acknowledge", "Record observation", "The expedition records the change.", EventOptionEffectKind.Archive) },
+                        location?.Coord));
                 }
-
-                var title = stage?.EventTitle ?? "World changed";
-                var body = stage?.EventBody ?? "A past expedition action has begun to change the surrounding world.";
-                game.Events.Enqueue(new EventState(
-                    game.World.RuntimeIds.Allocate("world-consequence"),
-                    EventKind.WorldConsequence,
-                    title,
-                    "World",
-                    body,
-                    new[] { new EventOptionState("acknowledge", "Record observation", "The expedition records the change.", EventOptionEffectKind.Archive) },
-                    location?.Coord));
                 messages.Add($"Scheduled consequence stage applied: {consequence.DefinitionId}/{appliedStage.StageId}.");
             }
         }
 
         return messages;
+    }
+
+    private static IReadOnlyList<WorldStageEffectDefinition> EffectiveEffects(ConsequenceStageDefinition stage)
+    {
+        var effects = stage.Effects.ToList();
+        if (stage.EvidenceId != null && !effects.Any(effect => effect.Kind == WorldStageEffectKind.AddEvidence && effect.ReferenceId == stage.EvidenceId))
+        {
+            effects.Add(new WorldStageEffectDefinition($"legacy-evidence:{stage.Id}", WorldStageEffectKind.AddEvidence, stage.EvidenceId));
+        }
+        foreach (var situationId in stage.SituationDefinitionIds)
+        {
+            if (!effects.Any(effect => effect.Kind == WorldStageEffectKind.CreateSituation && effect.ReferenceId == situationId))
+            {
+                effects.Add(new WorldStageEffectDefinition($"legacy-situation:{stage.Id}:{situationId}", WorldStageEffectKind.CreateSituation, situationId));
+            }
+        }
+        if (effects.Count == 0)
+        {
+            effects.Add(new WorldStageEffectDefinition($"stage:{stage.Id}", WorldStageEffectKind.CreateConnection));
+        }
+        return effects;
     }
 }
 }

@@ -22,6 +22,7 @@ public sealed class WorldRuntimeSnapshot
     public List<FactionAwarenessRuntimeSnapshot> FactionAwareness { get; set; } = new();
     public List<GeneratedContextRuntimeSnapshot> GeneratedContexts { get; set; } = new();
     public List<WorldSituationRuntimeSnapshot> Situations { get; set; } = new();
+    public List<WorldConnectionRuntimeSnapshot> Connections { get; set; } = new();
     public List<SimulationTraceRuntimeSnapshot> Traces { get; set; } = new();
     public List<string> AcquiredFindingKeys { get; set; } = new();
 
@@ -39,6 +40,7 @@ public sealed class WorldRuntimeSnapshot
             FactionAwareness = world.FactionAwareness.Select(FactionAwarenessRuntimeSnapshot.FromState).ToList(),
             GeneratedContexts = world.GeneratedContexts.Select(GeneratedContextRuntimeSnapshot.FromState).ToList(),
             Situations = world.Situations.Select(WorldSituationRuntimeSnapshot.FromState).ToList(),
+            Connections = world.Connections.Select(WorldConnectionRuntimeSnapshot.FromState).ToList(),
             Traces = world.Traces.Select(SimulationTraceRuntimeSnapshot.FromState).ToList(),
             AcquiredFindingKeys = world.AcquiredFindingKeys.OrderBy(key => key, StringComparer.Ordinal).ToList()
         };
@@ -61,6 +63,7 @@ public sealed class WorldRuntimeSnapshot
         var awareness = (FactionAwareness ?? new List<FactionAwarenessRuntimeSnapshot>()).Select(snapshot => snapshot.ToState()).ToList();
         var contexts = (GeneratedContexts ?? new List<GeneratedContextRuntimeSnapshot>()).Select(snapshot => snapshot.ToState()).ToList();
         var situations = (Situations ?? new List<WorldSituationRuntimeSnapshot>()).Select(snapshot => snapshot.ToState()).ToList();
+        var connections = (Connections ?? new List<WorldConnectionRuntimeSnapshot>()).Select(snapshot => snapshot.ToState()).ToList();
         var traces = (Traces ?? new List<SimulationTraceRuntimeSnapshot>()).Select(snapshot => snapshot.ToState()).ToList();
 
         return new WorldState(
@@ -76,7 +79,8 @@ public sealed class WorldRuntimeSnapshot
             traces,
             new RuntimeIdAllocatorState(RuntimeIdNextNumbers ?? new Dictionary<string, int>()),
             new DeterministicRandomState(RandomSeed, RandomCurrentState),
-            AcquiredFindingKeys);
+            AcquiredFindingKeys,
+            connections);
     }
 }
 
@@ -235,6 +239,8 @@ public sealed class WorldSituationRuntimeSnapshot
     public string? SourceLocationId { get; set; }
     public int? DueWorldDay { get; set; }
     public WorldSituationStatus Status { get; set; }
+    public string? FactionId { get; set; }
+    public string? ResolutionActionTag { get; set; }
 
     public static WorldSituationRuntimeSnapshot FromState(WorldSituationState state) => new()
     {
@@ -244,10 +250,34 @@ public sealed class WorldSituationRuntimeSnapshot
         SourceProcessId = state.SourceProcessId,
         SourceLocationId = state.SourceLocationId,
         DueWorldDay = state.DueWorldDay,
-        Status = state.Status
+        Status = state.Status,
+        FactionId = state.FactionId,
+        ResolutionActionTag = state.ResolutionActionTag
     };
 
-    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status);
+    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status, FactionId, ResolutionActionTag);
+}
+
+public sealed class WorldConnectionRuntimeSnapshot
+{
+    public string Id { get; set; } = string.Empty;
+    public string SourceId { get; set; } = string.Empty;
+    public string TargetId { get; set; } = string.Empty;
+    public string Kind { get; set; } = string.Empty;
+    public int CreatedWorldDay { get; set; }
+    public List<string> Tags { get; set; } = new();
+
+    public static WorldConnectionRuntimeSnapshot FromState(WorldConnectionState state) => new()
+    {
+        Id = state.Id,
+        SourceId = state.SourceId,
+        TargetId = state.TargetId,
+        Kind = state.Kind,
+        CreatedWorldDay = state.CreatedWorldDay,
+        Tags = state.Tags.ToList()
+    };
+
+    public WorldConnectionState ToState() => new(Id, SourceId, TargetId, Kind, CreatedWorldDay, Tags);
 }
 
 public sealed class SimulationTraceRuntimeSnapshot

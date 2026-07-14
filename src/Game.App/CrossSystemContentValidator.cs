@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -120,13 +121,29 @@ public static class CrossSystemContentValidator
 
         foreach (var consequence in crossSystem.Consequences.Values)
         {
-            foreach (var stage in consequence.Branches.SelectMany(branch => branch.Stages))
+            foreach (var branch in consequence.Branches)
             {
-                foreach (var situationId in stage.SituationDefinitionIds)
+                var stages = branch.Stages.OrderBy(stage => stage.DelayDays).ThenBy(stage => stage.Id, StringComparer.Ordinal).ToList();
+                for (var stageIndex = 0; stageIndex < stages.Count; stageIndex++)
                 {
-                    if (!authoring.Situations.ContainsKey(situationId))
+                    var stage = stages[stageIndex];
+                    foreach (var situationId in stage.Effects.Where(effect => effect.Kind == WorldStageEffectKind.CreateSituation).Select(effect => effect.ReferenceId).Where(id => id != null).Cast<string>())
                     {
-                        errors.Add($"Consequence '{consequence.Id}' stage '{stage.Id}' references unknown situation '{situationId}'.");
+                        if (!authoring.Situations.ContainsKey(situationId))
+                        {
+                            errors.Add($"Consequence '{consequence.Id}' stage '{stage.Id}' references unknown situation '{situationId}'.");
+                        }
+                    }
+
+                    if (stage.Severity != WorldConsequenceSeverity.Serious) continue;
+                    var warningSituationIds = stages.Take(stageIndex)
+                        .SelectMany(previous => previous.Effects)
+                        .Where(effect => effect.Kind == WorldStageEffectKind.CreateSituation && effect.ReferenceId != null)
+                        .Select(effect => effect.ReferenceId!)
+                        .ToList();
+                    if (!warningSituationIds.Any(id => authoring.Situations.TryGetValue(id, out var situation) && situation.ResponseActionTags.Count > 0))
+                    {
+                        errors.Add($"Serious consequence '{consequence.Id}' stage '{stage.Id}' lacks an earlier warning situation with a response path.");
                     }
                 }
             }

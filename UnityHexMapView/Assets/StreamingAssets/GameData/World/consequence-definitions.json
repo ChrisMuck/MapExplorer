@@ -8,7 +8,10 @@
         {
           "id": "rumours-spread",
           "delayDays": 2,
-          "evidenceId": "evidence-grave-disturbance-rumour",
+          "effects": [
+            { "id": "grave-rumour", "kind": "addEvidence", "referenceId": "evidence-grave-disturbance-rumour" },
+            { "id": "grave-warning", "kind": "createSituation", "referenceId": "situation-investigate-disturbance", "dueDays": 3 }
+          ],
           "event": {
             "title": "Unruhe bei einer alten Grabstelle",
             "body": "Zwei Tage nach einem Eingriff erreichen die Expedition erste, widerspruechliche Geruechte aus der Umgebung."
@@ -17,7 +20,11 @@
         {
           "id": "local-pattern-changed",
           "delayDays": 5,
-          "evidenceId": "evidence-grave-disturbance-change",
+          "severity": "serious",
+          "effects": [
+            { "id": "grave-change", "kind": "addEvidence", "referenceId": "evidence-grave-disturbance-change" },
+            { "id": "grave-attention", "kind": "escalateRelatedFactionAwareness", "suppressIfSituationResponseTags": [ "investigate", "prepare-response" ] }
+          ],
           "event": {
             "title": "Die Umgebung reagiert",
             "body": "Erst spaeter werden veraenderte Wege und vorsichtige Bewegungen um den Ort sichtbar."
@@ -31,7 +38,11 @@
         {
           "id": "traffic-returns",
           "delayDays": 2,
-          "evidenceId": "evidence-route-restored",
+          "effects": [
+            { "id": "route-evidence", "kind": "addEvidence", "referenceId": "evidence-route-restored" },
+            { "id": "route-open", "kind": "setTilePassability", "isBlocked": false },
+            { "id": "route-follow-up", "kind": "raiseWorldTrigger", "referenceId": "route-traffic-observed", "actionTags": [ "route", "traffic" ] }
+          ],
           "event": {
             "title": "Spuren auf der wiederhergestellten Route",
             "body": "Erst nach einigen Tagen zeigen frische Spuren, dass der veränderte Übergang auch von anderen bemerkt wurde."
@@ -45,7 +56,10 @@
         {
           "id": "first-disturbance",
           "delayDays": 2,
-          "evidenceId": "evidence-seal-disturbance",
+          "effects": [
+            { "id": "seal-evidence", "kind": "addEvidence", "referenceId": "evidence-seal-disturbance" },
+            { "id": "seal-warning", "kind": "createSituation", "referenceId": "situation-investigate-opened-seal", "dueDays": 3 }
+          ],
           "event": {
             "title": "Unruhe am geöffneten Verschluss",
             "body": "Erst nach einiger Zeit zeigen sich veränderte Spuren und eine Unruhe um den geöffneten Ort. Was sie verursacht, bleibt offen."
@@ -54,7 +68,11 @@
         {
           "id": "later-consequence",
           "delayDays": 5,
-          "evidenceId": "evidence-seal-consequence",
+          "severity": "serious",
+          "effects": [
+            { "id": "seal-later-evidence", "kind": "addEvidence", "referenceId": "evidence-seal-consequence" },
+            { "id": "seal-follow-up", "kind": "raiseWorldTrigger", "referenceId": "seal-disturbance-observed", "actionTags": [ "open", "hazard" ], "suppressIfSituationResponseTags": [ "contain", "investigate" ] }
+          ],
           "event": {
             "title": "Etwas hat sich verändert",
             "body": "Die spätere Entwicklung bestätigt nur, dass der geöffnete Verschluss nicht folgenlos blieb. Die Expedition muss die Zeichen weiter deuten."

@@ -57,6 +57,8 @@ var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
 scoutLocationSurroundingsTests.RunAll();
 var worldPhaseDataTests = new WorldPhaseDataTests();
 worldPhaseDataTests.RunAll();
+var worldProcessEffectTests = new WorldProcessEffectTests();
+worldProcessEffectTests.RunAll();
 var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
 var factionTerritorialPolicyTests = new FactionTerritorialPolicyTests();

@@ -15,6 +15,7 @@ public sealed class WorldState
     private readonly List<RegionFactionAwarenessState> factionAwareness;
     private readonly List<GeneratedContextAssignmentState> generatedContexts;
     private readonly List<WorldSituationState> situations;
+    private readonly List<WorldConnectionState> connections;
     private readonly List<SimulationTraceState> traces;
     private readonly HashSet<string> acquiredFindingKeys;
 
@@ -31,7 +32,8 @@ public sealed class WorldState
         IEnumerable<SimulationTraceState>? traces = null,
         RuntimeIdAllocatorState? runtimeIds = null,
         DeterministicRandomState? random = null,
-        IEnumerable<string>? acquiredFindingKeys = null)
+        IEnumerable<string>? acquiredFindingKeys = null,
+        IEnumerable<WorldConnectionState>? connections = null)
     {
         if (worldDay < 1)
         {
@@ -46,6 +48,7 @@ public sealed class WorldState
         this.factionAwareness = new List<RegionFactionAwarenessState>(factionAwareness ?? Enumerable.Empty<RegionFactionAwarenessState>());
         this.generatedContexts = new List<GeneratedContextAssignmentState>(generatedContexts ?? Enumerable.Empty<GeneratedContextAssignmentState>());
         this.situations = new List<WorldSituationState>(situations ?? Enumerable.Empty<WorldSituationState>());
+        this.connections = new List<WorldConnectionState>(connections ?? Enumerable.Empty<WorldConnectionState>());
         this.traces = new List<SimulationTraceState>(traces ?? Enumerable.Empty<SimulationTraceState>());
         this.acquiredFindingKeys = new HashSet<string>((acquiredFindingKeys ?? Enumerable.Empty<string>())
             .Where(key => !string.IsNullOrWhiteSpace(key)).Select(key => key.Trim()), StringComparer.Ordinal);
@@ -85,6 +88,9 @@ public sealed class WorldState
 
     /// <summary>Current world pressures, requests and warnings that can outlive an expedition.</summary>
     public IReadOnlyList<WorldSituationState> Situations => situations;
+
+    /// <summary>Logical world connections created by processes; they are not a visual map graph.</summary>
+    public IReadOnlyList<WorldConnectionState> Connections => connections;
 
     /// <summary>Objective developer provenance; normal player UI must not expose it directly.</summary>
     public IReadOnlyList<SimulationTraceState> Traces => traces;
@@ -158,11 +164,36 @@ public sealed class WorldState
         generatedContexts.Add(context);
     }
 
-    public void AddSituation(WorldSituationState situation)
+    public bool TryAddSituation(WorldSituationState situation)
     {
         if (situation == null) throw new ArgumentNullException(nameof(situation));
-        if (situations.Any(existing => existing.Id == situation.Id)) return;
+        if (situations.Any(existing => existing.Id == situation.Id)) return false;
+        if (situation.FactionId != null && situations.Any(existing =>
+                existing.FactionId == situation.FactionId &&
+                (existing.Status == WorldSituationStatus.Dormant || existing.Status == WorldSituationStatus.Active)))
+        {
+            return false;
+        }
         situations.Add(situation);
+        return true;
+    }
+
+    public void AddSituation(WorldSituationState situation)
+    {
+        TryAddSituation(situation);
+    }
+
+    public bool AddConnection(WorldConnectionState connection)
+    {
+        if (connection == null) throw new ArgumentNullException(nameof(connection));
+        if (connections.Any(existing => existing.Id == connection.Id ||
+                                        (existing.SourceId == connection.SourceId && existing.TargetId == connection.TargetId && existing.Kind == connection.Kind)))
+        {
+            return false;
+        }
+
+        connections.Add(connection);
+        return true;
     }
 
     public SimulationTraceState RecordTrace(
