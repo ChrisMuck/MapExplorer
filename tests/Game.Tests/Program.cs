@@ -47,6 +47,8 @@ var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
 var simulationRuntimeStateTests = new SimulationRuntimeStateTests();
 simulationRuntimeStateTests.RunAll();
+var worldRuntimeSnapshotTests = new WorldRuntimeSnapshotTests();
+worldRuntimeSnapshotTests.RunAll();
 var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
 scoutLocationSurroundingsTests.RunAll();
 var worldPhaseDataTests = new WorldPhaseDataTests();
