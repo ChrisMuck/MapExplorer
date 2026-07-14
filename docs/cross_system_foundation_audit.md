@@ -125,27 +125,34 @@ catalog and typed loader support them.
 
 ## 3. Design/Implementation Mismatches to Migrate
 
-### 3.1 Legacy Archetypes and Resource Terminology
+### 3.1 Legacy Archetypes and Economy Terminology
 
 Current `archetypes.json` contains ten IDs, including `resource-site`, `hazard-zone`,
 `landmark-site` and `dynamic-situation`. The approved core taxonomy has seven IDs and explicitly
 excludes `resource-site`; the first Slice uses five of those seven.
 
-Legacy resource/supply concepts are present in Core, App, Unity and tests:
+The following **expedition-logistics** concepts are intentionally present in Core, App, Unity and
+tests and must be retained:
 
 - `ExpeditionState.Supplies`, medicine, ration loadout and end-day consumption;
 - `BaseState.PendingSupplyBonus` and `PrepareSuppliesWithKnowledgeCommand`;
-- faction offers that exchange Knowledge Points for supplies;
+- faction offers that exchange Knowledge Points for supplies, medicine, reports or practical help;
 - base-unit and upgrade effects that raise supply capacity;
 - Unity heads-up display and loadout controls;
 - existing generator comments naming resource sites.
 
-The approved economy says that Knowledge Points are the only spendable base/trade resource and
-that inspections, reports and findings become knowledge. This audit does not change expedition
-pressure or delete the current system. Block 4 must perform an explicit compatibility migration so
-that no accidental supply/material economy remains in cross-system content. Any removal or
-replacement of expedition-pressure mechanics requires a focused, reviewed change rather than a
-silent rename.
+The approved economy is deliberately two-layered: findings, reports and observations are brought
+back to the base and analysed there to produce Knowledge Points; Knowledge Points are the sole
+general base/trade currency. Supplies and medicine are separate, limited expedition consumables:
+supplies impose return pressure and an expedition fails when they run out, while medicine treats
+injuries or enables help at locations. There is no generic material harvesting, processing or
+stockpile loop.
+
+This audit does not change expedition pressure or delete the current logistics system. Block 4
+must remove only obsolete *material-resource* reward paths and make the finding-to-analysis-to-
+Knowledge flow explicit. It must retain and validate supplies/medicine effects in expedition and
+faction-offer content. Any change to expedition pressure requires a focused, reviewed change
+rather than a silent rename.
 
 ### 3.2 Unity Presentation Logic that Must Become Shared Data/ViewModels
 

@@ -39,13 +39,16 @@ The following gaps must be resolved rather than worked around:
 - the current consequence scheduler stores individual delayed stages, but not a fixed resolved
   branch, typed world effects, situations or a causal trace;
 - some location presentation text and content decisions remain hardcoded in Unity UI scripts;
-- legacy code still contains supply/resource terminology that conflicts with the approved
-  knowledge-only economy and must be isolated and migrated deliberately;
+- legacy material-resource terminology still exists and must be isolated from the retained
+  supplies/medicine expedition-logistics model;
 - no shared scenario session, replay trace or headless runner exists yet.
 
 ## 3. Delivery Rules
 
 - Every block is independently buildable and covered by focused tests before the next starts.
+- When an audit finds an older concept that contradicts a locked current decision, correct or
+  explicitly supersede that passage in the same implementation block. A stale specialist document
+  must never remain an alternative source of truth for implemented behaviour.
 - Static JSON never names a generated faction instance, coordinate, territory, claim or resolved
   consequence branch.
 - Runtime IDs, random choices and trace records are deterministic for the same content version,
@@ -68,8 +71,8 @@ The following gaps must be resolved rather than worked around:
 2. Classify each Unity method as input/presentation, application orchestration or incorrectly
    embedded authoritative logic.
 3. Record the current JSON document types, their loaders, fallback paths and consumers.
-4. Record all legacy supply/resource uses and classify them as obsolete economy, expedition
-   pressure, presentation wording or test fixture.
+4. Record all material-resource and expedition-logistics uses. Classify each as obsolete material
+   economy, retained supplies/medicine logistics, presentation wording or test fixture.
 5. Define a compatibility matrix for old content documents and target schema documents.
 
 **Primary files**
@@ -116,21 +119,29 @@ special code.
 
 **Work**
 
-1. Add typed definitions and loaders for State Profiles, Scenario Profiles, Findings, neutral
+1. Correct the affected master and specialist concepts before data migration. The current rules are:
+   seven canonical location archetypes (no `resource-site`), Knowledge Points as the only general
+   base/trade currency, supplies and medicine as expedition-only consumables, no generic material
+   harvesting loop, and approximate player-facing scout reports without hex values. Record any
+   deliberately deferred replacement separately rather than retaining incompatible legacy rules.
+2. Add typed definitions and loaders for State Profiles, Scenario Profiles, Findings, neutral
    Context Definitions, Situation Definitions, Faction Offers and Faction Memory Definitions.
-2. Expand existing Action, Evidence, Consequence, Faction Profile, Signature and Scout definitions
+3. Expand existing Action, Evidence, Consequence, Faction Profile, Signature and Scout definitions
    with the approved optional fields and compatibility defaults.
-3. Extend `CrossSystemContentValidator` with the schema rules from the JSON concept: reference
-   validity, archetype/state compatibility, action cap, no static faction instance IDs, no material
-   resource rewards, warning path for severe consequence stages and soft-connection requirements.
-4. Add the five Vertical Slice scenario profiles: Route Obstacle, Investigation Site, Territorial
+4. Extend `CrossSystemContentValidator` with the schema rules from the JSON concept: reference
+   validity, archetype/state compatibility, action cap, no static faction instance IDs, no generic
+   material harvesting rewards, valid expedition-logistics effects, warning path for severe
+   consequence stages and soft-connection requirements.
+5. Add the five Vertical Slice scenario profiles: Route Obstacle, Investigation Site, Territorial
    Marker, Containment Site and Contact Site.
-5. Keep `content-profiles.json` presentation-only and move rule-bearing data to Scenario Profiles
+6. Keep `content-profiles.json` presentation-only and move rule-bearing data to Scenario Profiles
    or the appropriate shared definition file.
 
 **Acceptance tests**
 
 - Invalid definitions fail at catalog validation with an actionable file/ID/field error.
+- The master concept and every affected specialist document point to the same current taxonomy,
+  knowledge/trade currency, expedition-logistics and scout-information rule.
 - A reusable scenario profile can produce neutral, watched or claimed generated instances without
   naming a concrete faction in JSON.
 - Five Slice profiles load through the catalog and preserve the current bridge/gate proof flows.
@@ -172,8 +183,10 @@ state changes.
    later knowledge, specialist or context discoveries may expand it.
 4. Add generic finding acquisition and base-analysis handoff. Findings, inspections and reports
    generate field knowledge; analysed findings award Knowledge Points and archive entries.
-5. Remove obsolete resource reward paths from cross-system content. Migrate legacy supply/resource
-   terminology in a controlled compatibility pass without inventing a replacement economy.
+5. Remove obsolete material-resource reward paths from cross-system content. Make the
+   finding-to-base-analysis-to-Knowledge flow explicit, while retaining supplies and medicine as
+   expedition consumables that can be obtained through defined opportunities such as faction
+   offers.
 6. Move simulation-relevant action labels, state wording and availability reasons out of Unity UI
    conditionals into shared data/ViewModels.
 
