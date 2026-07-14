@@ -14,6 +14,8 @@ internal sealed class SimulationSessionTests
         SessionUsesTheSameLocationOptionContractAsTheApplication();
         FailingScenarioIncludesReproductionContext();
         FixtureProofScenariosReplayToTheSamePlayerState();
+        ScenarioPlaybackStepsSharedCommandsAndNormalDays();
+        ScenarioPlaybackRunsEveryProofScenario();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -96,6 +98,32 @@ internal sealed class SimulationSessionTests
                     .Select(option => $"{option.Action.Id}:{option.IsAvailable}:{option.LockedReason}");
                 AssertEqual(string.Join("|", firstOptions), string.Join("|", secondOptions), $"Fixture scenario '{fileName}' replays to the same player-visible options");
             }
+        }
+    }
+
+    private static void ScenarioPlaybackStepsSharedCommandsAndNormalDays()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-directional-lead.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var firstStep = playback.ExecuteNext();
+        AssertTrue(firstStep.Success, "Scenario playback delegates the next authored command to the shared session");
+        var originalWorldDay = playback.Session.Game.World.WorldDay;
+        var advance = playback.AdvanceDays(2);
+
+        AssertTrue(advance.Success && advance.AdvancedDays == 2, "Scenario playback advances normal end-day/world phases without a WPF rule path");
+        AssertEqual(originalWorldDay + 2, playback.Session.Game.World.WorldDay, "Scenario playback advances the shared world's day state");
+        AssertTrue(playback.HasManualTimeAdvance, "Manual time advance is marked so an unreplayable ad-hoc run is not exported as scripted");
+        AssertEqual(3, playback.Session.CommandHistory.Count, "Scenario command and both time advances are recorded by the shared session");
+    }
+
+    private static void ScenarioPlaybackRunsEveryProofScenario()
+    {
+        foreach (var fileName in new[] { "scenario-claimed-crossing.json", "scenario-sealed-containment.json", "scenario-directional-lead.json" })
+        {
+            var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", fileName));
+            var result = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario).RunToCompletion();
+            AssertTrue(result.Success, $"The presentation-neutral playback used by WPF runs proof scenario '{fileName}'");
         }
     }
 

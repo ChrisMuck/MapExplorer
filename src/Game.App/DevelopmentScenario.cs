@@ -130,28 +130,10 @@ public sealed class DevelopmentScenarioExecutor
     {
         if (catalog == null) throw new ArgumentNullException(nameof(catalog));
         if (scenario == null) throw new ArgumentNullException(nameof(scenario));
-        var session = CreateSession(catalog, scenario);
-        var failures = new List<string>();
-
-        for (var index = 0; index < scenario.Commands.Count; index++)
-        {
-            var command = scenario.Commands[index];
-            if (!ExecuteCommand(session, command, out var error))
-            {
-                failures.Add($"command {index + 1} ({command.Kind}): {error}");
-                break;
-            }
-        }
-
-        foreach (var assertion in scenario.Assertions)
-        {
-            if (!EvaluateAssertion(session, assertion.Kind, assertion.Argument, out var error)) failures.Add($"assertion '{assertion.Kind}': {error}");
-        }
-
-        return new DevelopmentScenarioRunResult(scenario, session, failures);
+        return DevelopmentScenarioPlayback.Create(catalog, scenario).RunToCompletion();
     }
 
-    private static bool ExecuteCommand(SimulationSession session, DevelopmentScenarioCommand command, out string error)
+    internal static bool ExecuteCommand(SimulationSession session, DevelopmentScenarioCommand command, out string error)
     {
         error = string.Empty;
         switch (command.Kind?.Trim().ToLowerInvariant())
@@ -225,7 +207,7 @@ public sealed class DevelopmentScenarioExecutor
         }
     }
 
-    private static bool EvaluateAssertion(SimulationSession session, string kind, string? argument, out string error)
+    internal static bool EvaluateAssertion(SimulationSession session, string kind, string? argument, out string error)
     {
         error = string.Empty;
         switch (kind?.Trim().ToLowerInvariant())
@@ -272,7 +254,7 @@ public sealed class DevelopmentScenarioExecutor
         }
     }
 
-    private static SimulationSession CreateSession(GameDataCatalog catalog, DevelopmentScenario scenario)
+    internal static SimulationSession CreateSession(GameDataCatalog catalog, DevelopmentScenario scenario)
     {
         if (scenario.InitialState != null)
         {

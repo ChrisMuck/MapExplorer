@@ -2,6 +2,8 @@
   <Folder Name="/src/">
     <Project Path="src/Game.App/Game.App.csproj" />
     <Project Path="src/Game.Core/Game.Core.csproj" />
+    <Project Path="src/Game.Simulation.Runner/Game.Simulation.Runner.csproj" />
+    <Project Path="src/Game.Simulation.Wpf/Game.Simulation.Wpf.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Game.Tests/Game.Tests.csproj" />

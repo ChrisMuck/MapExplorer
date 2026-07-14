@@ -378,6 +378,8 @@ compatible through block namespaces where needed and an `IsExternalInit` shim fo
 
 ### Block 9 — WPF Simulation Runner Shell
 
+**Status:** Complete.
+
 **Purpose:** provide fast human inspection of the proven headless simulation.
 
 **Work**
@@ -395,6 +397,17 @@ compatible through block namespaces where needed and an `IsExternalInit` shim fo
 - The WPF application can load and replay all three headless proof scenarios.
 - Viewing World Truth cannot mutate the session.
 - No Unity assemblies are referenced by the WPF project.
+
+**Implemented contract:** `Game.Simulation.Wpf` is a Windows-only, mapless developer inspector
+which references only `Game.App` and `Game.Core`. It creates the same `SimulationSession` as Unity,
+loads the three JSON proof scenarios or an exported scripted run record, and advances authored
+commands or normal end-day/world phases without a second rule path. Its Player Knowledge tab uses
+the session's shared confirmed-location interaction query; the separate read-only World Truth tab
+shows objective locations, faction observation, triggers, scheduled process stages and situations.
+The causal tab projects authoritative trace and `causedBy` links. Manual time advance is marked and
+cannot be exported as a misleading reproducible scripted run until the equivalent days are authored
+in the scenario. `DevelopmentScenarioPlayback` is presentation-neutral and is covered by the Core/
+App test suite.
 
 ### Block 10 — Batch Simulation, Balance Signals and Release Gate
 
