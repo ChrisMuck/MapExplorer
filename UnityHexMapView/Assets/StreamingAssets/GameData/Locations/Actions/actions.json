@@ -130,6 +130,7 @@
       "id": "action-construct-temporary-passage",
       "label": "Seiluebergang bauen",
       "description": "Eine provisorische Querung errichten. Der Bau ist riskant, macht die Passage danach aber berechenbarer.",
+      "commitment": "DayOperation",
       "hardRequirements": [ { "kind": "OperationalStateAny", "values": ["blocked"], "unmetReason": "Nur ein blockierter Uebergang braucht eine provisorische Querung." } ],
       "riskProfile": { "baseRisk": 20, "confidence": "Assessed" },
       "outcomeTableId": "outcome-construct-temporary-passage",

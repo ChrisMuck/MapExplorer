@@ -217,7 +217,8 @@ public static class LocationDataLoader
             icon: dto.Presentation?.Icon,
             primaryButtonLabel: dto.Presentation?.PrimaryButtonLabel,
             socialRisk: dto.SocialRisk,
-            actionTags: dto.ActionTags);
+            actionTags: dto.ActionTags,
+            commitment: ParseEnum(dto.Commitment, LocationActionCommitment.Immediate));
     }
 
     private static LocationRequirementDefinition BuildRequirement(RequirementDto dto)
@@ -241,7 +242,8 @@ public static class LocationDataLoader
             dto.Values,
             role,
             anchorKind,
-            string.IsNullOrWhiteSpace(dto.UnmetReason) ? "Requirement is not met." : dto.UnmetReason!);
+            string.IsNullOrWhiteSpace(dto.UnmetReason) ? "Requirement is not met." : dto.UnmetReason!,
+            ParseEnum(dto.Disclosure, LocationRequirementDisclosure.Known));
     }
 
     private static LocationCostDefinition BuildCost(CostDto dto)
@@ -560,6 +562,7 @@ public static class LocationDataLoader
         public RiskProfileDto? RiskProfile { get; set; }
         public string? OutcomeTableId { get; set; }
         public string? RepeatPolicy { get; set; }
+        public string? Commitment { get; set; }
         public ProjectDto? Project { get; set; }
         public PresentationDto? Presentation { get; set; }
         public bool SocialRisk { get; set; }
@@ -573,6 +576,7 @@ public static class LocationDataLoader
         public string? Role { get; set; }
         public string? AnchorKind { get; set; }
         public string? UnmetReason { get; set; }
+        public string? Disclosure { get; set; }
     }
 
     private sealed class CostDto

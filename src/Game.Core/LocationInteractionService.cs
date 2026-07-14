@@ -35,6 +35,8 @@ public sealed class LocationInteractionOption
     public LocationRiskBand RiskBand { get; }
 
     public LocationEstimateConfidence Confidence { get; }
+
+    public LocationActionCommitment Commitment => Action.Commitment;
 }
 
 public sealed class LocationInteractionModel
@@ -293,7 +295,9 @@ public sealed class LocationInteractionService
         {
             if (!IsRequirementMet(requirement, location, expedition, activeModifiers))
             {
-                return requirement.UnmetReason;
+                return requirement.Disclosure == LocationRequirementDisclosure.Known
+                    ? requirement.UnmetReason
+                    : "Noch nicht verfuegbar.";
             }
         }
 

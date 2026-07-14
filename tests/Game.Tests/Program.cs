@@ -1926,6 +1926,7 @@ internal sealed class LocationDataJsonTests
     {
         AllCanonicalArchetypesLoadAndAreRepresentable();
         AllLocationActionsCarrySemanticTags();
+        ActionCommitmentAndRequirementDisclosureLoad();
         ContentProfileSurfacesTitleAndFlavor();
         WeightedOutcomeStaysWithinAuthoredBandRow();
         ForcedTierAppliesAuthoredEffectBundle();
@@ -1981,6 +1982,13 @@ internal sealed class LocationDataJsonTests
             .ToList();
 
         AssertEqual(0, missing.Count, "Every JSON-authored location action has at least one semantic action tag");
+    }
+
+    private static void ActionCommitmentAndRequirementDisclosureLoad()
+    {
+        var action = LoadBundle().Definitions.Actions["action-construct-temporary-passage"];
+        AssertEqual(LocationActionCommitment.DayOperation, action.Commitment, "Temporary passage is a day operation");
+        AssertEqual(LocationRequirementDisclosure.Known, action.HardRequirements[0].Disclosure, "Existing hard requirement is visibly disclosed");
     }
 
     private static void ContentProfileSurfacesTitleAndFlavor()
