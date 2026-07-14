@@ -1,0 +1,59 @@
+{
+  "id": "scenario-claimed-crossing",
+  "seed": 41028,
+  "worldKind": "fixture",
+  "width": 8,
+  "height": 6,
+  "initialState": {
+    "expeditionQ": 2,
+    "expeditionR": 1,
+    "supplies": 12,
+    "confirmedLocationIds": ["location-route-proof"],
+    "members": [
+      { "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 },
+      { "id": "engineer-1", "name": "Iven", "role": "Engineer", "starLevel": 1 }
+    ],
+    "factions": [
+      { "id": "faction-1", "name": "Unknown Watchers", "reactionProfileId": "hostile", "signatureProfileId": "carved-boundaries" }
+    ],
+    "locations": [
+      {
+        "id": "location-route-proof",
+        "name": "Broken Crossing",
+        "kind": "BrokenRavine",
+        "q": 2,
+        "r": 1,
+        "anchorKind": "Edge",
+        "anchorOtherQ": 1,
+        "anchorOtherR": 1,
+        "archetypeId": "route-obstacle",
+        "variantId": "broken-bridge",
+        "modifierIds": ["modifier-repairable", "modifier-watched"],
+        "operationalStateId": "blocked",
+        "contextTags": ["deliberate-destruction"],
+        "evidenceSeedIds": ["evidence-claim-markers"],
+        "factionRelations": [
+          { "factionId": "faction-1", "kind": "Watched" }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-route-proof" },
+    { "kind": "scout-location-surroundings", "locationId": "location-route-proof", "scoutMemberIds": ["scout-1"] },
+    { "kind": "end-day" },
+    { "kind": "resolve-location-action", "locationId": "location-route-proof", "actionId": "action-rebuild-bridge", "outcomeTier": "Success" },
+    { "kind": "advance-location-project", "locationId": "location-route-proof" },
+    { "kind": "advance-location-project", "locationId": "location-route-proof" },
+    { "kind": "advance-location-project", "locationId": "location-route-proof" },
+    { "kind": "end-day" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-evidence", "argument": "evidence-claim-markers" },
+    { "kind": "has-evidence", "argument": "evidence-bridge-repaired" },
+    { "kind": "has-evidence", "argument": "evidence-route-restored" },
+    { "kind": "has-trace-kind", "argument": "ConsequenceStageApplied" },
+    { "kind": "has-causality-trace" }
+  ]
+}

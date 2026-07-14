@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using Game.App;
 using Game.Core;
 
@@ -11,6 +12,7 @@ internal sealed class SimulationSessionTests
     {
         CommandHistoryAndRunRecordAreDeterministic();
         FailingScenarioIncludesReproductionContext();
+        FixtureProofScenariosReplayToTheSamePlayerState();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -45,6 +47,40 @@ internal sealed class SimulationSessionTests
         AssertTrue(!result.Success, "Invalid scenario command fails");
         AssertTrue(result.FailureSummary.Contains("seed 41027", StringComparison.Ordinal), "Failure reports the reproducible seed");
         AssertTrue(result.FailureSummary.Contains("command 1", StringComparison.Ordinal), "Failure reports command index");
+        AssertTrue(result.Session.Game.World.Traces.Count > 0, "Invalid scenario command records a reproducible trace tail");
+    }
+
+    private static void FixtureProofScenariosReplayToTheSamePlayerState()
+    {
+        foreach (var fileName in new[] { "scenario-claimed-crossing.json", "scenario-sealed-containment.json", "scenario-directional-lead.json" })
+        {
+            var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", fileName));
+            var first = new DevelopmentScenarioExecutor().Execute(LoadCatalog(), scenario);
+            var exported = JsonSerializer.Serialize(first.CreateRunRecord());
+            var imported = JsonSerializer.Deserialize<DevelopmentScenarioRunRecord>(exported)
+                ?? throw new InvalidOperationException("Scenario run record was not deserialized.");
+            var second = imported.Replay(LoadCatalog());
+
+            AssertTrue(first.Success && second.Success, $"Fixture scenario '{fileName}' succeeds and its exported record replays");
+            AssertEqual(first.Session.Game.World.WorldDay, second.Session.Game.World.WorldDay, $"Fixture scenario '{fileName}' replays to the same world day");
+            AssertEqual(
+                string.Join("|", first.Session.Game.Knowledge.Evidence.Select(item => item.DefinitionId)),
+                string.Join("|", second.Session.Game.Knowledge.Evidence.Select(item => item.DefinitionId)),
+                $"Fixture scenario '{fileName}' replays to the same player knowledge");
+
+            foreach (var location in first.Session.Game.World.Locations)
+            {
+                var firstInteraction = first.Session.Application.GetLocationInteraction(first.Session.Game, location.Id);
+                var secondInteraction = second.Session.Application.GetLocationInteraction(second.Session.Game, location.Id);
+                AssertEqual(firstInteraction.Success, secondInteraction.Success, $"Fixture scenario '{fileName}' replays to the same location knowledge");
+                if (!firstInteraction.Success) continue;
+                var firstOptions = firstInteraction.Interaction!.Options
+                    .Select(option => $"{option.Action.Id}:{option.IsAvailable}:{option.LockedReason}");
+                var secondOptions = secondInteraction.Interaction!.Options
+                    .Select(option => $"{option.Action.Id}:{option.IsAvailable}:{option.LockedReason}");
+                AssertEqual(string.Join("|", firstOptions), string.Join("|", secondOptions), $"Fixture scenario '{fileName}' replays to the same player-visible options");
+            }
+        }
     }
 
     private static GameDataCatalog LoadCatalog()

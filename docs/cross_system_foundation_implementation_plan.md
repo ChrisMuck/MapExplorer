@@ -297,6 +297,8 @@ they remain hidden World Truth until later evidence makes a relationship player-
 
 ### Block 7 — Shared Simulation Session and Headless Scenario Runner
 
+**Status:** Complete.
+
 **Purpose:** make the full simulation reproducible before adding a desktop inspection UI.
 
 **Work**
@@ -317,6 +319,22 @@ they remain hidden World Truth until later evidence makes a relationship player-
 - A failing scenario reports seed, content version, command index and trace chain.
 - Replaying a run record yields the same terminal state and player-visible options.
 - The headless runner has no Unity reference.
+
+**Implemented contract:** `SimulationSession` is the shared, deterministic application facade for
+generated, tutorial and explicitly declared development-fixture worlds. The development scenario
+format is deliberately outside `GameData` and save data: it can define a small map, expedition,
+locations, generated faction relations and forced outcome tiers solely for repeatable proofs.
+The runner records seed, content version, command history and objective causal traces, prints a
+day-by-day provenance timeline and can export a run record. Its assertions explicitly distinguish
+player knowledge (evidence and reports), World Truth (triggers/situations) and trace kinds.
+
+The initial proof suite contains three JSON scenarios: a claimed but unidentified crossing whose
+repair has a delayed result, a sealed containment site whose warning can avert its later trigger,
+and a directional scout lead with no exact remote coordinates that is only confirmed later on
+foot. The Core/App test suite serializes each run record, replays it, and compares world day,
+player knowledge and player-visible location options.
+Fixtures are runner-only test overrides; normal world generation remains the sole source of
+runtime claim and context assignment during play.
 
 ### Block 8 — Unity Adapter Migration and Regression Pass
 
