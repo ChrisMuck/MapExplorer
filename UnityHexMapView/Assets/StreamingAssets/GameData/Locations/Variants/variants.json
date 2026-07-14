@@ -25,7 +25,7 @@
     },
     {
       "id": "abandoned-camp",
-      "archetypeId": "trace-site",
+      "archetypeId": "investigation-site",
       "label": "Verlassenes Lager",
       "subtitle": "Spurenfeld",
       "addedActionIds": [],

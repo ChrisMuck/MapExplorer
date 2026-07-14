@@ -7,7 +7,7 @@
       "id": "modifier-repairable",
       "label": "Reparierbar",
       "addedActionIds": ["action-rebuild-bridge"],
-      "compatibleArchetypeIds": ["route-obstacle", "landmark-site", "investigation-site"]
+      "compatibleArchetypeIds": ["route-obstacle", "natural-phenomenon", "investigation-site"]
     },
     {
       "id": "modifier-unstable",
@@ -23,7 +23,7 @@
     {
       "id": "modifier-watched",
       "label": "Beobachtet",
-      "compatibleArchetypeIds": ["trace-site", "investigation-site", "territorial-marker", "landmark-site", "dynamic-situation", "route-obstacle"]
+      "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "natural-phenomenon", "route-obstacle"]
     },
     {
       "id": "modifier-sacred",
@@ -33,12 +33,12 @@
         { "actionId": "action-investigate", "scoreDelta": 10 },
         { "actionId": "action-cross-boundary", "scoreDelta": 10 }
       ],
-      "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "resource-site", "contact-site", "containment-site"]
+      "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "contact-site", "containment-site"]
     },
     {
       "id": "modifier-faction-owned",
       "label": "Fraktionsbesitz",
-      "compatibleArchetypeIds": ["trace-site", "investigation-site", "territorial-marker", "contact-site", "resource-site", "route-obstacle"]
+      "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "contact-site", "route-obstacle"]
     },
     {
       "id": "modifier-sealed",
@@ -56,13 +56,13 @@
     {
       "id": "modifier-flooded",
       "label": "Ueberflutet",
-      "compatibleArchetypeIds": ["route-obstacle", "hazard-zone"],
+      "compatibleArchetypeIds": ["route-obstacle", "hazard-site"],
       "incompatibleModifierIds": ["modifier-burning"]
     },
     {
       "id": "modifier-burning",
       "label": "Brennend",
-      "compatibleArchetypeIds": ["hazard-zone", "dynamic-situation"],
+      "compatibleArchetypeIds": ["hazard-site"],
       "incompatibleModifierIds": ["modifier-flooded"]
     },
     {
@@ -73,7 +73,7 @@
     {
       "id": "modifier-damaged",
       "label": "Beschaedigt",
-      "compatibleArchetypeIds": ["route-obstacle", "landmark-site"]
+      "compatibleArchetypeIds": ["route-obstacle", "natural-phenomenon"]
     },
     {
       "id": "modifier-taboo",
@@ -89,7 +89,7 @@
     {
       "id": "modifier-occupied",
       "label": "Besetzt",
-      "compatibleArchetypeIds": ["contact-site", "dynamic-situation"]
+      "compatibleArchetypeIds": ["contact-site"]
     },
     {
       "id": "modifier-invitation",
@@ -100,7 +100,7 @@
     {
       "id": "modifier-contaminated",
       "label": "Verseucht",
-      "compatibleArchetypeIds": ["trace-site", "investigation-site", "resource-site", "hazard-zone", "containment-site"]
+      "compatibleArchetypeIds": ["investigation-site", "hazard-site", "containment-site"]
     },
     {
       "id": "modifier-trapped",
@@ -110,62 +110,57 @@
     {
       "id": "modifier-hostile-presence",
       "label": "Feindliche Praesenz",
-      "compatibleArchetypeIds": ["contact-site", "dynamic-situation", "hazard-zone"]
+      "compatibleArchetypeIds": ["contact-site", "hazard-site"]
     },
     {
       "id": "modifier-creature-presence",
       "label": "Kreaturen",
-      "compatibleArchetypeIds": ["hazard-zone", "dynamic-situation"]
+      "compatibleArchetypeIds": ["hazard-site"]
     },
     {
       "id": "modifier-spreading",
       "label": "Ausbreitend",
-      "compatibleArchetypeIds": ["hazard-zone"]
+      "compatibleArchetypeIds": ["hazard-site"]
     },
     {
       "id": "modifier-searchable",
       "label": "Durchsuchbar",
-      "compatibleArchetypeIds": ["trace-site", "investigation-site"]
+      "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-campable",
       "label": "Lagertauglich",
-      "compatibleArchetypeIds": ["trace-site"]
-    },
-    {
-      "id": "modifier-harvestable",
-      "label": "Erntbar",
-      "compatibleArchetypeIds": ["resource-site"]
+      "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-climbable",
       "label": "Besteigbar",
-      "compatibleArchetypeIds": ["landmark-site"]
+      "compatibleArchetypeIds": ["natural-phenomenon"]
     },
     {
       "id": "modifier-signal-capable",
       "label": "Signalfaehig",
-      "compatibleArchetypeIds": ["landmark-site"]
+      "compatibleArchetypeIds": ["natural-phenomenon"]
     },
     {
       "id": "modifier-contains-heavy-object",
       "label": "Schwere Bergung",
-      "compatibleArchetypeIds": ["trace-site", "investigation-site"]
+      "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-recently-used",
       "label": "Kuerzlich genutzt",
-      "compatibleArchetypeIds": ["trace-site", "contact-site", "resource-site"]
+      "compatibleArchetypeIds": ["investigation-site", "contact-site"]
     },
     {
       "id": "modifier-weather-damaged",
       "label": "Wetterschaden",
-      "compatibleArchetypeIds": ["trace-site", "route-obstacle"]
+      "compatibleArchetypeIds": ["investigation-site", "route-obstacle"]
     },
     {
       "id": "modifier-old-knowledge-linked",
       "label": "Alt-Wissen verknuepft",
-      "compatibleArchetypeIds": ["investigation-site", "landmark-site"]
+      "compatibleArchetypeIds": ["investigation-site", "natural-phenomenon"]
     },
     {
       "id": "modifier-previously-visited",

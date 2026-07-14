@@ -221,7 +221,7 @@
     },
     {
       "id": "outcome-search",
-      "appliesTo": { "archetypeId": "trace-site", "actionId": "action-search" },
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-search" },
       "tiers": {
         "Low": [ { "tier": "Success", "weight": 70 }, { "tier": "SuccessWithCost", "weight": 20 }, { "tier": "Failure", "weight": 10 } ],
         "Moderate": [ { "tier": "Success", "weight": 50 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 20 } ]

@@ -260,7 +260,7 @@ public sealed class WorldGenBridge
     {
         "route-obstacle" => LocationKind.BrokenRavine,
         "investigation-site" or "containment-site" => LocationKind.Ruin,
-        "trace-site" => LocationKind.AbandonedCamp,
+        "hazard-site" => LocationKind.Landmark,
         _ => LocationKind.Landmark
     };
 
@@ -269,12 +269,12 @@ public sealed class WorldGenBridge
         "Wegehindernis" => "route-obstacle",
         "Untersuchungsort" => "investigation-site",
         "Verwahrungsort" => "containment-site",
-        "Spurenort" => "trace-site",
-        "Ressourcenort" => "resource-site",
-        "Gefahrenzone" => "hazard-zone",
-        "Landmarke" => "landmark-site",
+        "Spurenort" => "investigation-site",
+        "Ressourcenort" => "natural-phenomenon",
+        "Gefahrenzone" => "hazard-site",
+        "Landmarke" => "natural-phenomenon",
         "Grenzzeichen" => "territorial-marker",
-        _ => "landmark-site"
+        _ => "natural-phenomenon"
     };
 
     private static string VariantIdFor(string variant) => variant switch

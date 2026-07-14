@@ -1924,7 +1924,7 @@ internal sealed class LocationDataJsonTests
 {
     public void RunAll()
     {
-        AllTenArchetypesLoadAndAreRepresentable();
+        AllCanonicalArchetypesLoadAndAreRepresentable();
         AllLocationActionsCarrySemanticTags();
         ContentProfileSurfacesTitleAndFlavor();
         WeightedOutcomeStaysWithinAuthoredBandRow();
@@ -1946,11 +1946,11 @@ internal sealed class LocationDataJsonTests
 
     private static readonly string[] AllArchetypeIds =
     {
-        "trace-site", "investigation-site", "route-obstacle", "containment-site", "territorial-marker",
-        "contact-site", "resource-site", "hazard-zone", "landmark-site", "dynamic-situation"
+        "investigation-site", "route-obstacle", "containment-site", "territorial-marker", "contact-site",
+        "hazard-site", "natural-phenomenon"
     };
 
-    private static void AllTenArchetypesLoadAndAreRepresentable()
+    private static void AllCanonicalArchetypesLoadAndAreRepresentable()
     {
         var defs = LoadBundle().Definitions;
 
@@ -2036,12 +2036,12 @@ internal sealed class LocationDataJsonTests
         var defs = LoadBundle().Definitions;
 
         AssertTrue(defs.IsModifierCompatible("investigation-site", "modifier-sacred"), "Sacred is compatible with investigation-site");
-        AssertFalse(defs.IsModifierCompatible("route-obstacle", "modifier-harvestable"), "Harvestable is not compatible with route-obstacle");
+        AssertFalse(defs.IsModifierCompatible("route-obstacle", "modifier-campable"), "Campable is not compatible with route-obstacle");
 
         var okErrors = defs.ValidateModifierSet("route-obstacle", new[] { "modifier-repairable", "modifier-unstable" });
         AssertEqual(0, okErrors.Count, "A valid modifier set has no compatibility errors");
 
-        var incompatible = defs.ValidateModifierSet("hazard-zone", new[] { "modifier-burning", "modifier-flooded" });
+        var incompatible = defs.ValidateModifierSet("hazard-site", new[] { "modifier-burning", "modifier-flooded" });
         AssertTrue(incompatible.Count > 0, "Declared-incompatible modifiers are rejected together");
     }
 

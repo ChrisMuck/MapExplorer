@@ -121,7 +121,9 @@ special code.
 Definitions, Faction Offers and Faction Memory Definitions now load through the shared catalog.
 Five initial Slice scenario profiles and profile-based offers are authored and validated. Wiring
 those offers into generated faction instances is complete; direct legacy callers retain their
-previous offer set as a compatibility fallback. Migrating the remaining legacy content is still open.
+previous offer set as a compatibility fallback. The active location data now uses only the seven
+canonical archetypes; the remaining work in this block is optional action/disclosure fields and
+the corresponding runtime option resolver.
 
 **Work**
 

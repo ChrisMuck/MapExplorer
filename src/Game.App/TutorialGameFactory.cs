@@ -230,7 +230,7 @@ public static class TutorialGameFactory
                 ViewCoord(-2, 3),
                 "Verlassenes Lager",
                 LocationAnchor.Point(ViewCoord(-2, 3)),
-                "trace-site",
+                "investigation-site",
                 "abandoned-camp",
                 new[] { "modifier-searchable", "modifier-campable" },
                 contentProfileId: "content-abandoned-camp",
