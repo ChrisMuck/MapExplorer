@@ -80,7 +80,7 @@ public sealed class GameApplication
         DataCatalog = dataCatalog;
         if (locationData != null && crossSystemData != null)
         {
-            CrossSystemContentValidator.Validate(locationData, crossSystemData);
+            CrossSystemContentValidator.Validate(locationData, crossSystemData, dataCatalog?.Authoring);
         }
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
@@ -104,7 +104,7 @@ public sealed class GameApplication
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
-        var worldPhaseService = new WorldPhaseService(crossSystemData);
+        var worldPhaseService = new WorldPhaseService(crossSystemData, dataCatalog?.Authoring);
         moveExpeditionCommand = new MoveExpeditionCommand(
             movementCostService,
             new KnowledgeService(),

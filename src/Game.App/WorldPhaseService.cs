@@ -11,12 +11,14 @@ namespace Game.App
 public sealed class WorldPhaseService
 {
     private readonly CrossSystemDataBundle? content;
+    private readonly CrossSystemAuthoringBundle? authoring;
     private readonly FactionReactionResolver factionReactionResolver;
     private readonly FactionTerritorialPolicyResolver territorialPolicyResolver;
 
-    public WorldPhaseService(CrossSystemDataBundle? content = null)
+    public WorldPhaseService(CrossSystemDataBundle? content = null, CrossSystemAuthoringBundle? authoring = null)
     {
         this.content = content;
+        this.authoring = authoring;
         factionReactionResolver = new FactionReactionResolver(content);
         territorialPolicyResolver = new FactionTerritorialPolicyResolver(content);
     }
@@ -40,7 +42,8 @@ public sealed class WorldPhaseService
                 var consequence = content!.FindConsequence(definition.ConsequenceId);
                 if (consequence != null)
                 {
-                    var stages = consequence.Stages
+                    var branch = consequence.SelectBranch(new WorldDeterministicRandomSource(game.World));
+                    var stages = branch.Stages
                         .OrderBy(stage => stage.DelayDays)
                         .ThenBy(stage => stage.Id, StringComparer.Ordinal)
                         .Select(stage => new ScheduledConsequenceStageState(
@@ -51,7 +54,7 @@ public sealed class WorldPhaseService
                     var process = new ScheduledConsequenceState(
                         game.World.RuntimeIds.Allocate("world-process"),
                         consequence.Id,
-                        resolvedBranchId: "default",
+                        branch.Id,
                         trigger.SourceLocationId ?? "world",
                         trigger.Id,
                         affectedContextIds: null,
@@ -59,7 +62,7 @@ public sealed class WorldPhaseService
                     game.World.ScheduleConsequence(process);
                     game.World.RecordTrace(
                         SimulationTraceKind.WorldProcessScheduled,
-                        $"Consequence '{consequence.Id}' fixed branch 'default' and scheduled {stages.Count} stage(s).",
+                        $"Consequence '{consequence.Id}' fixed branch '{branch.Id}' and scheduled {stages.Count} stage(s).",
                         new[] { triggerTrace.TraceId },
                         new[] { process.Id, consequence.Id });
                 }
@@ -78,7 +81,7 @@ public sealed class WorldPhaseService
                 if (scheduledStage == null) break;
                 var location = game.World.Locations.FirstOrDefault(item => item.Id == consequence.SourceLocationId);
                 var definition = content?.FindConsequence(consequence.DefinitionId);
-                var stage = definition?.FindStage(scheduledStage.StageId);
+                var stage = definition?.FindStage(consequence.ResolvedBranchId, scheduledStage.StageId);
                 var appliedStage = consequence.TryApplyDueStage(game.World.WorldDay);
                 if (appliedStage == null) break;
 
@@ -106,6 +109,28 @@ public sealed class WorldPhaseService
                         $"World process stage '{appliedStage.StageId}' created evidence '{stage.EvidenceId}'.",
                         new[] { stageTrace.TraceId },
                         new[] { stage.EvidenceId, consequence.Id });
+                }
+
+                foreach (var situationDefinitionId in stage?.SituationDefinitionIds ?? Array.Empty<string>())
+                {
+                    if (authoring == null || !authoring.Situations.ContainsKey(situationDefinitionId))
+                    {
+                        continue;
+                    }
+
+                    var situation = new WorldSituationState(
+                        game.World.RuntimeIds.Allocate("situation"),
+                        situationDefinitionId,
+                        game.World.WorldDay,
+                        sourceProcessId: consequence.Id,
+                        sourceLocationId: location?.Id);
+                    situation.Activate();
+                    game.World.AddSituation(situation);
+                    game.World.RecordTrace(
+                        SimulationTraceKind.SituationChanged,
+                        $"World process stage '{appliedStage.StageId}' activated situation '{situationDefinitionId}'.",
+                        new[] { stageTrace.TraceId },
+                        new[] { situation.Id, situationDefinitionId, consequence.Id });
                 }
 
                 var title = stage?.EventTitle ?? "World changed";

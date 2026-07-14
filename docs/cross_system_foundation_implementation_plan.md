@@ -161,8 +161,9 @@ the corresponding runtime option resolver.
 **Current implementation:** `WorldState` now persists generated-context assignments, world
 situations, deterministic ID/random state and objective simulation traces. A scheduled consequence
 is now one fixed process with branch ID, source trigger, affected context IDs and ordered stage
-state; the World Phase advances only due stages. Direct process-to-situation effects, save/load
-serialization and deterministic branch selection from authored branch weights remain in this block.
+state; the World Phase advances only due stages. JSON may author weighted branches and
+stage-to-situation references; the selected branch is fixed through the persisted deterministic
+random stream. Save/load serialization remains in this block.
 
 **Work**
 

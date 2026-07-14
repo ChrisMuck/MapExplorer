@@ -11,6 +11,7 @@ internal sealed class WorldPhaseDataTests
     {
         ExpeditionTimeResolvesAStagedConsequenceExactlyOnce();
         BaseTimeAlsoResolvesAStagedConsequence();
+        ExplicitConsequenceBranchesLoadWithSituationReferences();
         UndefinedEvidenceReferencesAreRejectedByTheLoader();
     }
 
@@ -58,6 +59,18 @@ internal sealed class WorldPhaseDataTests
         const string consequences = "{ \"documentType\": \"consequence-definitions\", \"schemaVersion\": 1, \"items\": [ { \"id\": \"consequence-test\", \"stages\": [ { \"id\": \"stage-1\", \"delayDays\": 1, \"evidenceId\": \"evidence-missing\" } ] } ] }";
 
         AssertThrows(() => CrossSystemDataLoader.LoadFromJson(new[] { evidence, consequences }), "Unknown evidence references are rejected");
+    }
+
+    private static void ExplicitConsequenceBranchesLoadWithSituationReferences()
+    {
+        const string consequences = "{ \"documentType\": \"consequence-definitions\", \"schemaVersion\": 2, \"items\": [ { \"id\": \"consequence-branching\", \"branches\": [ { \"id\": \"contained\", \"weight\": 1, \"stages\": [ { \"id\": \"early\", \"delayDays\": 1, \"situationCandidateIds\": [\"situation-test\"] } ] }, { \"id\": \"spread\", \"weight\": 2, \"stages\": [ { \"id\": \"later\", \"delayDays\": 2 } ] } ] } ] }";
+
+        var content = CrossSystemDataLoader.LoadFromJson(new[] { consequences });
+        var definition = content.FindConsequence("consequence-branching") ?? throw new InvalidOperationException("Branching consequence was not loaded.");
+
+        AssertEqual(2, definition.Branches.Count, "Explicit consequence branches are loaded");
+        AssertEqual(1, definition.FindBranch("contained")!.Stages.Count, "Branch keeps its own stages");
+        AssertEqual("situation-test", definition.FindBranch("contained")!.FindStage("early")!.SituationDefinitionIds[0], "Stage keeps situation reference for catalog validation");
     }
 
     private static CrossSystemDataBundle LoadContent()

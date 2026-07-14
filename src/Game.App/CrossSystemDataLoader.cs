@@ -196,7 +196,15 @@ public sealed class WorldTriggerDefinition
 
 public sealed class ConsequenceStageDefinition
 {
-    public ConsequenceStageDefinition(string id, int delayDays, string? evidenceId, string? eventTitle, string? eventBody)
+    private readonly List<string> situationDefinitionIds;
+
+    public ConsequenceStageDefinition(
+        string id,
+        int delayDays,
+        string? evidenceId,
+        string? eventTitle,
+        string? eventBody,
+        IEnumerable<string>? situationDefinitionIds = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence stage id must not be empty.", nameof(id));
         if (delayDays < 0) throw new ArgumentOutOfRangeException(nameof(delayDays));
@@ -205,6 +213,11 @@ public sealed class ConsequenceStageDefinition
         EvidenceId = string.IsNullOrWhiteSpace(evidenceId) ? null : evidenceId.Trim();
         EventTitle = string.IsNullOrWhiteSpace(eventTitle) ? null : eventTitle.Trim();
         EventBody = string.IsNullOrWhiteSpace(eventBody) ? null : eventBody.Trim();
+        this.situationDefinitionIds = (situationDefinitionIds ?? Enumerable.Empty<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     public string Id { get; }
@@ -212,23 +225,73 @@ public sealed class ConsequenceStageDefinition
     public string? EvidenceId { get; }
     public string? EventTitle { get; }
     public string? EventBody { get; }
+    public IReadOnlyList<string> SituationDefinitionIds => situationDefinitionIds;
+}
+
+/// <summary>An authored possible history. Its weight is read only once at process scheduling time.</summary>
+public sealed class ConsequenceBranchDefinition
+{
+    private readonly Dictionary<string, ConsequenceStageDefinition> stages;
+
+    public ConsequenceBranchDefinition(string id, int weight, IEnumerable<ConsequenceStageDefinition> stages)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence branch id must not be empty.", nameof(id));
+        if (weight < 1) throw new ArgumentOutOfRangeException(nameof(weight), "Consequence branch weight must be positive.");
+        Id = id.Trim();
+        Weight = weight;
+        this.stages = (stages ?? throw new ArgumentNullException(nameof(stages)))
+            .ToDictionary(stage => stage.Id, StringComparer.Ordinal);
+        if (this.stages.Count == 0) throw new ArgumentException("A consequence branch needs at least one stage.", nameof(stages));
+    }
+
+    public string Id { get; }
+    public int Weight { get; }
+    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => stages.Values;
+    public ConsequenceStageDefinition? FindStage(string stageId) => stages.TryGetValue(stageId, out var stage) ? stage : null;
 }
 
 public sealed class ConsequenceDefinition
 {
-    private readonly Dictionary<string, ConsequenceStageDefinition> stages;
+    private readonly Dictionary<string, ConsequenceBranchDefinition> branches;
 
     public ConsequenceDefinition(string id, IEnumerable<ConsequenceStageDefinition> stages)
+        : this(id, new[] { new ConsequenceBranchDefinition("default", 1, stages) })
+    {
+    }
+
+    public ConsequenceDefinition(string id, IEnumerable<ConsequenceBranchDefinition> branches)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence id must not be empty.", nameof(id));
         Id = id.Trim();
-        this.stages = (stages ?? throw new ArgumentNullException(nameof(stages))).ToDictionary(stage => stage.Id, StringComparer.Ordinal);
-        if (this.stages.Count == 0) throw new ArgumentException("A consequence needs at least one stage.", nameof(stages));
+        this.branches = (branches ?? throw new ArgumentNullException(nameof(branches))).ToDictionary(branch => branch.Id, StringComparer.Ordinal);
+        if (this.branches.Count == 0) throw new ArgumentException("A consequence needs at least one branch.", nameof(branches));
     }
 
     public string Id { get; }
-    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => stages.Values;
-    public ConsequenceStageDefinition? FindStage(string stageId) => stages.TryGetValue(stageId, out var stage) ? stage : null;
+    public IReadOnlyCollection<ConsequenceBranchDefinition> Branches => branches.Values;
+    /// <summary>Compatibility view for legacy callers and stage-only authoring.</summary>
+    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => branches.TryGetValue("default", out var branch)
+        ? branch.Stages
+        : branches.Values.SelectMany(item => item.Stages).ToArray();
+    public ConsequenceBranchDefinition? FindBranch(string branchId) => branches.TryGetValue(branchId, out var branch) ? branch : null;
+    public ConsequenceStageDefinition? FindStage(string branchId, string stageId) => FindBranch(branchId)?.FindStage(stageId);
+    public ConsequenceStageDefinition? FindStage(string stageId) => FindBranch("default")?.FindStage(stageId);
+
+    public ConsequenceBranchDefinition SelectBranch(IDeterministicRandomSource random)
+    {
+        if (random == null) throw new ArgumentNullException(nameof(random));
+        var ordered = branches.Values.OrderBy(branch => branch.Id, StringComparer.Ordinal).ToList();
+        if (ordered.Count == 1) return ordered[0];
+        var total = ordered.Sum(branch => branch.Weight);
+        var roll = random.NextInt(total);
+        foreach (var branch in ordered)
+        {
+            if (roll < branch.Weight) return branch;
+            roll -= branch.Weight;
+        }
+
+        throw new InvalidOperationException("Consequence branch selection did not resolve a branch.");
+    }
 }
 
 public sealed class FactionReactionRuleDefinition
@@ -627,7 +690,8 @@ public sealed class CrossSystemDataBundle
 /// </summary>
 public static class CrossSystemDataLoader
 {
-    private const int SupportedSchemaVersion = 1;
+    private const int MinimumSupportedSchemaVersion = 1;
+    private const int MaximumSupportedSchemaVersion = 2;
     private static readonly HashSet<string> SupportedDocumentTypes = new(StringComparer.Ordinal)
     {
         "evidence-definitions",
@@ -706,9 +770,9 @@ public static class CrossSystemDataLoader
             }
 
             var schemaVersion = (int?)envelope["schemaVersion"] ?? 0;
-            if (schemaVersion != SupportedSchemaVersion)
+            if (schemaVersion < MinimumSupportedSchemaVersion || schemaVersion > MaximumSupportedSchemaVersion)
             {
-                throw new LocationDataException($"Unsupported schemaVersion '{schemaVersion}' (expected {SupportedSchemaVersion}).");
+                throw new LocationDataException($"Unsupported schemaVersion '{schemaVersion}' (supported: {MinimumSupportedSchemaVersion}-{MaximumSupportedSchemaVersion}).");
             }
 
             var items = envelope["items"] as JArray ?? new JArray();
@@ -766,13 +830,12 @@ public static class CrossSystemDataLoader
 
         var builtConsequences = consequences.Select(item => new ConsequenceDefinition(
             Require(item.Id, "consequence.id"),
-            (item.Stages ?? new List<ConsequenceStageDto>()).Select(stage => new ConsequenceStageDefinition(
-                Require(stage.Id, "consequence.stage.id"), stage.DelayDays, stage.EvidenceId, stage.Event?.Title, stage.Event?.Body)))).ToList();
+            BuildConsequenceBranches(item))).ToList();
         if (builtConsequences.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
             throw new LocationDataException("Cross-system consequence IDs must be unique.");
         }
-        if (builtConsequences.SelectMany(consequence => consequence.Stages)
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages)
             .Any(stage => stage.EvidenceId != null && !definitions.Any(evidenceDefinition => evidenceDefinition.Id == stage.EvidenceId)))
         {
             throw new LocationDataException("A consequence stage references an unknown evidence definition.");
@@ -880,6 +943,40 @@ public static class CrossSystemDataLoader
         }
 
         return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtFactionProfiles, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports, builtScoutMissionTypes, builtScoutFocuses), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
+    }
+
+    private static IReadOnlyList<ConsequenceBranchDefinition> BuildConsequenceBranches(ConsequenceDefinitionDto dto)
+    {
+        if (dto.Branches != null && dto.Branches.Count > 0)
+        {
+            if (dto.Stages != null && dto.Stages.Count > 0)
+            {
+                throw new LocationDataException("A consequence definition must use either legacy stages or explicit branches, not both.");
+            }
+
+            return dto.Branches.Select(branch => new ConsequenceBranchDefinition(
+                Require(branch.Id, "consequence.branch.id"),
+                branch.Weight,
+                BuildConsequenceStages(branch.Stages))).ToList();
+        }
+
+        return new[]
+        {
+            new ConsequenceBranchDefinition("default", 1, BuildConsequenceStages(dto.Stages))
+        };
+    }
+
+    private static IReadOnlyList<ConsequenceStageDefinition> BuildConsequenceStages(IEnumerable<ConsequenceStageDto>? stages)
+    {
+        return (stages ?? Enumerable.Empty<ConsequenceStageDto>())
+            .Select(stage => new ConsequenceStageDefinition(
+                Require(stage.Id, "consequence.stage.id"),
+                stage.DelayDays,
+                stage.EvidenceId,
+                stage.Event?.Title,
+                stage.Event?.Body,
+                stage.SituationCandidateIds))
+            .ToList();
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -1019,6 +1116,14 @@ public static class CrossSystemDataLoader
     {
         public string? Id { get; set; }
         public List<ConsequenceStageDto>? Stages { get; set; }
+        public List<ConsequenceBranchDto>? Branches { get; set; }
+    }
+
+    private sealed class ConsequenceBranchDto
+    {
+        public string? Id { get; set; }
+        public int Weight { get; set; }
+        public List<ConsequenceStageDto>? Stages { get; set; }
     }
 
     private sealed class ConsequenceStageDto
@@ -1027,6 +1132,7 @@ public static class CrossSystemDataLoader
         public int DelayDays { get; set; }
         public string? EvidenceId { get; set; }
         public ConsequenceEventDto? Event { get; set; }
+        public List<string>? SituationCandidateIds { get; set; }
     }
 
     private sealed class ConsequenceEventDto

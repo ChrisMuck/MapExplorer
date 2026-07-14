@@ -109,6 +109,20 @@ public static class CrossSystemContentValidator
             }
         }
 
+        foreach (var consequence in crossSystem.Consequences.Values)
+        {
+            foreach (var stage in consequence.Branches.SelectMany(branch => branch.Stages))
+            {
+                foreach (var situationId in stage.SituationDefinitionIds)
+                {
+                    if (!authoring.Situations.ContainsKey(situationId))
+                    {
+                        errors.Add($"Consequence '{consequence.Id}' stage '{stage.Id}' references unknown situation '{situationId}'.");
+                    }
+                }
+            }
+        }
+
         foreach (var offer in authoring.FactionOffers.Values)
         {
             foreach (var profileTag in offer.EligibleProfileTags)

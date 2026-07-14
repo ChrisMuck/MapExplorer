@@ -287,6 +287,7 @@ internal sealed class WorldGenBridgeTests
         TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
         GeneratedWorldCanStartAnExpedition();
         GeneratedFactionsReceiveStableHiddenSignatureProfiles();
+        GeneratedWorldSeedsLaterSimulation();
     }
 
     private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
@@ -335,6 +336,12 @@ internal sealed class WorldGenBridgeTests
             string.Join("|", first.Factions.Select(faction => faction.SignatureProfileId)),
             string.Join("|", second.Factions.Select(faction => faction.SignatureProfileId)),
             "Same generation request keeps hidden signature assignments stable");
+    }
+
+    private static void GeneratedWorldSeedsLaterSimulation()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        AssertEqual(Request().Seed, result.World.Random.Seed, "Generated campaign carries its world seed into later simulation");
     }
 
     private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()

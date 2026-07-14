@@ -108,7 +108,13 @@ public sealed class WorldGenBridge
             ownerId: cell.Faction >= 0 && factionIds.TryGetValue(cell.Faction, out var ownerId) ? ownerId : null));
         var bounds = new HexMapBounds(generated.Grid.W + qOffset, generated.Grid.H);
         var paths = BuildPaths(generated, ToCore);
-        var world = new WorldState(new HexMapState(bounds, tiles), paths, locations);
+        // The generated-world seed is also the seed for later non-generator simulation choices.
+        // This keeps a full campaign reproducible from its generation request and command history.
+        var world = new WorldState(
+            new HexMapState(bounds, tiles),
+            paths,
+            locations,
+            random: new DeterministicRandomState(generated.Params.Seed));
         var factions = generated.Factions
             .Select(faction => new FactionState(
                 factionIds[faction.Id],
