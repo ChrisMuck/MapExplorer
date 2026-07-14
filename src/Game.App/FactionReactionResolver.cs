@@ -50,6 +50,14 @@ public sealed class FactionReactionResolver
 
             faction.Adjust(rule.TrustDelta, rule.AngerDelta, rule.FearDelta);
             faction.AddMemory(memoryId);
+            game.World.RecordTrace(
+                SimulationTraceKind.FactionReaction,
+                $"Faction '{faction.Id}' applied reaction rule '{rule.Id}' to trigger '{trigger.TriggerId}'.",
+                game.World.Traces
+                    .Where(trace => trace.SubjectIds.Contains(trigger.Id, StringComparer.Ordinal))
+                    .Select(trace => trace.TraceId)
+                    .Take(1),
+                new[] { faction.Id, trigger.Id, rule.Id, location.Id });
             if (rule.RevealsFaction && faction.ContactStatus == FactionContactStatus.Unknown)
             {
                 faction.SetContactStatus(FactionContactStatus.Rumored);
@@ -58,7 +66,7 @@ public sealed class FactionReactionResolver
             if (rule.EventTitle != null && rule.EventBody != null)
             {
                 game.Events.Enqueue(new EventState(
-                    $"faction-reaction-{game.Events.Events.Count + 1}",
+                    game.World.RuntimeIds.Allocate("faction-reaction"),
                     EventKind.FactionReaction,
                     rule.EventTitle,
                     rule.RevealsFaction ? faction.Name : "Unbekannte Beobachter",

@@ -45,6 +45,8 @@ var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
 var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
+var simulationRuntimeStateTests = new SimulationRuntimeStateTests();
+simulationRuntimeStateTests.RunAll();
 var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
 scoutLocationSurroundingsTests.RunAll();
 var worldPhaseDataTests = new WorldPhaseDataTests();

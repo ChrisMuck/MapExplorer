@@ -154,9 +154,15 @@ the corresponding runtime option resolver.
   naming a concrete faction in JSON.
 - Five Slice profiles load through the catalog and preserve the current bridge/gate proof flows.
 
-### Block 3 — Shared Runtime State, Determinism and Causal Trace
+### Block 3 — Shared Runtime State, Determinism and Causal Trace — In Progress
 
 **Purpose:** give every generated or delayed effect durable, inspectable runtime identity.
+
+**Current implementation:** `WorldState` now persists generated-context assignments, world
+situations, deterministic ID/random state and objective simulation traces. A scheduled consequence
+is now one fixed process with branch ID, source trigger, affected context IDs and ordered stage
+state; the World Phase advances only due stages. Direct process-to-situation effects, save/load
+serialization and deterministic branch selection from authored branch weights remain in this block.
 
 **Work**
 

@@ -50,6 +50,14 @@ public sealed class FactionTerritorialPolicyResolver
 
             faction.AddMemory(memoryId);
             faction.Adjust(response.TrustDelta, response.AngerDelta, response.FearDelta);
+            game.World.RecordTrace(
+                SimulationTraceKind.FactionReaction,
+                $"Faction '{faction.Id}' applied territorial policy to trigger '{trigger.TriggerId}'.",
+                game.World.Traces
+                    .Where(trace => trace.SubjectIds.Contains(trigger.Id, StringComparer.Ordinal))
+                    .Select(trace => trace.TraceId)
+                    .Take(1),
+                new[] { faction.Id, trigger.Id, location.Id });
             for (var i = 0; i < response.AwarenessIncrease; i++)
             {
                 game.World.EscalateFactionAwareness(faction.Id, $"location-region:{location.Id}");
@@ -63,7 +71,7 @@ public sealed class FactionTerritorialPolicyResolver
             if (response.EventTitle != null && response.EventBody != null)
             {
                 game.Events.Enqueue(new EventState(
-                    $"faction-policy-{game.Events.Events.Count + 1}",
+                    game.World.RuntimeIds.Allocate("faction-policy"),
                     EventKind.FactionReaction,
                     response.EventTitle,
                     response.RevealsFaction ? faction.Name : "Unbekannte Beobachter",

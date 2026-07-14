@@ -26,7 +26,9 @@ support every new field yet. Loader and Core changes belong to a later implement
 - `WorldState` stores objective generated facts. `KnowledgeState` stores only earned evidence and
   last-known information. `PlayerNotes` stores hypotheses and personal markers.
 - Findings, reports and location inspections create knowledge. They are not a material resource
-  loop. Knowledge Points are the sole spendable base and trade resource.
+  loop. Knowledge Points are the sole general base and trade currency. Supplies and medicine
+  remain separate expedition consumables: supplies impose return pressure and medicine treats
+  injuries or enables aid at locations. Neither creates a harvesting, processing or stockpile loop.
 - Every reference is an ID validated at load time. Tags are reusable selectors, never direct
   hidden conclusions.
 - IDs are stable, lowercase kebab-case and are never reused for a different meaning.
