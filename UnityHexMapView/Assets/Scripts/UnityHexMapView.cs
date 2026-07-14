@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Game.App;
 using Game.Core;
 using UnityEngine;
@@ -47,7 +48,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     // shifted in the bridge; presentation restores that shift before placing hexes.
     private int generatedCoreQOffset;
     private readonly MovementCostService movementCostService = new MovementCostService();
-    private readonly GameApplication gameApplication = CreateGameApplication();
+    private readonly GameDataCatalog gameDataCatalog = LoadGameDataCatalog();
+    private SimulationSession simulationSession;
     private Transform currentBuildRoot;
     private Material hexTerrainMaterial;
     private Material hexNatureMaterialTemplate;
@@ -103,7 +105,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public GameState CurrentGameState => coreGameState;
     public bool HasStartedCampaign => generatedCampaignRequest != null;
-    public WorldGenerationPresetCatalog? WorldGenerationCatalog => gameApplication.DataCatalog?.WorldGeneration;
+    public WorldGenerationPresetCatalog? WorldGenerationCatalog => gameDataCatalog.WorldGeneration;
 
     public string CurrentInteractionMessage => interactionMessage;
 
@@ -129,7 +131,25 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public SpecialLocationState GetLocationForUi(HexCoord coord)
     {
+        if (coreGameState == null || coreGameState.Knowledge.GetTileKnowledge(coord) != KnowledgeLevel.Confirmed)
+        {
+            return null;
+        }
+
         return FindLocation(coord);
+    }
+
+    /// <summary>Presentation may only list factions that have entered player knowledge.</summary>
+    public IReadOnlyList<FactionState> GetKnownFactionsForUi()
+    {
+        if (coreGameState == null)
+        {
+            return System.Array.Empty<FactionState>();
+        }
+
+        return coreGameState.Factions
+            .Where(faction => faction.ContactStatus != FactionContactStatus.Unknown)
+            .ToList();
     }
 
     public IReadOnlyList<PlayerMapMarkerState> GetMarkersForUi(HexCoord coord)
@@ -226,7 +246,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.StartUpgrade(coreGameState, upgradeId);
+        var result = simulationSession.StartUpgrade(upgradeId);
         interactionMessage = result.Success
             ? result.ArchiveEntry ?? "Base upgrade built."
             : result.Error ?? "Base upgrade rejected.";
@@ -246,7 +266,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.EvaluateKnowledgeItem(coreGameState, itemId);
+        var result = simulationSession.EvaluateKnowledgeItem(itemId);
         interactionMessage = result.Success
             ? result.ArchiveEntry ?? "Knowledge evaluated."
             : result.Error ?? "Evaluation rejected.";
@@ -273,7 +293,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.StartBaseAction(coreGameState, kind, memberId);
+        var result = simulationSession.StartBaseAction(kind, memberId);
         interactionMessage = result.Success
             ? result.ArchiveEntry ?? "Base action applied."
             : result.Error ?? "Base action rejected.";
@@ -326,7 +346,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.StartNewExpedition(coreGameState, memberIds);
+        var result = simulationSession.StartNewExpedition(memberIds);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "New expedition rejected.";
@@ -359,7 +379,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return ExpeditionReadiness.Compute(memberCount, System.Array.Empty<BaseUnitState>(), rations, medicine);
         }
 
-        return gameApplication.ComputeReadiness(coreGameState, memberCount, unitIds, rations, medicine);
+        return simulationSession.ComputeReadiness(memberCount, unitIds, rations, medicine);
     }
 
     public void RequestStartLoadoutExpeditionFromUi(IReadOnlyList<string> memberIds, IReadOnlyList<string> unitIds, int rations, int medicine)
@@ -369,7 +389,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.StartNewExpedition(coreGameState, memberIds, unitIds, rations, medicine);
+        var result = simulationSession.StartNewExpedition(memberIds, unitIds, rations, medicine);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "New expedition rejected.";
@@ -400,22 +420,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var report = coreGameState.Knowledge.ScoutReports[reportIndex];
-        if (report.RelatedCoords.Count == 0)
-        {
-            interactionMessage = $"Scout report selected: {report.Title}. No map coordinates were reported.";
-            RefreshHud();
-            return;
-        }
-
-        var coord = report.RelatedCoords[0];
-        var viewCoord = CoreCoordToViewCoord(coord);
-        inspectedHex = viewCoord;
-        selectedPreviewHex = viewCoord;
-        hasInspectedHex = true;
-        inspectedLocation = coreGameState.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Confirmed ? FindLocation(coord) : null;
-        interactionMessage = $"Scout report selected: {report.Title}. Reported field {coord}.";
-        FocusCameraOnCoord(viewCoord);
-        RefreshHexOverlays();
+        interactionMessage = report.Leads.Count == 0
+            ? $"Scout report selected: {report.Title}. Der Bericht enthält keine verortbare Spur."
+            : $"Scout report selected: {report.Title}. {string.Join(" ", report.Leads.Select(lead => lead.Summary))}";
         RefreshHud();
     }
 
@@ -437,7 +444,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return false;
         }
 
-        var result = gameApplication.SendScoutMission(coreGameState, scoutMemberIds, direction, durationDays, focus, behavior);
+        var result = simulationSession.SendDirectionalScout(scoutMemberIds, direction, durationDays, focus, behavior);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Scout mission rejected.";
@@ -494,14 +501,10 @@ public sealed class UnityHexMapView : MonoBehaviour
         if (coreGameState != null && coreGameState.Knowledge.ScoutReports.Count > 0)
         {
             var report = coreGameState.Knowledge.ScoutReports[coreGameState.Knowledge.ScoutReports.Count - 1];
-            if (report.RelatedCoords.Count > 0)
-            {
-                inspectedHex = CoreCoordToViewCoord(report.RelatedCoords[0]);
-                hasInspectedHex = true;
-            }
-
             selectedMarkerKind = PlayerMapMarkerKind.Question;
-            markerLabelDraft = report.Title;
+            markerLabelDraft = report.Leads.Count > 0
+                ? $"Hinweis: {report.Leads[0].Summary}"
+                : report.Title;
         }
 
         AddMarkerToInspectedHex();
@@ -516,16 +519,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var report = coreGameState.Knowledge.ScoutReports[reportIndex];
-        if (report.RelatedCoords.Count > 0)
-        {
-            inspectedHex = CoreCoordToViewCoord(report.RelatedCoords[0]);
-            hasInspectedHex = true;
-        }
-        else
-        {
-            EnsureUiSelectedHex();
-        }
-
+        EnsureUiSelectedHex();
         var hint = hintIndex >= 0 && hintIndex < report.Hints.Count ? report.Hints[hintIndex] : report.Title;
         selectedMarkerKind = MarkerKindForReportHint(hint);
         markerLabelDraft = hint;
@@ -556,7 +550,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         var coord = ViewCoordToCoreCoord(inspectedHex);
         if (GetLostExpeditionForUi(coord) != null)
         {
-            var recovery = gameApplication.RecoverLostExpedition(coreGameState, coord);
+            var recovery = simulationSession.RecoverLostExpedition(coord);
             if (recovery.Success)
             {
                 var expeditionNumber = recovery.Record == null ? 0 : recovery.Record.ExpeditionNumber;
@@ -572,7 +566,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.InspectLocation(coreGameState, coord);
+        var result = simulationSession.InspectLocation(coord);
         if (result.Success)
         {
             inspectedLocation = result.Location;
@@ -590,12 +584,12 @@ public sealed class UnityHexMapView : MonoBehaviour
     // Unity uses the same complete declared data catalog as tests and the future simulation runner.
     // Invalid declared content is a startup error; silently switching to fallback definitions would
     // make player behaviour differ from the content that was validated elsewhere.
-    private static GameApplication CreateGameApplication()
+    private static GameDataCatalog LoadGameDataCatalog()
     {
         var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData");
         var catalog = GameDataCatalog.LoadFromDirectory(root)
             ?? throw new System.InvalidOperationException($"Game data folder '{root}' was not found.");
-        return new GameApplication(catalog);
+        return catalog;
     }
 
     /// <summary>Starts one unseen generated campaign. This path intentionally offers no map preview or reroll.</summary>
@@ -621,7 +615,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return LocationInteractionQueryResult.Rejected("No active game state.");
         }
 
-        return gameApplication.GetLocationInteraction(coreGameState, locationId);
+        return simulationSession.GetLocationInteraction(locationId);
     }
 
     public LocationActionResult RequestResolveLocationActionFromUi(string locationId, string actionId)
@@ -631,7 +625,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return LocationActionResult.Rejected("No active game state.");
         }
 
-        var result = gameApplication.ResolveLocationAction(coreGameState, locationId, actionId);
+        var result = simulationSession.ResolveLocationAction(locationId, actionId);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Location action rejected.";
@@ -670,7 +664,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return LocationActionResult.Rejected("No active game state.");
         }
 
-        var result = gameApplication.AdvanceLocationProject(coreGameState, locationId);
+        var result = simulationSession.AdvanceLocationProject(locationId);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Location project rejected.";
@@ -702,7 +696,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.PrepareSuppliesWithKnowledge(coreGameState);
+        var result = simulationSession.PrepareSuppliesWithKnowledge();
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Preparation rejected.";
@@ -721,7 +715,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.ResolveEvent(coreGameState, eventId, optionId);
+        var result = simulationSession.ResolveEvent(eventId, optionId);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Event option rejected.";
@@ -741,7 +735,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.PurchaseFactionOffer(coreGameState, offerId);
+        var result = simulationSession.PurchaseFactionOffer(offerId);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Faction offer rejected.";
@@ -762,7 +756,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.CloseFactionInteraction(coreGameState);
+        var result = simulationSession.CloseFactionInteraction();
         interactionMessage = result.Success
             ? result.Message ?? "Faction contact closed."
             : result.Error ?? "No faction contact open.";
@@ -1494,9 +1488,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     {
         if (useCoreTutorialState)
         {
-            coreGameState = generatedCampaignRequest == null
-                ? gameApplication.CreateTutorialGame()
-                : gameApplication.CreateGeneratedGame(generatedCampaignRequest);
+            simulationSession = generatedCampaignRequest == null
+                ? SimulationSession.CreateTutorial(gameDataCatalog, unchecked((uint)Mathf.Max(1, mapSeed)))
+                : SimulationSession.CreateGenerated(gameDataCatalog, generatedCampaignRequest);
+            coreGameState = simulationSession.Game;
             generatedCoreQOffset = generatedCampaignRequest == null
                 ? 0
                 : (coreGameState.World.Map.Bounds.Height - 1) >> 1;
@@ -2284,7 +2279,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var destination = ViewCoordToCoreCoord(viewCoord);
-        var result = gameApplication.MoveExpedition(coreGameState, destination);
+        var result = simulationSession.MoveExpedition(destination);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Move rejected.";
@@ -2396,7 +2391,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.EndDay(coreGameState);
+        var result = simulationSession.EndDay();
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "End day rejected.";
@@ -2426,7 +2421,7 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
-        var result = gameApplication.CompleteExpedition(coreGameState);
+        var result = simulationSession.CompleteExpedition();
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Expedition completion rejected.";
@@ -2444,7 +2439,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void AdvanceCurrentBaseTime()
     {
-        var result = gameApplication.AdvanceBaseTime(coreGameState);
+        var result = simulationSession.AdvanceBaseTime();
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Base time rejected.";
@@ -2464,7 +2459,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private void StartNextExpedition()
     {
-        var result = gameApplication.StartNewExpedition(coreGameState);
+        var result = simulationSession.StartNewExpedition();
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "New expedition rejected.";
@@ -2577,7 +2572,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         var coord = ViewCoordToCoreCoord(inspectedHex);
         var label = string.IsNullOrWhiteSpace(markerLabelDraft) ? DefaultMarkerLabel(selectedMarkerKind) : markerLabelDraft;
         var factionId = IsFactionMarkerKind(selectedMarkerKind) ? markerFactionIdDraft : null;
-        var result = gameApplication.AddMapMarker(coreGameState, coord, selectedMarkerKind, label, factionId);
+        var result = simulationSession.AddMapMarker(coord, selectedMarkerKind, label, factionId);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Marker rejected.";
@@ -2598,7 +2593,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var coord = ViewCoordToCoreCoord(inspectedHex);
-        var result = gameApplication.AddMapNote(coreGameState, coord, noteDraftText);
+        var result = simulationSession.AddMapNote(coord, noteDraftText);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Note rejected.";
@@ -2653,7 +2648,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var selectedScouts = SelectAvailableScoutIds(sendTwoScouts ? 2 : 1);
-        var result = gameApplication.SendScoutMission(coreGameState, selectedScouts, scoutDirection, scoutDurationDays, scoutFocus, scoutBehavior);
+        var result = simulationSession.SendDirectionalScout(selectedScouts, scoutDirection, scoutDurationDays, scoutFocus, scoutBehavior);
         if (!result.Success)
         {
             interactionMessage = result.Error ?? "Scout mission rejected.";

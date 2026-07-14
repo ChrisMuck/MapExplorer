@@ -31,7 +31,8 @@ existing `Request*FromUi` seam — it never mutates world state.
   `StartUpgradeCommand`.
 - **Wissen auswerten** - evaluation queue backed by `EvaluationQueueState`, `AdvanceBaseTimeCommand`
   and `EvaluateKnowledgeItemCommand`.
-- **Fraktionen** - read-only from `FactionState`.
+- **Fraktionen** - read-only from player-known `FactionState` entries only; unknown factions are
+  not listed merely because they exist in World Truth.
 - **Archiv** - typed archive entries plus scout reports, with filters and search.
 
 ## Still prototype-level

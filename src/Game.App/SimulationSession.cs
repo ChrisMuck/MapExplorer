@@ -62,6 +62,13 @@ public sealed class SimulationSession
         return result;
     }
 
+    public MoveExpeditionResult MoveExpedition(HexCoord destination)
+    {
+        var result = Application.MoveExpedition(Game, destination);
+        Record("move-expedition", result.Success, result.Error ?? destination.ToString());
+        return result;
+    }
+
     public SendScoutMissionResult SendDirectionalScout(IReadOnlyList<string> scoutMemberIds, ScoutDirection direction, int durationDays, ScoutMissionFocus focus, ScoutMissionBehavior behavior)
     {
         var result = Application.SendScoutMission(Game, scoutMemberIds, direction, durationDays, focus, behavior);
@@ -80,13 +87,6 @@ public sealed class SimulationSession
     {
         var result = Application.InspectLocation(Game, coord);
         Record("inspect-location", result.Success, result.Error ?? coord.ToString());
-        return result;
-    }
-
-    public MoveExpeditionResult MoveExpedition(HexCoord destination)
-    {
-        var result = Application.MoveExpedition(Game, destination);
-        Record("move-expedition", result.Success, result.Error ?? destination.ToString());
         return result;
     }
 
@@ -131,6 +131,119 @@ public sealed class SimulationSession
         Record("resolve-world-situation", success, success ? $"{definitionId}/{responseActionTag}" : $"No active '{definitionId}' situation accepted '{responseActionTag}'.");
         return success;
     }
+
+    public MapAnnotationResult AddMapMarker(HexCoord coord, PlayerMapMarkerKind kind, string label, string? factionId = null)
+    {
+        var result = Application.AddMapMarker(Game, coord, kind, label, factionId);
+        Record("add-map-marker", result.Success, result.Error ?? label);
+        return result;
+    }
+
+    public MapAnnotationResult AddMapNote(HexCoord coord, string text)
+    {
+        var result = Application.AddMapNote(Game, coord, text);
+        Record("add-map-note", result.Success, result.Error ?? text);
+        return result;
+    }
+
+    public CompleteExpeditionResult CompleteExpedition()
+    {
+        var result = Application.CompleteExpedition(Game);
+        Record("complete-expedition", result.Success, result.Error ?? "Expedition completed.");
+        return result;
+    }
+
+    public AdvanceBaseTimeResult AdvanceBaseTime(int days = 1)
+    {
+        var result = Application.AdvanceBaseTime(Game, days);
+        Record("advance-base-time", result.Success, result.Error ?? $"{days} day(s)");
+        return result;
+    }
+
+    public StartNewExpeditionResult StartNewExpedition()
+    {
+        var result = Application.StartNewExpedition(Game);
+        Record("start-new-expedition", result.Success, result.Error ?? "Default loadout.");
+        return result;
+    }
+
+    public StartNewExpeditionResult StartNewExpedition(IReadOnlyList<string> memberIds)
+    {
+        var result = Application.StartNewExpedition(Game, memberIds);
+        Record("start-new-expedition", result.Success, result.Error ?? string.Join(",", memberIds ?? Array.Empty<string>()));
+        return result;
+    }
+
+    public StartNewExpeditionResult StartNewExpedition(IReadOnlyList<string>? memberIds, IReadOnlyList<string>? unitIds, int rations, int medicine)
+    {
+        var result = Application.StartNewExpedition(Game, memberIds, unitIds, rations, medicine);
+        Record("start-new-expedition", result.Success, result.Error ?? $"rations={rations}; medicine={medicine}");
+        return result;
+    }
+
+    public ExpeditionReadiness ComputeReadiness(int memberCount, IReadOnlyList<string>? unitIds, int rations, int medicine)
+    {
+        return Application.ComputeReadiness(Game, memberCount, unitIds, rations, medicine);
+    }
+
+    public StartBaseActionResult StartBaseAction(BaseActionKind kind, string? memberId = null)
+    {
+        var result = Application.StartBaseAction(Game, kind, memberId);
+        Record("start-base-action", result.Success, result.Error ?? kind.ToString());
+        return result;
+    }
+
+    public StartUpgradeResult StartUpgrade(string upgradeId)
+    {
+        var result = Application.StartUpgrade(Game, upgradeId);
+        Record("start-upgrade", result.Success, result.Error ?? upgradeId);
+        return result;
+    }
+
+    public EvaluateKnowledgeItemResult EvaluateKnowledgeItem(string itemId)
+    {
+        var result = Application.EvaluateKnowledgeItem(Game, itemId);
+        Record("evaluate-knowledge-item", result.Success, result.Error ?? itemId);
+        return result;
+    }
+
+    public PrepareSuppliesWithKnowledgeResult PrepareSuppliesWithKnowledge()
+    {
+        var result = Application.PrepareSuppliesWithKnowledge(Game);
+        Record("prepare-supplies-with-knowledge", result.Success, result.Error ?? "Preparation applied.");
+        return result;
+    }
+
+    public RecoverLostExpeditionResult RecoverLostExpedition(HexCoord coord)
+    {
+        var result = Application.RecoverLostExpedition(Game, coord);
+        Record("recover-lost-expedition", result.Success, result.Error ?? coord.ToString());
+        return result;
+    }
+
+    public ResolveEventResult ResolveEvent(string eventId, string optionId)
+    {
+        var result = Application.ResolveEvent(Game, eventId, optionId);
+        Record("resolve-event", result.Success, result.Error ?? $"{eventId}/{optionId}");
+        return result;
+    }
+
+    public FactionOfferResult PurchaseFactionOffer(string offerId)
+    {
+        var result = Application.PurchaseFactionOffer(Game, offerId);
+        Record("purchase-faction-offer", result.Success, result.Error ?? offerId);
+        return result;
+    }
+
+    public FactionInteractionResult CloseFactionInteraction()
+    {
+        var result = Application.CloseFactionInteraction(Game);
+        Record("close-faction-interaction", result.Success, result.Error ?? "Faction interaction closed.");
+        return result;
+    }
+
+    /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
+    public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);
 
     public SimulationRunRecord CreateRunRecord()
     {

@@ -6,7 +6,8 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Game.App;
+namespace Game.App
+{
 
 /// <summary>One declared JSON document loaded into the shared game-data catalog.</summary>
 public sealed class GameDataDocumentInfo
@@ -371,4 +372,5 @@ public sealed class GameDataCatalog
     }
 
     private sealed record DocumentSource(string RelativePath, string DocumentType, int SchemaVersion, string Json);
+}
 }

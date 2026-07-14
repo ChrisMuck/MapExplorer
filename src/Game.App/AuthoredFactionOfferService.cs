@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Game.Core;
 
-namespace Game.App;
+namespace Game.App
+{
 
 /// <summary>Resolves profile-based authored offers for one generated faction instance.</summary>
 public sealed class AuthoredFactionOfferService
@@ -58,4 +59,5 @@ public sealed class AuthoredFactionOfferService
         "grant-access" => FactionOfferEffectKind.AccessHint,
         _ => throw new LocationDataException($"Faction offer effect '{kind}' has no runtime resolver.")
     };
+}
 }

@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
-namespace Game.App;
+namespace Game.App
+{
 
 /// <summary>Permitted values of one persistent state channel for an authored location scenario.</summary>
 public sealed class LocationStateChannelDefinition
@@ -454,4 +455,5 @@ public static class CrossSystemAuthoringDataLoader
     private static string Text(JObject item, string field) => LocationStateChannelDefinition.RequireText((string?)item[field], field);
     private static int Int(JObject item, string field) => (int?)item[field] ?? throw new LocationDataException($"{field} must be an integer.");
     private static IReadOnlyList<string> Strings(JObject item, string field) => (item[field] as JArray ?? new JArray()).Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Trim()).ToList();
+}
 }

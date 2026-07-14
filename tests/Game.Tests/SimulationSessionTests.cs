@@ -11,6 +11,7 @@ internal sealed class SimulationSessionTests
     public void RunAll()
     {
         CommandHistoryAndRunRecordAreDeterministic();
+        SessionUsesTheSameLocationOptionContractAsTheApplication();
         FailingScenarioIncludesReproductionContext();
         FixtureProofScenariosReplayToTheSamePlayerState();
     }
@@ -48,6 +49,21 @@ internal sealed class SimulationSessionTests
         AssertTrue(result.FailureSummary.Contains("seed 41027", StringComparison.Ordinal), "Failure reports the reproducible seed");
         AssertTrue(result.FailureSummary.Contains("command 1", StringComparison.Ordinal), "Failure reports command index");
         AssertTrue(result.Session.Game.World.Traces.Count > 0, "Invalid scenario command records a reproducible trace tail");
+    }
+
+    private static void SessionUsesTheSameLocationOptionContractAsTheApplication()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-claimed-crossing.json"));
+        var result = new DevelopmentScenarioExecutor().Execute(LoadCatalog(), scenario);
+        const string locationId = "location-route-proof";
+        var throughSession = result.Session.GetLocationInteraction(locationId);
+        var directlyThroughApplication = result.Session.Application.GetLocationInteraction(result.Session.Game, locationId);
+
+        AssertTrue(throughSession.Success && directlyThroughApplication.Success, "Claimed crossing exposes the shared option contract");
+        AssertEqual(
+            string.Join("|", throughSession.Interaction!.Options.Select(option => $"{option.Action.Id}:{option.IsAvailable}:{option.LockedReason}")),
+            string.Join("|", directlyThroughApplication.Interaction!.Options.Select(option => $"{option.Action.Id}:{option.IsAvailable}:{option.LockedReason}")),
+            "Session and application expose identical player-visible location options");
     }
 
     private static void FixtureProofScenariosReplayToTheSamePlayerState()

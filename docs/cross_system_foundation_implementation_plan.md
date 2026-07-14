@@ -338,6 +338,8 @@ runtime claim and context assignment during play.
 
 ### Block 8 — Unity Adapter Migration and Regression Pass
 
+**Status:** Complete.
+
 **Purpose:** route normal gameplay through the same catalog/session/option contracts without
 changing its intended player-facing presentation.
 
@@ -361,6 +363,18 @@ changing its intended player-facing presentation.
   for the same scenario state.
 - Unity does not load a content subset that differs from tests/runner.
 - Existing movement, map and panel behavior remains functional.
+
+**Implemented contract:** Unity creates its campaign session through `SimulationSession` and the
+same complete `GameDataCatalog` used by Core/App tests and the headless runner. Presentation calls
+session commands; it no longer creates or calls a separate `GameApplication` command path. Location
+options remain the shared read-only contract, with a Core/App regression test comparing their IDs,
+availability and known requirement text through both access paths.
+
+Scout reports now render structured local/directional leads with scope, compass wording and
+confidence. The Unity report panel neither focuses a map coordinate nor creates a report-derived
+marker. A report can only label a marker at the player's currently selected field. UI accessors also
+withhold unconfirmed locations and unknown factions. Unity's package compilation is kept C#-9
+compatible through block namespaces where needed and an `IsExternalInit` shim for records.
 
 ### Block 9 — WPF Simulation Runner Shell
 
