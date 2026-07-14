@@ -67,6 +67,30 @@
       "id": "evidence-seal-consequence",
       "scoutReportText": "Die späteren Zeichen bestätigen, dass sich nach dem Öffnen etwas im Umfeld verändert hat.",
       "worldEventText": "Die anhaltenden Veränderungen um den geöffneten Ort lassen sich nicht länger als Zufall abtun."
+    },
+    {
+      "id": "evidence-directional-location-sighting",
+      "scoutReportText": "Aus der gewaehlten Richtung kommt ein vager Hinweis auf eine auffaellige Struktur. Der genaue Ort bleibt offen."
+    },
+    {
+      "id": "evidence-directional-route-hint",
+      "scoutReportText": "Die Scouts beschreiben in der gewaehlten Richtung Spuren eines moeglichen Uebergangs oder Weges; seine Verlaesslichkeit ist ungeklaert."
+    },
+    {
+      "id": "evidence-directional-sign-trace",
+      "scoutReportText": "Die Scouts sahen wiederkehrende Zeichen in der Ferne. Ob sie zusammengehoeren und wer sie nutzt, bleibt offen."
+    },
+    {
+      "id": "evidence-directional-environmental-change",
+      "scoutReportText": "Die Scouts berichten von einer auffaelligen Veraenderung der Umgebung in der gewaehlten Richtung."
+    },
+    {
+      "id": "evidence-directional-hazard-trace",
+      "scoutReportText": "Die Scouts bemerkten in der Ferne Hinweise auf eine moegliche Gefahr, ohne sie eindeutig einordnen zu koennen."
+    },
+    {
+      "id": "evidence-directional-witness-trace",
+      "scoutReportText": "Die Scouts fanden in der gewaehlten Richtung Spuren oder indirekte Hinweise, deren Bedeutung offen bleibt."
     }
   ]
 }

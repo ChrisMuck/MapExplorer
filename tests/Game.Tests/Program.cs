@@ -296,6 +296,7 @@ internal sealed class WorldGenBridgeTests
         GeneratedWorldCanStartAnExpedition();
         GeneratedFactionsReceiveStableHiddenSignatureProfiles();
         GeneratedWorldSeedsLaterSimulation();
+        GeneratedSliceHasOptionalSoftConnectionsWithoutStaticFactionAssignment();
     }
 
     private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
@@ -362,6 +363,14 @@ internal sealed class WorldGenBridgeTests
         AssertTrue(territorialLocations.Count > 0, "Generated world has locations inside faction territory");
         AssertTrue(territorialLocations.Any(location => location.FactionRelations.Count == 0), "Territory does not automatically claim every location");
         AssertTrue(result.World.Locations.Any(location => location.EvidenceSeedIds.Count > 0), "Generated locations carry neutral evidence seeds");
+    }
+
+    private static void GeneratedSliceHasOptionalSoftConnectionsWithoutStaticFactionAssignment()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        AssertTrue(result.World.Connections.Count >= 2, "Generated Slice provides at least two optional soft connections");
+        AssertTrue(result.World.Connections.All(connection => connection.Tags.Contains("optional")), "Generated connections are optional world context, not quest steps");
+        AssertTrue(result.World.Connections.All(connection => !connection.Tags.Any(tag => tag.StartsWith("faction-", StringComparison.Ordinal))), "Generated connections carry no static faction assignment");
     }
 
     private static WorldGenerationRequest Request()
@@ -1200,9 +1209,9 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Cautious scout returned");
         AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Returned scout available");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Scout report stored");
-        AssertTrue(game.Knowledge.ScoutReports[0].RelatedCoords.Count > 1, "Scout report covers a route corridor");
+        AssertTrue(game.Knowledge.ScoutReports[0].Leads.Any(lead => lead.Scope == ScoutLeadScope.Directional), "Scout report carries an approximate directional lead");
         AssertEqual(KnowledgeLevel.Unknown, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Scout report does not reveal objective map knowledge");
-        AssertTrue(game.PlayerNotes.Notes.Any(note => note.Coord == new HexCoord(2, 0)), "Scout report adds a note to reported fields");
+        AssertEqual(0, game.PlayerNotes.Notes.Count, "Scout report never creates an exact automatic map note");
         AssertEqual(3, game.Expedition.UnsecuredKnowledge, "Returned scout report adds unsecured knowledge");
     }
 

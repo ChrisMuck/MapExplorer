@@ -263,7 +263,7 @@ and requires generated watch/sacred context or a configured, bounded territory/r
 Concurrent processes are capped at eight and direct faction situations are limited to one open
 instance per generated faction.
 
-### Block 6 — Both Scout Paths and Generated Soft Connections
+### Block 6 — Both Scout Paths and Generated Soft Connections — Complete
 
 **Purpose:** complete the distinct local and directional scouting loops.
 
@@ -286,6 +286,14 @@ instance per generated faction.
 - Directional scouting does not require a location interaction.
 - A veteran report has better evidence quality, not a solved faction/location identity.
 - Every generated Slice fixture has two optional soft connections and no static faction assignment.
+
+**Implemented contract:** directional and local scouting remain separate mission types. Reports now
+store structured, approximate leads with a scope, compass direction, neutral kind and per-lead
+confidence; exact sampled hexes remain transient simulation data and are never written to player
+knowledge or automatic notes. Scout star level improves confidence only. Directional leads also
+create neutral evidence without a target-location reference. The generation bridge creates two
+deterministic optional soft connections after locations, terrain and territory instances exist;
+they remain hidden World Truth until later evidence makes a relationship player-visible.
 
 ### Block 7 — Shared Simulation Session and Headless Scenario Runner
 

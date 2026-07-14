@@ -67,9 +67,9 @@ public sealed class EndDayCommand
     private static EventState CreateScoutEvent(GameState game, ScoutMissionResolutionResult resolution)
     {
         var eventId = $"event-{game.Events.Events.Count + 1}";
-        var coord = resolution.Report != null && resolution.Report.RelatedCoords.Count > 0
-            ? resolution.Report.RelatedCoords[0]
-            : (HexCoord?)null;
+        // Scout reports contain deliberately approximate leads. An event must not turn their
+        // unseen sampled corridor into an exact player-visible map coordinate.
+        HexCoord? coord = null;
 
         switch (resolution.Status)
         {

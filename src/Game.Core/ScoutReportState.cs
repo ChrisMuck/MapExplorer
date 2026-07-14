@@ -10,6 +10,7 @@ public sealed class ScoutReportState
 {
     private readonly List<HexCoord> relatedCoords;
     private readonly List<string> hints;
+    private readonly List<ScoutLeadState> leads;
 
     public ScoutReportState(
         string id,
@@ -18,7 +19,8 @@ public sealed class ScoutReportState
         string body,
         int reliability,
         IEnumerable<HexCoord> relatedCoords,
-        IEnumerable<string> hints)
+        IEnumerable<string> hints,
+        IEnumerable<ScoutLeadState>? leads = null)
     {
         if (reliability < 0 || reliability > 100)
         {
@@ -30,11 +32,15 @@ public sealed class ScoutReportState
         Title = RequireText(title, nameof(title));
         Body = RequireText(body, nameof(body));
         Reliability = reliability;
-        this.relatedCoords = new List<HexCoord>(relatedCoords ?? Enumerable.Empty<HexCoord>());
+        // The old constructor shape accepts the former internal corridor for source
+        // compatibility, but player knowledge must never retain exact scout coordinates.
+        _ = relatedCoords ?? Enumerable.Empty<HexCoord>();
+        this.relatedCoords = new List<HexCoord>();
         this.hints = (hints ?? Enumerable.Empty<string>())
             .Where(hint => !string.IsNullOrWhiteSpace(hint))
             .Select(hint => hint.Trim())
             .ToList();
+        this.leads = new List<ScoutLeadState>(leads ?? Enumerable.Empty<ScoutLeadState>());
     }
 
     public string Id { get; }
@@ -47,6 +53,8 @@ public sealed class ScoutReportState
 
     public int Reliability { get; }
 
+    /// <summary>Always empty for newly resolved reports; use <see cref="Leads"/> for player-facing information.</summary>
+    [Obsolete("Scout reports no longer reveal exact coordinates. Use Leads instead.")]
     public IReadOnlyList<HexCoord> RelatedCoords
     {
         get { return relatedCoords; }
@@ -56,6 +64,8 @@ public sealed class ScoutReportState
     {
         get { return hints; }
     }
+
+    public IReadOnlyList<ScoutLeadState> Leads => leads;
 
     private static string RequireText(string value, string name)
     {

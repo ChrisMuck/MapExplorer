@@ -115,6 +115,7 @@ public sealed class WorldGenBridge
             paths,
             locations,
             random: new DeterministicRandomState(generated.Params.Seed));
+        AddGeneratedSoftConnections(world, locations);
         var factions = generated.Factions
             .Select(faction => new FactionState(
                 factionIds[faction.Id],
@@ -123,6 +124,30 @@ public sealed class WorldGenBridge
                 signatureProfileId: signatureProfiles.TryGetValue(faction.Id, out var profileId) ? profileId : "unassigned"))
             .ToList();
         return new WorldGenerationBridgeResult(world, ToCore(generated.Base), factions);
+    }
+
+    /// <summary>
+    /// Creates optional, hidden world links only after terrain, territories and location instances
+    /// exist. They are evidence-thread candidates, not quests and not player-visible map edges.
+    /// </summary>
+    private static void AddGeneratedSoftConnections(WorldState world, IReadOnlyList<SpecialLocationState> locations)
+    {
+        var ordered = locations.OrderBy(location => location.Coord.Q).ThenBy(location => location.Coord.R).ThenBy(location => location.Id, StringComparer.Ordinal).ToList();
+        if (ordered.Count < 2) return;
+
+        var connectionKinds = new[] { "recurring-sign", "contextual-access" };
+        for (var index = 0; index < connectionKinds.Length; index++)
+        {
+            var source = ordered[index % ordered.Count];
+            var target = ordered[(index + 1) % ordered.Count];
+            world.AddConnection(new WorldConnectionState(
+                world.RuntimeIds.Allocate("generated-soft-connection"),
+                source.Id,
+                target.Id,
+                connectionKinds[index],
+                world.WorldDay,
+                new[] { "generated", "optional", "unconfirmed" }));
+        }
     }
 
     private string ResolveReactionProfileId(string? generatedProfileId)
