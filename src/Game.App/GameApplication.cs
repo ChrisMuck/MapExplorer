@@ -10,6 +10,8 @@ namespace Game.App
 public sealed class GameApplication
 {
     public HexMapBounds DefaultPrototypeBounds { get; } = new(40, 30);
+    /// <summary>Shared authored content used by this application instance when loaded through the catalog.</summary>
+    public GameDataCatalog? DataCatalog { get; }
     private readonly MovementCostService movementCostService = new MovementCostService();
     private readonly MoveExpeditionCommand moveExpeditionCommand;
     private readonly LocationInteractionDefinitionSet locationInteractionDefinitions;
@@ -39,7 +41,16 @@ public sealed class GameApplication
     private readonly WorldGenBridge worldGenBridge;
 
     public GameApplication()
-        : this(null, null)
+        : this(null, null, null)
+    {
+    }
+
+    /// <summary>Builds the application facade from the one shared content catalog.</summary>
+    public GameApplication(GameDataCatalog catalog)
+        : this(
+            catalog?.Locations ?? throw new ArgumentNullException(nameof(catalog)),
+            catalog.CrossSystem,
+            catalog)
     {
     }
 
@@ -49,14 +60,24 @@ public sealed class GameApplication
     /// folder can be found on disk, and finally falls back to the in-code definitions (Section 17.10).
     /// </summary>
     public GameApplication(LocationDataBundle? locationData)
-        : this(locationData, null)
+        : this(locationData, null, null)
     {
     }
 
     public GameApplication(LocationDataBundle? locationData, CrossSystemDataBundle? crossSystemData)
+        : this(locationData, crossSystemData, null)
     {
-        locationData ??= TryLoadDefaultLocationData();
-        crossSystemData ??= TryLoadDefaultCrossSystemData();
+    }
+
+    private GameApplication(LocationDataBundle? locationData, CrossSystemDataBundle? crossSystemData, GameDataCatalog? dataCatalog)
+    {
+        if (locationData == null || crossSystemData == null)
+        {
+            dataCatalog ??= TryLoadDefaultCatalog();
+            locationData ??= dataCatalog?.Locations;
+            crossSystemData ??= dataCatalog?.CrossSystem;
+        }
+        DataCatalog = dataCatalog;
         if (locationData != null && crossSystemData != null)
         {
             CrossSystemContentValidator.Validate(locationData, crossSystemData);
@@ -102,47 +123,15 @@ public sealed class GameApplication
         return TutorialGameFactory.CreateGenerated(worldGenBridge.Generate(request));
     }
 
-    private static LocationDataBundle? TryLoadDefaultLocationData()
-    {
-        foreach (var root in CandidateDataRoots())
-        {
-            var bundle = LocationDataLoader.LoadFromDirectory(root);
-            if (bundle != null)
-            {
-                return bundle;
-            }
-        }
-
-        return null;
-    }
-
-    private static CrossSystemDataBundle? TryLoadDefaultCrossSystemData()
+    private static GameDataCatalog? TryLoadDefaultCatalog()
     {
         foreach (var root in CandidateGameDataRoots())
         {
-            var bundle = CrossSystemDataLoader.LoadFromDirectories(new[]
-            {
-                Path.Combine(root, "World"),
-                Path.Combine(root, "Factions"),
-                Path.Combine(root, "Scouting")
-            });
-            if (bundle != null) return bundle;
+            var catalog = GameDataCatalog.LoadFromDirectory(root);
+            if (catalog != null) return catalog;
         }
 
         return null;
-    }
-
-    private static IEnumerable<string> CandidateDataRoots()
-    {
-        const string relative = "UnityHexMapView/Assets/StreamingAssets/GameData/Locations";
-        yield return Path.Combine(Directory.GetCurrentDirectory(), relative);
-
-        var dir = AppContext.BaseDirectory;
-        for (var i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
-        {
-            yield return Path.Combine(dir, relative);
-            dir = Directory.GetParent(dir)?.FullName;
-        }
     }
 
     private static IEnumerable<string> CandidateGameDataRoots()

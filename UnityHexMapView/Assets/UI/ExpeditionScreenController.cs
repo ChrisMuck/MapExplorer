@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Game.App;
 using Game.Core;
@@ -241,17 +240,15 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return;
         }
 
-        var rootPath = Path.Combine(Application.streamingAssetsPath, "GameData", "World");
-        try
+        var catalog = mapView?.WorldGenerationCatalog;
+        if (catalog == null)
         {
-            var catalog = WorldGenerationPresetLoader.LoadCatalogFromDirectory(rootPath);
-            campaignPresets.AddRange(catalog.Sizes);
-            campaignOptionPresets.AddRange(catalog.Options);
+            Debug.LogError("World generation presets are unavailable because the shared game-data catalog was not loaded.");
+            return;
         }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"World generation presets could not be loaded: {ex.Message}");
-        }
+
+        campaignPresets.AddRange(catalog.Sizes);
+        campaignOptionPresets.AddRange(catalog.Options);
     }
 
     private void SetCampaignPreset(string presetId)

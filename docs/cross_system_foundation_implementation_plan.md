@@ -58,7 +58,7 @@ The following gaps must be resolved rather than worked around:
 
 ## 4. Work Blocks
 
-### Block 0 — Baseline Audit and Compatibility Contract
+### Block 0 — Baseline Audit and Compatibility Contract — Complete
 
 **Purpose:** establish an exact boundary before moving code or content.
 
@@ -87,7 +87,7 @@ The following gaps must be resolved rather than worked around:
 - No code changes alter normal gameplay in this block.
 - The existing test suite passes before and after the audit.
 
-### Block 1 — Unified Game-Data Catalog and Validation
+### Block 1 — Unified Game-Data Catalog and Validation — Complete
 
 **Purpose:** Unity, tests and future runner load the identical declared content set.
 
@@ -335,5 +335,6 @@ changing its intended player-facing presentation.
 ## 6. Working Sequence
 
 We execute one block at a time. A block is only marked complete after its acceptance tests pass and
-the project owner has reviewed any player-facing or generated-world semantics. The immediate next
-implementation block is **Block 0**, followed by **Block 1**; no WPF work begins before Block 7.
+the project owner has reviewed any player-facing or generated-world semantics. Block 0 is recorded
+in `docs/cross_system_foundation_audit.md`. Blocks 0 and 1 are complete; the immediate next
+implementation block is **Block 2**. No WPF work begins before Block 7.

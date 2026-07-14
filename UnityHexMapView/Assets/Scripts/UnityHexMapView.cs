@@ -103,6 +103,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public GameState CurrentGameState => coreGameState;
     public bool HasStartedCampaign => generatedCampaignRequest != null;
+    public WorldGenerationPresetCatalog? WorldGenerationCatalog => gameApplication.DataCatalog?.WorldGeneration;
 
     public string CurrentInteractionMessage => interactionMessage;
 
@@ -586,28 +587,15 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
-    // Loads the JSON-authored location content from StreamingAssets (concept Section 17), falling
-    // back to the in-code definitions if the data folder is missing or fails validation.
+    // Unity uses the same complete declared data catalog as tests and the future simulation runner.
+    // Invalid declared content is a startup error; silently switching to fallback definitions would
+    // make player behaviour differ from the content that was validated elsewhere.
     private static GameApplication CreateGameApplication()
     {
-        try
-        {
-            var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData", "Locations");
-            var bundle = LocationDataLoader.LoadFromDirectory(root);
-            var gameDataRoot = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData");
-            var crossSystem = CrossSystemDataLoader.LoadFromDirectories(new[]
-            {
-                System.IO.Path.Combine(gameDataRoot, "World"),
-                System.IO.Path.Combine(gameDataRoot, "Factions")
-            });
-            return new GameApplication(bundle, crossSystem);
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"Location JSON load failed, using in-code fallback definitions: {ex.Message}");
-        }
-
-        return new GameApplication();
+        var root = System.IO.Path.Combine(Application.streamingAssetsPath, "GameData");
+        var catalog = GameDataCatalog.LoadFromDirectory(root)
+            ?? throw new System.InvalidOperationException($"Game data folder '{root}' was not found.");
+        return new GameApplication(catalog);
     }
 
     /// <summary>Starts one unseen generated campaign. This path intentionally offers no map preview or reroll.</summary>
