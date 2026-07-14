@@ -162,6 +162,16 @@ public sealed class ExpeditionState
         Supplies += amount;
     }
 
+    public void AddMedicine(int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Medicine amount must not be negative.");
+        }
+
+        Medicine += amount;
+    }
+
     public void AdjustMorale(int amount)
     {
         Morale = Math.Max(0, Morale + amount);

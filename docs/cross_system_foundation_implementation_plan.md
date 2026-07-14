@@ -117,10 +117,11 @@ The following gaps must be resolved rather than worked around:
 **Purpose:** implement the approved JSON authoring structure without introducing per-location
 special code.
 
-**Progress:** State Profiles, Scenario Profiles, Findings, Context Definitions and Situation
-Definitions now load through the shared catalog. Five initial Slice scenario profiles are authored
-and validated. Data-driven faction offers/memory definitions and the remaining legacy-content
-migration are still open.
+**Progress:** State Profiles, Scenario Profiles, Findings, Context Definitions, Situation
+Definitions, Faction Offers and Faction Memory Definitions now load through the shared catalog.
+Five initial Slice scenario profiles and profile-based offers are authored and validated. Wiring
+those offers into generated faction instances is complete; direct legacy callers retain their
+previous offer set as a compatibility fallback. Migrating the remaining legacy content is still open.
 
 **Work**
 

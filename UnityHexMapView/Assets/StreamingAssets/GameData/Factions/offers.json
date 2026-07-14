@@ -1,0 +1,47 @@
+{
+  "documentType": "faction-offers",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    {
+      "id": "offer-knowledge-for-supplies",
+      "title": "Vorräte für Wissen",
+      "description": "Die Kontaktleute tauschen Verpflegung und Trägerhilfe gegen gesichertes Wissen.",
+      "eligibleProfileTags": ["trade"],
+      "requiresContactStatusAny": ["first-contact", "trusted"],
+      "knowledgePointCost": 6,
+      "effects": [{ "kind": "grant-supplies", "supplies": 10 }],
+      "repeatPolicy": "repeatable"
+    },
+    {
+      "id": "offer-regional-account",
+      "title": "Bericht aus der Region",
+      "description": "Die Kontaktleute teilen eine begrenzte, aber nützliche Einschätzung der Umgebung.",
+      "eligibleProfileTags": ["knowledge"],
+      "requiresContactStatusAny": ["first-contact", "trusted"],
+      "knowledgePointCost": 4,
+      "effects": [{ "kind": "grant-contact-report", "reportTemplateId": "report-regional-account" }],
+      "repeatPolicy": "once-per-faction"
+    },
+    {
+      "id": "offer-knowledge-for-medicine",
+      "title": "Medizinische Hilfe",
+      "description": "Eine kleine Menge Medizin wird gegen gesichertes Wissen überlassen.",
+      "eligibleProfileTags": ["help"],
+      "requiresContactStatusAny": ["first-contact", "trusted"],
+      "knowledgePointCost": 5,
+      "effects": [{ "kind": "grant-medicine", "medicine": 1 }],
+      "repeatPolicy": "once-per-faction"
+    },
+    {
+      "id": "offer-safe-resting-place",
+      "title": "Hinweis auf einen Rastplatz",
+      "description": "Die Kontaktleute nennen einen Ort, an dem die Expedition vorübergehend sicherer lagern kann.",
+      "eligibleProfileTags": ["curiosity"],
+      "requiresContactStatusAny": ["first-contact", "trusted"],
+      "knowledgePointCost": 5,
+      "effects": [{ "kind": "grant-access", "referenceId": "safe-resting-place" }],
+      "repeatPolicy": "once-per-faction"
+    }
+  ]
+}

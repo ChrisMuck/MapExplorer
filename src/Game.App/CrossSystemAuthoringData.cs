@@ -246,25 +246,93 @@ public sealed class SituationDefinition
     public IReadOnlyList<string> ResolutionTags { get; }
 }
 
+/// <summary>A reusable offer effect. It may grant expedition logistics or information, never materials.</summary>
+public sealed class FactionOfferContentEffectDefinition
+{
+    public FactionOfferContentEffectDefinition(string kind, string? referenceId = null, int supplies = 0, int medicine = 0)
+    {
+        Kind = LocationStateChannelDefinition.RequireText(kind, nameof(kind));
+        ReferenceId = string.IsNullOrWhiteSpace(referenceId) ? null : referenceId.Trim();
+        if (supplies < 0 || medicine < 0) throw new LocationDataException("Faction offer logistics amounts must not be negative.");
+        Supplies = supplies;
+        Medicine = medicine;
+    }
+
+    public string Kind { get; }
+    public string? ReferenceId { get; }
+    public int Supplies { get; }
+    public int Medicine { get; }
+}
+
+/// <summary>
+/// Static faction-offer content. It selects reusable profile values, never a generated faction
+/// instance, territory or specific location.
+/// </summary>
+public sealed class FactionOfferContentDefinition
+{
+    public FactionOfferContentDefinition(string id, string title, string description, IEnumerable<string> eligibleProfileTags, IEnumerable<string>? requiredContactStatuses, int knowledgePointCost, IEnumerable<FactionOfferContentEffectDefinition> effects, string repeatPolicy)
+    {
+        Id = LocationStateChannelDefinition.RequireText(id, nameof(id));
+        Title = LocationStateChannelDefinition.RequireText(title, nameof(title));
+        Description = LocationStateChannelDefinition.RequireText(description, nameof(description));
+        EligibleProfileTags = LocationStateChannelDefinition.Normalize(eligibleProfileTags, nameof(eligibleProfileTags));
+        RequiredContactStatuses = LocationContextActionRuleDefinition.NormalizeOptional(requiredContactStatuses);
+        if (knowledgePointCost < 0) throw new LocationDataException("Faction offer Knowledge cost must not be negative.");
+        KnowledgePointCost = knowledgePointCost;
+        Effects = (effects ?? throw new ArgumentNullException(nameof(effects))).ToList();
+        if (Effects.Count == 0) throw new LocationDataException($"Faction offer '{Id}' must define an effect.");
+        RepeatPolicy = LocationStateChannelDefinition.RequireText(repeatPolicy, nameof(repeatPolicy));
+    }
+
+    public string Id { get; }
+    public string Title { get; }
+    public string Description { get; }
+    public IReadOnlyList<string> EligibleProfileTags { get; }
+    public IReadOnlyList<string> RequiredContactStatuses { get; }
+    public int KnowledgePointCost { get; }
+    public IReadOnlyList<FactionOfferContentEffectDefinition> Effects { get; }
+    public string RepeatPolicy { get; }
+}
+
+/// <summary>Stable semantic memory key and its neutral provenance. Runtime supplies the faction and day.</summary>
+public sealed class FactionMemoryDefinition
+{
+    public FactionMemoryDefinition(string id, string description, IEnumerable<string>? provenanceTags = null)
+    {
+        Id = LocationStateChannelDefinition.RequireText(id, nameof(id));
+        Description = LocationStateChannelDefinition.RequireText(description, nameof(description));
+        ProvenanceTags = LocationContextActionRuleDefinition.NormalizeOptional(provenanceTags);
+    }
+
+    public string Id { get; }
+    public string Description { get; }
+    public IReadOnlyList<string> ProvenanceTags { get; }
+}
+
 /// <summary>Typed target-schema content that is static and never identifies generated world instances.</summary>
 public sealed class CrossSystemAuthoringBundle
 {
     public static readonly CrossSystemAuthoringBundle Empty = new(
         Enumerable.Empty<LocationStateProfileDefinition>(), Enumerable.Empty<LocationScenarioProfileDefinition>(),
-        Enumerable.Empty<FindingDefinition>(), Enumerable.Empty<ContextDefinition>(), Enumerable.Empty<SituationDefinition>());
+        Enumerable.Empty<FindingDefinition>(), Enumerable.Empty<ContextDefinition>(), Enumerable.Empty<SituationDefinition>(),
+        Enumerable.Empty<FactionOfferContentDefinition>(), Enumerable.Empty<FactionMemoryDefinition>());
 
     public CrossSystemAuthoringBundle(
         IEnumerable<LocationStateProfileDefinition> stateProfiles,
         IEnumerable<LocationScenarioProfileDefinition> scenarioProfiles,
         IEnumerable<FindingDefinition> findings,
         IEnumerable<ContextDefinition> contexts,
-        IEnumerable<SituationDefinition> situations)
+        IEnumerable<SituationDefinition> situations,
+        IEnumerable<FactionOfferContentDefinition> factionOffers,
+        IEnumerable<FactionMemoryDefinition> factionMemories)
     {
         StateProfiles = ToDictionary(stateProfiles, profile => profile.Id, "state profile");
         ScenarioProfiles = ToDictionary(scenarioProfiles, profile => profile.Id, "scenario profile");
         Findings = ToDictionary(findings, finding => finding.Id, "finding");
         Contexts = ToDictionary(contexts, context => context.Id, "context");
         Situations = ToDictionary(situations, situation => situation.Id, "situation");
+        FactionOffers = ToDictionary(factionOffers, offer => offer.Id, "faction offer");
+        FactionMemories = ToDictionary(factionMemories, memory => memory.Id, "faction memory");
     }
 
     public IReadOnlyDictionary<string, LocationStateProfileDefinition> StateProfiles { get; }
@@ -272,6 +340,8 @@ public sealed class CrossSystemAuthoringBundle
     public IReadOnlyDictionary<string, FindingDefinition> Findings { get; }
     public IReadOnlyDictionary<string, ContextDefinition> Contexts { get; }
     public IReadOnlyDictionary<string, SituationDefinition> Situations { get; }
+    public IReadOnlyDictionary<string, FactionOfferContentDefinition> FactionOffers { get; }
+    public IReadOnlyDictionary<string, FactionMemoryDefinition> FactionMemories { get; }
 
     private static IReadOnlyDictionary<string, T> ToDictionary<T>(IEnumerable<T>? values, Func<T, string> id, string kind)
     {
@@ -297,6 +367,8 @@ public static class CrossSystemAuthoringDataLoader
         var findings = new List<FindingDefinition>();
         var contexts = new List<ContextDefinition>();
         var situations = new List<SituationDefinition>();
+        var factionOffers = new List<FactionOfferContentDefinition>();
+        var factionMemories = new List<FactionMemoryDefinition>();
 
         foreach (var json in jsonDocuments.Where(json => !string.IsNullOrWhiteSpace(json)))
         {
@@ -316,11 +388,13 @@ public static class CrossSystemAuthoringDataLoader
                 case "findings": findings.AddRange(items.OfType<JObject>().Select(ParseFinding)); break;
                 case "context-definitions": contexts.AddRange(items.OfType<JObject>().Select(ParseContext)); break;
                 case "situation-definitions": situations.AddRange(items.OfType<JObject>().Select(ParseSituation)); break;
+                case "faction-offers": factionOffers.AddRange(items.OfType<JObject>().Select(ParseFactionOffer)); break;
+                case "faction-memory-definitions": factionMemories.AddRange(items.OfType<JObject>().Select(ParseFactionMemory)); break;
                 default: throw new LocationDataException($"Unsupported target-schema documentType '{(string?)document["documentType"]}'.");
             }
         }
 
-        return new CrossSystemAuthoringBundle(stateProfiles, scenarioProfiles, findings, contexts, situations);
+        return new CrossSystemAuthoringBundle(stateProfiles, scenarioProfiles, findings, contexts, situations, factionOffers, factionMemories);
     }
 
     private static LocationStateProfileDefinition ParseStateProfile(JObject item)
@@ -364,6 +438,18 @@ public static class CrossSystemAuthoringDataLoader
         var responseTags = (item["responseOptions"] as JArray ?? new JArray()).OfType<JObject>().Select(option => Text(option, "actionTag"));
         return new SituationDefinition(Text(item, "id"), Text(item, "kind"), Strings(item, "possibleSourceKinds"), Strings(item, "urgencyLabels"), responseTags, Strings(item, "resolutionTags"));
     }
+
+    private static FactionOfferContentDefinition ParseFactionOffer(JObject item)
+    {
+        var effects = (item["effects"] as JArray ?? new JArray()).OfType<JObject>().Select(effect => new FactionOfferContentEffectDefinition(
+            Text(effect, "kind"),
+            (string?)effect["referenceId"] ?? (string?)effect["reportTemplateId"],
+            (int?)effect["supplies"] ?? 0,
+            (int?)effect["medicine"] ?? 0));
+        return new FactionOfferContentDefinition(Text(item, "id"), Text(item, "title"), Text(item, "description"), Strings(item, "eligibleProfileTags"), Strings(item, "requiresContactStatusAny"), Int(item, "knowledgePointCost"), effects, Text(item, "repeatPolicy"));
+    }
+
+    private static FactionMemoryDefinition ParseFactionMemory(JObject item) => new(Text(item, "id"), Text(item, "description"), Strings(item, "provenanceTags"));
 
     private static string Text(JObject item, string field) => LocationStateChannelDefinition.RequireText((string?)item[field], field);
     private static int Int(JObject item, string field) => (int?)item[field] ?? throw new LocationDataException($"{field} must be an integer.");

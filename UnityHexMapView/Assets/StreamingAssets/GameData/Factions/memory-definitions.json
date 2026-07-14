@@ -1,0 +1,22 @@
+{
+  "documentType": "faction-memory-definitions",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    {
+      "id": "memory-changed-access",
+      "description": "Die Fraktion hat eine Veränderung des Zugangs zu einem bekannten Ort bemerkt.",
+      "provenanceTags": ["repair", "infrastructure", "changed-access"]
+    },
+    {
+      "id": "memory-promise-kept",
+      "description": "Die Expedition hat eine zugesagte Hilfe geleistet.",
+      "provenanceTags": ["situation", "promise-kept", "assist"]
+    },
+    {
+      "id": "memory-promise-broken",
+      "description": "Eine zugesagte Hilfe blieb aus oder kam zu spät.",
+      "provenanceTags": ["situation", "promise-broken", "expired"]
+    }
+  ]
+}

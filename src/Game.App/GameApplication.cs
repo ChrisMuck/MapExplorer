@@ -32,7 +32,7 @@ public sealed class GameApplication
     private readonly EvaluateKnowledgeItemCommand evaluateKnowledgeItemCommand = new EvaluateKnowledgeItemCommand();
     private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
-    private readonly OpenFactionInteractionCommand openFactionInteractionCommand = new OpenFactionInteractionCommand();
+    private readonly OpenFactionInteractionCommand openFactionInteractionCommand;
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
@@ -84,6 +84,9 @@ public sealed class GameApplication
         }
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
+        openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
+            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring))
+            : new OpenFactionInteractionCommand();
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;

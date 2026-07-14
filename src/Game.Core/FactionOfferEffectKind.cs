@@ -8,6 +8,9 @@ namespace Game.Core
 public enum FactionOfferEffectKind
 {
     SuppliesForKnowledge,
+    MedicineForKnowledge,
+    ContactReport,
+    AccessHint,
     RouteHint,
     SafeCampHint,
     SpringLocation,

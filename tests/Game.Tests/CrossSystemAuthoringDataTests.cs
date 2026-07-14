@@ -10,6 +10,8 @@ internal sealed class CrossSystemAuthoringDataTests
     {
         TargetDefinitionsLoadAndValidateAgainstCurrentContent();
         UnknownScenarioReferencesFailWithAnActionableError();
+        MaterialEconomyOfferIsRejected();
+        AuthoredOffersResolveForTheGeneratedFactionProfile();
     }
 
     private static void TargetDefinitionsLoadAndValidateAgainstCurrentContent()
@@ -43,6 +45,38 @@ internal sealed class CrossSystemAuthoringDataTests
         AssertThrows(() => CrossSystemContentValidator.Validate(catalog.Locations, catalog.CrossSystem, authoring), "Unknown scenario action must be rejected");
     }
 
+    private static void MaterialEconomyOfferIsRejected()
+    {
+        var authoring = CrossSystemAuthoringDataLoader.LoadFromJson(new[]
+        {
+            """{ "documentType":"faction-offers", "schemaVersion":2, "items":[{ "id":"offer-invalid-material", "title":"Invalid", "description":"Invalid", "eligibleProfileTags":["trade"], "knowledgePointCost":1, "effects":[{ "kind":"grant-material-stockpile" }], "repeatPolicy":"once-per-faction" }] }"""
+        });
+        var catalog = GameDataCatalog.LoadFromDirectory(GameDataRoot()) ?? throw new InvalidOperationException("Game data was not loaded.");
+
+        AssertThrows(() => CrossSystemContentValidator.Validate(catalog.Locations, catalog.CrossSystem, authoring), "Material economy offer must be rejected");
+    }
+
+    private static void AuthoredOffersResolveForTheGeneratedFactionProfile()
+    {
+        var catalog = GameDataCatalog.LoadFromDirectory(GameDataRoot()) ?? throw new InvalidOperationException("Game data was not loaded.");
+        var application = new GameApplication(catalog);
+        var game = application.CreateTutorialGame();
+        game.Base.AddKnowledgePoints(15);
+        var medicineBefore = game.Expedition.Medicine;
+
+        var opened = application.OpenFactionInteraction(game, "coastal-people", game.Expedition.Position);
+        var supplies = application.PurchaseFactionOffer(game, "offer-knowledge-for-supplies");
+        var medicine = application.PurchaseFactionOffer(game, "offer-knowledge-for-medicine");
+
+        AssertTrue(opened.Success, "Profile-based faction interaction opens");
+        AssertTrue(game.ActiveFactionInteraction!.Offers.Any(offer => offer.Id == "offer-knowledge-for-supplies"), "Trade profile receives supply offer");
+        AssertTrue(game.ActiveFactionInteraction.Offers.Any(offer => offer.Id == "offer-knowledge-for-medicine"), "Help profile receives medicine offer");
+        AssertTrue(supplies.Success, "Knowledge buys authored supplies");
+        AssertTrue(medicine.Success, "Knowledge buys authored medicine");
+        AssertEqual(medicineBefore + 1, game.Expedition.Medicine, "Medicine offer changes only expedition medicine");
+        AssertEqual(4, game.Base.KnowledgePoints, "Both authored offers spend Knowledge Points");
+    }
+
     private static string GameDataRoot()
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
@@ -60,5 +94,10 @@ internal sealed class CrossSystemAuthoringDataTests
     private static void AssertEqual<T>(T expected, T actual, string message)
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"{message}: expected {expected}, got {actual}.");
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition) throw new InvalidOperationException($"{message}: expected true.");
     }
 }

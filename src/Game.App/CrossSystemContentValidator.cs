@@ -108,6 +108,24 @@ public static class CrossSystemContentValidator
                 if (crossSystem.Evidence.Find(evidenceId) == null) errors.Add($"Context '{context.Id}' references unknown evidence '{evidenceId}'.");
             }
         }
+
+        foreach (var offer in authoring.FactionOffers.Values)
+        {
+            foreach (var profileTag in offer.EligibleProfileTags)
+            {
+                if (!crossSystem.FactionProfiles.All.Any(profile => profile.Values.Contains(profileTag, StringComparer.Ordinal)))
+                {
+                    errors.Add($"Faction offer '{offer.Id}' references unknown faction profile tag '{profileTag}'.");
+                }
+            }
+            foreach (var effect in offer.Effects)
+            {
+                if (effect.Kind.Contains("material", StringComparison.OrdinalIgnoreCase) || effect.Kind.Contains("harvest", StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add($"Faction offer '{offer.Id}' defines forbidden material-economy effect '{effect.Kind}'.");
+                }
+            }
+        }
     }
 
     private static void ValidateEffects(

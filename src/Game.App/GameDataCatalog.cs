@@ -72,7 +72,9 @@ public sealed class GameDataCatalog
         "location-scenario-profiles",
         "findings",
         "context-definitions",
-        "situation-definitions"
+        "situation-definitions",
+        "faction-offers",
+        "faction-memory-definitions"
     };
 
     private static readonly HashSet<string> WorldGenerationDocumentTypes = new(StringComparer.Ordinal)
@@ -95,6 +97,8 @@ public sealed class GameDataCatalog
         "findings",
         "context-definitions",
         "situation-definitions",
+        "faction-offers",
+        "faction-memory-definitions",
         "world-trigger-definitions",
         "consequence-definitions",
         "faction-signatures",

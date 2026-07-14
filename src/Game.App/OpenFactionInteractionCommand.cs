@@ -7,6 +7,13 @@ namespace Game.App
 
 public sealed class OpenFactionInteractionCommand
 {
+    private readonly AuthoredFactionOfferService? authoredOfferService;
+
+    public OpenFactionInteractionCommand(AuthoredFactionOfferService? authoredOfferService = null)
+    {
+        this.authoredOfferService = authoredOfferService;
+    }
+
     public FactionInteractionResult Execute(GameState game, string factionId, HexCoord coord)
     {
         if (game == null)
@@ -37,7 +44,7 @@ public sealed class OpenFactionInteractionCommand
         return FactionInteractionResult.Opened(interaction, $"Contact opened with {interaction.Representative.DisplayName}.");
     }
 
-    private static FactionInteractionState CreateInteraction(GameState game, FactionState faction, HexCoord coord)
+    private FactionInteractionState CreateInteraction(GameState game, FactionState faction, HexCoord coord)
     {
         var representative = RepresentativeFor(faction);
         return new FactionInteractionState(
@@ -48,7 +55,7 @@ public sealed class OpenFactionInteractionCommand
             representative,
             AttitudeFor(faction),
             DialogueFor(faction),
-            FactionInteractionDefinitions.BuildOffers(game, faction));
+            authoredOfferService?.BuildOffers(faction) ?? FactionInteractionDefinitions.BuildOffers(game, faction));
     }
 
     private static FactionRepresentativeState RepresentativeFor(FactionState faction)

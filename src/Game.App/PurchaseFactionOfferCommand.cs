@@ -78,6 +78,16 @@ public sealed class PurchaseFactionOfferCommand
             case FactionOfferEffectKind.SuppliesForKnowledge:
                 game.Expedition.AddSupplies(offer.SupplyReward);
                 break;
+            case FactionOfferEffectKind.MedicineForKnowledge:
+                game.Expedition.AddMedicine(offer.MedicineReward);
+                break;
+            case FactionOfferEffectKind.ContactReport:
+                RevealNearbyReportedHexes(game, interaction.Coord, maxCount: 2);
+                AddFactionMarker(game, interaction, PlayerMapMarkerKind.FactionRumor, "contact-report", offer.Title);
+                break;
+            case FactionOfferEffectKind.AccessHint:
+                AddFactionMarker(game, interaction, PlayerMapMarkerKind.FactionContact, "access-hint", offer.Title);
+                break;
             case FactionOfferEffectKind.RouteHint:
                 RevealNearbyReportedHexes(game, interaction.Coord, maxCount: 2);
                 game.PlayerNotes.AddMarker(new PlayerMapMarkerState(
@@ -193,6 +203,12 @@ public sealed class PurchaseFactionOfferCommand
         {
             case FactionOfferEffectKind.SuppliesForKnowledge:
                 return $"Supplies gained: +{offer.SupplyReward}.";
+            case FactionOfferEffectKind.MedicineForKnowledge:
+                return $"Medicine gained: +{offer.MedicineReward}.";
+            case FactionOfferEffectKind.ContactReport:
+                return "Contact report recorded in the archive and on the map.";
+            case FactionOfferEffectKind.AccessHint:
+                return "Access information recorded on the map.";
             case FactionOfferEffectKind.RouteHint:
                 return "Route hint recorded on the map.";
             case FactionOfferEffectKind.SafeCampHint:

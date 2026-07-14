@@ -21,9 +21,10 @@ public sealed class FactionOfferState
         string? lockedReason = null,
         string? requiredLeverageItemId = null,
         bool consumesRequiredLeverage = false,
-        string? resolvedMemoryId = null)
+        string? resolvedMemoryId = null,
+        int medicineReward = 0)
     {
-        if (knowledgeCost < 0 || medicineCost < 0 || supplyReward < 0)
+        if (knowledgeCost < 0 || medicineCost < 0 || supplyReward < 0 || medicineReward < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(knowledgeCost), "Offer costs and rewards must not be negative.");
         }
@@ -35,6 +36,7 @@ public sealed class FactionOfferState
         KnowledgeCost = knowledgeCost;
         MedicineCost = medicineCost;
         SupplyReward = supplyReward;
+        MedicineReward = medicineReward;
         Repeatable = repeatable;
         IsAvailable = isAvailable;
         LockedReason = string.IsNullOrWhiteSpace(lockedReason) ? null : lockedReason;
@@ -56,6 +58,8 @@ public sealed class FactionOfferState
     public int MedicineCost { get; }
 
     public int SupplyReward { get; }
+
+    public int MedicineReward { get; }
 
     public bool Repeatable { get; }
 

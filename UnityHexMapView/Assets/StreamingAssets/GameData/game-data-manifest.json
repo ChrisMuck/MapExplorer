@@ -12,6 +12,8 @@
     "Locations/StateProfiles/state-profiles.json",
     "Locations/Variants/variants.json",
     "Factions/factions.json",
+    "Factions/memory-definitions.json",
+    "Factions/offers.json",
     "Factions/reaction-rules.json",
     "Factions/signatures.json",
     "Factions/territory-entry-rules.json",
