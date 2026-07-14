@@ -83,6 +83,23 @@
         "discovered": "Ein versiegeltes Tor wurde entdeckt.",
         "resolved": "Das versiegelte Tor wurde dokumentiert."
       }
+    },
+    {
+      "id": "content-first-contact",
+      "title": "Zeichen einer Begegnung",
+      "subtitle": "Kontaktort",
+      "shortDescription": "Ein bewohnter Rastplatz und ein sichtbares Signal deuten auf einen möglichen Kontakt.",
+      "description": "Jemand hat den Platz bewusst vorbereitet, doch wer auf die Expedition wartet und welche Absicht dahintersteht, bleibt offen.",
+      "flavorByState": {
+        "unapproached": "Der Ort wirkt vorbereitet, aber noch still.",
+        "contacted": "Die erste Begegnung hat Spuren und Fragen hinterlassen.",
+        "withdrawn": "Die Expedition hat Abstand gehalten."
+      },
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discovered": "Ein Ort deutet auf eine mögliche Begegnung hin.",
+        "resolved": "Der mögliche Kontakt wurde dokumentiert."
+      }
     }
   ]
 }

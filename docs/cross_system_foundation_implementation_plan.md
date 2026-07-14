@@ -117,6 +117,11 @@ The following gaps must be resolved rather than worked around:
 **Purpose:** implement the approved JSON authoring structure without introducing per-location
 special code.
 
+**Progress:** State Profiles, Scenario Profiles, Findings, Context Definitions and Situation
+Definitions now load through the shared catalog. Five initial Slice scenario profiles are authored
+and validated. Data-driven faction offers/memory definitions and the remaining legacy-content
+migration are still open.
+
 **Work**
 
 1. Correct the affected master and specialist concepts before data migration. The current rules are:

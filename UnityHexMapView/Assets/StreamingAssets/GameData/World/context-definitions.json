@@ -1,0 +1,11 @@
+{
+  "documentType": "context-definitions",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    { "id": "context-structural-failure", "applicableArchetypeIds": ["route-obstacle"], "contextTags": ["structural-failure"], "discoverableBy": ["inspection", "local-scout", "engineer"], "candidateEvidenceIds": ["evidence-old-structure"], "candidateActionTags": ["repair", "provisional-passage"], "candidateConsequenceFamilies": ["route-or-place-change"] },
+    { "id": "context-deliberate-closure", "applicableArchetypeIds": ["route-obstacle", "containment-site"], "contextTags": ["deliberate-destruction", "restricted-access"], "discoverableBy": ["inspection", "local-scout", "contact"], "candidateEvidenceIds": ["evidence-claim-markers"], "candidateActionTags": ["repair", "respect-warning", "request-passage"], "candidateConsequenceFamilies": ["social-aftereffect", "route-or-place-change"] },
+    { "id": "context-protected-remains", "applicableArchetypeIds": ["investigation-site"], "contextTags": ["protected-remains"], "discoverableBy": ["inspection", "local-scout", "contact"], "candidateEvidenceIds": ["evidence-ritual-signs"], "candidateActionTags": ["disturb", "offer", "document"], "candidateConsequenceFamilies": ["social-aftereffect", "knowledge-trail"] },
+    { "id": "context-dangerous-release", "applicableArchetypeIds": ["containment-site"], "contextTags": ["dangerous-release"], "discoverableBy": ["inspection", "specialist", "local-scout"], "candidateEvidenceIds": ["evidence-seal-opened"], "candidateActionTags": ["open", "contain", "document"], "candidateConsequenceFamilies": ["release", "propagation"] }
+  ]
+}

@@ -17,7 +17,7 @@ public static class CrossSystemContentValidator
     /// Validates every location effect that addresses the shared world contracts. Both bundles
     /// must already have passed their own loader validation.
     /// </summary>
-    public static void Validate(LocationDataBundle locations, CrossSystemDataBundle crossSystem)
+    public static void Validate(LocationDataBundle locations, CrossSystemDataBundle crossSystem, CrossSystemAuthoringBundle? authoring = null)
     {
         if (locations == null) throw new ArgumentNullException(nameof(locations));
         if (crossSystem == null) throw new ArgumentNullException(nameof(crossSystem));
@@ -40,9 +40,73 @@ public static class CrossSystemContentValidator
             }
         }
 
+        if (authoring != null)
+        {
+            ValidateAuthoringDefinitions(locations, crossSystem, authoring, errors);
+        }
+
         if (errors.Count > 0)
         {
             throw new LocationDataException("Cross-system content validation failed:\n - " + string.Join("\n - ", errors));
+        }
+    }
+
+    private static void ValidateAuthoringDefinitions(
+        LocationDataBundle locations,
+        CrossSystemDataBundle crossSystem,
+        CrossSystemAuthoringBundle authoring,
+        ICollection<string> errors)
+    {
+        foreach (var profile in authoring.StateProfiles.Values)
+        {
+            if (!locations.Definitions.Archetypes.ContainsKey(profile.ArchetypeId))
+            {
+                errors.Add($"State profile '{profile.Id}' references unknown archetype '{profile.ArchetypeId}'.");
+            }
+        }
+
+        foreach (var scenario in authoring.ScenarioProfiles.Values)
+        {
+            if (!locations.Definitions.Archetypes.ContainsKey(scenario.ArchetypeId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown archetype '{scenario.ArchetypeId}'.");
+            // The legacy Core variant definition intentionally does not retain its authored
+            // archetype. The target scenario profile is the first typed owner of that pairing;
+            // migration of the legacy DTO follows once profiles replace legacy variant routing.
+            if (!locations.Definitions.Variants.ContainsKey(scenario.VariantId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown variant '{scenario.VariantId}'.");
+            if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown state profile '{scenario.StateProfileId}'.");
+            else if (stateProfile.ArchetypeId != scenario.ArchetypeId) errors.Add($"Scenario profile '{scenario.Id}' combines state profile '{scenario.StateProfileId}' with a different archetype.");
+            if (!locations.Definitions.ContentProfiles.ContainsKey(scenario.ContentProfileId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
+            foreach (var actionId in scenario.ActionSet.SharedActionIds.Concat(scenario.ActionSet.InitialAdditionalActionIds).Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds)))
+            {
+                if (!locations.Definitions.Actions.ContainsKey(actionId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown action '{actionId}'.");
+            }
+            foreach (var modifierId in scenario.InitialModifierPoolIds)
+            {
+                if (!locations.Definitions.Modifiers.ContainsKey(modifierId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown modifier '{modifierId}'.");
+            }
+            foreach (var evidenceId in scenario.EvidencePoolIds)
+            {
+                if (crossSystem.Evidence.Find(evidenceId) == null) errors.Add($"Scenario profile '{scenario.Id}' references unknown evidence '{evidenceId}'.");
+            }
+            foreach (var findingId in scenario.FindingPoolIds)
+            {
+                if (!authoring.Findings.ContainsKey(findingId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown finding '{findingId}'.");
+            }
+            foreach (var consequenceId in scenario.ConsequencePoolIds)
+            {
+                if (crossSystem.FindConsequence(consequenceId) == null) errors.Add($"Scenario profile '{scenario.Id}' references unknown consequence '{consequenceId}'.");
+            }
+        }
+
+        foreach (var context in authoring.Contexts.Values)
+        {
+            foreach (var archetypeId in context.ApplicableArchetypeIds)
+            {
+                if (!locations.Definitions.Archetypes.ContainsKey(archetypeId)) errors.Add($"Context '{context.Id}' references unknown archetype '{archetypeId}'.");
+            }
+            foreach (var evidenceId in context.CandidateEvidenceIds)
+            {
+                if (crossSystem.Evidence.Find(evidenceId) == null) errors.Add($"Context '{context.Id}' references unknown evidence '{evidenceId}'.");
+            }
         }
     }
 

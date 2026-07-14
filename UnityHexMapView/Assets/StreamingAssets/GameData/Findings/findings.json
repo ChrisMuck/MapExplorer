@@ -1,0 +1,11 @@
+{
+  "documentType": "findings",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    { "id": "finding-riverway-construction-sample", "category": "sample", "sourceTags": ["river-crossing", "old-construction"], "fieldDescription": "Ein ungewöhnlich leichtes Metallstück steckt zwischen alten Befestigungen.", "requiresPhysicalReturn": true, "analysis": { "durationDays": { "min": 2, "max": 4 }, "knowledgePoints": { "min": 2, "max": 6 }, "archiveKind": "insight", "explanation": "Die Legierung wurde nicht mit den üblichen Werkzeugen der Küste verarbeitet." }, "repeatPolicy": "once-per-world" },
+    { "id": "finding-grave-inscription-rubbing", "category": "document", "sourceTags": ["burial-custom"], "fieldDescription": "Eine Abreibung hält Teile der verwitterten Grabinschrift fest.", "requiresPhysicalReturn": true, "analysis": { "durationDays": { "min": 1, "max": 3 }, "knowledgePoints": { "min": 1, "max": 4 }, "archiveKind": "record", "explanation": "Die Schrift bewahrt Hinweise auf lokale Bräuche, ohne ihren Zusammenhang vollständig zu erklären." }, "repeatPolicy": "once-per-world" },
+    { "id": "finding-boundary-symbol-rubbing", "category": "document", "sourceTags": ["boundary-signature"], "fieldDescription": "Eine Skizze hält die wiederkehrende Form eines Grenzzeichens fest.", "requiresPhysicalReturn": false, "analysis": { "durationDays": { "min": 1, "max": 2 }, "knowledgePoints": { "min": 1, "max": 3 }, "archiveKind": "record", "explanation": "Die Form lässt sich mit späteren Zeichen vergleichen, benennt aber keine Fraktion." }, "repeatPolicy": "once-per-world" },
+    { "id": "finding-seal-fragment", "category": "sample", "sourceTags": ["sealed-symbol", "containment-history"], "fieldDescription": "Ein abgeplatztes Fragment trägt eine wiederholte, unbekannte Markierung.", "requiresPhysicalReturn": true, "analysis": { "durationDays": { "min": 2, "max": 5 }, "knowledgePoints": { "min": 2, "max": 5 }, "archiveKind": "insight", "explanation": "Das Fragment lässt auf eine bewusste Sicherung schließen, nicht auf ihren Grund." }, "repeatPolicy": "once-per-world" }
+  ]
+}

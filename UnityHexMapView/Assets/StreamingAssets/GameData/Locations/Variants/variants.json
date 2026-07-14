@@ -52,6 +52,16 @@
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-sealed", "modifier-guarded"],
       "defaultContentProfileId": "content-sealed-gate"
+    },
+    {
+      "id": "first-contact",
+      "archetypeId": "contact-site",
+      "label": "Erste Begegnung",
+      "subtitle": "Kontaktort",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-guarded", "modifier-invitation", "modifier-occupied"],
+      "defaultContentProfileId": "content-first-contact"
     }
   ]
 }

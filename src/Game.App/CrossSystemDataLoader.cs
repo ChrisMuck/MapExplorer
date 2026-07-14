@@ -628,6 +628,20 @@ public sealed class CrossSystemDataBundle
 public static class CrossSystemDataLoader
 {
     private const int SupportedSchemaVersion = 1;
+    private static readonly HashSet<string> SupportedDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "evidence-definitions",
+        "world-trigger-definitions",
+        "consequence-definitions",
+        "faction-signatures",
+        "faction-profiles",
+        "faction-reaction-rules",
+        "faction-territory-entry-rules",
+        "scout-mission-types",
+        "scout-focuses",
+        "scout-outcome-rules",
+        "scout-report-templates"
+    };
 
     public static CrossSystemDataBundle? LoadFromDirectory(string rootFolder)
     {
@@ -643,9 +657,25 @@ public static class CrossSystemDataLoader
             .Where(root => !string.IsNullOrWhiteSpace(root) && Directory.Exists(root))
             .SelectMany(root => Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories))
             .OrderBy(path => path, StringComparer.Ordinal)
+            .Where(IsSupportedDocumentFile)
             .Select(File.ReadAllText)
             .ToList();
         return documents.Count == 0 ? null : LoadFromJson(documents);
+    }
+
+    // Direct directory loading remains available for tests and older callers. It must not consume
+    // schema-v2 authoring documents that are owned by CrossSystemAuthoringDataLoader.
+    private static bool IsSupportedDocumentFile(string path)
+    {
+        try
+        {
+            var document = JObject.Parse(File.ReadAllText(path));
+            return SupportedDocumentTypes.Contains((string?)document["documentType"] ?? string.Empty);
+        }
+        catch (JsonException ex)
+        {
+            throw new LocationDataException($"Malformed cross-system JSON document '{path}': {ex.Message}");
+        }
     }
 
     public static CrossSystemDataBundle LoadFromJson(IEnumerable<string> jsonDocuments)

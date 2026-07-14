@@ -59,6 +59,8 @@ var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
 crossSystemContentValidationTests.RunAll();
 var gameDataCatalogTests = new GameDataCatalogTests();
 gameDataCatalogTests.RunAll();
+var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
+crossSystemAuthoringDataTests.RunAll();
 var worldGenerationPresetTests = new WorldGenerationPresetTests();
 worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();

@@ -66,6 +66,15 @@ public sealed class GameDataCatalog
         "scout-report-templates"
     };
 
+    private static readonly HashSet<string> TargetAuthoringDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "location-state-profiles",
+        "location-scenario-profiles",
+        "findings",
+        "context-definitions",
+        "situation-definitions"
+    };
+
     private static readonly HashSet<string> WorldGenerationDocumentTypes = new(StringComparer.Ordinal)
     {
         "world-generation-presets",
@@ -80,7 +89,12 @@ public sealed class GameDataCatalog
         "location-actions",
         "location-outcome-tables",
         "location-content-profiles",
+        "location-state-profiles",
+        "location-scenario-profiles",
         "evidence-definitions",
+        "findings",
+        "context-definitions",
+        "situation-definitions",
         "world-trigger-definitions",
         "consequence-definitions",
         "faction-signatures",
@@ -103,6 +117,7 @@ public sealed class GameDataCatalog
         int contentVersion,
         LocationDataBundle locations,
         CrossSystemDataBundle crossSystem,
+        CrossSystemAuthoringBundle authoring,
         WorldGenerationPresetCatalog worldGeneration,
         IEnumerable<GameDataDocumentInfo> documents)
     {
@@ -111,6 +126,7 @@ public sealed class GameDataCatalog
         ContentVersion = contentVersion;
         Locations = locations ?? throw new ArgumentNullException(nameof(locations));
         CrossSystem = crossSystem ?? throw new ArgumentNullException(nameof(crossSystem));
+        Authoring = authoring ?? throw new ArgumentNullException(nameof(authoring));
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
     }
@@ -120,6 +136,8 @@ public sealed class GameDataCatalog
     public int ContentVersion { get; }
     public LocationDataBundle Locations { get; }
     public CrossSystemDataBundle CrossSystem { get; }
+    /// <summary>Schema-v2 reusable definitions. Empty until target documents are introduced.</summary>
+    public CrossSystemAuthoringBundle Authoring { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
     public IReadOnlyList<GameDataDocumentInfo> Documents => documents;
 
@@ -157,11 +175,13 @@ public sealed class GameDataCatalog
     {
         var locationDocuments = sources.Where(source => LocationDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var crossSystemDocuments = sources.Where(source => CrossSystemDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
+        var authoringDocuments = sources.Where(source => TargetAuthoringDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var worldGenerationDocuments = sources.Where(source => WorldGenerationDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
 
         var unsupported = sources
             .Where(source => !LocationDocumentTypes.Contains(source.DocumentType)
                 && !CrossSystemDocumentTypes.Contains(source.DocumentType)
+                && !TargetAuthoringDocumentTypes.Contains(source.DocumentType)
                 && !WorldGenerationDocumentTypes.Contains(source.DocumentType))
             .Select(source => $"{source.RelativePath} ({source.DocumentType})")
             .ToList();
@@ -179,7 +199,8 @@ public sealed class GameDataCatalog
         {
             var locations = LocationDataLoader.LoadFromJson(locationDocuments);
             var crossSystem = CrossSystemDataLoader.LoadFromJson(crossSystemDocuments);
-            CrossSystemContentValidator.Validate(locations, crossSystem);
+            var authoring = CrossSystemAuthoringDataLoader.LoadFromJson(authoringDocuments);
+            CrossSystemContentValidator.Validate(locations, crossSystem, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
             return new GameDataCatalog(
                 rootPath,
@@ -187,6 +208,7 @@ public sealed class GameDataCatalog
                 contentVersion,
                 locations,
                 crossSystem,
+                authoring,
                 worldGeneration,
                 sources.Select(source => new GameDataDocumentInfo(source.RelativePath, source.DocumentType, source.SchemaVersion)));
         }
