@@ -339,6 +339,10 @@ Unity presentation scripts may reference `Game.App`.
 
 `Game.Core` must not reference Unity.
 
+An internal WPF Simulation Runner may also reference `Game.App` and `Game.Core`. It is a developer
+inspection client for the same simulation, not a second implementation of gameplay rules; see
+`docs/gameconcept/simulation_runner_concept.md`.
+
 ---
 
 ## 6. Runtime Flow
@@ -718,6 +722,10 @@ Because core logic is separated from Unity, unit tests should cover:
 Early tests should prioritize game-state correctness over visual behavior.
 
 Unity play mode tests may be added later for presentation and scene integration.
+
+For cross-system behaviour, use deterministic scenario runs and batch simulations in addition to
+unit tests. The internal Simulation Runner may inspect World Truth, but normal Unity presentation
+must continue to respect the Knowledge State boundary.
 
 ---
 

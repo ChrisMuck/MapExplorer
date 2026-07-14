@@ -131,7 +131,7 @@ Examples:
 location-infrastructure-repaired
 location-seal-broken
 location-grave-disturbed
-location-resource-harvested
+location-finding-recovered
 location-warning-respected
 scout-observed-in-region
 hazard-spread
@@ -274,7 +274,7 @@ scouting/report-templates.json
 | File | Responsibility |
 |---|---|
 | `mission-types.json` | Local surroundings reconnaissance and regional compass-sector missions, costs and availability requirements. |
-| `focuses.json` | What a scout prioritises: faction signs, routes, hazards, locations, resources or witnesses. |
+| `focuses.json` | What a scout prioritises: faction signs, routes, hazards, locations, traces/findings or witnesses. |
 | `outcome-tables.json` | Scout-leg outcome tables and escalation effects, using the shared risk/outcome structure. |
 | `report-templates.json` | Evidence-driven report wording, uncertainty language and follow-up-question hooks. |
 
@@ -493,6 +493,32 @@ Intervene, Restrict or Support modes during the World Phase even while the exped
 Reaction chains are valid: observation can become a signal, then contact, then support,
 restriction or escalation depending on later player choices and world developments.
 
+#### 13.3.2 Initial Faction Profile Scope
+
+**Decision — stable profile, limited dynamic meters.** Each faction has one primary value, at most
+one secondary value and one primary taboo. It also declares territorial rules, signature families,
+typical observation channels, contact behaviour and compatible reaction modes. These descriptions
+and rules explain why the faction responds as it does; only Trust, Anger and Fear are initial
+numeric internal relationship values. Respect, curiosity, need and similar concepts remain
+authored traits, memories, evidence or situation context rather than additional global meters.
+
+This limited profile keeps a faction legible while allowing a broad range of generated worlds and
+reactions. Specific previous actions are stored as faction memories, not flattened into another
+permanent statistic.
+
+**Decision — current pressure is World State, not another profile meter.** A faction's immediate
+need, fear, shortage, threat, damaged route, illness, missing person or other pressure is a
+time-bound generated situation in the world. It can cause requests, offers, avoidance, patrols or
+changed behaviour and may resolve without the expedition. The player learns of it only through
+earned signs, reports, contacts or visible world changes. Once resolved, it leaves appropriate
+history or memories but does not become a permanent extra faction number.
+
+**Decision — one direct open situation per faction in the MVP.** A faction has at most one current
+player-facing request, warning, promise, offer or demand that awaits a direct expedition response.
+It may still create other signs, patrols, reports, indirect reactions and background world changes.
+If a new urgent direct situation replaces an older one, the earlier situation visibly resolves,
+expires or changes state rather than accumulating as an unexplained parallel task list.
+
 ### 13.4 One Shared Lead System for Both Scout Paths
 
 Directional reconnaissance and local surroundings scouting remain separate orders with separate availability and risk. Their reports should nevertheless create compatible leads: an unconfirmed location sighting, route hint, recurring sign, hazard indication, witness trace or possible link between places. This work defines how reports become actionable without automatically revealing objective map information.
@@ -621,6 +647,218 @@ World Phase at once. At most one or two require an immediate player decision at 
 others remain as early signs, non-urgent reports or background developments until they become
 actionable. This is a presentation and pacing limit, not a promise that inactive processes pause.
 
+#### 13.6.3 Information Quality and Indirect Response
+
+**Decision — scout experience changes actionable clarity.** The quality of an early report depends
+on the observing scout's experience rating as well as relevant specialist support and the evidence
+actually available. An inexperienced scout may only report unsettling water, smoke, tracks or an
+unusual absence. A veteran may identify the likely problem, its approximate seriousness and a
+plausible response goal, such as threatened crossings or signs consistent with contamination. Even
+the best report remains an earned assessment rather than direct access to hidden World Truth, but
+the loss of a veteran scout is consequential because it reduces the expedition's ability to make
+timely, informed choices.
+
+**Decision — other actors can act before the expedition.** A faction, local group or appropriate
+non-faction actor that plausibly learns of and can reach an active process may investigate,
+contain, rescue, secure, exploit or otherwise resolve it in the World Phase. The expedition can
+therefore arrive too late and find a changed situation rather than a frozen request waiting for it.
+If the expedition plausibly triggered the process, witnesses, traces or later investigation can
+connect its action to the outcome and create the corresponding social, political or practical
+consequences; no actor receives omniscient attribution.
+
+**Decision — indirect help is real but limited by connection and time.** When the expedition has
+an earned, plausible communication or assistance channel, it may warn, request help or coordinate
+from a distance. Messages, messengers and helpers require a route and time of their own. Distance,
+weather, closed routes and the process's stage can therefore make indirect action insufficient or
+too late; the system must report this through believable outcomes rather than pretending that a
+known contact grants instant remote control.
+
+#### 13.6.4 Responsibility and Evidence
+
+**Decision — intent modifies a proven responsibility, but only in a limited way.** The concrete
+harm, the expedition's known risk-taking and its later conduct remain more important than a hidden
+intent flag. Where intent, care, warning or an attempt at repair can plausibly be known through
+direct communication, prior conduct, witnesses or evidence, they may make an actor's response more
+understanding, more distrustful or more demanding. Good intent does not erase injury or damage;
+neither may the simulation expose an unspoken intention as World Truth to justify a reaction.
+
+**Decision — attribution needs evidence.** A plausible suspicion alone does not create an
+attribution-based penalty, faction memory or hard reaction against the expedition. Witnesses,
+physical traces, a credible message, a demonstrated chain of events, an admission or another
+authored proof must connect the expedition to the process. Rumours and incomplete reports may
+become leads that invite further investigation, but do not themselves license the game to punish
+the player as though responsibility were established.
+
+**Decision — warning and seeking help can mitigate, not erase.** If the expedition cannot reach a
+process in time, a timely, credible warning or genuine request for help through an available
+channel can reduce foreseeable harm, demonstrate responsibility and improve a later response from
+those affected. It does not undo damage already done, guarantee that help arrives, or substitute
+for a route where none exists. The outcome records both the changed world and the observable effort
+to respond, allowing later actors to distinguish abandonment from an attempted intervention.
+
+#### 13.6.5 Propagation Family: Origin, Reach and End States
+
+**Decision — an expedition-triggered origin is known.** When an expedition action starts a
+propagation process, the expedition knows the place, route, person or other immediate origin at
+which it acted. It may not understand the mechanism, seriousness or future reach, but the game
+does not pretend that the trigger point itself is a mystery. A propagation process that begins
+independently in the World Phase may still have an initially unknown origin and require discovery.
+
+**Decision — spread follows a comprehensible connection.** A propagation may move through adjacent
+terrain, water, wind, routes, trade, travellers, shared infrastructure, migrating creatures or
+another authored connection. It may appear far from its origin when such a connection supports it,
+but never as an arbitrary random jump. Evidence does not need to reveal the connection immediately;
+later observation and analysis must be able to make its course understandable in retrospect.
+
+**Decision — propagation has several possible end states.** Content may resolve a process as fully
+contained, permanently localized, weakened but still active, or expanded into a major persistent
+world change. The final state is selected through the process's staged context and decisions, not a
+single arbitrary roll. The last outcome is exceptionally rare and requires a credible chain of
+serious escalation, clear warnings and multiple missed, failed or impossible opportunities rather
+than ordinary imperfect play.
+
+**Decision — containment leaves history.** Even a fully contained propagation leaves a persistent
+trace appropriate to its cause: a sealed source, a cleared but altered camp, a watched crossing, a
+memorial, a changed record or an archive entry. The immediate danger can end and ordinary use may
+return, but the world and the expedition retain the fact that it happened.
+
+**Decision — resolution may be shared.** The expedition, factions and other plausible actors may
+contribute separate stages of a response. One may warn, another impose a quarantine or protect
+people, and a later expedition may investigate or secure the source. The process records these
+distinct visible contributions and the resulting world state; it does not require a single actor to
+perform the one correct solution.
+
+**Decision — a major transformation continues the campaign.** The rare largest end state changes
+routes, places, relations, risks and available opportunities, but never ends the campaign by
+itself. It becomes difficult persistent world context for later expeditions, with both losses and
+new reasons to explore, assist, adapt or understand what changed.
+
+#### 13.6.6 Release Family: Scope and Ethical Context
+
+**Decision — initial releases begin with an expedition action.** In the initial scope, a Release
+process is triggered by the expedition opening, breaking, moving, freeing or otherwise changing a
+known containment. Earthquakes, floods and other World Phase events may alter compatible locations,
+but do not initially create a separate unexplained Release process. This keeps the first authored
+cases legible and ties the immediate origin to a player decision.
+
+**Decision — release is content-neutral and may lead anywhere.** Authoring may use positive,
+negative or mixed follow-ups: an unjustly confined person, a dangerous animal, valuable knowledge
+with political implications, a failed safety mechanism or something initially unclassified. These
+are objective possible outcomes, not labels shown to the player before the evidence supports an
+interpretation. The same family must not be treated as a crypt-specific punishment or reward.
+
+**Decision — re-securing is contextual, never a universal answer.** A dangerous animal, unstable
+material, hazardous object or breached protective boundary may be secured, contained or closed
+again if the discovered context makes that meaningful. Knowledge cannot be put back into ignorance,
+and an innocent or endangered person is not framed as something to re-imprison. Available actions
+must express the player-known reason and ethical context rather than presenting a generic
+"re-contain" button.
+
+**Decision — the MVP represents the released effect through world evidence and situations.** A
+released person, animal, item, knowledge or danger initially acts through staged reports, traces,
+changed location states, encounters, actor reactions and later opportunities. It does not require a
+fully autonomous individual simulation to create a credible consequence; richer independent actor
+behaviour remains an extension of the same evidence and event framework.
+
+#### 13.6.7 Route or Place Change Family: Shared, Visible Access
+
+**Decision — changed access changes the world for all plausible actors.** A repaired crossing,
+opened passage, closed route, secured site or similar change may alter trade, travel, patrol,
+escape, aid, territorial control and conflict for factions and other actors as well as the
+expedition. The effect is selected from context and actual access connections; it is never a
+player-only convenience flag.
+
+**Decision — important physical changes have both state and presentation.** A meaningful repaired,
+sealed, collapsed, guarded or otherwise changed place persists as World State and has a clear
+in-world visual form when the player observes it. The associated gameplay change is equally real:
+access, safety, available actions, movement or local opportunities change with it. Presentation
+must remain a view of the state rather than its owner, and the player sees no off-screen update
+until a report, observation or return visit has earned that knowledge.
+
+**Decision — later counter-actions are valid world reactions.** A faction or other capable actor
+may secure, damage, remove, improve, close or otherwise alter an expedition construction when it
+plausibly learns of it and can reach it. Such a reaction uses the normal evidence, distance,
+observation and faction-response rules; it must not silently negate player work without a
+discoverable persistent change in the world.
+
+**Decision — access has a small, composable state vocabulary.** The objective state may distinguish
+an impassable route or place, an expedition-scale provisional passage, a risky passage, a stable
+generally usable connection and a restricted or guarded connection. Further detail belongs in
+context tags and requirements rather than a sprawling fixed state list. Whether the expedition
+knows a state remains a separate Knowledge State question.
+
+**Decision — local expedients differ from shared infrastructure.** A rope line, marked ford,
+temporary ladder or comparable improvisation may be enough for the present small expedition while
+remaining unusable for ordinary trade, patrols or larger groups. A genuine infrastructure change
+has a wider access scope and can affect the world for others. Content declares that scope explicitly
+instead of assuming that every successful player action opens a route for everyone.
+
+**Decision — no arbitrary attrition.** A route or place change stays in its state until a specific,
+authored cause alters it: weather, disaster, deliberate action, plausible overuse, an identified
+construction weakness or another visible world process. Time passing alone does not randomly erase
+or degrade player work.
+
+#### 13.6.8 Knowledge Trail Family: Persistent, Fallible Evidence
+
+**Decision — a secured knowledge trail persists and ages.** Reports, fragments, analysis results
+and player-created markers that reach the base remain available as archive history. They can become
+old, doubtful or contradicted through later evidence, but are not silently removed. Field evidence
+that does not return with a failed expedition remains subject to the separate recovery and loss
+rules. This preserves the past decision context while keeping a later world state uncertain.
+
+**Decision — error and deception require a source.** An observation or report may be incomplete,
+mistaken or falsely interpreted. Deliberate misleading evidence requires a plausible actor, motive
+and eventual possibility of counter-evidence; it is never inserted as arbitrary authorial trickery.
+The archive preserves what was actually reported and by whom, allowing the player to revise a
+hypothesis rather than being told that an earlier source was simply deleted from reality.
+
+**Decision — a trail can connect systems without solving them.** A pattern may make a route,
+contact, location context, danger or political interest newly relevant. It may open another report,
+an approximate lead, a specialist analysis or a contextual action, but provides individual
+evidence rather than an automatic conclusion about ownership, motive or objective truth.
+
+#### 13.6.9 External World Crisis Family: Change, Discovery and Safe Base
+
+**Decision — a crisis may expose as well as damage.** Flood, erosion, fire, landslide, eruption,
+storm or other compatible crisis can uncover, expose, make reachable or otherwise activate a new
+location, lead or investigation opportunity in addition to damaging routes and places. Such a
+location is not a random reward dropped into the world: it must be geographically and narratively
+compatible with the event, and may be hidden, buried, inaccessible or merely irrelevant until the
+change occurs. Conversely, a crisis may bury, close or make a known place inaccessible while the
+archive preserves its earlier history.
+
+**Decision — known susceptibility enables preparation; dynamic onset enables surprise.** A
+generated volcano, floodplain, unstable slope, exposed coast or similar feature can provide
+discoverable advance context and preparedness. Storms, earthquakes and comparable dynamic crises
+may begin unexpectedly. Once active, both types follow the shared fairness rules: observable signs,
+coherent consequences and a meaningful opportunity to respond to continuing or major effects.
+
+**Decision — the base remains a secure campaign anchor.** An external crisis may affect base
+reports, supplies, contacts, available help, incoming people or planning priorities, but cannot in
+the initial scope destroy the base or make it non-functional. The campaign always retains a stable
+place to return, archive knowledge and begin a later expedition.
+
+#### 13.6.10 Rescue or Assistance Family: Sources, Testimony and Safe Destination
+
+**Decision — a need for help has a plausible source and delivery path.** A rescue or assistance
+situation may arise from a location, external crisis, faction, individual survivor, local group,
+scout finding, direct encounter or delivered message. The expedition receives it only through a
+credible observation, report, contact or communication path; the world does not generate abstract
+requests detached from people and places.
+
+**Decision — a person is a source, not an oracle.** Testimony from a rescued, helped or
+encountered person enters the archive with its source and normal reliability. It may be honest,
+partial, frightened, mistaken or, in rare contextually supported cases, deliberately misleading.
+It creates evidence and possible leads rather than confirmed World Truth, and the same source rules
+allow later corroboration or contradiction.
+
+**Decision — help ends at a real safe destination or agreement.** Taking responsibility for a
+protected person continues until the expedition reaches a contextually valid destination such as
+the base, a known settlement, a trusted contact, an agreed meeting point or another concrete safe
+solution. The person does not disappear from the state merely because the initial rescue succeeded.
+Limited aid, handover, independent departure or a revised agreement may end the obligation when
+they are observable, context-appropriate outcomes.
+
 ### 13.7 Persistent History and Later Expeditions
 
 The world must retain enough history for later expeditions to encounter repaired routes, damaged sites, changed faction attitudes, old warnings, unresolved situations and lost or secured knowledge. The player should inherit useful but imperfect preparation, while the world retains objective consequences that the player may not fully understand yet.
@@ -651,7 +889,6 @@ The common interaction pipeline must not flatten all locations into the same cho
 
 - route obstacle: access, danger, bypass and control
 - investigation site: interpretation, recovery, respect and loss
-- resource site: use, exploitation, dependency and restraint
 - territorial marker: meaning, permission and provocation
 - contact site: intent, language and trust
 - hazard zone: cause, spread, avoidance and containment
@@ -671,7 +908,8 @@ archetypes at once.
 expeditions are variants of an Investigation Site rather than a separate Trace Site family. A
 Natural Phenomenon is a distinct primary archetype because its central purpose is research and
 interpretation: springs, unusual trees, caves, peaks, geological formations and similar places may
-be studied, observed or approached with restraint without being reduced to a resource or a hazard.
+be studied, observed or approached with restraint without being reduced to material extraction or a
+hazard.
 Inhabited settlements, outposts and other active community places remain Contact Site variants;
 they do not require a separate settlement archetype. The initial set is deliberately expanded by
 the Natural Phenomenon archetype; further families remain data-driven additions after the core loop
@@ -682,12 +920,83 @@ surroundings* and *leave* as its common interaction floor. Further actions arise
 archetype, state, discovered context and expedition capabilities. Leaving is always a valid player
 decision, even when it leaves an opportunity, risk or delayed consequence unresolved.
 
+**Decision — the initial action surface remains deliberately small.** Beyond the shared floor, a
+concrete location initially offers only one to three contextually fitting actions. Newly discovered
+state, evidence, specialists, equipment or later world changes may reveal further actions, but
+content must not present an exhaustive menu of every theoretical possibility. This keeps each
+decision readable and allows the data-driven action library to expand later without changing the
+shared interaction model.
+
 **Decision — not every location needs a dramatic payoff.** An archetype may offer a persistent
-change, information, risk, a follow-up lead, a resource or none of these beyond atmosphere and
+change, information, risk, a follow-up lead, a finding or none of these beyond atmosphere and
 observation. A camp may only point toward a crypt; a crypt may be empty. Such observations still
 become unsecured field knowledge with a later archive-analysis value if the expedition returns.
 The content profile decides which opportunities are present; the generic system does not require
 every location to contain an intervention, reward or world-changing outcome.
+
+**Decision — exploration itself generates knowledge.** The first meaningful inspection of every
+location creates a distinct unsecured field report: description, observed condition, evidence,
+map understanding or a documented absence can all be knowledge worth returning with. A physical
+finding such as unknown metal, a tablet, sample, tool or record is an additional deeper analysis
+opportunity, not a separate material reward loop. On return, the base archives the report and
+awards Knowledge Points according to novelty and value; duplicate or trivial repeat observations
+are filtered by stable source and repeat rules so knowledge cannot be farmed.
+
+**Decision — an archetype frames an exploratory question.** It gives a location its dominant
+player-facing question and expected kinds of evidence, rather than predetermining an outcome. A
+Route Obstacle asks how passage might be made, understood or avoided; an Investigation Site asks
+what happened or remains; a Contact Site asks who is present and what relationship is possible. The
+same principle applies to the other archetypes and prevents individual examples such as bridges or
+crypts from becoming their own rule systems.
+
+**Decision — consequences cross archetypes within a bounded authoring scope.** Every archetype
+may use any compatible consequence family, but content profiles declare the likely combinations
+and use the existing one-primary-plus-at-most-one-secondary consequence limit. This preserves
+cross-system richness without authoring every theoretical pairing or creating unreadable stacks of
+effects.
+
+**Decision — the initial playable taxonomy contains seven archetypes.** The MVP includes Route
+Obstacle, Investigation Site, Territorial Marker, Contact Site, Hazard Site, Containment Site and
+Natural Phenomenon. Every one of them can yield reports, evidence or physical findings that later
+produce Knowledge Points through base analysis; none is a separate material Resource Site. Each
+begins with only a small number of representative
+variants and contexts; further variety is added through data after the shared loop is proven.
+
+**Decision — the Vertical Slice is narrower than the MVP taxonomy.** The first playable slice uses
+only four to five representative archetypes and roughly four to six special locations, while
+reusing the shared evidence, state, consequence and persistence infrastructure that the full
+seven-archetype MVP requires. The remaining archetypes follow as the first content expansion once
+the loop of exploring, returning with knowledge and preparing a better later expedition is proven.
+
+**Decision — Vertical Slice archetype selection.** The first slice contains one Route Obstacle,
+one Investigation Site, one Territorial Marker, one Containment Site and one Contact Site. Together
+they test persistent access change, knowledge and finding return, unknown faction rules and
+signatures, delayed consequences, and a direct faction-created situation. Hazard Sites and Natural
+Phenomena are the first content expansion after this shared loop is working.
+
+**Decision — Vertical Slice connective minimum.** World generation guarantees at least two soft,
+optional evidence or access connections between its special locations. A recurring unknown
+signature, an investigation finding that later makes another site more intelligible, or an access
+change that affects another place are valid examples. These links never create a required quest
+order, static faction-to-location mapping or automatic player conclusion; they give the player
+enough material to discover that the systems form a world rather than five isolated demonstrations.
+
+**Decision — one core content profile per Slice archetype.** Each of the five Slice archetypes
+starts with one complete representative profile. Initial variation comes from generated context,
+current state, faction claim, evidence, scout quality and the optional connections between places,
+not from a large library of near-duplicate authored variants. Additional profiles, text variation
+and rarer combinations are deliberate post-slice content work once the common loop has proven its
+value.
+
+**Clarification — a Territorial Marker is a current faction claim, not a generic old sign.** The
+WorldGenerator creates it only for an active generated faction where that faction currently marks a
+boundary, rule, route or place. Its faction identity may still be unknown to the expedition until
+evidence establishes it. If no current faction has generated a claim, the location is neutral;
+historical signs, ruins and unexplained symbols are investigation evidence rather than a
+Territorial Marker archetype. A separately generated claim on another location, such as a bridge,
+crypt or passage, does not turn that location into a Territorial Marker: it retains its own
+archetype while the current faction's claim remains hidden context until the expedition earns
+evidence of it.
 
 ### 13.9 Operational Fairness and World-Facing Feedback
 
@@ -964,3 +1273,5 @@ companionship alone does not silently add a roster member.
 - `scout_mission_cycle_concept.md`: scout orders, reports, persistence, symbols and regional faction awareness
 - `factions_and_trade_concept.md`: territories, values, rules, contact, memory and world-phase reactions
 - `world_locations_and_events_concept.md`: world persistence, event queue and world consequences
+- `cross_system_json_authoring_schema.md`: target contracts for editable content, generated World State and saved knowledge
+- `simulation_runner_concept.md`: internal scenario runner, causal inspection and shared simulation requirements
