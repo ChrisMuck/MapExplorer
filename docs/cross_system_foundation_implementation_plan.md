@@ -185,10 +185,21 @@ the wider campaign save, which separately owns map topology, paths, locations an
 - A delayed consequence cannot reroll after time advances or after reloading its persisted state.
 - Inspecting the World-truth trace does not alter `KnowledgeState` or `PlayerNotes`.
 
-### Block 4 — Generic Location Interaction and Knowledge Contract
+### Block 4 — Generic Location Interaction and Knowledge Contract — Complete
 
 **Purpose:** make all location archetypes use common action conditions, evidence and persistent
 state changes.
+
+**Implemented:** Scenario Profiles replace the legacy archetype/variant action base for catalog
+sessions. State Profiles validate authored transitions and concrete runtime states; the active
+slice now has compatible bridge, boundary and seal states. Conditional actions consult only
+confirmed `KnowledgeState` context tags, while obvious but risky actions remain visible and generic
+modifiers still compose on top. Inspections and their event text use shared Content Profiles rather
+than `LocationKind` branches. They can acquire deterministic, JSON-authored field findings; these
+remain with the expedition, move into the existing Base evaluation queue only after a successful
+return, and award Knowledge Points only after analysis. Finding repeat state is runtime-persisted.
+The direct no-catalog inspection fallback remains solely for legacy callers and test migration; it
+is not used by the catalog-backed gameplay path.
 
 **Work**
 

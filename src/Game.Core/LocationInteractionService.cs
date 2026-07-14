@@ -93,7 +93,8 @@ public sealed class LocationInteractionService
     public LocationOutcomeResolution? ResolveOutcome(
         LocationActionDefinition action,
         LocationRiskBand band,
-        LocationOutcomeTier? forcedTier = null)
+        LocationOutcomeTier? forcedTier = null,
+        IDeterministicRandomSource? deterministicRandom = null)
     {
         if (action == null)
         {
@@ -106,11 +107,11 @@ public sealed class LocationInteractionService
             return null;
         }
 
-        var tier = forcedTier ?? RollTier(table.WeightsForBand(band));
+        var tier = forcedTier ?? RollTier(table.WeightsForBand(band), deterministicRandom);
         return new LocationOutcomeResolution(tier, table.EffectsForTier(tier));
     }
 
-    private LocationOutcomeTier RollTier(IReadOnlyList<LocationOutcomeTierWeight> weights)
+    private LocationOutcomeTier RollTier(IReadOnlyList<LocationOutcomeTierWeight> weights, IDeterministicRandomSource? deterministicRandom)
     {
         var total = 0;
         foreach (var weight in weights)
@@ -123,7 +124,7 @@ public sealed class LocationInteractionService
             return weights.Count > 0 ? weights[0].Tier : LocationOutcomeTier.Success;
         }
 
-        var roll = rng.Next(total);
+        var roll = deterministicRandom != null ? deterministicRandom.NextInt(total) : rng.Next(total);
         var accumulated = 0;
         foreach (var weight in weights)
         {
@@ -140,7 +141,8 @@ public sealed class LocationInteractionService
     public LocationInteractionModel BuildInteraction(
         SpecialLocationState location,
         ExpeditionState expedition,
-        IReadOnlyList<FactionState>? linkedFactions = null)
+        IReadOnlyList<FactionState>? linkedFactions = null,
+        IReadOnlyList<string>? scenarioBaseActionIds = null)
     {
         if (location == null)
         {
@@ -164,7 +166,7 @@ public sealed class LocationInteractionService
         }
 
         var activeModifiers = ActiveModifiers(location).ToList();
-        var actionIds = ResolveActionIds(location, archetype, activeModifiers);
+        var actionIds = ResolveActionIds(location, archetype, activeModifiers, scenarioBaseActionIds);
         var options = new List<LocationInteractionOption>();
 
         foreach (var actionId in actionIds)
@@ -229,11 +231,13 @@ public sealed class LocationInteractionService
     private IReadOnlyList<string> ResolveActionIds(
         SpecialLocationState location,
         LocationArchetypeDefinition archetype,
-        IReadOnlyList<LocationModifierDefinition> activeModifiers)
+        IReadOnlyList<LocationModifierDefinition> activeModifiers,
+        IReadOnlyList<string>? scenarioBaseActionIds)
     {
-        var actionIds = new List<string>(archetype.DefaultActionIds);
+        var usesScenarioProfile = scenarioBaseActionIds != null;
+        var actionIds = new List<string>(scenarioBaseActionIds ?? archetype.DefaultActionIds);
 
-        if (!string.IsNullOrWhiteSpace(location.VariantId) && definitions.Variants.TryGetValue(location.VariantId, out var variant))
+        if (!usesScenarioProfile && !string.IsNullOrWhiteSpace(location.VariantId) && definitions.Variants.TryGetValue(location.VariantId, out var variant))
         {
             ApplySequentialLayer(actionIds, variant.AddedActionIds, variant.RemovedActionIds);
         }

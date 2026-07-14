@@ -23,6 +23,7 @@ public sealed class WorldRuntimeSnapshot
     public List<GeneratedContextRuntimeSnapshot> GeneratedContexts { get; set; } = new();
     public List<WorldSituationRuntimeSnapshot> Situations { get; set; } = new();
     public List<SimulationTraceRuntimeSnapshot> Traces { get; set; } = new();
+    public List<string> AcquiredFindingKeys { get; set; } = new();
 
     public static WorldRuntimeSnapshot Capture(WorldState world)
     {
@@ -38,7 +39,8 @@ public sealed class WorldRuntimeSnapshot
             FactionAwareness = world.FactionAwareness.Select(FactionAwarenessRuntimeSnapshot.FromState).ToList(),
             GeneratedContexts = world.GeneratedContexts.Select(GeneratedContextRuntimeSnapshot.FromState).ToList(),
             Situations = world.Situations.Select(WorldSituationRuntimeSnapshot.FromState).ToList(),
-            Traces = world.Traces.Select(SimulationTraceRuntimeSnapshot.FromState).ToList()
+            Traces = world.Traces.Select(SimulationTraceRuntimeSnapshot.FromState).ToList(),
+            AcquiredFindingKeys = world.AcquiredFindingKeys.OrderBy(key => key, StringComparer.Ordinal).ToList()
         };
     }
 
@@ -73,7 +75,8 @@ public sealed class WorldRuntimeSnapshot
             situations,
             traces,
             new RuntimeIdAllocatorState(RuntimeIdNextNumbers ?? new Dictionary<string, int>()),
-            new DeterministicRandomState(RandomSeed, RandomCurrentState));
+            new DeterministicRandomState(RandomSeed, RandomCurrentState),
+            AcquiredFindingKeys);
     }
 }
 

@@ -271,10 +271,10 @@
       },
       "effectBundles": {
         "Success": [
-          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Expedition ueberschreitet die Grenze unbehelligt." }
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "violated", "text": "Die Expedition ueberschreitet die Grenze unbehelligt." }
         ],
         "SuccessWithCost": [
-          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
           { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed-observed", "text": "Der Uebertritt wurde offenbar bemerkt." }
         ],
         "Failure": [

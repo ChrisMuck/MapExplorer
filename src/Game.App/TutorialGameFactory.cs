@@ -246,6 +246,7 @@ public static class TutorialGameFactory
                 "border-warning-sign",
                 new[] { "modifier-faction-owned", "modifier-watched" },
                 contentProfileId: "content-border-warning",
+                operationalStateId: "standing",
                 presenceStateId: LocationStateIds.Presence.Watched,
                 factionIds: new[] { "border-wardens" }),
             new SpecialLocationState(

@@ -10,6 +10,7 @@ public sealed class ExpeditionState
 {
     private readonly List<ExpeditionMemberState> members;
     private readonly List<ScoutMissionState> scoutMissions = new();
+    private readonly List<FieldFindingState> fieldFindings = new();
 
     public ExpeditionState(
         int expeditionNumber,
@@ -91,6 +92,9 @@ public sealed class ExpeditionState
         get { return scoutMissions; }
     }
 
+    /// <summary>Unsecured concrete finds that must survive the return trip before base analysis can begin.</summary>
+    public IReadOnlyList<FieldFindingState> FieldFindings => fieldFindings;
+
     public ExpeditionMemberState? FindMember(string memberId)
     {
         return members.FirstOrDefault(member => member.Id == memberId);
@@ -99,6 +103,20 @@ public sealed class ExpeditionState
     public void AddScoutMission(ScoutMissionState mission)
     {
         scoutMissions.Add(mission ?? throw new ArgumentNullException(nameof(mission)));
+    }
+
+    public void AddFieldFinding(FieldFindingState finding)
+    {
+        if (finding == null) throw new ArgumentNullException(nameof(finding));
+        if (fieldFindings.Any(existing => existing.Id == finding.Id)) return;
+        fieldFindings.Add(finding);
+    }
+
+    public IReadOnlyList<FieldFindingState> ClearFieldFindings()
+    {
+        var transferred = fieldFindings.ToList();
+        fieldFindings.Clear();
+        return transferred;
     }
 
     public void SetPosition(HexCoord position)

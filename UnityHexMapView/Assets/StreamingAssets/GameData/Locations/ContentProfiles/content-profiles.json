@@ -76,7 +76,8 @@
       "shortDescription": "Ein altes, absichtlich versiegeltes Tor.",
       "description": "Schwere Riegel und verwitterte Zeichen halten dieses Tor verschlossen. Warum es versiegelt wurde, bleibt vorerst unklar.",
       "flavorByState": {
-        "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen."
+        "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen.",
+        "opened": "Der Verschluss ist gebrochen; was dahinter liegt, bleibt weiterhin unklar."
       },
       "imageId": "placeholder-gate",
       "journalText": {

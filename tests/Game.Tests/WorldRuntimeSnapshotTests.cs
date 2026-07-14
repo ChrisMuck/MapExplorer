@@ -30,6 +30,7 @@ internal sealed class WorldRuntimeSnapshotTests
         world.AddSituation(situation);
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
+        AssertTrue(world.TryRegisterFinding("finding-seal-fragment", "once-per-world", location.Id), "World registers acquired finding before snapshot");
 
         var commandTrace = world.RecordTrace(SimulationTraceKind.Command, "Opened an old site.", subjectIds: new[] { location.Id });
         var trigger = new WorldTriggerState("trigger-1", "location-seal-broken", 2, new[] { "open" }, location.Id, location.Coord, commandTrace.TraceId);
@@ -68,6 +69,7 @@ internal sealed class WorldRuntimeSnapshotTests
         AssertEqual(1, restored.ScheduledConsequences[0].CurrentStageIndex, "Applied process stage survives runtime snapshot roundtrip");
         AssertEqual(2, restored.Traces.Count, "Causal trace entries survive runtime snapshot roundtrip");
         AssertEqual(commandTrace.TraceId, restored.Traces[1].CausedByTraceIds[0], "Trace parent link survives runtime snapshot roundtrip");
+        AssertTrue(!restored.TryRegisterFinding("finding-seal-fragment", "once-per-world", location.Id), "Finding repeat state survives runtime snapshot roundtrip");
 
         var content = new CrossSystemDataBundle(
             new EvidenceDefinitionSet(Array.Empty<EvidenceDefinition>()),

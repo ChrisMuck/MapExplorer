@@ -10,10 +10,12 @@ namespace Game.App
 public sealed class GetLocationInteractionCommand
 {
     private readonly LocationInteractionService interactionService;
+    private readonly LocationScenarioActionResolver? scenarioActionResolver;
 
-    public GetLocationInteractionCommand(LocationInteractionService interactionService)
+    public GetLocationInteractionCommand(LocationInteractionService interactionService, LocationScenarioActionResolver? scenarioActionResolver = null)
     {
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
+        this.scenarioActionResolver = scenarioActionResolver;
     }
 
     public LocationInteractionQueryResult Execute(GameState game, string locationId)
@@ -34,8 +36,14 @@ public sealed class GetLocationInteractionCommand
             return LocationInteractionQueryResult.Rejected("This location is not confirmed knowledge yet.");
         }
 
+        scenarioActionResolver?.ValidateRuntimeState(location);
+
         return LocationInteractionQueryResult.Found(
-            interactionService.BuildInteraction(location, game.Expedition, LocationInteractionSupport.LinkedFactions(game, location)));
+            interactionService.BuildInteraction(
+                location,
+                game.Expedition,
+                LocationInteractionSupport.LinkedFactions(game, location),
+                scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge)));
     }
 
     private static bool IsKnownEnough(GameState game, SpecialLocationState location)
@@ -79,10 +87,12 @@ internal static class LocationInteractionSupport
 public sealed class ResolveLocationActionCommand
 {
     private readonly LocationInteractionService interactionService;
+    private readonly LocationScenarioActionResolver? scenarioActionResolver;
 
-    public ResolveLocationActionCommand(LocationInteractionService interactionService)
+    public ResolveLocationActionCommand(LocationInteractionService interactionService, LocationScenarioActionResolver? scenarioActionResolver = null)
     {
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
+        this.scenarioActionResolver = scenarioActionResolver;
     }
 
     public LocationActionResult Execute(
@@ -103,7 +113,13 @@ public sealed class ResolveLocationActionCommand
             return LocationActionResult.Rejected("Location was not found.");
         }
 
-        var interaction = interactionService.BuildInteraction(location, game.Expedition, LocationInteractionSupport.LinkedFactions(game, location));
+        scenarioActionResolver?.ValidateRuntimeState(location);
+
+        var interaction = interactionService.BuildInteraction(
+            location,
+            game.Expedition,
+            LocationInteractionSupport.LinkedFactions(game, location),
+            scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge));
         var option = interaction.FindOption(actionId);
         if (option == null)
         {
@@ -121,7 +137,11 @@ public sealed class ResolveLocationActionCommand
         LocationOutcomeResolution? resolution = null;
         if (!option.Action.StartsProject)
         {
-            resolution = interactionService.ResolveOutcome(option.Action, option.RiskBand, forcedTier);
+            resolution = interactionService.ResolveOutcome(
+                option.Action,
+                option.RiskBand,
+                forcedTier,
+                new WorldDeterministicRandomSource(game.World));
             if (resolution == null)
             {
                 return LocationActionResult.Rejected("This action has no outcome table yet.");
@@ -163,6 +183,7 @@ public sealed class ResolveLocationActionCommand
 
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
         var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId);
+        scenarioActionResolver?.ValidateRuntimeState(location);
         QueueGenericActionTriggerIfNeeded(game, location, option.Action, triggerCountBeforeEffects, commandTrace.TraceId);
         var texts = new List<string>(costTexts);
         texts.AddRange(effectTexts);

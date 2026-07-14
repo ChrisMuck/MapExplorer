@@ -10,6 +10,7 @@ internal sealed class CrossSystemAuthoringDataTests
     {
         TargetDefinitionsLoadAndValidateAgainstCurrentContent();
         UnknownScenarioReferencesFailWithAnActionableError();
+        ScenarioStateTransitionOutsideProfileFails();
         MaterialEconomyOfferIsRejected();
         AuthoredOffersResolveForTheGeneratedFactionProfile();
     }
@@ -18,7 +19,7 @@ internal sealed class CrossSystemAuthoringDataTests
     {
         var authoring = CrossSystemAuthoringDataLoader.LoadFromJson(new[]
         {
-            """{ "documentType":"location-state-profiles", "schemaVersion":2, "items":[{ "id":"state-test-crossing", "archetypeId":"route-obstacle", "channels":{ "operational":{ "initial":"blocked", "values":["blocked","open"] } } }] }""",
+            """{ "documentType":"location-state-profiles", "schemaVersion":2, "items":[{ "id":"state-test-crossing", "archetypeId":"route-obstacle", "channels":{ "interaction":{ "initial":"untouched", "values":["untouched","inspected"] }, "operational":{ "initial":"blocked", "values":["blocked","risky-passage","open"] } } }] }""",
             """{ "documentType":"findings", "schemaVersion":2, "items":[{ "id":"finding-test-sample", "category":"sample", "fieldDescription":"A test sample.", "requiresPhysicalReturn":true, "analysis":{ "durationDays":{ "min":1, "max":2 }, "knowledgePoints":{ "min":2, "max":3 }, "archiveKind":"insight", "explanation":"The base can study it." } }] }""",
             """{ "documentType":"context-definitions", "schemaVersion":2, "items":[{ "id":"context-test-repair", "applicableArchetypeIds":["route-obstacle"], "contextTags":["structural-failure"], "candidateEvidenceIds":["evidence-old-structure"] }] }""",
             """{ "documentType":"situation-definitions", "schemaVersion":2, "items":[{ "id":"situation-test-request", "kind":"request", "possibleSourceKinds":["individual"], "urgencyLabels":["soon"], "responseOptions":[{ "id":"accept", "actionTag":"assist" }], "resolutionTags":["help-provided"] }] }""",
@@ -54,6 +55,19 @@ internal sealed class CrossSystemAuthoringDataTests
         var catalog = GameDataCatalog.LoadFromDirectory(GameDataRoot()) ?? throw new InvalidOperationException("Game data was not loaded.");
 
         AssertThrows(() => CrossSystemContentValidator.Validate(catalog.Locations, catalog.CrossSystem, authoring), "Material economy offer must be rejected");
+    }
+
+    private static void ScenarioStateTransitionOutsideProfileFails()
+    {
+        var authoring = CrossSystemAuthoringDataLoader.LoadFromJson(new[]
+        {
+            """{ "documentType":"location-state-profiles", "schemaVersion":2, "items":[{ "id":"state-invalid-transition", "archetypeId":"route-obstacle", "channels":{ "operational":{ "initial":"blocked", "values":["blocked"] } } }] }""",
+            """{ "documentType":"location-scenario-profiles", "schemaVersion":2, "items":[{ "id":"scenario-invalid-transition", "archetypeId":"route-obstacle", "variantId":"broken-bridge", "stateProfileId":"state-invalid-transition", "contentProfileId":"content-old-trade-road-bridge", "worldgen":{ "anchorKinds":["Edge"], "claimEligibility":"if-inside-current-territory" }, "actionSet":{ "sharedActionIds":["action-assess-crossing"], "initialAdditionalActionIds":[], "maximumVisibleAdditionalActions":3 } }] }"""
+        });
+        var catalog = GameDataCatalog.LoadFromDirectory(GameDataRoot()) ?? throw new InvalidOperationException("Game data was not loaded.");
+
+        AssertThrows(() => CrossSystemContentValidator.Validate(catalog.Locations, catalog.CrossSystem, authoring),
+            "A scenario action may not write a state outside its profile");
     }
 
     private static void AuthoredOffersResolveForTheGeneratedFactionProfile()

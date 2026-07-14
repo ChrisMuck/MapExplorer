@@ -21,9 +21,9 @@ public sealed class GameApplication
     private readonly AddMapNoteCommand addMapNoteCommand = new AddMapNoteCommand();
     private readonly SendScoutMissionCommand sendScoutMissionCommand;
     private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand;
-    private readonly InspectLocationCommand inspectLocationCommand = new InspectLocationCommand();
+    private readonly InspectLocationCommand inspectLocationCommand;
     private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
-    private readonly CompleteExpeditionCommand completeExpeditionCommand = new CompleteExpeditionCommand();
+    private readonly CompleteExpeditionCommand completeExpeditionCommand;
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
     private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand;
     private readonly StartNewExpeditionCommand startNewExpeditionCommand = new StartNewExpeditionCommand();
@@ -99,10 +99,23 @@ public sealed class GameApplication
         }
 
         var locationInteractionService = new LocationInteractionService(locationInteractionDefinitions);
+        var scenarioActionResolver = dataCatalog?.Authoring.ScenarioProfiles.Count > 0
+            ? new LocationScenarioActionResolver(dataCatalog.Authoring)
+            : null;
+        var findingAcquisitionService = dataCatalog?.Authoring.Findings.Count > 0
+            ? new LocationFindingAcquisitionService(dataCatalog.Authoring)
+            : null;
+        var findingAnalysisHandoffService = dataCatalog?.Authoring.Findings.Count > 0
+            ? new FindingAnalysisHandoffService(dataCatalog.Authoring)
+            : null;
+        inspectLocationCommand = new InspectLocationCommand(
+            findingAcquisitionService,
+            new LocationInspectionPresentationResolver(locationInteractionDefinitions));
+        completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
         scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(crossSystemData?.ScoutContent);
-        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService);
-        resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService);
+        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver);
+        resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
         var worldPhaseService = new WorldPhaseService(crossSystemData, dataCatalog?.Authoring);
         moveExpeditionCommand = new MoveExpeditionCommand(

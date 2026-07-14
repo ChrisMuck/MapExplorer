@@ -8,7 +8,7 @@
       "archetypeId": "route-obstacle",
       "channels": {
         "interaction": { "initial": "untouched", "values": ["untouched", "inspected"] },
-        "operational": { "initial": "blocked", "values": ["blocked", "provisional", "open", "repaired", "destroyed"] },
+        "operational": { "initial": "blocked", "values": ["blocked", "provisional", "risky-passage", "open", "repaired", "destroyed"] },
         "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
       }
     },
@@ -17,8 +17,8 @@
       "archetypeId": "investigation-site",
       "channels": {
         "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "documented"] },
-        "operational": { "initial": "sealed", "values": ["sealed", "opened", "disturbed"] },
-        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+        "operational": { "initial": "sealed", "values": ["sealed", "open", "disturbed"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "empty", "watched", "abandoned"] }
       }
     },
     {

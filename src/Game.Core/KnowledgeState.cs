@@ -11,6 +11,7 @@ public sealed class KnowledgeState
     private readonly List<ScoutReportState> scoutReports = new();
     private readonly List<EvidenceState> evidence = new();
     private readonly HashSet<string> claimedKnowledgeSources = new();
+    private readonly Dictionary<string, HashSet<string>> knownLocationContextTags = new(StringComparer.Ordinal);
 
     public KnowledgeLevel GetTileKnowledge(HexCoord coord)
     {
@@ -98,6 +99,39 @@ public sealed class KnowledgeState
         return true;
     }
 
+    /// <summary>
+    /// Records a context conclusion that the expedition has actually earned for one location.
+    /// It deliberately does not mirror generated WorldState context tags.
+    /// </summary>
+    public bool LearnLocationContextTag(string locationId, string contextTag)
+    {
+        if (string.IsNullOrWhiteSpace(locationId)) throw new ArgumentException("Location id must not be empty.", nameof(locationId));
+        if (string.IsNullOrWhiteSpace(contextTag)) throw new ArgumentException("Context tag must not be empty.", nameof(contextTag));
+        if (!knownLocationContextTags.TryGetValue(locationId.Trim(), out var tags))
+        {
+            tags = new HashSet<string>(StringComparer.Ordinal);
+            knownLocationContextTags.Add(locationId.Trim(), tags);
+        }
+
+        return tags.Add(contextTag.Trim());
+    }
+
+    public bool KnowsLocationContextTag(string locationId, string contextTag)
+    {
+        return !string.IsNullOrWhiteSpace(locationId)
+            && !string.IsNullOrWhiteSpace(contextTag)
+            && knownLocationContextTags.TryGetValue(locationId.Trim(), out var tags)
+            && tags.Contains(contextTag.Trim());
+    }
+
+    public IReadOnlyCollection<string> KnownLocationContextTags(string locationId)
+    {
+        return !string.IsNullOrWhiteSpace(locationId)
+            && knownLocationContextTags.TryGetValue(locationId.Trim(), out var tags)
+            ? tags.ToArray()
+            : Array.Empty<string>();
+    }
+
     public EvidenceState? FindEvidence(string evidenceId)
     {
         foreach (var item in evidence)
@@ -117,6 +151,7 @@ public sealed class KnowledgeState
         scoutReports.Clear();
         evidence.Clear();
         claimedKnowledgeSources.Clear();
+        knownLocationContextTags.Clear();
     }
 
     private static int KnowledgeRank(KnowledgeLevel knowledge)

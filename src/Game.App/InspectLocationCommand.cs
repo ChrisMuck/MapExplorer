@@ -7,6 +7,17 @@ namespace Game.App
 
 public sealed class InspectLocationCommand
 {
+    private readonly LocationFindingAcquisitionService? findingAcquisitionService;
+    private readonly LocationInspectionPresentationResolver? presentationResolver;
+
+    public InspectLocationCommand(
+        LocationFindingAcquisitionService? findingAcquisitionService = null,
+        LocationInspectionPresentationResolver? presentationResolver = null)
+    {
+        this.findingAcquisitionService = findingAcquisitionService;
+        this.presentationResolver = presentationResolver;
+    }
+
     public InspectLocationResult Execute(GameState game, HexCoord coord)
     {
         if (game == null)
@@ -27,24 +38,31 @@ public sealed class InspectLocationCommand
 
         var wasInspected = location.IsInspected;
         location.Inspect(game.World.WorldDay);
-        var message = BuildMessage(game, location);
+        var presentation = presentationResolver?.Resolve(location);
+        var message = presentation?.Message ?? BuildLegacyMessage(game, location);
         string? archiveEntry = null;
+        FieldFindingState? fieldFinding = null;
         if (!wasInspected)
         {
             archiveEntry = $"Day {game.World.WorldDay}: {location.Name} inspected. {message}";
             game.Base.AddArchiveEntry(archiveEntry);
-            AddLocationLeverage(game, location);
-            game.Events.Enqueue(CreateLocationEvent(game, location, message));
-            if (location.Kind != LocationKind.BaseCamp)
+            if (presentation == null)
+            {
+                AddLegacyLocationLeverage(game, location);
+            }
+
+            game.Events.Enqueue(CreateLocationEvent(game, location, message, presentation));
+            fieldFinding = findingAcquisitionService?.TryAcquire(game, location);
+            if (fieldFinding == null && findingAcquisitionService == null && location.Kind != LocationKind.BaseCamp)
             {
                 game.Expedition.AddUnsecuredKnowledge(8);
             }
         }
 
-        return InspectLocationResult.Inspected(location, message, archiveEntry);
+        return InspectLocationResult.Inspected(location, message, archiveEntry, fieldFinding);
     }
 
-    private static void AddLocationLeverage(GameState game, SpecialLocationState location)
+    private static void AddLegacyLocationLeverage(GameState game, SpecialLocationState location)
     {
         foreach (var leverage in FactionInteractionDefinitions.LeverageForLocation(location))
         {
@@ -68,7 +86,7 @@ public sealed class InspectLocationCommand
         return null;
     }
 
-    private static string BuildMessage(GameState game, SpecialLocationState location)
+    private static string BuildLegacyMessage(GameState game, SpecialLocationState location)
     {
         switch (location.Kind)
         {
@@ -93,9 +111,29 @@ public sealed class InspectLocationCommand
         }
     }
 
-    private static EventState CreateLocationEvent(GameState game, SpecialLocationState location, string message)
+    private static EventState CreateLocationEvent(
+        GameState game,
+        SpecialLocationState location,
+        string message,
+        LocationInspectionPresentation? presentation)
     {
         var eventId = $"event-{game.Events.Events.Count + 1}";
+        if (presentation != null)
+        {
+            return new EventState(
+                eventId,
+                EventKind.LocationDiscovery,
+                presentation.Title,
+                "Expedition",
+                message,
+                new[]
+                {
+                    new EventOptionState("archive", "Dokumentieren", presentation.JournalText, EventOptionEffectKind.Archive),
+                    new EventOptionState("mark", "Markieren", "Die Expedition hat eine Markierung für spätere Rückkehr gesetzt.", EventOptionEffectKind.AddWarningMarker)
+                },
+                location.Coord);
+        }
+
         switch (location.Kind)
         {
             case LocationKind.AbandonedCamp:

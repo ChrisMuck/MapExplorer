@@ -6,6 +6,12 @@ using System.Linq;
 namespace Game.Core
 {
 
+/// <summary>Deterministic random contract used by Core resolution services.</summary>
+public interface IDeterministicRandomSource
+{
+    int NextInt(int exclusiveMaximum);
+}
+
 /// <summary>
 /// Persisted deterministic runtime support. The allocator is intentionally part of simulation
 /// state so generated IDs and causal references remain stable after a suspend/load boundary.

@@ -11,7 +11,7 @@
       "contentProfileId": "content-old-trade-road-bridge",
       "worldgen": { "anchorKinds": ["Edge"], "terrainTagsAny": ["river-crossing", "ravine-crossing"], "initialModifierPoolIds": ["modifier-repairable", "modifier-unstable", "modifier-watched"], "claimEligibility": "if-inside-current-territory" },
       "actionSet": {
-        "sharedActionIds": ["action-assess-crossing", "action-mark", "action-leave"],
+        "sharedActionIds": ["action-assess-crossing", "action-attempt-crossing", "action-mark", "action-leave"],
         "initialAdditionalActionIds": ["action-find-bypass"],
         "maximumVisibleAdditionalActions": 3,
         "contextActionRules": [

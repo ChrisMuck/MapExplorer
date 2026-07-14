@@ -37,6 +37,10 @@ var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var locationInteractionTests = new LocationInteractionFrameworkTests();
 locationInteractionTests.RunAll();
+var scenarioProfileInteractionTests = new ScenarioProfileInteractionTests();
+scenarioProfileInteractionTests.RunAll();
+var findingLifecycleTests = new FindingLifecycleTests();
+findingLifecycleTests.RunAll();
 var locationDataJsonTests = new LocationDataJsonTests();
 locationDataJsonTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -1695,7 +1699,7 @@ internal sealed class LocationInteractionFrameworkTests
         TutorialBridgeIsImmediateEdgeLocation();
         TutorialBridgeTileIsMovableFromBase();
         TutorialBridgeBlocksForwardRouteUntilBypassOpensIt();
-        BridgeActionsComeFromArchetypeAndModifiers();
+        BridgeActionsComeFromScenarioProfileAndModifiers();
         LocationActionCostsLockWhenMovementIsMissing();
         BridgeCrossingActionMovesExpeditionAcrossEdge();
         RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
@@ -1751,7 +1755,7 @@ internal sealed class LocationInteractionFrameworkTests
         AssertTrue(opened.Success, "Opened bypass allows forward movement");
     }
 
-    private static void BridgeActionsComeFromArchetypeAndModifiers()
+    private static void BridgeActionsComeFromScenarioProfileAndModifiers()
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
@@ -1768,8 +1772,10 @@ internal sealed class LocationInteractionFrameworkTests
             throw new InvalidOperationException("Bridge interaction model missing.");
         }
 
-        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Route obstacle action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == "action-assess-crossing"), "Scenario profile provides the basic route assessment action");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionFindBypass), "Scenario profile provides its initial additional action");
         AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Repairable modifier adds rebuild action");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Scenario profile exposes the obvious but risky crossing attempt");
         AssertTrue(interaction.Options.All(option => option.Action.Id != LocationInteractionContent.ActionDisturb), "Investigation-site action is absent");
     }
 
@@ -1828,6 +1834,13 @@ internal sealed class LocationInteractionFrameworkTests
         var crossingBefore = before?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
         AssertTrue(crossingBefore != null, "Crossing action exists before rope crossing");
         AssertEqual(LocationRiskBand.High, crossingBefore!.RiskBand, "Blocked bridge crossing risk is high");
+
+        AssertTrue(before?.FindOption(LocationInteractionContent.ActionConstructTemporaryPassage) == null,
+            "Temporary-passage option stays hidden until its structural context is confirmed");
+        game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
+        var prepared = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        AssertTrue(prepared?.FindOption(LocationInteractionContent.ActionConstructTemporaryPassage) != null,
+            "Confirmed structural context reveals the temporary-passage option");
 
         var result = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionConstructTemporaryPassage, LocationOutcomeTier.SuccessWithCost);
 
@@ -2081,6 +2094,7 @@ internal sealed class LocationDataJsonTests
         var lockedBypass = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertFalse(lockedBypass.IsAvailable, "OncePerState action locks in the same state");
 
+        game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
         app.ResolveLocationAction(game, bridge.Id, "action-construct-temporary-passage", LocationOutcomeTier.SuccessWithCost);
         var reopened = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertTrue(reopened.IsAvailable, "OncePerState action reopens after the operational state changes");

@@ -77,7 +77,16 @@ public static class CrossSystemContentValidator
             if (!locations.Definitions.ContentProfiles.ContainsKey(scenario.ContentProfileId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
             foreach (var actionId in scenario.ActionSet.SharedActionIds.Concat(scenario.ActionSet.InitialAdditionalActionIds).Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds)))
             {
-                if (!locations.Definitions.Actions.ContainsKey(actionId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown action '{actionId}'.");
+                if (!locations.Definitions.Actions.TryGetValue(actionId, out var action))
+                {
+                    errors.Add($"Scenario profile '{scenario.Id}' references unknown action '{actionId}'.");
+                    continue;
+                }
+
+                if (stateProfile != null)
+                {
+                    ValidateActionStateEffects(scenario, stateProfile, action, locations.Definitions, errors);
+                }
             }
             foreach (var modifierId in scenario.InitialModifierPoolIds)
             {
@@ -138,6 +147,52 @@ public static class CrossSystemContentValidator
                 {
                     errors.Add($"Faction offer '{offer.Id}' defines forbidden material-economy effect '{effect.Kind}'.");
                 }
+            }
+        }
+    }
+
+    private static void ValidateActionStateEffects(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition stateProfile,
+        LocationActionDefinition action,
+        LocationInteractionDefinitionSet definitions,
+        ICollection<string> errors)
+    {
+        ValidateStateEffects(scenario, stateProfile, action.Id, action.ProjectCompletionEffects, errors);
+        var table = definitions.FindOutcomeTable(action.OutcomeTableId);
+        if (table == null) return;
+
+        foreach (var bundle in table.EffectBundles)
+        {
+            ValidateStateEffects(scenario, stateProfile, action.Id, bundle, errors);
+        }
+    }
+
+    private static void ValidateStateEffects(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition stateProfile,
+        string actionId,
+        IEnumerable<LocationEffectDefinition> effects,
+        ICollection<string> errors)
+    {
+        foreach (var effect in effects)
+        {
+            if (effect.Kind != LocationEffectKind.ChangeLocationState) continue;
+            if (effect.StateChannel == null || effect.StateId == null)
+            {
+                errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' has a state-change effect without channel or state ID.");
+                continue;
+            }
+
+            if (!stateProfile.Channels.TryGetValue(effect.StateChannel, out var channel))
+            {
+                errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' changes unknown state channel '{effect.StateChannel}'.");
+                continue;
+            }
+
+            if (!channel.Values.Contains(effect.StateId, StringComparer.Ordinal))
+            {
+                errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' changes '{effect.StateChannel}' to '{effect.StateId}', which is not allowed by state profile '{stateProfile.Id}'.");
             }
         }
     }

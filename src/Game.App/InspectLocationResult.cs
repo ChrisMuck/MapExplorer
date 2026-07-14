@@ -12,12 +12,14 @@ public sealed class InspectLocationResult
         SpecialLocationState? location,
         string message,
         string? archiveEntry,
+        FieldFindingState? fieldFinding,
         string? error)
     {
         Success = success;
         Location = location;
         Message = message;
         ArchiveEntry = archiveEntry;
+        FieldFinding = fieldFinding;
         Error = error;
     }
 
@@ -29,9 +31,11 @@ public sealed class InspectLocationResult
 
     public string? ArchiveEntry { get; }
 
+    public FieldFindingState? FieldFinding { get; }
+
     public string? Error { get; }
 
-    public static InspectLocationResult Inspected(SpecialLocationState location, string message, string? archiveEntry)
+    public static InspectLocationResult Inspected(SpecialLocationState location, string message, string? archiveEntry, FieldFindingState? fieldFinding = null)
     {
         if (location == null)
         {
@@ -43,7 +47,7 @@ public sealed class InspectLocationResult
             throw new ArgumentException("Inspect result message must not be empty.", nameof(message));
         }
 
-        return new InspectLocationResult(true, location, message, archiveEntry, null);
+        return new InspectLocationResult(true, location, message, archiveEntry, fieldFinding, null);
     }
 
     public static InspectLocationResult Rejected(string error)
@@ -53,7 +57,7 @@ public sealed class InspectLocationResult
             throw new ArgumentException("Rejected inspect result needs an error message.", nameof(error));
         }
 
-        return new InspectLocationResult(false, null, error, null, error);
+        return new InspectLocationResult(false, null, error, null, null, error);
     }
 }
 }

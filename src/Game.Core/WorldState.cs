@@ -16,6 +16,7 @@ public sealed class WorldState
     private readonly List<GeneratedContextAssignmentState> generatedContexts;
     private readonly List<WorldSituationState> situations;
     private readonly List<SimulationTraceState> traces;
+    private readonly HashSet<string> acquiredFindingKeys;
 
     public WorldState(
         HexMapState map,
@@ -29,7 +30,8 @@ public sealed class WorldState
         IEnumerable<WorldSituationState>? situations = null,
         IEnumerable<SimulationTraceState>? traces = null,
         RuntimeIdAllocatorState? runtimeIds = null,
-        DeterministicRandomState? random = null)
+        DeterministicRandomState? random = null,
+        IEnumerable<string>? acquiredFindingKeys = null)
     {
         if (worldDay < 1)
         {
@@ -45,6 +47,8 @@ public sealed class WorldState
         this.generatedContexts = new List<GeneratedContextAssignmentState>(generatedContexts ?? Enumerable.Empty<GeneratedContextAssignmentState>());
         this.situations = new List<WorldSituationState>(situations ?? Enumerable.Empty<WorldSituationState>());
         this.traces = new List<SimulationTraceState>(traces ?? Enumerable.Empty<SimulationTraceState>());
+        this.acquiredFindingKeys = new HashSet<string>((acquiredFindingKeys ?? Enumerable.Empty<string>())
+            .Where(key => !string.IsNullOrWhiteSpace(key)).Select(key => key.Trim()), StringComparer.Ordinal);
         RuntimeIds = runtimeIds ?? new RuntimeIdAllocatorState();
         Random = random ?? new DeterministicRandomState();
         WorldDay = worldDay;
@@ -84,6 +88,9 @@ public sealed class WorldState
 
     /// <summary>Objective developer provenance; normal player UI must not expose it directly.</summary>
     public IReadOnlyList<SimulationTraceState> Traces => traces;
+
+    /// <summary>Stable repeat-policy keys for findings already recovered in this world.</summary>
+    public IReadOnlyCollection<string> AcquiredFindingKeys => acquiredFindingKeys;
 
     public RuntimeIdAllocatorState RuntimeIds { get; }
 
@@ -185,6 +192,21 @@ public sealed class WorldState
         }
 
         state.Escalate();
+    }
+
+    public bool TryRegisterFinding(string findingDefinitionId, string repeatPolicy, string sourceLocationId)
+    {
+        if (string.IsNullOrWhiteSpace(findingDefinitionId)) throw new ArgumentException("Finding definition ID must not be empty.", nameof(findingDefinitionId));
+        if (string.IsNullOrWhiteSpace(sourceLocationId)) throw new ArgumentException("Finding source location ID must not be empty.", nameof(sourceLocationId));
+
+        var policy = string.IsNullOrWhiteSpace(repeatPolicy) ? "once-per-world" : repeatPolicy.Trim();
+        var key = policy switch
+        {
+            "once-per-location" => $"location:{sourceLocationId.Trim()}:{findingDefinitionId.Trim()}",
+            "once-per-world" => $"world:{findingDefinitionId.Trim()}",
+            _ => $"world:{findingDefinitionId.Trim()}"
+        };
+        return acquiredFindingKeys.Add(key);
     }
 }
 }

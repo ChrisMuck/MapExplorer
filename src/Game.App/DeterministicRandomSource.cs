@@ -5,15 +5,6 @@ using Game.Core;
 namespace Game.App
 {
 
-/// <summary>
-/// Application-boundary random source for simulation decisions. It is backed by persisted
-/// WorldState and deliberately has no Unity dependency, so a seed and command sequence replay.
-/// </summary>
-public interface IDeterministicRandomSource
-{
-    int NextInt(int exclusiveMaximum);
-}
-
 public sealed class WorldDeterministicRandomSource : IDeterministicRandomSource
 {
     private readonly DeterministicRandomState state;
