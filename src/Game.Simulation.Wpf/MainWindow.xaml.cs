@@ -61,6 +61,7 @@ public partial class MainWindow : Window
             var scenario = DevelopmentScenarioLoader.LoadFile(path);
             playback = DevelopmentScenarioPlayback.Create(catalog!, scenario);
             ResetTestTeamSelection();
+            ShowScenarioMetadata(scenario);
             SessionStatus.Text = $"Szenario '{scenario.Id}' geladen. Seed {scenario.Seed}; {scenario.Commands.Count} Skriptbefehle.";
             RefreshInspector();
         }
@@ -84,6 +85,7 @@ public partial class MainWindow : Window
             playback = DevelopmentScenarioPlayback.Create(catalog!, result.Scenario);
             playback.RunToCompletion();
             ResetTestTeamSelection();
+            ShowScenarioMetadata(result.Scenario);
             SessionStatus.Text = $"Run-Record '{result.ScenarioId}' reproduziert: {(result.Success ? "erfolgreich" : result.FailureSummary)}";
             RefreshInspector();
         }
@@ -178,6 +180,25 @@ public partial class MainWindow : Window
         CausalityList.ItemsSource = BuildCausality(game);
         RefreshTestTeam(game);
         UpdateLocationCommandSelection();
+    }
+
+    private void ShowScenarioMetadata(DevelopmentScenario scenario)
+    {
+        var metadata = scenario.Metadata;
+        ScenarioPurpose.Text = string.IsNullOrWhiteSpace(metadata.Purpose) ? "Kein Zweck beschrieben." : metadata.Purpose;
+        ScenarioStartingKnowledge.Text = metadata.StartingKnowledge.Count == 0
+            ? "Startwissen: keines ausgewiesen."
+            : $"Startwissen: {string.Join("; ", metadata.StartingKnowledge)}";
+        var names = scenario.InitialState?.Members
+            .Where(member => metadata.SelectedTeamMemberIds.Contains(member.Id, StringComparer.Ordinal))
+            .Select(member => $"{member.Name} ({member.Role})") ?? Enumerable.Empty<string>();
+        ScenarioSelectedTeam.Text = names.Any() ? string.Join(", ", names) : "Kein Testteam ausgewiesen.";
+        ScenarioExpectedProcess.Text = string.IsNullOrWhiteSpace(metadata.ExpectedWorldProcess)
+            ? "Erwarteter Prozess: keiner."
+            : $"Erwarteter Prozess: {metadata.ExpectedWorldProcess}";
+        ScenarioDecisionPoint.Text = string.IsNullOrWhiteSpace(metadata.OutstandingDecisionPoint)
+            ? "Offene Entscheidung: keine beschrieben."
+            : $"Offene Entscheidung: {metadata.OutstandingDecisionPoint}";
     }
 
     private void TestTeamSelectionChanged(object sender, SelectionChangedEventArgs e)

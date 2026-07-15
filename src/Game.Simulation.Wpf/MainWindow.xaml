@@ -40,6 +40,29 @@
                 <Button Content="Fortschreiben" Click="AdvanceSpecifiedDays" />
                 <Button Content="Skript-Run speichern…" Click="SaveScriptedRun" />
             </WrapPanel>
+            <Border BorderBrush="#4A5970" BorderThickness="1" Background="#202630" Padding="10" Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.4*" />
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1.2*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                        <TextBlock Text="Zweck und Startwissen" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioPurpose" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                        <TextBlock x:Name="ScenarioStartingKnowledge" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                        <TextBlock Text="Ausgewähltes Team" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioSelectedTeam" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Erwarteter Prozess / Entscheidung" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioExpectedProcess" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                        <TextBlock x:Name="ScenarioDecisionPoint" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
             <TextBox x:Name="SessionStatus" IsReadOnly="True" TextWrapping="Wrap" MinHeight="48" Padding="8" Margin="0,0,0,12" />
         </StackPanel>
 

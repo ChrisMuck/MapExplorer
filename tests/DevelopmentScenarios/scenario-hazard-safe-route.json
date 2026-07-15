@@ -1,0 +1,29 @@
+{
+  "id": "scenario-hazard-safe-route", "seed": 41034, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Hazard-site path: assess a persistent danger and choose a safer route while previewing the medic-gated containment option.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["The marsh is confirmed; its immediate danger has not yet been assessed."],
+    "expectedWorldProcess": "The chosen route persists locally; containment remains a specialist-sensitive alternative, not a special marsh rule.",
+    "outstandingDecisionPoint": "Use the restricted safe route, attempt traversal or return with a medic to contain the hazard."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-hazard"],
+    "members": [{ "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-hazard", "name": "Restless Marsh", "kind": "Landmark", "q": 2, "r": 1,
+      "archetypeId": "hazard-site", "variantId": "restless-marsh", "operationalStateId": "active"
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-hazard" },
+    { "kind": "resolve-location-action", "locationId": "location-hazard", "actionId": "action-observe", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-hazard", "actionId": "action-assess-risk", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-hazard", "actionId": "action-find-safe-route", "outcomeTier": "Success" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-hazard", "stateChannel": "interaction", "stateId": "assessed" },
+    { "kind": "has-location-state", "locationId": "location-hazard", "stateChannel": "operational", "stateId": "restricted" }
+  ]
+}

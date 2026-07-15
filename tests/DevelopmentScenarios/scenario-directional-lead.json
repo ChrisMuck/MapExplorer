@@ -2,6 +2,13 @@
   "id": "scenario-directional-lead",
   "seed": 41027,
   "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Scout proof path: obtain an approximate directional lead, travel normally and confirm an investigation site without exact remote truth.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["Only the expedition start tile is confirmed; the remote site is objective World Truth."],
+    "expectedWorldProcess": "No special process; the report adds only an approximate directional lead.",
+    "outstandingDecisionPoint": "Follow the lead and inspect, or defer the uncertain report."
+  },
   "width": 8,
   "height": 6,
   "initialState": {

@@ -22,9 +22,9 @@ internal sealed class SimulationBatchRunnerTests
         var first = new SimulationBatchRunner().Run(catalog, request);
         var second = new SimulationBatchRunner().Run(catalog, request);
 
-        AssertTrue(first.Success, $"Batch report has no release-gate issues: {string.Join("; ", first.Issues.Select(issue => issue.Kind + ": " + issue.Message))}");
+        AssertTrue(first.Success, $"Batch report has no release-gate issues: {string.Join("; ", first.Issues.Select(issue => issue.Kind + " [" + issue.ScenarioId + "]: " + issue.Message))}");
         AssertEqual(3, first.GeneratedWorlds.Count, "Batch creates every requested deterministic generated world");
-        AssertEqual(3, first.Scenarios.Count, "Batch includes all proof scenarios");
+        AssertEqual(ProofScenarios().Count, first.Scenarios.Count, "Batch includes all proof scenarios");
         AssertTrue(first.Scenarios.All(result => result.Success), "All proof scenarios pass through the batch runner");
         AssertTrue(first.GeneratedWorlds.All(result => result.SoftConnectionCount >= SimulationBatchRunner.RequiredSoftConnectionCount), "Each generated world has the required soft connections");
         AssertEqual(

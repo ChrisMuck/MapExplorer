@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.4 complete; Block 2.5 next**
+Status: **In progress — Blocks 2.0–2.5 complete; Block 2.6 next**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -293,6 +293,18 @@ to react when one is possible. Contact, deadline and ignored-response outcomes r
 through causal traces and persist in World State/faction memory rather than a transient UI message.
 
 ### Block 2.5 — WPF Path Library for Every Existing Location Type
+
+**Status:** Complete. The development-scenario contract now carries purpose, selected team, starting
+knowledge, expected world process and outstanding decision metadata, and WPF displays that context
+without changing simulation state. Generic assertions cover player-visible/available/locked
+options, objective and last-known state channels, situation delivery channels, evidence, triggers
+and causal trace. The automatically discovered path library now exercises all seven current
+archetypes, including separate respectful and disturbing investigation branches, territorial
+respect, established-contact delivery, hazard routing and scholar-gated landmark survey. The
+explicit event-chain matrix also proves a silent unobserved remote passability change, an earned
+neutral external crisis, a fulfilled direct-contact request, a broken promise after deadline and an
+ignored warning expiry. Development fixture triggers enter the ordinary trigger/process pipeline;
+they do not introduce a WPF-only world-rule path.
 
 1. Add one or more explicit JSON development scenarios for every current Scenario Profile and key
    state branch, including sealed-opened follow-up, bridge repair, respectful/disturbing

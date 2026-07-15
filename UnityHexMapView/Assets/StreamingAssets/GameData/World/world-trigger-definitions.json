@@ -12,6 +12,8 @@
     { "id": "location-boundary-crossed-observed" },
     { "id": "location-boundary-crossed" },
     { "id": "location-boundary-crossed-hostile" },
-    { "id": "contact-help-requested", "consequenceId": "consequence-contact-help-request" }
+    { "id": "contact-help-requested", "consequenceId": "consequence-contact-help-request" },
+    { "id": "external-route-collapse", "consequenceId": "consequence-external-route-collapse" },
+    { "id": "neutral-local-crisis", "consequenceId": "consequence-neutral-local-crisis" }
   ]
 }

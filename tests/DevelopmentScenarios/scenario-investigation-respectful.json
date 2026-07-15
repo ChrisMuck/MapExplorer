@@ -1,0 +1,36 @@
+{
+  "id": "scenario-investigation-respectful",
+  "seed": 41030,
+  "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Investigation-site respectful branch: inspect and document a marked grave before leaving an offering.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The grave is confirmed; protected remains and observers are not known."],
+    "expectedWorldProcess": "Respect raises only the authored neutral respect trigger and starts no disturbance process.",
+    "outstandingDecisionPoint": "Keep the site undisturbed or return later if new evidence supports deeper investigation."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "supplies": 10,
+    "confirmedLocationIds": ["location-grave-respect"],
+    "members": [{ "id": "scholar-1", "name": "Elian", "role": "Scholar", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-grave-respect", "name": "Marked Grave", "kind": "MarkedGrave", "q": 2, "r": 1,
+      "archetypeId": "investigation-site", "variantId": "marked-grave", "modifierIds": ["modifier-sacred"],
+      "operationalStateId": "sealed", "contextTags": ["protected-remains"]
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-grave-respect" },
+    { "kind": "resolve-location-action", "locationId": "location-grave-respect", "actionId": "action-inspect", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-grave-respect", "actionId": "action-document", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-grave-respect", "actionId": "action-leave-offering", "outcomeTier": "Success" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-grave-respect", "stateChannel": "interaction", "stateId": "inspected" },
+    { "kind": "has-world-trigger", "argument": "location-grave-respected" },
+    { "kind": "no-world-trigger", "argument": "location-grave-disturbed" },
+    { "kind": "option-visible", "locationId": "location-grave-respect", "actionId": "action-disturb" },
+    { "kind": "has-causality-trace" }
+  ]
+}

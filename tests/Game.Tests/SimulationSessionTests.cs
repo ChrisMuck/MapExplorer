@@ -121,11 +121,13 @@ internal sealed class SimulationSessionTests
 
     private static void ScenarioPlaybackRunsEveryProofScenario()
     {
-        foreach (var fileName in new[] { "scenario-claimed-crossing.json", "scenario-sealed-containment.json", "scenario-directional-lead.json" })
+        var scenarioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios");
+        foreach (var path in Directory.GetFiles(scenarioDirectory, "scenario-*.json").OrderBy(Path.GetFileName))
         {
-            var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", fileName));
+            var fileName = Path.GetFileName(path);
+            var scenario = DevelopmentScenarioLoader.LoadFile(path);
             var result = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario).RunToCompletion();
-            AssertTrue(result.Success, $"The presentation-neutral playback used by WPF runs proof scenario '{fileName}'");
+            AssertTrue(result.Success, $"The presentation-neutral playback used by WPF runs proof scenario '{fileName}': {result.FailureSummary}");
         }
     }
 

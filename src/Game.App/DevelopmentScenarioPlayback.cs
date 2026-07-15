@@ -160,7 +160,7 @@ public sealed class DevelopmentScenarioPlayback
         assertionsEvaluated = true;
         foreach (var assertion in Scenario.Assertions)
         {
-            if (!DevelopmentScenarioExecutor.EvaluateAssertion(Session, assertion.Kind, assertion.Argument, out var error))
+            if (!DevelopmentScenarioExecutor.EvaluateAssertion(Session, assertion, out var error))
             {
                 failures.Add($"assertion '{assertion.Kind}': {error}");
             }

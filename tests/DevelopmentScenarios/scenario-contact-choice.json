@@ -1,0 +1,38 @@
+{
+  "id": "scenario-contact-choice", "seed": 41033, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Contact-site path: observe, approach and communicate with the one generated faction related to the site.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The meeting place is confirmed; faction contact is not established merely by displaying World Truth."],
+    "expectedWorldProcess": "Successful communication establishes local contact and may deliver a request through the direct-contact channel.",
+    "outstandingDecisionPoint": "Fulfil, defer or decline the contacted faction's request before its deadline."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-contact"],
+    "members": [{ "id": "scholar-1", "name": "Sera", "role": "Scholar", "starLevel": 2 }],
+    "factions": [{ "id": "faction-1", "name": "River Delegation", "reactionProfileId": "welcoming", "signatureProfileId": "stone-watchmarks" }],
+    "locations": [{
+      "id": "location-contact", "name": "Quiet Meeting Place", "kind": "AbandonedCamp", "q": 2, "r": 1,
+      "archetypeId": "contact-site", "variantId": "first-contact", "interactionStateId": "unapproached", "operationalStateId": "available", "presenceStateId": "present",
+      "factionRelations": [{ "factionId": "faction-1", "kind": "Guarded" }]
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-contact" },
+    { "kind": "resolve-location-action", "locationId": "location-contact", "actionId": "action-observe", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-contact", "actionId": "action-approach-cautiously", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-contact", "actionId": "action-communicate", "outcomeTier": "Success" },
+    { "kind": "end-day" },
+    { "kind": "resolve-world-situation", "situationDefinitionId": "situation-request-help-with-crossing", "responseActionTag": "assist" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-contact", "stateChannel": "interaction", "stateId": "contacted" },
+    { "kind": "has-world-trigger", "argument": "contact-help-requested" },
+    { "kind": "has-situation-delivery", "situationDefinitionId": "situation-request-help-with-crossing", "deliveryChannel": "direct-contact" },
+    { "kind": "has-situation-status", "situationDefinitionId": "situation-request-help-with-crossing", "stateId": "Resolved" },
+    { "kind": "has-resolved-situation-response", "argument": "assist" },
+    { "kind": "option-visible", "locationId": "location-contact", "actionId": "action-negotiate" },
+    { "kind": "has-causality-trace" }
+  ]
+}

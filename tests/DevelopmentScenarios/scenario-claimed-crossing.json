@@ -2,6 +2,13 @@
   "id": "scenario-claimed-crossing",
   "seed": 41028,
   "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Route-obstacle path: inspect a claimed broken crossing, reveal the repair option, complete the project and observe its later world reaction.",
+    "selectedTeamMemberIds": ["scout-1", "engineer-1"],
+    "startingKnowledge": ["The broken crossing is confirmed; its deliberate destruction and watchers are not yet confirmed."],
+    "expectedWorldProcess": "A repaired route creates observable traffic and a later coordination situation.",
+    "outstandingDecisionPoint": "Coordinate the reopened route or leave the later attention unmanaged."
+  },
   "width": 8,
   "height": 6,
   "initialState": {
@@ -51,6 +58,9 @@
     { "kind": "end-day" }
   ],
   "assertions": [
+    { "kind": "has-location-state", "locationId": "location-route-proof", "stateChannel": "operational", "stateId": "repaired" },
+    { "kind": "has-known-location-state", "locationId": "location-route-proof", "stateChannel": "operational", "stateId": "repaired" },
+    { "kind": "option-visible", "locationId": "location-route-proof", "actionId": "action-attempt-crossing" },
     { "kind": "has-evidence", "argument": "evidence-claim-markers" },
     { "kind": "has-evidence", "argument": "evidence-bridge-repaired" },
     { "kind": "has-evidence", "argument": "evidence-route-restored" },

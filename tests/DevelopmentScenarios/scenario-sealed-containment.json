@@ -2,6 +2,13 @@
   "id": "scenario-sealed-containment",
   "seed": 41029,
   "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Containment-site path: inspect a sealed entrance, open it, receive an earned warning and contain the delayed escalation.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["The sealed entrance is confirmed; the dangerous release is hidden until supported by evidence."],
+    "expectedWorldProcess": "Opening raises a generic trigger that produces evidence and a containment situation through normal world stages.",
+    "outstandingDecisionPoint": "Contain the disturbance, investigate it further or allow the warning to expire."
+  },
   "width": 8,
   "height": 6,
   "initialState": {

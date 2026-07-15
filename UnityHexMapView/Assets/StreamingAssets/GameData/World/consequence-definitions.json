@@ -104,6 +104,34 @@
           ]
         }
       ]
+    },
+    {
+      "id": "consequence-external-route-collapse",
+      "stages": [
+        {
+          "id": "remote-collapse",
+          "delayDays": 1,
+          "effects": [
+            { "id": "block-remote-route", "kind": "setTilePassability", "isBlocked": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consequence-neutral-local-crisis",
+      "stages": [
+        {
+          "id": "crisis-observed",
+          "delayDays": 1,
+          "effects": [
+            { "id": "deliver-neutral-crisis", "kind": "createSituation", "referenceId": "situation-neutral-local-crisis", "dueDays": 3 }
+          ],
+          "event": {
+            "title": "Ein Weg ist unpassierbar geworden",
+            "body": "Neue Spuren und Umwege zeigen, dass ein lokaler Weg eingebrochen ist. Wer oder was betroffen ist, bleibt offen."
+          }
+        }
+      ]
     }
   ]
 }

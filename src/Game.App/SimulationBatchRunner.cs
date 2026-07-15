@@ -172,7 +172,10 @@ public sealed class SimulationBatchRunner
 
         var observations = world.Traces.Count(item => item.Kind == SimulationTraceKind.FactionObservation);
         var reactions = world.Traces.Count(item => item.Kind == SimulationTraceKind.FactionReaction);
-        if (observations > 0 && reactions == 0)
+        var deliveredFactionSituation = world.Situations.Any(item =>
+            string.Equals(item.SourceKind, "faction", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(item.DeliveryChannel));
+        if (observations > 0 && reactions == 0 && !deliveredFactionSituation)
         {
             issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.NoOpFactionObservation, seed, scenarioId, "Faction observation occurred but produced no reaction trace; inspect the context and reaction rules."));
         }
