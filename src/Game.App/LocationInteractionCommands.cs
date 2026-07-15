@@ -56,12 +56,40 @@ public sealed class GetLocationInteractionCommand
 
         scenarioActionResolver?.ValidateRuntimeState(location);
 
-        return LocationInteractionQueryResult.Found(
-            interactionService.BuildInteraction(
+        var interaction = interactionService.BuildInteraction(
                 location,
                 expedition,
                 LocationInteractionSupport.LinkedFactions(game, location),
-                scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge)));
+                scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge));
+        return LocationInteractionQueryResult.Found(interaction, BuildPresentation(game, interaction));
+    }
+
+    private static LocationInteractionPresentation BuildPresentation(GameState game, LocationInteractionModel interaction)
+    {
+        var location = interaction.Location;
+        var profile = interaction.ContentProfile;
+        var known = game.Knowledge.KnownLocationConditions.FirstOrDefault(item => item.LocationId == location.Id);
+        var knowledgeLabel = known == null
+            ? "Bestaetigt, Zustand noch nicht aufgenommen"
+            : known.IsDoubtful ? $"Zweifelhaft, zuletzt beobachtet an Tag {known.ObservedWorldDay}" : $"Bestaetigt an Tag {known.ObservedWorldDay}";
+        string Wording(string? stateId, string fallback) =>
+            stateId != null && profile?.FlavorByState.TryGetValue(stateId, out var text) == true ? text : fallback;
+        var interactionText = Wording(known?.InteractionStateId, "Der Interaktionszustand ist noch nicht bekannt.");
+        var operationalText = Wording(known?.OperationalStateId, "Der aktuelle Zustand ist noch nicht bekannt.");
+        var presenceText = Wording(known?.PresenceStateId, "Die aktuelle Anwesenheit ist nicht bekannt.");
+        var description = known == null
+            ? profile?.ShortDescription ?? "Der Ort ist bestaetigt, wurde aber noch nicht aus der Naehe aufgenommen."
+            : string.Join(" ", new[] { interactionText, operationalText, presenceText });
+        return new LocationInteractionPresentation(
+            profile?.Title ?? location.Name,
+            profile?.Subtitle ?? "Bestaetigter besonderer Ort",
+            description,
+            profile?.ImageId,
+            knowledgeLabel,
+            interactionText,
+            operationalText,
+            presenceText,
+            game.Knowledge.KnownLocationContextTags(location.Id).OrderBy(item => item, StringComparer.Ordinal).ToList());
     }
 
     private static bool IsKnownEnough(GameState game, SpecialLocationState location)

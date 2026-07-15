@@ -14,6 +14,7 @@ internal sealed class ScenarioProfileInteractionTests
         GeneratedContextDoesNotUnlockAnActionUntilKnowledgeConfirmsIt();
         DifferentScenarioArchetypesUseTheSameProfilePipeline();
         UnknownLocationRiskRemainsAnEstimate();
+        PlayerFacingPresentationUsesLastKnownConditionInsteadOfWorldTruth();
     }
 
     private static void ScenarioProfileReplacesLegacyVariantActionBase()
@@ -78,6 +79,24 @@ internal sealed class ScenarioProfileInteractionTests
             "Unconfirmed danger is represented as an estimate instead of exposing hidden world context");
     }
 
+    private static void PlayerFacingPresentationUsesLastKnownConditionInsteadOfWorldTruth()
+    {
+        var (app, game, location) = CreateBridgeGame(contextTags: new[] { "structural-failure" });
+        game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
+        game.Knowledge.LearnLocationContextTag(location.Id, "structural-failure");
+        location.SetState(LocationStateChannels.Operational, "repaired");
+
+        var result = app.GetLocationInteraction(game, location.Id);
+
+        AssertTrue(result.Success && result.Presentation != null, "Shared interaction query includes a player-facing presentation projection");
+        AssertTrue(result.Presentation!.OperationalStateText.Contains("unterbrochen", StringComparison.Ordinal),
+            "Presentation uses the authored wording for the last observed blocked state");
+        AssertTrue(!result.Presentation.OperationalStateText.Contains("wieder passierbar", StringComparison.Ordinal),
+            "Unobserved repaired WorldState does not leak into player-facing wording");
+        AssertEqual("structural-failure", result.Presentation.KnownContextTags.Single(),
+            "Presentation exposes earned context rather than objective modifiers");
+    }
+
     private static (GameApplication App, GameState Game, SpecialLocationState Location) CreateBridgeGame(IEnumerable<string>? contextTags = null)
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
@@ -92,6 +111,7 @@ internal sealed class ScenarioProfileInteractionTests
             "route-obstacle",
             "broken-bridge",
             modifierIds: new[] { "modifier-repairable" },
+            contentProfileId: "content-old-trade-road-bridge",
             operationalStateId: "blocked",
             contextTags: contextTags);
         var knowledge = new KnowledgeState();

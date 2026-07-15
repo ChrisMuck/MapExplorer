@@ -148,7 +148,7 @@
                             <ui:VisualElement name="report-list" class="report-list" />
                             <ui:VisualElement name="report-card-main" class="card" style="display: none;">
                                 <ui:VisualElement class="card__head">
-                                    <ui:VisualElement class="avatar" />
+                                    <ui:VisualElement name="report-avatar-main" class="avatar" tooltip="Platzhalterporträt des berichtenden Scouts" />
                                     <ui:VisualElement style="flex-grow: 1;">
                                         <ui:Label name="report-title-main" text="Rauch hinter dem Kamm" class="card__title serif" />
                                         <ui:Label name="report-sub-main" text="Mara · Späher · Tag 5" class="card__sub mono" />
@@ -319,7 +319,7 @@
         <!-- ======================= EVENT POPUP ======================= -->
         <ui:VisualElement name="event-popup" class="event-popup" style="display: none;">
             <ui:VisualElement class="event-card">
-                <ui:VisualElement class="event-image" />
+                <ui:VisualElement name="event-image" class="event-image" tooltip="Platzhalterbild zur aktuellen Meldung" />
                 <ui:VisualElement class="event-content">
                     <ui:Label name="event-source" text="Expedition" class="section-label" />
                     <ui:Label name="event-title" text="Ereignis" class="event-title serif" />

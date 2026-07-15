@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.6 complete; Block 2.7 next**
+Status: **In progress — Blocks 2.0–2.7 complete; Block 2.8 next**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -350,6 +350,17 @@ objective faction identity or automatic map conclusions.
 overdue, injured or lower-confidence result when authored scenario content calls for it.
 
 ### Block 2.7 — Unity Player-Facing Parity
+
+**Status:** Complete for implementation; final human Unity play-through remains part of Block 2.9.
+Unity already obtained option IDs, availability and known locked reasons from the shared
+`SimulationSession` query. Its location header now also consumes a `Game.App` player-facing
+presentation projection built from authored Content Profiles and the last observed
+`KnowledgeState` condition. It no longer renders live operational/presence World Truth, objective
+modifier IDs or variant-specific fallback prose. Action glyphs are selected from generic authored
+action tags rather than special action IDs. Action, project, scout and end-day/world-process paths
+all refresh the shared UI query, while report and event surfaces retain explicit portrait/scene
+placeholder anchors. Tests prove that an unobserved repaired state does not replace the last-known
+blocked wording and that earned context, not hidden modifiers, reaches presentation.
 
 1. Display the same dynamic follow-up options, availability reasons and location state wording in
    the Unity location panel.

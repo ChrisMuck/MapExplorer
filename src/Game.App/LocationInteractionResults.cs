@@ -8,10 +8,11 @@ namespace Game.App
 
 public sealed class LocationInteractionQueryResult
 {
-    private LocationInteractionQueryResult(bool success, LocationInteractionModel? interaction, string? error)
+    private LocationInteractionQueryResult(bool success, LocationInteractionModel? interaction, LocationInteractionPresentation? presentation, string? error)
     {
         Success = success;
         Interaction = interaction;
+        Presentation = presentation;
         Error = error;
     }
 
@@ -19,17 +20,48 @@ public sealed class LocationInteractionQueryResult
 
     public LocationInteractionModel? Interaction { get; }
 
+    /// <summary>Player-facing location wording derived only from authored presentation and KnowledgeState.</summary>
+    public LocationInteractionPresentation? Presentation { get; }
+
     public string? Error { get; }
 
-    public static LocationInteractionQueryResult Found(LocationInteractionModel interaction)
+    public static LocationInteractionQueryResult Found(LocationInteractionModel interaction, LocationInteractionPresentation? presentation = null)
     {
-        return new LocationInteractionQueryResult(true, interaction ?? throw new ArgumentNullException(nameof(interaction)), null);
+        return new LocationInteractionQueryResult(true, interaction ?? throw new ArgumentNullException(nameof(interaction)), presentation, null);
     }
 
     public static LocationInteractionQueryResult Rejected(string error)
     {
-        return new LocationInteractionQueryResult(false, null, error);
+        return new LocationInteractionQueryResult(false, null, null, error);
     }
+}
+
+public sealed class LocationInteractionPresentation
+{
+    public LocationInteractionPresentation(string title, string subtitle, string description, string? imageId,
+        string knowledgeLabel, string interactionStateText, string operationalStateText, string presenceStateText,
+        IReadOnlyList<string> knownContextTags)
+    {
+        Title = title;
+        Subtitle = subtitle;
+        Description = description;
+        ImageId = imageId;
+        KnowledgeLabel = knowledgeLabel;
+        InteractionStateText = interactionStateText;
+        OperationalStateText = operationalStateText;
+        PresenceStateText = presenceStateText;
+        KnownContextTags = knownContextTags;
+    }
+
+    public string Title { get; }
+    public string Subtitle { get; }
+    public string Description { get; }
+    public string? ImageId { get; }
+    public string KnowledgeLabel { get; }
+    public string InteractionStateText { get; }
+    public string OperationalStateText { get; }
+    public string PresenceStateText { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
 }
 
 public sealed class LocationActionResult
