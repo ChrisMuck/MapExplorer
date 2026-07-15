@@ -207,6 +207,7 @@ public sealed class ResolveLocationActionCommand
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
         var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId, findingAcquisitionService);
         scenarioActionResolver?.ValidateRuntimeState(location);
+        game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
         QueueGenericActionTriggerIfNeeded(game, location, option.Action, triggerCountBeforeEffects, commandTrace.TraceId);
         var texts = new List<string>(costTexts);
         texts.AddRange(effectTexts);
@@ -613,6 +614,7 @@ public sealed class AdvanceLocationProjectCommand
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
         var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags, findingAcquisitionService: findingAcquisitionService);
         ResolveLocationActionCommand.QueueGenericActionTriggerIfNeeded(game, location, action, triggerCountBeforeEffects);
+        game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
         location.ClearProject();
         return LocationActionResult.Resolved(location, action, null, null, texts, expeditionMoved);
     }

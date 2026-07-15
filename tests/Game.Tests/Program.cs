@@ -9,6 +9,8 @@ var movementTests = new MovementCostServiceTests();
 movementTests.RunAll();
 var knowledgeTests = new KnowledgeServiceTests();
 knowledgeTests.RunAll();
+var locationConditionKnowledgeTests = new LocationConditionKnowledgeTests();
+locationConditionKnowledgeTests.RunAll();
 var gameStateTests = new GameStateTests();
 gameStateTests.RunAll();
 var moveCommandTests = new MoveExpeditionCommandTests();

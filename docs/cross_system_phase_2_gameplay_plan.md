@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.1 complete; Block 2.2 next**
+Status: **In progress — Blocks 2.0–2.2 complete; Block 2.3 in progress**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -191,11 +191,16 @@ chains use this for investigation, containment, hazard containment and natural-p
 The distinct player-knowledge model for a once-observed condition becoming old or doubtful remains
 separate follow-up work; no objective location state is exposed merely to satisfy that requirement.
 
-**Next implementation step:** add validated Finding Tables and a generic `RollFindingTable` effect.
-Normal investigation/sample/survey outcomes should draw from weighted, state/context-filtered
-tables through deterministic World State and persist the resolved entry or empty result. Direct
-`AddFinding` remains available only for guaranteed narrative discoveries. Migrate the current
-ordinary fixed outcome findings to tables once the resolver and save/runtime snapshot tests exist.
+**Implemented:** validated Finding Tables and the generic `RollFindingTable` effect now resolve
+weighted, state/context-filtered candidates through deterministic World State and persist the
+resolved entry or empty result. Direct `AddFinding` remains available for guaranteed narrative
+discoveries; ordinary fixed investigation/sample/survey findings have been migrated to tables.
+
+**Current implementation step:** `KnowledgeState` records the last directly observed interaction,
+operational and presence state of a location with its observation day. Later World-State changes do
+not update this record omnisciently. The record can become old against a caller/content-supplied
+freshness window or explicitly doubtful through earned conflicting evidence; the gameplay
+balancing threshold is intentionally not hardcoded before human review.
 
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
