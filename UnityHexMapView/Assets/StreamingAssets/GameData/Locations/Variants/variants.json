@@ -62,6 +62,26 @@
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-guarded", "modifier-invitation", "modifier-occupied"],
       "defaultContentProfileId": "content-first-contact"
+    },
+    {
+      "id": "restless-marsh",
+      "archetypeId": "hazard-site",
+      "label": "Unruhiges Moor",
+      "subtitle": "Gefahrenzone",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-flooded", "modifier-contaminated", "modifier-spreading", "modifier-creature-presence"],
+      "defaultContentProfileId": "content-restless-marsh"
+    },
+    {
+      "id": "wind-carved-peak",
+      "archetypeId": "natural-phenomenon",
+      "label": "Windgeformter Gipfel",
+      "subtitle": "Naturphaenomen",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-climbable", "modifier-signal-capable", "modifier-damaged", "modifier-old-knowledge-linked", "modifier-watched"],
+      "defaultContentProfileId": "content-wind-carved-peak"
     }
   ]
 }

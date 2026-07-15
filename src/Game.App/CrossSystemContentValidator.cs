@@ -69,6 +69,14 @@ public static class CrossSystemContentValidator
         foreach (var scenario in authoring.ScenarioProfiles.Values)
         {
             if (!locations.Definitions.Archetypes.ContainsKey(scenario.ArchetypeId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown archetype '{scenario.ArchetypeId}'.");
+            try
+            {
+                LocationArchetypeInteractionFlowRegistry.CreateInitialSlice().Get(scenario.ArchetypeId);
+            }
+            catch (InvalidOperationException)
+            {
+                errors.Add($"Scenario profile '{scenario.Id}' references archetype '{scenario.ArchetypeId}', which has no registered interaction flow.");
+            }
             // The legacy Core variant definition intentionally does not retain its authored
             // archetype. The target scenario profile is the first typed owner of that pairing;
             // migration of the legacy DTO follows once profiles replace legacy variant routing.
@@ -76,7 +84,11 @@ public static class CrossSystemContentValidator
             if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown state profile '{scenario.StateProfileId}'.");
             else if (stateProfile.ArchetypeId != scenario.ArchetypeId) errors.Add($"Scenario profile '{scenario.Id}' combines state profile '{scenario.StateProfileId}' with a different archetype.");
             if (!locations.Definitions.ContentProfiles.ContainsKey(scenario.ContentProfileId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
-            foreach (var actionId in scenario.ActionSet.SharedActionIds.Concat(scenario.ActionSet.InitialAdditionalActionIds).Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds)))
+            ValidateStateActionRules(scenario, stateProfile, errors);
+            foreach (var actionId in scenario.ActionSet.SharedActionIds
+                .Concat(scenario.ActionSet.InitialAdditionalActionIds)
+                .Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds))
+                .Concat(scenario.ActionSet.StateActionRules.SelectMany(rule => rule.ActionIds)))
             {
                 if (!locations.Definitions.Actions.TryGetValue(actionId, out var action))
                 {
@@ -165,6 +177,41 @@ public static class CrossSystemContentValidator
                     errors.Add($"Faction offer '{offer.Id}' defines forbidden material-economy effect '{effect.Kind}'.");
                 }
             }
+        }
+    }
+
+    private static void ValidateStateActionRules(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition? stateProfile,
+        ICollection<string> errors)
+    {
+        if (stateProfile == null) return;
+
+        foreach (var rule in scenario.ActionSet.StateActionRules)
+        {
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Interaction, rule.InteractionStateIds, errors);
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Operational, rule.OperationalStateIds, errors);
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Presence, rule.PresenceStateIds, errors);
+        }
+    }
+
+    private static void ValidateRuleStates(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition stateProfile,
+        string channelId,
+        IReadOnlyList<string> stateIds,
+        ICollection<string> errors)
+    {
+        if (stateIds.Count == 0) return;
+        if (!stateProfile.Channels.TryGetValue(channelId, out var channel))
+        {
+            errors.Add($"Scenario profile '{scenario.Id}' has a state action rule for undefined '{channelId}' state.");
+            return;
+        }
+
+        foreach (var stateId in stateIds.Where(stateId => !channel.Values.Contains(stateId, StringComparer.Ordinal)))
+        {
+            errors.Add($"Scenario profile '{scenario.Id}' state action rule references invalid '{channelId}' state '{stateId}' for state profile '{stateProfile.Id}'.");
         }
     }
 

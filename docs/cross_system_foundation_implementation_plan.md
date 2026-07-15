@@ -1,6 +1,6 @@
 # Cross-System Foundation Implementation Plan
 
-Status: **Active**
+Status: **Implementation complete; owner review and Unity playtest release decision pending**
 Branch: `codex/cross-system-foundation`
 Scope: shared simulation foundation for the approved core gameplay concepts.
 Related concepts:
@@ -116,7 +116,7 @@ The following gaps must be resolved rather than worked around:
 - A manifest that omits Scouting fails clearly instead of silently creating a divergent session.
 - Old directory-based content remains loadable until the manifest migration is complete.
 
-### Block 2 — Typed Authoring Definitions and Slice Content Migration
+### Block 2 — Typed Authoring Definitions and Slice Content Migration — Complete
 
 **Purpose:** implement the approved JSON authoring structure without introducing per-location
 special code.
@@ -126,8 +126,8 @@ Definitions, Faction Offers and Faction Memory Definitions now load through the 
 Five initial Slice scenario profiles and profile-based offers are authored and validated. Wiring
 those offers into generated faction instances is complete; direct legacy callers retain their
 previous offer set as a compatibility fallback. The active location data now uses only the seven
-canonical archetypes; the remaining work in this block is optional action/disclosure fields and
-the corresponding runtime option resolver.
+canonical archetypes; the remaining action/disclosure and runtime option-flow work is deliberately
+continued by `cross_system_phase_2_gameplay_plan.md`.
 
 **Work**
 

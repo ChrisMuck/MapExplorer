@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Game.Core;
 using Newtonsoft.Json.Linq;
 
 namespace Game.App
@@ -82,18 +83,60 @@ public sealed class LocationContextActionRuleDefinition
         .ToList();
 }
 
+/// <summary>
+/// Adds normal actions after an authored persistent state has been reached. Conditions across
+/// channels are combined with AND; values inside one channel are alternatives.
+/// </summary>
+public sealed class LocationStateActionRuleDefinition
+{
+    public LocationStateActionRuleDefinition(
+        IEnumerable<string>? interactionStateIds,
+        IEnumerable<string>? operationalStateIds,
+        IEnumerable<string>? presenceStateIds,
+        IEnumerable<string> actionIds)
+    {
+        InteractionStateIds = LocationContextActionRuleDefinition.NormalizeOptional(interactionStateIds);
+        OperationalStateIds = LocationContextActionRuleDefinition.NormalizeOptional(operationalStateIds);
+        PresenceStateIds = LocationContextActionRuleDefinition.NormalizeOptional(presenceStateIds);
+        ActionIds = LocationStateChannelDefinition.Normalize(actionIds, nameof(actionIds));
+
+        if (InteractionStateIds.Count == 0 && OperationalStateIds.Count == 0 && PresenceStateIds.Count == 0)
+        {
+            throw new LocationDataException("A state action rule needs at least one state condition.");
+        }
+    }
+
+    public IReadOnlyList<string> InteractionStateIds { get; }
+    public IReadOnlyList<string> OperationalStateIds { get; }
+    public IReadOnlyList<string> PresenceStateIds { get; }
+    public IReadOnlyList<string> ActionIds { get; }
+
+    public bool Matches(SpecialLocationState location)
+    {
+        if (location == null) throw new ArgumentNullException(nameof(location));
+        return Matches(InteractionStateIds, location.InteractionStateId)
+            && Matches(OperationalStateIds, location.OperationalStateId)
+            && Matches(PresenceStateIds, location.PresenceStateId);
+    }
+
+    private static bool Matches(IReadOnlyList<string> allowedStateIds, string currentStateId) =>
+        allowedStateIds.Count == 0 || allowedStateIds.Contains(currentStateId, StringComparer.Ordinal);
+}
+
 public sealed class LocationScenarioActionSetDefinition
 {
     public LocationScenarioActionSetDefinition(
         IEnumerable<string>? sharedActionIds,
         IEnumerable<string>? initialAdditionalActionIds,
         int maximumVisibleAdditionalActions,
-        IEnumerable<LocationContextActionRuleDefinition>? contextActionRules)
+        IEnumerable<LocationContextActionRuleDefinition>? contextActionRules,
+        IEnumerable<LocationStateActionRuleDefinition>? stateActionRules = null)
     {
         SharedActionIds = LocationContextActionRuleDefinition.NormalizeOptional(sharedActionIds);
         InitialAdditionalActionIds = LocationContextActionRuleDefinition.NormalizeOptional(initialAdditionalActionIds);
         MaximumVisibleAdditionalActions = maximumVisibleAdditionalActions;
         ContextActionRules = (contextActionRules ?? Enumerable.Empty<LocationContextActionRuleDefinition>()).ToList();
+        StateActionRules = (stateActionRules ?? Enumerable.Empty<LocationStateActionRuleDefinition>()).ToList();
         if (maximumVisibleAdditionalActions < 0 || maximumVisibleAdditionalActions > 3)
         {
             throw new LocationDataException("maximumVisibleAdditionalActions must be between 0 and 3.");
@@ -108,6 +151,7 @@ public sealed class LocationScenarioActionSetDefinition
     public IReadOnlyList<string> InitialAdditionalActionIds { get; }
     public int MaximumVisibleAdditionalActions { get; }
     public IReadOnlyList<LocationContextActionRuleDefinition> ContextActionRules { get; }
+    public IReadOnlyList<LocationStateActionRuleDefinition> StateActionRules { get; }
 }
 
 /// <summary>Reusable, faction-neutral composition of a location archetype, state and possible context.</summary>
@@ -415,10 +459,16 @@ public static class CrossSystemAuthoringDataLoader
         var actions = item["actionSet"] as JObject ?? new JObject();
         var contextRules = (actions["contextActionRules"] as JArray ?? new JArray()).OfType<JObject>().Select(rule =>
             new LocationContextActionRuleDefinition(Strings(rule, "whenKnownContextTagsAny"), Strings(rule, "whenHiddenContextTagsAny"), Strings(rule, "addActionIds"), Text(rule, "knownRequirementDisclosure"))).ToList();
+        var stateRules = (actions["stateActionRules"] as JArray ?? new JArray()).OfType<JObject>().Select(rule =>
+            new LocationStateActionRuleDefinition(
+                Strings(rule, "whenInteractionStatesAny"),
+                Strings(rule, "whenOperationalStatesAny"),
+                Strings(rule, "whenPresenceStatesAny"),
+                Strings(rule, "addActionIds"))).ToList();
         return new LocationScenarioProfileDefinition(
             Text(item, "id"), Text(item, "archetypeId"), Text(item, "variantId"), Text(item, "stateProfileId"), Text(item, "contentProfileId"),
             Strings(worldgen, "anchorKinds"), Strings(worldgen, "terrainTagsAny"), Strings(worldgen, "initialModifierPoolIds"), Text(worldgen, "claimEligibility"),
-            new LocationScenarioActionSetDefinition(Strings(actions, "sharedActionIds"), Strings(actions, "initialAdditionalActionIds"), Int(actions, "maximumVisibleAdditionalActions"), contextRules),
+            new LocationScenarioActionSetDefinition(Strings(actions, "sharedActionIds"), Strings(actions, "initialAdditionalActionIds"), Int(actions, "maximumVisibleAdditionalActions"), contextRules, stateRules),
             Strings(item, "evidencePoolIds"), Strings(item, "findingPoolIds"), Strings(item, "consequencePoolIds"), Strings(item, "connectionTags"));
     }
 

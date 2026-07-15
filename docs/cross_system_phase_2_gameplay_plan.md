@@ -1,6 +1,7 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **Planned**
+Status: **In progress — Blocks 2.0–2.1 complete; Block 2.2 next**
+Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
 catalog, deterministic simulation, world processes, scouting, Unity adapter and WPF runner.
@@ -36,7 +37,7 @@ future archetypes.
 - `Game.Core` and `Game.App` remain the only rule implementation. Unity and WPF only render shared
   queries and send shared commands.
 - No action, action chain, faction, coordinate, claim, hidden consequence or WPF scenario behavior
-  is hardcoded by location ID, `LocationKind`, Unity UI branch or WPF UI branch.
+  is hardcoded by location ID, variant ID, `LocationKind`, Unity UI branch or WPF UI branch.
 - Reusable authored content lives in JSON with stable IDs. The WorldGenerator alone assigns runtime
   territory, claim, signature, local context and resolved consequence branches.
 - `WorldState`, `KnowledgeState` and `PlayerNotes` remain separate. A new option may be visible
@@ -46,6 +47,22 @@ future archetypes.
 - A delayed severe consequence needs an earned warning and at least one feasible response path.
 - Development scenarios and the WPF runner may inspect objective World Truth, but never create
   player knowledge merely by displaying it.
+
+### 2.1 Confirmed Archetype-Flow Boundary
+
+The common interaction pipeline must preserve distinct archetype questions rather than flattening
+every location into one generic menu. `Game.App` therefore owns one registered interaction-flow
+policy for each supported **archetype**. The selected policy is identified by the authored
+`ScenarioProfile.ArchetypeId`, never by `LocationKind`, a variant ID, a location ID or a Unity/WPF
+branch.
+
+An archetype flow owns the order and meaning of its decision phases: Route Obstacle owns
+access/bypass/infrastructure choices; Investigation Site owns interpretation/respect/recovery;
+Containment Site owns protection/temptation/release. The shared Core/App pipeline still owns
+requirements, costs, state persistence, evidence, findings, triggers, processes and option
+presentation. JSON supplies the action IDs, state/context gates, text and effects used by that
+archetype flow. A variant only composes a particular scenario and presentation; an individual
+generated location supplies runtime state and context. Neither may add a separate code path.
 
 ## 3. Phase-2 Data Contract
 
@@ -66,8 +83,10 @@ catalog or create a second content format.
 - repeat policy and persistent local effects.
 
 Scenario Profiles define which generic action IDs belong to an archetype/variant and under which
-state/context conditions additional action IDs become available. Content Profiles remain strictly
-presentation-only: titles, descriptions, state wording and visual IDs, never hidden world truth.
+state/context conditions additional action IDs become available. The registered archetype flow
+interprets that authored action surface; it does not infer a flow from a concrete variant. Content
+Profiles remain strictly presentation-only: titles, descriptions, state wording and visual IDs,
+never hidden world truth.
 
 ### 3.2 Follow-Up Model
 
@@ -86,8 +105,8 @@ scenario-sealed-gate
   -> when opened + known danger context: add action-secure-entrance
 ```
 
-The resolver recalculates the same option contract after every command. It does not contain an
-archetype-specific continuation table.
+The resolver recalculates the same option contract after every command. It invokes the registered
+archetype flow, but contains no special-variant continuation table.
 
 ### 3.3 Development Scenario Contract
 
@@ -98,7 +117,7 @@ these actions; it does not contain one button or workflow per location.
 
 ## 4. Implementation Blocks
 
-### Block 2.0 — Plan and Content Audit
+### Block 2.0 — Plan and Content Audit — Complete
 
 1. Mark the completed foundation blocks accurately and remove stale sequencing from the Phase-1
    plan.
@@ -109,25 +128,39 @@ these actions; it does not contain one button or workflow per location.
    document, defer and leave. The vocabulary is reusable IDs/tags, not a mandatory action list for
    every location.
 
+**Audit record:** [`cross_system_phase_2_audit.md`](cross_system_phase_2_audit.md)
+
 **Exit criteria:** the audit maps every initial Slice location to a proposed non-hardcoded path and
 identifies the JSON field needed for every missing transition or condition.
 
-### Block 2.1 — State-Driven Follow-Up Option Resolver
+### Block 2.1 — State-Driven Follow-Up Option Resolver — Complete
 
-1. Extend the typed JSON schema and validator with state-gated additional-action rules.
-2. Make the shared interaction resolver evaluate operational, interaction and presence state along
-   with existing known context and role requirements.
-3. Preserve information honesty: only known prerequisite failures can be shown as disabled reasons;
+1. Introduce the registered archetype-flow boundary in `Game.App`; prove that it is selected by
+   `ScenarioProfile.ArchetypeId` and cannot fall back to a variant or `LocationKind` branch.
+2. Extend the typed JSON schema and validator with state-gated additional-action rules.
+3. Make the shared interaction resolver evaluate operational, interaction and presence state along
+   with existing known context and role requirements through the selected archetype flow.
+4. Preserve information honesty: only known prerequisite failures can be shown as disabled reasons;
    hidden context only changes uncertainty or later discovery.
-4. Re-query options after inspect, scout report, action resolution, project progress and world-stage
+5. Re-query options after inspect, scout report, action resolution, project progress and world-stage
    location changes.
-5. Add Core/App tests proving that different generated instances of the same profile expose
-   different legal options without variant-specific code.
+6. Add Core/App tests proving that different generated instances of the same profile expose
+   different legal options without variant-specific code, while different archetypes select their
+   own flow policies.
 
 **Exit criteria:** changing a location to `opened`, `repaired`, `searched` or comparable authored
 state can expose a generic follow-up action through JSON alone.
 
+**Implemented:** `Game.App` now selects a registered interaction-flow policy from the authored
+archetype ID, including all seven current archetypes. Scenario Profiles support
+`stateActionRules` over interaction, operational and presence states; the catalog validates state
+and action references. The shared option query runs the selected flow after every normal command
+query. Core/App tests prove state-only follow-up availability, compound channel gates, archetype
+selection and rejection of invalid state/flow authoring without a variant or `LocationKind` branch.
+
 ### Block 2.2 — Complete Initial Slice Location Chains
+
+**Status:** Complete for the seven currently defined archetype profiles; runner and Unity path-library coverage remains in Blocks 2.5 and 2.7.
 
 Author and test at least one complete decision chain for every current Scenario Profile.
 
@@ -138,14 +171,16 @@ Author and test at least one complete decision chain for every current Scenario 
 | Territorial Marker | observe -> interpret -> respect / cross / communicate -> territorial response only if observed and relevant |
 | Containment Site | inspect seal -> open -> investigate interior / scout inside / secure / leave -> delayed release or contained result |
 | Contact Site | observe -> approach / communicate / withdraw -> contact knowledge, offer, warning or social memory |
+| Hazard Site | observe -> assess -> avoid / traverse / find safe route / contain -> persistent risk or route knowledge |
+| Natural Phenomenon | observe -> approach -> survey / map -> persistent landmark knowledge |
 
 Each chain must contain a safe or deferrable choice, a contextually risky choice and at least one
 specialist-sensitive branch where it makes sense. A location may be atmospheric and yield only
 knowledge; rewards are never mandatory material loot.
 
-**Exit criteria:** every initial profile has a playable path that begins with Inspect and local
-scouting where applicable, continues after its first intervention, and reaches a persistent local
-or world result.
+**Exit criteria:** all seven current archetype profiles have a playable, data-authored path that
+begins with the appropriate first investigation action (including inspection where applicable),
+continues after its first intervention, and reaches a persistent local or world result.
 
 ### Block 2.3 — Findings, Knowledge and Persistent Local Results
 

@@ -101,6 +101,39 @@
         "discovered": "Ein Ort deutet auf eine mögliche Begegnung hin.",
         "resolved": "Der mögliche Kontakt wurde dokumentiert."
       }
+    },
+    {
+      "id": "content-restless-marsh",
+      "title": "Unruhiges Moor",
+      "subtitle": "Gefahrenzone",
+      "shortDescription": "Dunst, unsicherer Grund und dunkles Wasser machen diese Senke unberechenbar.",
+      "description": "Zwischen den Grasinseln liegen verborgene Wasserlaeufe und Spuren einer Gefahr, die sich mit dem Moor bewegen kann.",
+      "flavorByState": {
+        "active": "Das Moor wirkt unruhig; jeder Schritt neben dem festen Grund kann Konsequenzen haben.",
+        "restricted": "Ein begrenzter, sicherer Verlauf am Rand des Moors ist vermerkt.",
+        "contained": "Die unmittelbare Gefahr ist eingegrenzt, aber der Ort bleibt vorsichtshalber markiert."
+      },
+      "imageId": "placeholder-hazard",
+      "journalText": {
+        "discovered": "Ein unruhiges Moor blockiert die direkte Route.",
+        "resolved": "Die Gefahr des Moors wurde als Routenwissen festgehalten."
+      }
+    },
+    {
+      "id": "content-wind-carved-peak",
+      "title": "Windgeformter Gipfel",
+      "subtitle": "Naturphaenomen",
+      "shortDescription": "Eine auffaellige Felsnadel ragt ueber die umliegenden Wege.",
+      "description": "Wind und Wetter haben den Fels zu einer weithin sichtbaren Form geschliffen; von hier koennte sich die Landschaft neu lesen lassen.",
+      "flavorByState": {
+        "stable": "Die Felsnadel ist ein ferner, unverwechselbarer Bezugspunkt.",
+        "mapped": "Der Gipfel und seine Umgebung sind als verlaesslicher Kartenbezug festgehalten."
+      },
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein windgeformter Gipfel wurde als Bezugspunkt entdeckt.",
+        "resolved": "Der Gipfel wurde vermessen und in die Kartenkenntnis aufgenommen."
+      }
     }
   ]
 }

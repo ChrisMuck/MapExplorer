@@ -202,6 +202,18 @@ presentation-only.
         "addActionIds": ["action-rebuild-bridge"],
         "knownRequirementDisclosure": "hidden-until-supported"
       }
+    ],
+    "stateActionRules": [
+      {
+        "whenOperationalStatesAny": ["repaired", "provisional"],
+        "addActionIds": ["action-confirm-passage"]
+      },
+      {
+        "whenInteractionStatesAny": ["inspected"],
+        "whenOperationalStatesAny": ["opened"],
+        "whenPresenceStatesAny": ["guarded"],
+        "addActionIds": ["action-secure-entrance"]
+      }
     ]
   },
   "evidencePoolIds": ["evidence-removed-supports", "evidence-fresh-marker"],
@@ -213,6 +225,11 @@ presentation-only.
 
 `claimEligibility` only permits the generator to evaluate a claim. It never selects a faction or
 asserts that a claim exists.
+
+`stateActionRules` adds ordinary reusable action IDs once a persistent location state matches.
+The three channel conditions are combined with AND; values within a channel are alternatives. The
+selected archetype interaction flow evaluates the rules, while the Scenario Profile supplies the
+state values and action IDs. State rules must not name a location, a variant or a generated faction.
 
 ### 4. Actions and Outcome Tables
 

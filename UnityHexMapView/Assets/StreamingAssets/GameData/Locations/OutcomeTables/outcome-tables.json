@@ -178,9 +178,11 @@
       },
       "effectBundles": {
         "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "disturbed", "text": "Der Zustand des Grabes wurde dauerhaft veraendert." },
           { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." }
         ],
         "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "disturbed", "text": "Der Zustand des Grabes wurde dauerhaft veraendert." },
           { "kind": "AddUnsecuredKnowledge", "amount": 5, "text": "Ein Fund wird geborgen." },
           { "kind": "ChangeMorale", "amount": -1, "text": "Die Gruppe ist sich uneins, ob dies richtig war." },
             { "kind": "RaiseWorldTrigger", "referenceId": "location-grave-disturbed", "text": "Die Stoerung kann von jemandem bemerkt oder spaeter entdeckt werden." }
@@ -283,6 +285,220 @@
         "SevereFailure": [
           { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed-hostile", "text": "Der Uebertritt loest eine ernste Reaktion aus." },
           { "kind": "InjureMember", "selection": "randomActiveMember", "severity": "Wounded", "text": "Beim Rueckzug wird jemand verletzt." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-observe-sign",
+      "appliesTo": { "archetypeId": "territorial-marker", "actionId": "action-observe-sign" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "observed", "text": "Die sichtbaren Zeichen und ihre Lage wurden festgehalten." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition gewinnt einen ersten Eindruck der Markierung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-respect-warning",
+      "appliesTo": { "archetypeId": "territorial-marker", "actionId": "action-respect-warning" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "respected", "text": "Die Expedition laesst die Grenze unangetastet." },
+          { "kind": "AddArchiveEntry", "text": "Die Expedition respektierte eine gedeutete Grenzwarnung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-inspect-seal",
+      "appliesTo": { "archetypeId": "containment-site", "actionId": "action-inspect-seal" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "inspected", "text": "Die Warnzeichen und der Zustand des Verschlusses wurden festgehalten." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert Feldkenntnis ueber den Verschluss." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-investigate-interior",
+      "appliesTo": { "archetypeId": "containment-site", "actionId": "action-investigate-interior" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 60 }, { "tier": "PartialResult", "weight": 40 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Der zugaengliche Bereich wurde gruendlich untersucht." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Die Expedition sichert neue Feldkenntnis aus dem Inneren." }
+        ],
+        "PartialResult": [
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Aus dem Inneren bleiben nur unvollstaendige Hinweise zurueck." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-secure-site",
+      "appliesTo": { "archetypeId": "containment-site", "actionId": "action-secure-site" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "secured", "text": "Der Ort wurde mit den vorhandenen Mitteln gesichert." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "sealed", "text": "Der Zugang ist wieder verschlossen und muss spaeter erneut geprueft werden." },
+          { "kind": "AddArchiveEntry", "text": "Die Expedition sicherte einen zuvor geoeffneten Ort." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-approach-contact",
+      "appliesTo": { "archetypeId": "contact-site", "actionId": "action-approach-cautiously" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "approached", "text": "Die Expedition hat sich sichtbar, aber zurueckhaltend genaehert." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Reaktion auf die Annaeherung wird als Feldkenntnis festgehalten." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-communicate",
+      "appliesTo": { "archetypeId": "contact-site", "actionId": "action-communicate" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 80 }, { "tier": "PartialResult", "weight": 20 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contacted", "text": "Ein erster Austausch kommt zustande." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert eine erste Kontaktbeobachtung." }
+        ],
+        "PartialResult": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contacted", "text": "Es bleibt bei einem vorsichtigen, unvollstaendigen Austausch." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition sichert eine unsichere Kontaktbeobachtung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-withdraw-contact",
+      "appliesTo": { "archetypeId": "contact-site", "actionId": "action-withdraw" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "withdrawn", "text": "Die Expedition zieht sich sichtbar vom Kontaktort zurueck." },
+          { "kind": "AddArchiveEntry", "text": "Die Expedition verschob einen moeglichen Kontakt auf spaeter." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-assess-hazard",
+      "appliesTo": { "archetypeId": "hazard-site", "actionId": "action-assess-risk" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "assessed", "text": "Die unmittelbaren Gefahrenzeichen wurden eingeschätzt." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert eine erste Gefahreneinschaetzung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-avoid-hazard",
+      "appliesTo": { "archetypeId": "hazard-site", "actionId": "action-avoid" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "avoided", "text": "Die Expedition meidet die Gefahr vorerst." },
+          { "kind": "AddArchiveEntry", "text": "Eine Gefahrzone wurde bewusst umgangen und fuer eine spaetere Rueckkehr vermerkt." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-traverse-hazard",
+      "appliesTo": { "archetypeId": "hazard-site", "actionId": "action-traverse-cautiously" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 60 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 10 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "traversed", "text": "Die Expedition findet einen vorsichtigen Weg durch die Gefahrzone." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Bedingungen der Durchquerung werden als Feldkenntnis festgehalten." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "traversed", "text": "Die Expedition durchquert die Zone, doch die Belastung bleibt spuerbar." },
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Die vorsichtige Durchquerung verbraucht zusaetzliche Vorraete." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Gefahrzone zwingt die Expedition zum Abbruch." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-safe-hazard",
+      "appliesTo": { "archetypeId": "hazard-site", "actionId": "action-find-safe-route" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 70 }, { "tier": "Failure", "weight": 30 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "restricted", "text": "Ein begrenzter sicherer Verlauf am Rand der Gefahrzone wurde markiert." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert einen Hinweis auf eine sicherere Passage." }
+        ],
+        "Failure": [
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Die Suche nach einem sicheren Verlauf kostet Zeit und Vorraete." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-contain-hazard",
+      "appliesTo": { "archetypeId": "hazard-site", "actionId": "action-contain-hazard" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 75 }, { "tier": "SuccessWithCost", "weight": 25 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contained", "text": "Die unmittelbare Gefahr wurde vorlaeufig eingegrenzt." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "contained", "text": "Die Gefahrzone ist nicht verschwunden, aber lokal begrenzt." }
+        ],
+        "SuccessWithCost": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contained", "text": "Die unmittelbare Gefahr wurde vorlaeufig eingegrenzt." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "contained", "text": "Die Gefahrzone ist nicht verschwunden, aber lokal begrenzt." },
+          { "kind": "ConsumeSupplies", "amount": 1, "text": "Die Eindämmung verbraucht Material und Vorraete." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-observe-phenomenon",
+      "appliesTo": { "archetypeId": "natural-phenomenon", "actionId": "action-observe-from-distance" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "observed", "text": "Das Naturphaenomen wurde aus sicherer Entfernung beobachtet." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition sichert eine erste Beobachtung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-approach-phenomenon",
+      "appliesTo": { "archetypeId": "natural-phenomenon", "actionId": "action-approach" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 85 }, { "tier": "Failure", "weight": 15 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "approached", "text": "Die Expedition erreicht einen geeigneten Beobachtungspunkt." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die naeheren Merkmale des Ortes werden festgehalten." }
+        ],
+        "Failure": [
+          { "kind": "ChangeMorale", "amount": -1, "text": "Die Bedingungen am Naturphaenomen verhindern eine sichere Annaeherung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-survey-phenomenon",
+      "appliesTo": { "archetypeId": "natural-phenomenon", "actionId": "action-survey" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "surveyed", "text": "Die geordnete Vermessung liefert eine belastbare Beobachtung." },
+          { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Die Expedition sichert eine detaillierte Feldbeobachtung." }
+        ]
+      }
+    },
+    {
+      "id": "outcome-map-phenomenon",
+      "appliesTo": { "archetypeId": "natural-phenomenon", "actionId": "action-map-surroundings" },
+      "tiers": { "Low": [ { "tier": "Success", "weight": 100 } ] },
+      "effectBundles": {
+        "Success": [
+          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "documented", "text": "Die Umgebung des Naturphaenomens wurde kartiert." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "mapped", "text": "Der Ort ist als wieder auffindbarer Bezugspunkt vermerkt." },
+          { "kind": "AddArchiveEntry", "text": "Die Expedition kartierte die Umgebung eines auffaelligen Naturphaenomens." }
         ]
       }
     },
