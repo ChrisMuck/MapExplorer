@@ -30,7 +30,8 @@ internal sealed class WorldRuntimeSnapshotTests
         world.AddSituation(situation);
         world.AddSituation(new WorldSituationState(
             "situation-promise", "situation-request-help-with-crossing", 3, sourceLocationId: location.Id,
-            dueWorldDay: 9, status: WorldSituationStatus.Promised, factionId: "faction-1", resolutionActionTag: ResolveWorldSituationCommand.PromiseReturnActionTag));
+            dueWorldDay: 9, status: WorldSituationStatus.Promised, factionId: "faction-1", resolutionActionTag: ResolveWorldSituationCommand.PromiseReturnActionTag,
+            sourceKind: "faction", deliveryChannel: "direct-contact"));
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
         AssertTrue(world.TryRegisterFinding("finding-seal-fragment", "once-per-world", location.Id), "World registers acquired finding before snapshot");
@@ -70,6 +71,8 @@ internal sealed class WorldRuntimeSnapshotTests
         var restoredPromise = restored.Situations.Single(item => item.Id == "situation-promise");
         AssertEqual(WorldSituationStatus.Promised, restoredPromise.Status, "Open promise survives runtime snapshot roundtrip");
         AssertEqual(ResolveWorldSituationCommand.PromiseReturnActionTag, restoredPromise.ResolutionActionTag, "Promise response tag survives runtime snapshot roundtrip");
+        AssertEqual("faction", restoredPromise.SourceKind, "Situation source kind survives runtime snapshot roundtrip");
+        AssertEqual("direct-contact", restoredPromise.DeliveryChannel, "Situation delivery channel survives runtime snapshot roundtrip");
         AssertEqual(FactionAwarenessLevel.Alert, restored.FactionAwareness[0].Level, "Faction awareness survives runtime snapshot roundtrip");
         AssertTrue(restored.WorldTriggers[0].IsResolved, "Trigger resolution state survives runtime snapshot roundtrip");
         AssertEqual(commandTrace.TraceId, restored.WorldTriggers[0].CausedByTraceId, "Trigger trace parent survives runtime snapshot roundtrip");

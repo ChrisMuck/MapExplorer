@@ -173,6 +173,7 @@ public enum LocationEffectKind
     AddEvidence,
     AddFinding,
     RollFindingTable,
+    EstablishRelatedFactionContact,
     RaiseWorldTrigger,
     ScheduleConsequence
 }

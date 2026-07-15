@@ -11,6 +11,7 @@
     { "id": "location-grave-respected" },
     { "id": "location-boundary-crossed-observed" },
     { "id": "location-boundary-crossed" },
-    { "id": "location-boundary-crossed-hostile" }
+    { "id": "location-boundary-crossed-hostile" },
+    { "id": "contact-help-requested", "consequenceId": "consequence-contact-help-request" }
   ]
 }

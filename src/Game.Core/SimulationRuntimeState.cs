@@ -214,7 +214,9 @@ public sealed class WorldSituationState
         int? dueWorldDay = null,
         WorldSituationStatus status = WorldSituationStatus.Dormant,
         string? factionId = null,
-        string? resolutionActionTag = null)
+        string? resolutionActionTag = null,
+        string? sourceKind = null,
+        string? deliveryChannel = null)
     {
         if (createdWorldDay < 1) throw new ArgumentOutOfRangeException(nameof(createdWorldDay));
         if (dueWorldDay.HasValue && dueWorldDay.Value < createdWorldDay) throw new ArgumentOutOfRangeException(nameof(dueWorldDay));
@@ -227,6 +229,8 @@ public sealed class WorldSituationState
         Status = status;
         FactionId = Normalize(factionId);
         ResolutionActionTag = Normalize(resolutionActionTag);
+        SourceKind = Normalize(sourceKind);
+        DeliveryChannel = Normalize(deliveryChannel);
     }
 
     public string Id { get; }
@@ -240,6 +244,8 @@ public sealed class WorldSituationState
     public string? FactionId { get; }
     /// <summary>Recorded player response tag; it can suppress later authored process effects.</summary>
     public string? ResolutionActionTag { get; private set; }
+    public string? SourceKind { get; }
+    public string? DeliveryChannel { get; }
 
     public void Activate() { if (Status == WorldSituationStatus.Dormant) Status = WorldSituationStatus.Active; }
     public void Resolve() { if (Status == WorldSituationStatus.Active || Status == WorldSituationStatus.Dormant || Status == WorldSituationStatus.Promised) Status = WorldSituationStatus.Resolved; }

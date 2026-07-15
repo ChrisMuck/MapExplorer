@@ -367,11 +367,14 @@
       "effectBundles": {
         "Success": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contacted", "text": "Ein erster Austausch kommt zustande." },
-          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert eine erste Kontaktbeobachtung." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Die Expedition sichert eine erste Kontaktbeobachtung." },
+          { "kind": "EstablishRelatedFactionContact", "text": "Der Kontakt zu der eindeutig mit dem Ort verbundenen Gruppe ist hergestellt." },
+          { "kind": "RaiseWorldTrigger", "referenceId": "contact-help-requested", "text": "Aus dem Kontakt kann eine konkrete Bitte entstehen." }
         ],
         "PartialResult": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contacted", "text": "Es bleibt bei einem vorsichtigen, unvollstaendigen Austausch." },
-          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition sichert eine unsichere Kontaktbeobachtung." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 1, "text": "Die Expedition sichert eine unsichere Kontaktbeobachtung." },
+          { "kind": "EstablishRelatedFactionContact", "text": "Trotz des vorsichtigen Austauschs besteht nun ein erster Kontakt." }
         ]
       }
     },

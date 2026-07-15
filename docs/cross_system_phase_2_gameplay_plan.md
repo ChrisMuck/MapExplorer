@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.3 complete; Block 2.4 next**
+Status: **In progress — Blocks 2.0–2.4 complete; Block 2.5 next**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -231,7 +231,7 @@ condition survives save/load without exposing the current objective condition.
 
 ### Block 2.4 — Follow-Up World Processes and Fair Responses
 
-**Status:** In progress. The sealed-containment reference path now proves the complete generic
+**Status:** Complete. The sealed-containment reference path proves the complete generic
 chain from opening through delayed earned evidence and an active warning situation to an authored
 containment response. The response persists and suppresses the later escalation trigger without
 erasing the later evidence or historical trace. The route-obstacle reference path now likewise
@@ -247,7 +247,13 @@ deadline and records both causal trace and player-facing notice. `promise-return
 persistent `Promised` state rather than resolving the request; it remains fulfillable until the
 deadline. A fulfilled promise resolves normally, while an expired promise applies only its authored
 trust delta and memory ID. World runtime snapshots preserve the open promise and response tag.
-Faction/contact delivery of the initial request remains the next missing reference path.
+The contact-site reference path establishes contact only with one concrete generated related
+faction, then schedules a request through the ordinary trigger/process contract. The runtime
+situation records `SourceKind=faction` and `DeliveryChannel=direct-contact`; a generated relation
+without established local contact cannot deliver the request. Source and delivery survive the
+World runtime snapshot. Together the containment, route, investigation and contact proofs cover
+earned warnings, mitigation, coordination, respectful non-escalation, unanswered expiry and kept
+or broken promises without a variant or location-specific simulation branch.
 
 1. Connect relevant action chains to existing generic triggers, consequence branches, observation
    channels, faction reactions and situations.

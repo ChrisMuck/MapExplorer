@@ -262,6 +262,8 @@ public sealed class WorldSituationRuntimeSnapshot
     public WorldSituationStatus Status { get; set; }
     public string? FactionId { get; set; }
     public string? ResolutionActionTag { get; set; }
+    public string? SourceKind { get; set; }
+    public string? DeliveryChannel { get; set; }
 
     public static WorldSituationRuntimeSnapshot FromState(WorldSituationState state) => new()
     {
@@ -273,10 +275,12 @@ public sealed class WorldSituationRuntimeSnapshot
         DueWorldDay = state.DueWorldDay,
         Status = state.Status,
         FactionId = state.FactionId,
-        ResolutionActionTag = state.ResolutionActionTag
+        ResolutionActionTag = state.ResolutionActionTag,
+        SourceKind = state.SourceKind,
+        DeliveryChannel = state.DeliveryChannel
     };
 
-    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status, FactionId, ResolutionActionTag);
+    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status, FactionId, ResolutionActionTag, SourceKind, DeliveryChannel);
 }
 
 public sealed class WorldConnectionRuntimeSnapshot

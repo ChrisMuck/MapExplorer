@@ -92,6 +92,18 @@
           }
         }
       ]
+    },
+    {
+      "id": "consequence-contact-help-request",
+      "stages": [
+        {
+          "id": "request-delivered",
+          "delayDays": 1,
+          "effects": [
+            { "id": "deliver-help-request", "kind": "createSituation", "referenceId": "situation-request-help-with-crossing", "dueDays": 4 }
+          ]
+        }
+      ]
     }
   ]
 }

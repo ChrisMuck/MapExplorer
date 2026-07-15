@@ -16,8 +16,49 @@ internal sealed class CrossSystemIntegrationProofTests
     {
         RouteObstacleFlowConnectsInspectionScoutingProjectAndWorldReaction();
         InvestigationSiteDisturbanceOffersAResponseWithoutPunishingRespect();
+        ContactSiteDeliversFactionRequestOnlyThroughEstablishedLocalContact();
         SealedContainmentFlowConnectsInspectionScoutingOpeningAndDelayedConsequences();
         SealedModifierCanReuseTheOpeningFlowOnAnotherCompatibleArchetype();
+    }
+
+    private static void ContactSiteDeliversFactionRequestOnlyThroughEstablishedLocalContact()
+    {
+        var coord = new HexCoord(1, 2);
+        var contactSite = new SpecialLocationState(
+            "location-contact-proof", LocationKind.Settlement, coord, "Prepared Meeting Place",
+            LocationAnchor.Point(coord), "contact-site", "first-contact", interactionStateId: "unapproached",
+            operationalStateId: "available", presenceStateId: "present",
+            factionRelations: new[] { new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Guarded) });
+        var (app, game) = CreateGame(contactSite, coord,
+            new FactionState("faction-1", "Unknown Locals", contactStatus: FactionContactStatus.Unknown, reactionProfileId: "welcoming"));
+
+        AssertTrue(app.ResolveLocationAction(game, contactSite.Id, "action-approach-cautiously", LocationOutcomeTier.Success).Success,
+            "Contact archetype approaches through its authored action");
+        AssertTrue(app.ResolveLocationAction(game, contactSite.Id, "action-communicate", LocationOutcomeTier.Success).Success,
+            "Successful communication uses the shared contact outcome");
+        AssertEqual(FactionContactStatus.Contacted, game.FindFaction("faction-1")!.ContactStatus,
+            "Generic effect establishes contact with the one generated related faction");
+        app.EndDay(game);
+
+        var request = game.World.Situations.Single(item => item.DefinitionId == "situation-request-help-with-crossing");
+        AssertEqual("faction", request.SourceKind, "Delivered request records its plausible runtime source kind");
+        AssertEqual("direct-contact", request.DeliveryChannel, "Delivered request records the earned local contact channel");
+        AssertEqual("faction-1", request.FactionId, "Request keeps the concrete generated faction only in runtime state");
+        var authoring = app.DataCatalog?.Authoring ?? throw new InvalidOperationException("Authored game data was not loaded.");
+        AssertTrue(new ResolveWorldSituationCommand(authoring).Execute(game, request.Id, "assist"),
+            "Delivered request accepts an authored response through the generic command");
+
+        var silentSite = new SpecialLocationState(
+            "location-contact-silent-proof", LocationKind.Settlement, coord, "Distant Signs",
+            LocationAnchor.Point(coord), "contact-site", "first-contact", interactionStateId: "unapproached",
+            operationalStateId: "available", presenceStateId: "unknown",
+            factionRelations: new[] { new LocationFactionRelationState("faction-2", LocationFactionRelationKind.Watched) });
+        var (silentApp, silentGame) = CreateGame(silentSite, coord,
+            new FactionState("faction-2", "Unknown Watchers", contactStatus: FactionContactStatus.Unknown, reactionProfileId: "neutral-cautious"));
+        silentGame.World.QueueWorldTrigger(new WorldTriggerState("trigger-undeliverable", "contact-help-requested", 1, sourceLocationId: silentSite.Id, sourceCoord: coord));
+        silentApp.EndDay(silentGame);
+        AssertTrue(!silentGame.World.Situations.Any(item => item.DefinitionId == "situation-request-help-with-crossing"),
+            "Generated relation alone cannot deliver a faction request without established contact");
     }
 
     private static void InvestigationSiteDisturbanceOffersAResponseWithoutPunishingRespect()

@@ -455,6 +455,15 @@ public sealed class ResolveLocationActionCommand
                 if (findingAcquisitionService == null) throw new InvalidOperationException("RollFindingTable effect requires authored finding content.");
                 findingAcquisitionService.RollTable(game, location, effect.ReferenceId);
                 return false;
+            case LocationEffectKind.EstablishRelatedFactionContact:
+                var relatedFactionIds = location.FactionRelations.Select(relation => relation.FactionId)
+                    .Distinct(StringComparer.Ordinal).ToList();
+                if (relatedFactionIds.Count != 1) return false;
+                var relatedFaction = game.FindFaction(relatedFactionIds[0]);
+                if (relatedFaction == null) return false;
+                if (relatedFaction.ContactStatus == FactionContactStatus.Unknown || relatedFaction.ContactStatus == FactionContactStatus.Rumored)
+                    relatedFaction.SetContactStatus(FactionContactStatus.Contacted);
+                return false;
             case LocationEffectKind.RaiseWorldTrigger:
                 var triggerTrace = game.World.RecordTrace(
                     SimulationTraceKind.WorldTrigger,
