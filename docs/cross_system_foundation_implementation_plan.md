@@ -411,6 +411,8 @@ App test suite.
 
 ### Block 10 — Batch Simulation, Balance Signals and Release Gate
 
+**Status:** Implementation complete; owner review and Unity playtest release decision pending.
+
 **Purpose:** discover rare generated failures and make the first Slice suitable for human playtests.
 
 **Work**
@@ -428,6 +430,18 @@ App test suite.
   end-to-end proof scenarios.
 - No player-facing path reveals hidden faction identity, claim truth, exact remote targets or
   resolved consequence branches without earned evidence.
+
+**Implemented contract:** `SimulationBatchRunner` runs deterministic generated worlds over a seed
+range and the explicit proof-scenario suite through the same `SimulationSession` and scenario
+executor as Unity and the WPF inspector. It reports generated locations and soft connections,
+open processes/situations, player-visible available/locked options in scenarios, faction
+observation/reaction traces and reproducible seed/scenario issues. The headless runner exposes this
+through `--batch <first-seed> <count> [game-data-root] [report.json]` and writes an optional JSON
+report suitable for CI or handoff. Content is revalidated before a batch, serious consequence
+stages are audited for earlier answerable warnings, and runtime checks flag missing connections,
+excess process load, unanswerable situations, no-op observations and scenario failures. The
+remaining owner review determines whether representative metrics are acceptable and when Unity
+playtests begin; neither decision is automated by the batch tool.
 
 ## 5. Explicitly Deferred
 
