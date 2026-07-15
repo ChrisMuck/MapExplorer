@@ -1,0 +1,25 @@
+{
+  "documentType": "finding-tables",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    { "id": "finding-table-burial-investigation", "rolls": 1, "repeatPolicy": "once-per-location", "entries": [
+      { "findingId": "finding-grave-inscription-rubbing", "weight": 80 },
+      { "findingId": null, "weight": 20 }
+    ] },
+    { "id": "finding-table-sealed-interior", "rolls": 1, "repeatPolicy": "once-per-state", "entries": [
+      { "findingId": "finding-seal-fragment", "weight": 85 },
+      { "findingId": null, "weight": 15 }
+    ] },
+    { "id": "finding-table-hazard-site", "rolls": 1, "repeatPolicy": "once-per-state", "entries": [
+      { "findingId": "finding-marsh-water-sample", "weight": 40 },
+      { "findingId": "finding-marsh-sediment-sample", "weight": 35 },
+      { "findingId": "finding-marsh-spore-sample", "weight": 25, "requiresContextTagsAny": ["contaminated", "spreading"] }
+    ] },
+    { "id": "finding-table-natural-phenomenon", "rolls": 1, "repeatPolicy": "once-per-location", "entries": [
+      { "findingId": "finding-wind-carved-survey", "weight": 45 },
+      { "findingId": "finding-peak-stone-sample", "weight": 30 },
+      { "findingId": "finding-peak-echo-record", "weight": 25 }
+    ] }
+  ]
+}

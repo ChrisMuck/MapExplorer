@@ -137,7 +137,11 @@ internal sealed class ArchetypeFlowResolverTests
         Resolve(hazard, "action-assess-risk");
         Resolve(hazard, "action-contain-hazard");
         AssertEqual(1, hazard.Game.Expedition.FieldFindings.Count, "A location action records its authored finding in the field");
-        AssertEqual("finding-marsh-water-sample", hazard.Game.Expedition.FieldFindings[0].DefinitionId, "Outcome uses its JSON finding reference");
+        AssertTrue(new[] { "finding-marsh-water-sample", "finding-marsh-sediment-sample", "finding-marsh-spore-sample" }
+            .Contains(hazard.Game.Expedition.FieldFindings[0].DefinitionId, StringComparer.Ordinal),
+            "Outcome uses one eligible entry from its authored finding table");
+        AssertEqual("finding-table-hazard-site", hazard.Game.World.FindingTableRolls.Single().TableId,
+            "Outcome persists the generic table roll instead of a location-specific branch");
         AssertEqual(0, hazard.Game.Base.EvaluationQueue.Items.Count, "A field finding is not analyzable before return");
 
         var returned = hazard.App.CompleteExpedition(hazard.Game);

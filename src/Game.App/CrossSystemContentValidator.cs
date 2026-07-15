@@ -132,6 +132,16 @@ public static class CrossSystemContentValidator
             }
         }
 
+        foreach (var table in authoring.FindingTables.Values)
+        {
+            if (table.Rolls != 1) errors.Add($"Finding table '{table.Id}' must use exactly one roll in the Vertical Slice.");
+            if (table.RepeatPolicy != "once-per-location" && table.RepeatPolicy != "once-per-state" && table.RepeatPolicy != "repeatable")
+                errors.Add($"Finding table '{table.Id}' has unsupported repeat policy '{table.RepeatPolicy}'.");
+            if (table.Entries.Count == 0) errors.Add($"Finding table '{table.Id}' has no entries.");
+            foreach (var findingId in table.Entries.Select(entry => entry.FindingId).Where(id => id != null).Cast<string>())
+                if (!authoring.Findings.ContainsKey(findingId)) errors.Add($"Finding table '{table.Id}' references unknown finding '{findingId}'.");
+        }
+
         foreach (var consequence in crossSystem.Consequences.Values)
         {
             foreach (var branch in consequence.Branches)
@@ -243,11 +253,14 @@ public static class CrossSystemContentValidator
         CrossSystemAuthoringBundle authoring,
         ICollection<string> errors)
     {
-        foreach (var effect in effects.Where(effect => effect.Kind == LocationEffectKind.AddFinding))
+        foreach (var effect in effects.Where(effect => effect.Kind == LocationEffectKind.AddFinding || effect.Kind == LocationEffectKind.RollFindingTable))
         {
-            if (effect.ReferenceId != null && authoring.Findings.ContainsKey(effect.ReferenceId)) continue;
-            var findingId = string.IsNullOrWhiteSpace(effect.ReferenceId) ? "<missing>" : effect.ReferenceId;
-            errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' references unknown finding '{findingId}'.");
+            var exists = effect.Kind == LocationEffectKind.AddFinding
+                ? effect.ReferenceId != null && authoring.Findings.ContainsKey(effect.ReferenceId)
+                : effect.ReferenceId != null && authoring.FindingTables.ContainsKey(effect.ReferenceId);
+            if (exists) continue;
+            var id = string.IsNullOrWhiteSpace(effect.ReferenceId) ? "<missing>" : effect.ReferenceId;
+            errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' references unknown {(effect.Kind == LocationEffectKind.AddFinding ? "finding" : "finding table")} '{id}'.");
         }
     }
 

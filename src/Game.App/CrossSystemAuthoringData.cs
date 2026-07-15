@@ -249,6 +249,49 @@ public sealed class FindingDefinition
     public string RepeatPolicy { get; }
 }
 
+public sealed class FindingTableEntryDefinition
+{
+    public FindingTableEntryDefinition(string? findingId, int weight, IEnumerable<string>? interactionStateIds = null,
+        IEnumerable<string>? operationalStateIds = null, IEnumerable<string>? presenceStateIds = null,
+        IEnumerable<string>? requiredContextTagsAny = null)
+    {
+        FindingId = string.IsNullOrWhiteSpace(findingId) ? null : findingId.Trim();
+        Weight = weight > 0 ? weight : throw new ArgumentOutOfRangeException(nameof(weight), "Finding table weight must be positive.");
+        InteractionStateIds = LocationContextActionRuleDefinition.NormalizeOptional(interactionStateIds);
+        OperationalStateIds = LocationContextActionRuleDefinition.NormalizeOptional(operationalStateIds);
+        PresenceStateIds = LocationContextActionRuleDefinition.NormalizeOptional(presenceStateIds);
+        RequiredContextTagsAny = LocationContextActionRuleDefinition.NormalizeOptional(requiredContextTagsAny);
+    }
+
+    public string? FindingId { get; }
+    public int Weight { get; }
+    public IReadOnlyList<string> InteractionStateIds { get; }
+    public IReadOnlyList<string> OperationalStateIds { get; }
+    public IReadOnlyList<string> PresenceStateIds { get; }
+    public IReadOnlyList<string> RequiredContextTagsAny { get; }
+
+    public bool Matches(SpecialLocationState location) =>
+        (InteractionStateIds.Count == 0 || InteractionStateIds.Contains(location.InteractionStateId, StringComparer.Ordinal)) &&
+        (OperationalStateIds.Count == 0 || OperationalStateIds.Contains(location.OperationalStateId, StringComparer.Ordinal)) &&
+        (PresenceStateIds.Count == 0 || PresenceStateIds.Contains(location.PresenceStateId, StringComparer.Ordinal)) &&
+        (RequiredContextTagsAny.Count == 0 || RequiredContextTagsAny.Any(location.ContextTags.Contains));
+}
+
+public sealed class FindingTableDefinition
+{
+    public FindingTableDefinition(string id, int rolls, string repeatPolicy, IEnumerable<FindingTableEntryDefinition> entries)
+    {
+        Id = LocationStateChannelDefinition.RequireText(id, nameof(id));
+        Rolls = rolls;
+        RepeatPolicy = LocationStateChannelDefinition.RequireText(repeatPolicy, nameof(repeatPolicy));
+        Entries = new List<FindingTableEntryDefinition>(entries ?? throw new ArgumentNullException(nameof(entries)));
+    }
+    public string Id { get; }
+    public int Rolls { get; }
+    public string RepeatPolicy { get; }
+    public IReadOnlyList<FindingTableEntryDefinition> Entries { get; }
+}
+
 public sealed class ContextDefinition
 {
     public ContextDefinition(string id, IEnumerable<string> applicableArchetypeIds, IEnumerable<string> contextTags, IEnumerable<string>? discoverableBy, IEnumerable<string>? candidateEvidenceIds, IEnumerable<string>? candidateActionTags, IEnumerable<string>? candidateConsequenceFamilies)
@@ -369,11 +412,13 @@ public sealed class CrossSystemAuthoringBundle
         IEnumerable<ContextDefinition> contexts,
         IEnumerable<SituationDefinition> situations,
         IEnumerable<FactionOfferContentDefinition> factionOffers,
-        IEnumerable<FactionMemoryDefinition> factionMemories)
+        IEnumerable<FactionMemoryDefinition> factionMemories,
+        IEnumerable<FindingTableDefinition>? findingTables = null)
     {
         StateProfiles = ToDictionary(stateProfiles, profile => profile.Id, "state profile");
         ScenarioProfiles = ToDictionary(scenarioProfiles, profile => profile.Id, "scenario profile");
         Findings = ToDictionary(findings, finding => finding.Id, "finding");
+        FindingTables = ToDictionary(findingTables ?? Enumerable.Empty<FindingTableDefinition>(), table => table.Id, "finding table");
         Contexts = ToDictionary(contexts, context => context.Id, "context");
         Situations = ToDictionary(situations, situation => situation.Id, "situation");
         FactionOffers = ToDictionary(factionOffers, offer => offer.Id, "faction offer");
@@ -383,6 +428,7 @@ public sealed class CrossSystemAuthoringBundle
     public IReadOnlyDictionary<string, LocationStateProfileDefinition> StateProfiles { get; }
     public IReadOnlyDictionary<string, LocationScenarioProfileDefinition> ScenarioProfiles { get; }
     public IReadOnlyDictionary<string, FindingDefinition> Findings { get; }
+    public IReadOnlyDictionary<string, FindingTableDefinition> FindingTables { get; }
     public IReadOnlyDictionary<string, ContextDefinition> Contexts { get; }
     public IReadOnlyDictionary<string, SituationDefinition> Situations { get; }
     public IReadOnlyDictionary<string, FactionOfferContentDefinition> FactionOffers { get; }
@@ -410,6 +456,7 @@ public static class CrossSystemAuthoringDataLoader
         var stateProfiles = new List<LocationStateProfileDefinition>();
         var scenarioProfiles = new List<LocationScenarioProfileDefinition>();
         var findings = new List<FindingDefinition>();
+        var findingTables = new List<FindingTableDefinition>();
         var contexts = new List<ContextDefinition>();
         var situations = new List<SituationDefinition>();
         var factionOffers = new List<FactionOfferContentDefinition>();
@@ -431,6 +478,7 @@ public static class CrossSystemAuthoringDataLoader
                 case "location-state-profiles": stateProfiles.AddRange(items.OfType<JObject>().Select(ParseStateProfile)); break;
                 case "location-scenario-profiles": scenarioProfiles.AddRange(items.OfType<JObject>().Select(ParseScenarioProfile)); break;
                 case "findings": findings.AddRange(items.OfType<JObject>().Select(ParseFinding)); break;
+                case "finding-tables": findingTables.AddRange(items.OfType<JObject>().Select(ParseFindingTable)); break;
                 case "context-definitions": contexts.AddRange(items.OfType<JObject>().Select(ParseContext)); break;
                 case "situation-definitions": situations.AddRange(items.OfType<JObject>().Select(ParseSituation)); break;
                 case "faction-offers": factionOffers.AddRange(items.OfType<JObject>().Select(ParseFactionOffer)); break;
@@ -439,7 +487,7 @@ public static class CrossSystemAuthoringDataLoader
             }
         }
 
-        return new CrossSystemAuthoringBundle(stateProfiles, scenarioProfiles, findings, contexts, situations, factionOffers, factionMemories);
+        return new CrossSystemAuthoringBundle(stateProfiles, scenarioProfiles, findings, contexts, situations, factionOffers, factionMemories, findingTables);
     }
 
     private static LocationStateProfileDefinition ParseStateProfile(JObject item)
@@ -481,6 +529,12 @@ public static class CrossSystemAuthoringDataLoader
             new FindingAnalysisDefinition(Int(duration, "min"), Int(duration, "max"), Int(knowledge, "min"), Int(knowledge, "max"), Text(analysis, "archiveKind"), Text(analysis, "explanation")),
             Strings(item, "sourceTags"), (string?)item["repeatPolicy"]);
     }
+
+    private static FindingTableDefinition ParseFindingTable(JObject item) => new(
+        Text(item, "id"), Int(item, "rolls"), Text(item, "repeatPolicy"),
+        (item["entries"] as JArray ?? new JArray()).OfType<JObject>().Select(entry => new FindingTableEntryDefinition(
+            (string?)entry["findingId"], Int(entry, "weight"), Strings(entry, "whenInteractionStatesAny"),
+            Strings(entry, "whenOperationalStatesAny"), Strings(entry, "whenPresenceStatesAny"), Strings(entry, "requiresContextTagsAny"))));
 
     private static ContextDefinition ParseContext(JObject item) => new(Text(item, "id"), Strings(item, "applicableArchetypeIds"), Strings(item, "contextTags"), Strings(item, "discoverableBy"), Strings(item, "candidateEvidenceIds"), Strings(item, "candidateActionTags"), Strings(item, "candidateConsequenceFamilies"));
 

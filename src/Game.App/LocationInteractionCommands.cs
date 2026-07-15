@@ -449,6 +449,11 @@ public sealed class ResolveLocationActionCommand
 
                 findingAcquisitionService.TryAcquire(game, location, effect.ReferenceId);
                 return false;
+            case LocationEffectKind.RollFindingTable:
+                if (effect.ReferenceId == null) throw new InvalidOperationException("RollFindingTable effect needs a table reference.");
+                if (findingAcquisitionService == null) throw new InvalidOperationException("RollFindingTable effect requires authored finding content.");
+                findingAcquisitionService.RollTable(game, location, effect.ReferenceId);
+                return false;
             case LocationEffectKind.RaiseWorldTrigger:
                 var triggerTrace = game.World.RecordTrace(
                     SimulationTraceKind.WorldTrigger,

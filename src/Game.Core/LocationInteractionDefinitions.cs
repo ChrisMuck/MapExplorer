@@ -172,6 +172,7 @@ public enum LocationEffectKind
     ChangeFactionFear,
     AddEvidence,
     AddFinding,
+    RollFindingTable,
     RaiseWorldTrigger,
     ScheduleConsequence
 }
