@@ -39,23 +39,36 @@ public sealed class LocationFindingAcquisitionService
         var offset = new WorldDeterministicRandomSource(game.World).NextInt(candidates.Count);
         for (var index = 0; index < candidates.Count; index++)
         {
-            var definition = authoring.Findings[candidates[(offset + index) % candidates.Count]];
-            if (!game.World.TryRegisterFinding(definition.Id, definition.RepeatPolicy, location.Id)) continue;
-
-            var finding = new FieldFindingState(
-                game.World.RuntimeIds.Allocate("finding"),
-                definition.Id,
-                location.Id,
-                game.World.WorldDay);
-            game.Expedition.AddFieldFinding(finding);
-            game.World.RecordTrace(
-                SimulationTraceKind.KnowledgeObserved,
-                $"Field finding '{definition.Id}' acquired at '{location.Id}'.",
-                subjectIds: new[] { finding.Id, location.Id });
-            return finding;
+            var finding = TryAcquire(game, location, candidates[(offset + index) % candidates.Count]);
+            if (finding != null) return finding;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Records one explicitly authored finding from a location outcome. The definition controls
+    /// repeat policy; this method only creates unsecured field state and never grants points.
+    /// </summary>
+    public FieldFindingState? TryAcquire(GameState game, SpecialLocationState location, string findingDefinitionId)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (location == null) throw new ArgumentNullException(nameof(location));
+        if (string.IsNullOrWhiteSpace(findingDefinitionId)) throw new ArgumentException("Finding definition ID must not be empty.", nameof(findingDefinitionId));
+        if (!authoring.Findings.TryGetValue(findingDefinitionId, out var definition)) return null;
+        if (!game.World.TryRegisterFinding(definition.Id, definition.RepeatPolicy, location.Id)) return null;
+
+        var finding = new FieldFindingState(
+            game.World.RuntimeIds.Allocate("finding"),
+            definition.Id,
+            location.Id,
+            game.World.WorldDay);
+        game.Expedition.AddFieldFinding(finding);
+        game.World.RecordTrace(
+            SimulationTraceKind.KnowledgeObserved,
+            $"Field finding '{definition.Id}' acquired at '{location.Id}'.",
+            subjectIds: new[] { finding.Id, location.Id });
+        return finding;
     }
 }
 }

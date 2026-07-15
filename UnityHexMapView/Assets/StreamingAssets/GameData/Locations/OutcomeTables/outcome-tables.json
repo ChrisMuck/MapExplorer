@@ -145,7 +145,8 @@
       "effectBundles": {
         "Success": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Die Untersuchung liefert eine belastbare Deutung." },
-          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Gesichertes Fundstellenwissen wurde gewonnen." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Gesichertes Fundstellenwissen wurde gewonnen." },
+          { "kind": "AddFinding", "referenceId": "finding-grave-inscription-rubbing", "text": "Eine Abreibung der Grabinschrift wird als Feldfund gesichert." }
         ],
         "PartialResult": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Die Untersuchung liefert Hinweise, aber keine sichere Deutung." },
@@ -328,7 +329,8 @@
       "effectBundles": {
         "Success": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "investigated", "text": "Der zugaengliche Bereich wurde gruendlich untersucht." },
-          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Die Expedition sichert neue Feldkenntnis aus dem Inneren." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 4, "text": "Die Expedition sichert neue Feldkenntnis aus dem Inneren." },
+          { "kind": "AddFinding", "referenceId": "finding-seal-fragment", "text": "Ein Fragment des Verschlusses wird als Feldfund gesichert." }
         ],
         "PartialResult": [
           { "kind": "AddUnsecuredKnowledge", "amount": 2, "text": "Aus dem Inneren bleiben nur unvollstaendige Hinweise zurueck." }
@@ -445,7 +447,8 @@
       "effectBundles": {
         "Success": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contained", "text": "Die unmittelbare Gefahr wurde vorlaeufig eingegrenzt." },
-          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "contained", "text": "Die Gefahrzone ist nicht verschwunden, aber lokal begrenzt." }
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "contained", "text": "Die Gefahrzone ist nicht verschwunden, aber lokal begrenzt." },
+          { "kind": "AddFinding", "referenceId": "finding-marsh-water-sample", "text": "Eine Wasserprobe wird als Feldfund gesichert." }
         ],
         "SuccessWithCost": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "contained", "text": "Die unmittelbare Gefahr wurde vorlaeufig eingegrenzt." },
@@ -486,7 +489,8 @@
       "effectBundles": {
         "Success": [
           { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "surveyed", "text": "Die geordnete Vermessung liefert eine belastbare Beobachtung." },
-          { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Die Expedition sichert eine detaillierte Feldbeobachtung." }
+          { "kind": "AddUnsecuredKnowledge", "amount": 3, "text": "Die Expedition sichert eine detaillierte Feldbeobachtung." },
+          { "kind": "AddFinding", "referenceId": "finding-wind-carved-survey", "text": "Die Vermessungsskizze wird als Feldfund gesichert." }
         ]
       }
     },

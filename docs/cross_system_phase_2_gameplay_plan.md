@@ -184,6 +184,13 @@ continues after its first intervention, and reaches a persistent local or world 
 
 ### Block 2.3 — Findings, Knowledge and Persistent Local Results
 
+**In progress:** `AddFinding` is now a generic location-outcome/project-completion effect. It
+creates only an unsecured field finding, observes the authored repeat policy, transfers through
+the existing return handoff and awards Knowledge Points only after normal base analysis. Initial
+chains use this for investigation, containment, hazard containment and natural-phenomenon survey.
+The distinct player-knowledge model for a once-observed condition becoming old or doubtful remains
+separate follow-up work; no objective location state is exposed merely to satisfy that requirement.
+
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
 2. Keep the existing knowledge loop intact: findings and field knowledge only become Knowledge

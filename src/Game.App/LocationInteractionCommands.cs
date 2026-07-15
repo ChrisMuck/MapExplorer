@@ -106,11 +106,16 @@ public sealed class ResolveLocationActionCommand
 {
     private readonly LocationInteractionService interactionService;
     private readonly LocationScenarioActionResolver? scenarioActionResolver;
+    private readonly LocationFindingAcquisitionService? findingAcquisitionService;
 
-    public ResolveLocationActionCommand(LocationInteractionService interactionService, LocationScenarioActionResolver? scenarioActionResolver = null)
+    public ResolveLocationActionCommand(
+        LocationInteractionService interactionService,
+        LocationScenarioActionResolver? scenarioActionResolver = null,
+        LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
         this.scenarioActionResolver = scenarioActionResolver;
+        this.findingAcquisitionService = findingAcquisitionService;
     }
 
     public LocationActionResult Execute(
@@ -200,7 +205,7 @@ public sealed class ResolveLocationActionCommand
         }
 
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
-        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId);
+        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId, findingAcquisitionService);
         scenarioActionResolver?.ValidateRuntimeState(location);
         QueueGenericActionTriggerIfNeeded(game, location, option.Action, triggerCountBeforeEffects, commandTrace.TraceId);
         var texts = new List<string>(costTexts);
@@ -342,7 +347,8 @@ public sealed class ResolveLocationActionCommand
         LocationRecoveryOutcome? recovery,
         out bool expeditionMoved,
         IReadOnlyList<string>? actionTags = null,
-        string? causedByTraceId = null)
+        string? causedByTraceId = null,
+        LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         var texts = new List<string>();
         expeditionMoved = false;
@@ -354,7 +360,7 @@ public sealed class ResolveLocationActionCommand
                 continue;
             }
 
-            expeditionMoved |= ApplyEffect(game, location, effect, actionTags, causedByTraceId);
+            expeditionMoved |= ApplyEffect(game, location, effect, actionTags, causedByTraceId, findingAcquisitionService);
             texts.Add(effect.Text);
         }
 
@@ -366,7 +372,8 @@ public sealed class ResolveLocationActionCommand
         SpecialLocationState location,
         LocationEffectDefinition effect,
         IReadOnlyList<string>? actionTags,
-        string? causedByTraceId)
+        string? causedByTraceId,
+        LocationFindingAcquisitionService? findingAcquisitionService)
     {
         switch (effect.Kind)
         {
@@ -428,6 +435,19 @@ public sealed class ResolveLocationActionCommand
                     $"Location effect '{effect.Id}' created evidence '{effect.ReferenceId ?? effect.Id}'.",
                     causedByTraceId == null ? null : new[] { causedByTraceId },
                     new[] { location.Id, effect.ReferenceId ?? effect.Id });
+                return false;
+            case LocationEffectKind.AddFinding:
+                if (effect.ReferenceId == null)
+                {
+                    throw new InvalidOperationException("AddFinding effect needs a finding definition reference.");
+                }
+
+                if (findingAcquisitionService == null)
+                {
+                    throw new InvalidOperationException("AddFinding effect requires authored finding content.");
+                }
+
+                findingAcquisitionService.TryAcquire(game, location, effect.ReferenceId);
                 return false;
             case LocationEffectKind.RaiseWorldTrigger:
                 var triggerTrace = game.World.RecordTrace(
@@ -548,10 +568,12 @@ public sealed class ResolveLocationActionCommand
 public sealed class AdvanceLocationProjectCommand
 {
     private readonly LocationInteractionDefinitionSet definitions;
+    private readonly LocationFindingAcquisitionService? findingAcquisitionService;
 
-    public AdvanceLocationProjectCommand(LocationInteractionDefinitionSet definitions)
+    public AdvanceLocationProjectCommand(LocationInteractionDefinitionSet definitions, LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+        this.findingAcquisitionService = findingAcquisitionService;
     }
 
     public LocationActionResult Execute(GameState game, string locationId)
@@ -584,7 +606,7 @@ public sealed class AdvanceLocationProjectCommand
         }
 
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
-        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags);
+        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags, findingAcquisitionService: findingAcquisitionService);
         ResolveLocationActionCommand.QueueGenericActionTriggerIfNeeded(game, location, action, triggerCountBeforeEffects);
         location.ClearProject();
         return LocationActionResult.Resolved(location, action, null, null, texts, expeditionMoved);

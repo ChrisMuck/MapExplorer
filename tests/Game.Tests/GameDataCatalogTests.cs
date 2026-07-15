@@ -25,7 +25,7 @@ internal sealed class GameDataCatalogTests
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-report-templates"), "Scouting reports are in the shared catalog");
         AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Seven initial archetype scenario profiles load from the catalog");
-        AssertEqual(4, catalog.Authoring.Findings.Count, "Findings are separate from material-resource content");
+        AssertEqual(6, catalog.Authoring.Findings.Count, "Findings are separate from material-resource content");
         AssertEqual(4, catalog.Authoring.FactionOffers.Count, "Faction offers load without static faction assignments");
         AssertEqual(3, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");

@@ -30,6 +30,7 @@ public static class CrossSystemContentValidator
                 action.ProjectCompletionEffects,
                 $"Action '{action.Id}' project completion",
                 crossSystem,
+                authoring,
                 errors);
         }
 
@@ -37,7 +38,7 @@ public static class CrossSystemContentValidator
         {
             foreach (var effects in table.EffectBundles)
             {
-                ValidateEffects(effects, $"Outcome table '{table.Id}'", crossSystem, errors);
+                ValidateEffects(effects, $"Outcome table '{table.Id}'", crossSystem, authoring, errors);
             }
         }
 
@@ -98,7 +99,7 @@ public static class CrossSystemContentValidator
 
                 if (stateProfile != null)
                 {
-                    ValidateActionStateEffects(scenario, stateProfile, action, locations.Definitions, errors);
+                    ValidateActionStateEffects(scenario, stateProfile, action, locations.Definitions, authoring, errors);
                 }
             }
             foreach (var modifierId in scenario.InitialModifierPoolIds)
@@ -220,15 +221,33 @@ public static class CrossSystemContentValidator
         LocationStateProfileDefinition stateProfile,
         LocationActionDefinition action,
         LocationInteractionDefinitionSet definitions,
+        CrossSystemAuthoringBundle authoring,
         ICollection<string> errors)
     {
         ValidateStateEffects(scenario, stateProfile, action.Id, action.ProjectCompletionEffects, errors);
+        ValidateFindingEffects(scenario, action.Id, action.ProjectCompletionEffects, authoring, errors);
         var table = definitions.FindOutcomeTable(action.OutcomeTableId);
         if (table == null) return;
 
         foreach (var bundle in table.EffectBundles)
         {
             ValidateStateEffects(scenario, stateProfile, action.Id, bundle, errors);
+            ValidateFindingEffects(scenario, action.Id, bundle, authoring, errors);
+        }
+    }
+
+    private static void ValidateFindingEffects(
+        LocationScenarioProfileDefinition scenario,
+        string actionId,
+        IEnumerable<LocationEffectDefinition> effects,
+        CrossSystemAuthoringBundle authoring,
+        ICollection<string> errors)
+    {
+        foreach (var effect in effects.Where(effect => effect.Kind == LocationEffectKind.AddFinding))
+        {
+            if (effect.ReferenceId != null && authoring.Findings.ContainsKey(effect.ReferenceId)) continue;
+            var findingId = string.IsNullOrWhiteSpace(effect.ReferenceId) ? "<missing>" : effect.ReferenceId;
+            errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' references unknown finding '{findingId}'.");
         }
     }
 
@@ -265,6 +284,7 @@ public static class CrossSystemContentValidator
         IEnumerable<LocationEffectDefinition> effects,
         string source,
         CrossSystemDataBundle crossSystem,
+        CrossSystemAuthoringBundle? authoring,
         ICollection<string> errors)
     {
         foreach (var effect in effects)

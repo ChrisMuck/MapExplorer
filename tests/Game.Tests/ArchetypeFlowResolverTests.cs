@@ -15,6 +15,7 @@ internal sealed class ArchetypeFlowResolverTests
         RegistrySelectsAFlowByArchetypeRatherThanVariantOrLocationKind();
         AllSevenAuthoredArchetypesExposeTheirFollowUpChain();
         AllSevenAuthoredArchetypesResolveTheirFirstPlayableChain();
+        ActionOutcomeFindingStaysUnsecuredUntilReturnAndAnalysis();
         InvalidStateRuleIsRejectedByCrossSystemValidation();
         ScenarioWithoutRegisteredArchetypeFlowIsRejected();
     }
@@ -126,6 +127,30 @@ internal sealed class ArchetypeFlowResolverTests
         Resolve(phenomenon, "action-approach");
         Resolve(phenomenon, "action-survey");
         AssertEqual("surveyed", phenomenon.Location.InteractionStateId, "Natural Phenomenon survey persists its finding state");
+    }
+
+    private static void ActionOutcomeFindingStaysUnsecuredUntilReturnAndAnalysis()
+    {
+        var catalog = GameDataCatalog.LoadFromDirectory(GameDataRoot()) ?? throw new InvalidOperationException("Game data was not loaded.");
+        var hazard = CreatePlayableGame(catalog, "hazard-site", "restless-marsh", "untouched", "active", "unknown");
+
+        Resolve(hazard, "action-assess-risk");
+        Resolve(hazard, "action-contain-hazard");
+        AssertEqual(1, hazard.Game.Expedition.FieldFindings.Count, "A location action records its authored finding in the field");
+        AssertEqual("finding-marsh-water-sample", hazard.Game.Expedition.FieldFindings[0].DefinitionId, "Outcome uses its JSON finding reference");
+        AssertEqual(0, hazard.Game.Base.EvaluationQueue.Items.Count, "A field finding is not analyzable before return");
+
+        var returned = hazard.App.CompleteExpedition(hazard.Game);
+        AssertTrue(returned.Success, "The active expedition returns the action-acquired finding at base");
+        AssertEqual("contained", hazard.Location.OperationalStateId, "The physical containment result persists after expedition return");
+        AssertEqual(0, hazard.Game.Expedition.FieldFindings.Count, "Returned finding leaves the expedition inventory");
+        var queued = hazard.Game.Base.EvaluationQueue.Items.Single(item => item.Id.StartsWith("finding-", StringComparison.Ordinal));
+        var knowledgeBeforeAnalysis = hazard.Game.Base.KnowledgePoints;
+
+        hazard.App.AdvanceBaseTime(hazard.Game, queued.RequiredDays);
+        var analysed = hazard.App.EvaluateKnowledgeItem(hazard.Game, queued.Id);
+        AssertTrue(analysed.Success, "Returned action finding can be analysed after its authored base time");
+        AssertEqual(knowledgeBeforeAnalysis + queued.KnowledgeReward, hazard.Game.Base.KnowledgePoints, "Only analysis awards the finding's Knowledge Points");
     }
 
     private static (GameApplication App, GameState Game, SpecialLocationState Location) CreatePlayableGame(

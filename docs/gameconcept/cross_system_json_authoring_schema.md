@@ -284,6 +284,21 @@ journal wording and visual asset IDs. It does not own actions, outcome rules, cl
 `findings.json` defines physical or documented material that becomes an analysis item only after a
 return to base. A finding is not a trade good or material resource.
 
+An action outcome or project-completion effect may acquire one explicit authored finding:
+
+```json
+{
+  "kind": "AddFinding",
+  "referenceId": "finding-wind-carved-survey",
+  "text": "Die Vermessungsskizze wird als Feldfund gesichert."
+}
+```
+
+`referenceId` must name an item in `findings.json`. The shared effect pipeline creates an
+unsecured `FieldFindingState`, applies the finding's repeat policy for that concrete location and
+adds no Knowledge Points. Only the normal expedition return and base analysis can turn it into an
+archive insight and Knowledge Points.
+
 ```json
 {
   "id": "finding-unknown-river-metal",
