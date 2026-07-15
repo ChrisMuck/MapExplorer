@@ -4,21 +4,12 @@
   "contentVersion": 1,
   "items": [
     {
-      "id": "trace-site",
-      "label": "Trace Site",
-      "allowedAnchorKinds": ["Point", "Area"],
-      "defaultActionIds": [
-        "action-observe", "action-inspect", "action-search", "action-investigate",
-        "action-document", "action-collect", "action-compare-archive", "action-mark", "action-leave"
-      ]
-    },
-    {
       "id": "investigation-site",
       "label": "Investigation Site",
       "allowedAnchorKinds": ["Point", "Area"],
       "defaultActionIds": [
-        "action-inspect", "action-document", "action-investigate", "action-interpret",
-        "action-search", "action-mark", "action-leave"
+        "action-observe", "action-inspect", "action-search", "action-investigate",
+        "action-document", "action-collect", "action-compare-archive", "action-mark", "action-leave"
       ]
     },
     {
@@ -57,17 +48,8 @@
       ]
     },
     {
-      "id": "resource-site",
-      "label": "Resource Site",
-      "allowedAnchorKinds": ["Point", "Area"],
-      "defaultActionIds": [
-        "action-observe", "action-assess", "action-harvest-carefully",
-        "action-harvest-fully", "action-mark", "action-leave"
-      ]
-    },
-    {
-      "id": "hazard-zone",
-      "label": "Hazard Zone",
+      "id": "hazard-site",
+      "label": "Hazard Site",
       "allowedAnchorKinds": ["Area", "Point"],
       "defaultActionIds": [
         "action-observe", "action-assess-risk", "action-avoid",
@@ -75,21 +57,12 @@
       ]
     },
     {
-      "id": "landmark-site",
-      "label": "Landmark Site",
+      "id": "natural-phenomenon",
+      "label": "Natural Phenomenon",
       "allowedAnchorKinds": ["Point", "Area"],
       "defaultActionIds": [
         "action-observe-from-distance", "action-approach", "action-survey",
         "action-map-surroundings", "action-document", "action-mark"
-      ]
-    },
-    {
-      "id": "dynamic-situation",
-      "label": "Dynamic Situation",
-      "allowedAnchorKinds": ["Point", "Area"],
-      "defaultActionIds": [
-        "action-observe", "action-approach", "action-assist",
-        "action-negotiate", "action-withdraw", "action-ignore"
       ]
     }
   ]

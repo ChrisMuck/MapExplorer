@@ -10,11 +10,12 @@ internal sealed class ScoutLocationSurroundingsTests
 {
     public void RunAll()
     {
-        ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness();
+        LocalScoutingResolvesImmediatelyConsumesMovementAndCreatesNeutralEvidence();
         ScoutingRequiresAnAvailableScoutAtTheLocation();
         MissionTypeJsonControlsLocalScoutTeamSize();
         JsonEvidenceDefinitionDrivesScoutReportText();
         DirectionalReconReportsNearbyUnknownLocationWithoutTargetingIt();
+        VeteranScoutImprovesLeadQualityWithoutRevealingIdentity();
     }
 
     private static void MissionTypeJsonControlsLocalScoutTeamSize()
@@ -28,6 +29,7 @@ internal sealed class ScoutLocationSurroundingsTests
         }) ?? throw new InvalidOperationException("Scout JSON content was not loaded.");
         var localMission = data.ScoutContent.FindMissionType("location-surroundings");
         AssertEqual(1, localMission!.MaxScouts, "Local surroundings mission limit comes from JSON");
+        AssertEqual(2, localMission.MovementPointCost, "Local surroundings movement cost comes from JSON");
         AssertTrue(localMission.Allows(ScoutMissionFocus.FactionSigns), "Local surroundings permits faction-sign focus from JSON");
         AssertFalse(localMission.Allows(ScoutMissionFocus.Ruins), "Local surroundings excludes unrelated focus from JSON");
 
@@ -38,17 +40,21 @@ internal sealed class ScoutLocationSurroundingsTests
         AssertFalse(result.Success, "Local surroundings mission rejects a two-scout team by JSON limit");
     }
 
-    private static void ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness()
+    private static void LocalScoutingResolvesImmediatelyConsumesMovementAndCreatesNeutralEvidence()
     {
         var game = CreateGame(new HexCoord(1, 1));
         var app = new GameApplication();
 
-        var sent = app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
-        var day = new EndDayCommand(suppliesPerDay: 0).Execute(game);
+        var result = app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
 
-        AssertTrue(sent.Success, "Local surroundings scout mission is sent");
-        AssertEqual("location-1", sent.Mission!.TargetLocationId, "Mission retains its target location");
-        AssertTrue(day.Success, "End day resolves local scout mission");
+        AssertTrue(result.Success, "Local surroundings scouting resolves at the location");
+        AssertTrue(result.Report != null, "Local surroundings scouting returns its report immediately");
+        AssertEqual(2, result.MovementPointCost, "Local surroundings spends the JSON movement cost");
+        AssertEqual(2, game.Expedition.MovementPoints, "Local surroundings spends movement without ending the day");
+        AssertEqual(1, game.World.WorldDay, "Local surroundings does not advance world time");
+        AssertEqual(0, game.Expedition.ScoutMissions.Count, "Local surroundings does not create a travelling scout mission");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout-1")!.Status, "Local surroundings keeps the selected scout with the expedition");
+        AssertTrue(game.Knowledge.ScoutReports[0].Leads.All(lead => lead.Scope == ScoutLeadScope.Local), "Local scouting reports only local leads");
         AssertEqual(1, game.Knowledge.Evidence.Count, "Scouting creates one evidence item");
         AssertEqual("evidence-location-surroundings-signs", game.Knowledge.Evidence[0].DefinitionId, "Evidence reports signs without naming a faction");
         AssertTrue(!game.Knowledge.Evidence[0].PlayerText.Contains("wardens", StringComparison.OrdinalIgnoreCase), "Evidence does not reveal objective faction identity");
@@ -78,7 +84,6 @@ internal sealed class ScoutLocationSurroundingsTests
         var app = new GameApplication(null, data);
 
         app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
-        app.EndDay(game);
 
         AssertTrue(data != null, "World evidence JSON is loaded");
         AssertTrue(data!.Evidence.Find("evidence-patrol-signs") != null, "Patrol evidence definition is available by stable id");
@@ -103,7 +108,38 @@ internal sealed class ScoutLocationSurroundingsTests
 
         AssertTrue(sent.Success, "Directional reconnaissance can be sent away from a location");
         AssertEqual("directional-recon", sent.Mission!.MissionTypeId, "Directional reconnaissance has its own mission type");
-        AssertTrue(game.Knowledge.ScoutReports[0].Hints.Any(hint => hint.Contains("auffaellige Struktur", StringComparison.Ordinal)), "Directional reconnaissance reports a nearby unknown location as an unconfirmed sighting");
+        AssertTrue(game.Knowledge.ScoutReports[0].Leads.Any(lead => lead.Kind == ScoutLeadKind.LocationSighting && lead.Scope == ScoutLeadScope.Directional), "Directional reconnaissance reports a nearby unknown location as an approximate sighting");
+    }
+
+    private static void VeteranScoutImprovesLeadQualityWithoutRevealingIdentity()
+    {
+        var beginner = CreateGame(HexCoord.Zero);
+        var veteran = CreateGame(HexCoord.Zero);
+        veteran.SetExpedition(new ExpeditionState(
+            veteran.Expedition.ExpeditionNumber,
+            veteran.Expedition.Position,
+            new[] { new ExpeditionMemberState("scout-1", "Mira", ExpeditionMemberRole.Scout, starLevel: 3) },
+            veteran.Expedition.ExpeditionDay,
+            veteran.Expedition.MovementPoints,
+            veteran.Expedition.MaxMovementPoints,
+            veteran.Expedition.Supplies,
+            veteran.Expedition.Medicine,
+            veteran.Expedition.Morale,
+            veteran.Expedition.Capacity,
+            veteran.Expedition.Status,
+            veteran.Expedition.UnsecuredKnowledge));
+
+        var command = new SendScoutMissionCommand();
+        command.Execute(beginner, new[] { "scout-1" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        command.Execute(veteran, new[] { "scout-1" }, ScoutDirection.East, 1, ScoutMissionFocus.Survey, ScoutMissionBehavior.Cautious);
+        new EndDayCommand(suppliesPerDay: 0).Execute(beginner);
+        new EndDayCommand(suppliesPerDay: 0).Execute(veteran);
+
+        var beginnerLead = beginner.Knowledge.ScoutReports[0].Leads[0];
+        var veteranLead = veteran.Knowledge.ScoutReports[0].Leads[0];
+        AssertTrue(veteranLead.Confidence > beginnerLead.Confidence, "Veteran scout produces a higher-confidence lead");
+        AssertEqual(beginnerLead.Kind, veteranLead.Kind, "Experience improves clarity rather than solving a different world fact");
+        AssertEqual(null, veteranLead.SymbolId, "Veteran lead does not infer an unknown faction or symbol identity");
     }
 
     private static GameState CreateGame(HexCoord expeditionPosition, params string[] evidenceSeedIds)

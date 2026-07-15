@@ -16,6 +16,7 @@
       "minDurationDays": 1,
       "maxDurationDays": 1,
       "maxScouts": 1,
+      "movementPointCost": 2,
       "allowedFocuses": [ "FactionSigns" ]
     }
   ]

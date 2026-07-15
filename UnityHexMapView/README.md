@@ -37,4 +37,11 @@ Unity-Variante der prozeduralen 4X-HexMap-Ansicht zum Vergleich mit der Godot-Ve
 
 Die Szene nutzt keine externen Assets. Alles wird zur Laufzeit bzw. im Editor aus Unity-Primitives, Meshes, Materialien und prozeduralen Texturen erzeugt.
 
+## Shared simulation contract
+
+Gameplay commands are routed through `SimulationSession`, created from the same complete
+`GameDataCatalog` as the headless runner and Core/App tests. Unity owns only map presentation,
+input and panels. Scout reports show qualitative leads (scope, direction, confidence and wording),
+never a report-derived map coordinate or automatic target marker.
+
 Siehe auch `VISUAL_MIGRATION_PLAN.md` und `ASSET_MANIFEST.md`.

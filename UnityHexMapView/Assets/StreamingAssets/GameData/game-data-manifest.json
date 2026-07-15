@@ -1,0 +1,33 @@
+{
+  "documentType": "game-data-manifest",
+  "schemaVersion": 1,
+  "contentVersion": 2,
+  "documents": [
+    "Locations/Actions/actions.json",
+    "Locations/Archetypes/archetypes.json",
+    "Locations/ContentProfiles/content-profiles.json",
+    "Locations/Modifiers/modifiers.json",
+    "Locations/OutcomeTables/outcome-tables.json",
+    "Locations/ScenarioProfiles/scenario-profiles.json",
+    "Locations/StateProfiles/state-profiles.json",
+    "Locations/Variants/variants.json",
+    "Factions/factions.json",
+    "Factions/memory-definitions.json",
+    "Factions/offers.json",
+    "Factions/reaction-rules.json",
+    "Factions/signatures.json",
+    "Factions/territory-entry-rules.json",
+    "Findings/findings.json",
+    "Scouting/focuses.json",
+    "Scouting/mission-types.json",
+    "Scouting/outcome-tables.json",
+    "Scouting/report-templates.json",
+    "World/consequence-definitions.json",
+    "World/context-definitions.json",
+    "World/evidence-definitions.json",
+    "World/world-generation-option-presets.json",
+    "World/world-generation-presets.json",
+    "World/situation-definitions.json",
+    "World/world-trigger-definitions.json"
+  ]
+}

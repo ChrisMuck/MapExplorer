@@ -115,6 +115,21 @@ public enum LocationActionRepeatPolicy
     RepeatableWithCost
 }
 
+/// <summary>How much expedition time an action commits before its outcome is resolved.</summary>
+public enum LocationActionCommitment
+{
+    Immediate,
+    DayOperation,
+    Project
+}
+
+/// <summary>Whether an unmet requirement may be stated directly to the player.</summary>
+public enum LocationRequirementDisclosure
+{
+    Known,
+    HiddenUntilSupported
+}
+
 public enum LocationRequirementKind
 {
     OperationalStateAny,
@@ -275,7 +290,8 @@ public sealed class LocationRequirementDefinition
         IEnumerable<string>? values = null,
         ExpeditionMemberRole? requiredRole = null,
         LocationAnchorKind? requiredAnchorKind = null,
-        string unmetReason = "Requirement is not met.")
+        string unmetReason = "Requirement is not met.",
+        LocationRequirementDisclosure disclosure = LocationRequirementDisclosure.Known)
     {
         Id = RequireText(id, nameof(id));
         Kind = kind;
@@ -283,6 +299,7 @@ public sealed class LocationRequirementDefinition
         RequiredRole = requiredRole;
         RequiredAnchorKind = requiredAnchorKind;
         UnmetReason = RequireText(unmetReason, nameof(unmetReason));
+        Disclosure = disclosure;
     }
 
     public string Id { get; }
@@ -296,6 +313,8 @@ public sealed class LocationRequirementDefinition
     public LocationAnchorKind? RequiredAnchorKind { get; }
 
     public string UnmetReason { get; }
+
+    public LocationRequirementDisclosure Disclosure { get; }
 
     private static string RequireText(string value, string name)
     {
@@ -413,7 +432,8 @@ public sealed class LocationActionDefinition
         string? icon = null,
         string? primaryButtonLabel = null,
         bool socialRisk = false,
-        IEnumerable<string>? actionTags = null)
+        IEnumerable<string>? actionTags = null,
+        LocationActionCommitment commitment = LocationActionCommitment.Immediate)
     {
         Id = RequireText(id, nameof(id));
         Label = RequireText(label, nameof(label));
@@ -434,6 +454,7 @@ public sealed class LocationActionDefinition
             .Select(tag => tag.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        Commitment = startsProject ? LocationActionCommitment.Project : commitment;
 
         if (StartsProject && ProjectDurationDays < 1)
         {
@@ -473,6 +494,8 @@ public sealed class LocationActionDefinition
 
     /// <summary>Neutral semantic tags such as repair, disturb or map, used by world and faction rules.</summary>
     public IReadOnlyList<string> ActionTags { get; }
+
+    public LocationActionCommitment Commitment { get; }
 
     private static string RequireText(string value, string name)
     {

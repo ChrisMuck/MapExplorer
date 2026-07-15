@@ -184,7 +184,8 @@ public sealed class WorldTriggerState
         int raisedWorldDay,
         IEnumerable<string>? actionTags = null,
         string? sourceLocationId = null,
-        HexCoord? sourceCoord = null)
+        HexCoord? sourceCoord = null,
+        string? causedByTraceId = null)
     {
         if (raisedWorldDay < 1)
         {
@@ -196,6 +197,7 @@ public sealed class WorldTriggerState
         RaisedWorldDay = raisedWorldDay;
         SourceLocationId = Normalize(sourceLocationId);
         SourceCoord = sourceCoord;
+        CausedByTraceId = Normalize(causedByTraceId);
         this.actionTags = (actionTags ?? Enumerable.Empty<string>())
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Select(tag => tag.Trim())
@@ -208,6 +210,7 @@ public sealed class WorldTriggerState
     public int RaisedWorldDay { get; }
     public string? SourceLocationId { get; }
     public HexCoord? SourceCoord { get; }
+    public string? CausedByTraceId { get; }
     public IReadOnlyList<string> ActionTags => actionTags;
     public bool IsResolved { get; private set; }
 
@@ -236,9 +239,50 @@ public sealed class WorldTriggerState
 /// A consequence whose concrete branch was resolved at trigger time and whose stages apply later.
 /// The effect IDs are data references; their interpretation belongs to the application-layer scheduler.
 /// </summary>
-public sealed class ScheduledConsequenceState
+public sealed class ScheduledConsequenceStageState
 {
     private readonly List<string> resolvedEffectIds;
+
+    public ScheduledConsequenceStageState(string stageId, int dueWorldDay, IEnumerable<string> resolvedEffectIds)
+    {
+        if (dueWorldDay < 1) throw new ArgumentOutOfRangeException(nameof(dueWorldDay), "Due world day must be at least 1.");
+        StageId = RequireText(stageId, nameof(stageId));
+        DueWorldDay = dueWorldDay;
+        this.resolvedEffectIds = NormalizeEffects(resolvedEffectIds);
+    }
+
+    public string StageId { get; }
+    public int DueWorldDay { get; }
+    public IReadOnlyList<string> ResolvedEffectIds => resolvedEffectIds;
+    public bool IsApplied { get; private set; }
+    public void MarkApplied() => IsApplied = true;
+
+    private static List<string> NormalizeEffects(IEnumerable<string> effectIds)
+    {
+        var result = (effectIds ?? throw new ArgumentNullException(nameof(effectIds)))
+            .Where(effectId => !string.IsNullOrWhiteSpace(effectId))
+            .Select(effectId => effectId.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (result.Count == 0) throw new ArgumentException("A consequence stage needs at least one resolved effect id.", nameof(effectIds));
+        return result;
+    }
+
+    private static string RequireText(string value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value must not be empty.", name);
+        return value.Trim();
+    }
+}
+
+/// <summary>
+/// One fixed, persistent consequence branch. All future stages belong to this one instance so
+/// time advancement never reselects history. The legacy constructor creates one default stage.
+/// </summary>
+public sealed class ScheduledConsequenceState
+{
+    private readonly List<string> affectedContextIds;
+    private readonly List<ScheduledConsequenceStageState> stages;
 
     public ScheduledConsequenceState(
         string id,
@@ -246,52 +290,87 @@ public sealed class ScheduledConsequenceState
         string sourceLocationId,
         int dueWorldDay,
         IEnumerable<string> resolvedEffectIds)
+        : this(
+            id,
+            definitionId,
+            resolvedBranchId: "legacy-default",
+            sourceLocationId,
+            sourceTriggerId: null,
+            affectedContextIds: null,
+            stages: new[] { new ScheduledConsequenceStageState("legacy-stage", dueWorldDay, resolvedEffectIds) })
     {
-        if (dueWorldDay < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(dueWorldDay), dueWorldDay, "Due world day must be at least 1.");
-        }
+    }
 
+    public ScheduledConsequenceState(
+        string id,
+        string definitionId,
+        string resolvedBranchId,
+        string sourceLocationId,
+        string? sourceTriggerId,
+        IEnumerable<string>? affectedContextIds,
+        IEnumerable<ScheduledConsequenceStageState> stages)
+    {
         Id = RequireText(id, nameof(id));
         DefinitionId = RequireText(definitionId, nameof(definitionId));
+        ResolvedBranchId = RequireText(resolvedBranchId, nameof(resolvedBranchId));
         SourceLocationId = RequireText(sourceLocationId, nameof(sourceLocationId));
-        DueWorldDay = dueWorldDay;
-        this.resolvedEffectIds = (resolvedEffectIds ?? throw new ArgumentNullException(nameof(resolvedEffectIds)))
-            .Where(effectId => !string.IsNullOrWhiteSpace(effectId))
-            .Select(effectId => effectId.Trim())
+        SourceTriggerId = Normalize(sourceTriggerId);
+        this.affectedContextIds = (affectedContextIds ?? Enumerable.Empty<string>())
+            .Where(contextId => !string.IsNullOrWhiteSpace(contextId))
+            .Select(contextId => contextId.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
-        if (this.resolvedEffectIds.Count == 0)
-        {
-            throw new ArgumentException("A scheduled consequence needs at least one resolved effect id.", nameof(resolvedEffectIds));
-        }
+        this.stages = (stages ?? throw new ArgumentNullException(nameof(stages))).ToList();
+        if (this.stages.Count == 0) throw new ArgumentException("A scheduled consequence needs at least one stage.", nameof(stages));
+        if (this.stages.Select(stage => stage.StageId).Distinct(StringComparer.Ordinal).Count() != this.stages.Count)
+            throw new ArgumentException("Scheduled consequence stage IDs must be unique.", nameof(stages));
+        if (this.stages.Zip(this.stages.Skip(1), (first, second) => first.DueWorldDay <= second.DueWorldDay).Any(isOrdered => !isOrdered))
+            throw new ArgumentException("Scheduled consequence stages must be in due-day order.", nameof(stages));
     }
 
     public string Id { get; }
     public string DefinitionId { get; }
+    public string ResolvedBranchId { get; }
     public string SourceLocationId { get; }
-    public int DueWorldDay { get; }
-    public IReadOnlyList<string> ResolvedEffectIds => resolvedEffectIds;
-    public bool IsApplied { get; private set; }
+    public string? SourceTriggerId { get; }
+    public IReadOnlyList<string> AffectedContextIds => affectedContextIds;
+    public IReadOnlyList<ScheduledConsequenceStageState> Stages => stages;
+    public int CurrentStageIndex { get; private set; }
+    public int DueWorldDay => CurrentStage?.DueWorldDay ?? stages[stages.Count - 1].DueWorldDay;
+    public IReadOnlyList<string> ResolvedEffectIds => CurrentStage?.ResolvedEffectIds ?? Array.Empty<string>();
+    public ScheduledConsequenceStageState? CurrentStage => CurrentStageIndex < stages.Count ? stages[CurrentStageIndex] : null;
+    public bool IsApplied => IsCompleted;
+    public bool IsCompleted => CurrentStageIndex >= stages.Count;
 
-    public bool IsDue(int worldDay)
+    public bool IsDue(int worldDay) => CurrentStage != null && !CurrentStage.IsApplied && worldDay >= CurrentStage.DueWorldDay;
+
+    public ScheduledConsequenceStageState? MarkCurrentStageApplied()
     {
-        return !IsApplied && worldDay >= DueWorldDay;
+        var stage = CurrentStage;
+        if (stage == null || stage.IsApplied) return null;
+        stage.MarkApplied();
+        CurrentStageIndex++;
+        return stage;
     }
 
+    /// <summary>World-phase-safe application helper; it cannot advance a stage before its due day.</summary>
+    public ScheduledConsequenceStageState? TryApplyDueStage(int worldDay)
+    {
+        return IsDue(worldDay) ? MarkCurrentStageApplied() : null;
+    }
+
+    /// <summary>Compatibility operation for legacy callers: complete every remaining stage.</summary>
     public void MarkApplied()
     {
-        IsApplied = true;
+        while (MarkCurrentStageApplied() != null) { }
     }
 
     private static string RequireText(string value, string name)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("Value must not be empty.", name);
-        }
-
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value must not be empty.", name);
         return value.Trim();
     }
+
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 }

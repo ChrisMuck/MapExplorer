@@ -49,17 +49,8 @@ public sealed class ScoutMissionResolutionService
                 report = CreateReport(game, mission, outcome);
                 game.Knowledge.AddScoutReport(report);
                 AddLocationSurroundingsEvidence(game, mission, report);
-                var reportedNewKnowledge = false;
-                foreach (var coord in report.RelatedCoords)
-                {
-                    if (game.World.Map.Contains(coord))
-                    {
-                        reportedNewKnowledge = reportedNewKnowledge || game.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Unknown;
-                        AddScoutReportNote(game, report, coord);
-                    }
-                }
-
-                if (reportedNewKnowledge && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(report)))
+                AddDirectionalLeadEvidence(game, mission, report);
+                if (report.Leads.Count > 0 && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(mission)))
                 {
                     game.Expedition.AddUnsecuredKnowledge(outcome == ScoutMissionStatus.ReturnedInjured ? 2 : 3);
                 }
@@ -69,6 +60,39 @@ public sealed class ScoutMissionResolutionService
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Resolves reconnaissance around the current location immediately. It deliberately creates no
+    /// travelling mission: local scouting spends today's movement but does not take a scout away
+    /// from the expedition or advance world time.
+    /// </summary>
+    public ScoutReportState ResolveLocalSurroundings(GameState game, string locationId, IReadOnlyList<string> scoutMemberIds)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(locationId)) throw new ArgumentException("Location id must not be empty.", nameof(locationId));
+        if (scoutMemberIds == null || scoutMemberIds.Count == 0) throw new ArgumentException("At least one scout is required.", nameof(scoutMemberIds));
+
+        var mission = new ScoutMissionState(
+            $"scout-local-{game.Knowledge.ScoutReports.Count + 1}",
+            scoutMemberIds,
+            game.Expedition.Position,
+            ScoutDirection.North,
+            durationDays: 1,
+            expectedReturnWorldDay: game.World.WorldDay,
+            ScoutMissionFocus.FactionSigns,
+            ScoutMissionBehavior.Cautious,
+            targetLocationId: locationId,
+            missionTypeId: "location-surroundings");
+        var report = CreateReport(game, mission, ScoutMissionStatus.Returned);
+        game.Knowledge.AddScoutReport(report);
+        AddLocationSurroundingsEvidence(game, mission, report);
+        if (report.Leads.Count > 0 && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(mission)))
+        {
+            game.Expedition.AddUnsecuredKnowledge(3);
+        }
+
+        return report;
     }
 
     private ScoutMissionStatus DetermineOutcome(ScoutMissionState mission, int worldDay)
@@ -131,8 +155,8 @@ public sealed class ScoutMissionResolutionService
 
     private ScoutReportState CreateReport(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome)
     {
-        var relatedCoords = BuildRelatedCoords(game, mission);
-        var reliability = ReliabilityFor(mission, outcome);
+        var sampledCoords = BuildRelatedCoords(game, mission);
+        var reliability = ReliabilityFor(game, mission, outcome);
         var template = scoutContent?.FindReport(mission, outcome);
         var title = template?.Title ?? $"Scout report: {mission.Direction} {mission.Focus}";
         var body = template?.Body ?? (outcome == ScoutMissionStatus.ReturnedInjured
@@ -144,7 +168,8 @@ public sealed class ScoutMissionResolutionService
             template?.Hint ?? HintFor(mission),
             $"Reliability {reliability}/100. Confirm on foot before trusting it fully."
         };
-        AddDirectionalDiscoveryHints(game, mission, relatedCoords, hints);
+        var leads = BuildLeads(game, mission, sampledCoords, reliability);
+        hints.AddRange(leads.Select(lead => lead.Summary));
 
         return new ScoutReportState(
             $"scout-report-{game.Knowledge.ScoutReports.Count + 1}",
@@ -152,27 +177,48 @@ public sealed class ScoutMissionResolutionService
             title,
             body,
             reliability,
-            relatedCoords,
-            hints);
+            Array.Empty<HexCoord>(),
+            hints,
+            leads);
     }
 
-    private static void AddDirectionalDiscoveryHints(GameState game, ScoutMissionState mission, IReadOnlyList<HexCoord> relatedCoords, ICollection<string> hints)
+    private IReadOnlyList<ScoutLeadState> BuildLeads(GameState game, ScoutMissionState mission, IReadOnlyList<HexCoord> sampledCoords, int reliability)
     {
-        if (mission.MissionTypeId != "directional-recon")
+        if (mission.MissionTypeId == "location-surroundings")
         {
-            return;
+            var location = game.World.Locations.FirstOrDefault(item => item.Id == mission.TargetLocationId);
+            if (location == null) return Array.Empty<ScoutLeadState>();
+            var relation = location.FactionRelations.FirstOrDefault();
+            var faction = relation == null ? null : game.FindFaction(relation.FactionId);
+            var symbolId = factionSignatures?.FindForProfile(faction?.SignatureProfileId)?.Id;
+            var summary = relation == null
+                ? "In der unmittelbaren Umgebung finden sich keine eindeutigen Spuren regelmaessiger Kontrolle."
+                : "In der unmittelbaren Umgebung finden sich wiederkehrende Zeichen, Nutzungsspuren oder Beobachtungspunkte.";
+            return new[] { new ScoutLeadState(ScoutLeadKind.LocalContext, ScoutLeadScope.Local, mission.Direction, reliability, summary, symbolId, location.Id) };
         }
 
         foreach (var location in game.World.Locations)
         {
-            if (!location.Anchor.Coords.Any(relatedCoords.Contains) || game.Knowledge.GetTileKnowledge(location.Coord) == KnowledgeLevel.Confirmed)
+            if (!location.Anchor.Coords.Any(sampledCoords.Contains) || game.Knowledge.GetTileKnowledge(location.Coord) == KnowledgeLevel.Confirmed)
             {
                 continue;
             }
 
-            hints.Add($"In Richtung {mission.Direction} wurde bei Feld {location.Coord} eine auffaellige Struktur oder Spur gesehen. Sie ist nicht bestaetigt.");
-            return;
+            return new[]
+            {
+                new ScoutLeadState(
+                    ScoutLeadKind.LocationSighting,
+                    ScoutLeadScope.Directional,
+                    mission.Direction,
+                    reliability,
+                    $"Irgendwo im {DirectionText(mission.Direction)} liegt eine auffaellige Struktur oder Spur. Sie ist nicht bestaetigt.")
+            };
         }
+
+        return new[]
+        {
+            new ScoutLeadState(LeadKindFor(mission.Focus), ScoutLeadScope.Directional, mission.Direction, reliability, HintFor(mission))
+        };
     }
 
     private static IReadOnlyList<HexCoord> BuildRelatedCoords(GameState game, ScoutMissionState mission)
@@ -209,32 +255,23 @@ public sealed class ScoutMissionResolutionService
         coords.Add(coord);
     }
 
-    private static void AddScoutReportNote(GameState game, ScoutReportState report, HexCoord coord)
+    private static string ScoutKnowledgeSourceId(ScoutMissionState mission)
     {
-        var id = $"note-scout-report-{game.PlayerNotes.Notes.Count + 1}";
-        var text = $"{report.Title}: reported scout trace. Not confirmed by the expedition.";
-        game.PlayerNotes.AddNote(new PlayerMapNoteState(id, coord, text));
+        return $"scout-report:{mission.MissionTypeId}:{mission.TargetLocationId ?? "directional"}:{mission.Origin.Q}:{mission.Origin.R}:{mission.Direction}:{mission.DurationDays}:{mission.Focus}";
     }
 
-    private static string ScoutKnowledgeSourceId(ScoutReportState report)
+    private static int ReliabilityFor(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome)
     {
-        var parts = new List<string>();
-        foreach (var coord in report.RelatedCoords)
-        {
-            parts.Add($"{coord.Q}:{coord.R}");
-        }
-
-        return $"scout-report:{string.Join("|", parts)}";
-    }
-
-    private static int ReliabilityFor(ScoutMissionState mission, ScoutMissionStatus outcome)
-    {
+        var starLevel = mission.ScoutMemberIds
+            .Select(id => game.Expedition.FindMember(id)?.StarLevel ?? 0)
+            .DefaultIfEmpty(0)
+            .Average();
+        var reliability = 58 + (int)Math.Round(starLevel * 11) + (mission.Behavior == ScoutMissionBehavior.Cautious ? 8 : 0) - Math.Max(0, mission.DurationDays - 1) * 4;
         if (outcome == ScoutMissionStatus.ReturnedInjured)
         {
-            return 45;
+            reliability -= 20;
         }
-
-        return mission.Behavior == ScoutMissionBehavior.Cautious ? 78 : 62;
+        return Math.Max(25, Math.Min(92, reliability));
     }
 
     private static string HintFor(ScoutMissionState mission)
@@ -252,6 +289,34 @@ public sealed class ScoutMissionResolutionService
             default:
                 return "The scouts sketched terrain and visibility from the route.";
         }
+    }
+
+    private static ScoutLeadKind LeadKindFor(ScoutMissionFocus focus)
+    {
+        return focus switch
+        {
+            ScoutMissionFocus.Route => ScoutLeadKind.RouteHint,
+            ScoutMissionFocus.FactionSigns => ScoutLeadKind.FactionSignature,
+            ScoutMissionFocus.Ruins => ScoutLeadKind.LocationSighting,
+            ScoutMissionFocus.Resources => ScoutLeadKind.EnvironmentalChange,
+            _ => ScoutLeadKind.WitnessTrace
+        };
+    }
+
+    private static string DirectionText(ScoutDirection direction)
+    {
+        return direction switch
+        {
+            ScoutDirection.North => "Norden",
+            ScoutDirection.NorthEast => "Nordosten",
+            ScoutDirection.East => "Osten",
+            ScoutDirection.SouthEast => "Suedosten",
+            ScoutDirection.South => "Sueden",
+            ScoutDirection.SouthWest => "Suedwesten",
+            ScoutDirection.West => "Westen",
+            ScoutDirection.NorthWest => "Nordwesten",
+            _ => "gewählten Sektor"
+        };
     }
 
     private void AddLocationSurroundingsEvidence(GameState game, ScoutMissionState mission, ScoutReportState report)
@@ -297,6 +362,31 @@ public sealed class ScoutMissionResolutionService
         {
             game.World.EscalateFactionAwareness(relation.FactionId, $"location-region:{location.Id}");
         }
+    }
+
+    private void AddDirectionalLeadEvidence(GameState game, ScoutMissionState mission, ScoutReportState report)
+    {
+        if (mission.MissionTypeId != "directional-recon" || report.Leads.Count == 0) return;
+        var lead = report.Leads[0];
+        var definitionId = lead.Kind switch
+        {
+            ScoutLeadKind.LocationSighting => "evidence-directional-location-sighting",
+            ScoutLeadKind.RouteHint => "evidence-directional-route-hint",
+            ScoutLeadKind.FactionSignature => "evidence-directional-sign-trace",
+            ScoutLeadKind.EnvironmentalChange => "evidence-directional-environmental-change",
+            ScoutLeadKind.HazardIndication => "evidence-directional-hazard-trace",
+            _ => "evidence-directional-witness-trace"
+        };
+        var definition = evidenceDefinitions?.Find(definitionId);
+        var text = definition?.ScoutReportText ?? lead.Summary;
+        game.Knowledge.AddEvidence(new EvidenceState(
+            $"evidence-scout-{report.Id}-directional",
+            definitionId,
+            EvidenceSourceKind.ScoutReport,
+            EvidenceKnowledgeState.Reported,
+            text,
+            symbolId: lead.SymbolId,
+            confidence: lead.Confidence));
     }
 }
 }

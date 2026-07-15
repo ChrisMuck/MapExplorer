@@ -37,6 +37,10 @@ var inspectLocationTests = new InspectLocationCommandTests();
 inspectLocationTests.RunAll();
 var locationInteractionTests = new LocationInteractionFrameworkTests();
 locationInteractionTests.RunAll();
+var scenarioProfileInteractionTests = new ScenarioProfileInteractionTests();
+scenarioProfileInteractionTests.RunAll();
+var findingLifecycleTests = new FindingLifecycleTests();
+findingLifecycleTests.RunAll();
 var locationDataJsonTests = new LocationDataJsonTests();
 locationDataJsonTests.RunAll();
 var eventQueueTests = new EventQueueCommandTests();
@@ -45,10 +49,20 @@ var factionTests = new FactionPresenceTests();
 factionTests.RunAll();
 var crossSystemStateTests = new CrossSystemStateTests();
 crossSystemStateTests.RunAll();
+var simulationRuntimeStateTests = new SimulationRuntimeStateTests();
+simulationRuntimeStateTests.RunAll();
+var worldRuntimeSnapshotTests = new WorldRuntimeSnapshotTests();
+worldRuntimeSnapshotTests.RunAll();
 var scoutLocationSurroundingsTests = new ScoutLocationSurroundingsTests();
 scoutLocationSurroundingsTests.RunAll();
 var worldPhaseDataTests = new WorldPhaseDataTests();
 worldPhaseDataTests.RunAll();
+var worldProcessEffectTests = new WorldProcessEffectTests();
+worldProcessEffectTests.RunAll();
+var simulationSessionTests = new SimulationSessionTests();
+simulationSessionTests.RunAll();
+var simulationBatchRunnerTests = new SimulationBatchRunnerTests();
+simulationBatchRunnerTests.RunAll();
 var factionReactionDataTests = new FactionReactionDataTests();
 factionReactionDataTests.RunAll();
 var factionTerritorialPolicyTests = new FactionTerritorialPolicyTests();
@@ -57,6 +71,10 @@ var crossSystemIntegrationProofTests = new CrossSystemIntegrationProofTests();
 crossSystemIntegrationProofTests.RunAll();
 var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
 crossSystemContentValidationTests.RunAll();
+var gameDataCatalogTests = new GameDataCatalogTests();
+gameDataCatalogTests.RunAll();
+var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
+crossSystemAuthoringDataTests.RunAll();
 var worldGenerationPresetTests = new WorldGenerationPresetTests();
 worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
@@ -281,6 +299,8 @@ internal sealed class WorldGenBridgeTests
         TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds();
         GeneratedWorldCanStartAnExpedition();
         GeneratedFactionsReceiveStableHiddenSignatureProfiles();
+        GeneratedWorldSeedsLaterSimulation();
+        GeneratedSliceHasOptionalSoftConnectionsWithoutStaticFactionAssignment();
     }
 
     private static void GeneratedWorldBridgesToCoreWithoutLosingAnchors()
@@ -331,6 +351,12 @@ internal sealed class WorldGenBridgeTests
             "Same generation request keeps hidden signature assignments stable");
     }
 
+    private static void GeneratedWorldSeedsLaterSimulation()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        AssertEqual(Request().Seed, result.World.Random.Seed, "Generated campaign carries its world seed into later simulation");
+    }
+
     private static void TerritorialLocationsCanRemainUnclaimedAndCarryGeneratedEvidenceSeeds()
     {
         var result = new WorldGenBridge().Generate(Request());
@@ -341,6 +367,14 @@ internal sealed class WorldGenBridgeTests
         AssertTrue(territorialLocations.Count > 0, "Generated world has locations inside faction territory");
         AssertTrue(territorialLocations.Any(location => location.FactionRelations.Count == 0), "Territory does not automatically claim every location");
         AssertTrue(result.World.Locations.Any(location => location.EvidenceSeedIds.Count > 0), "Generated locations carry neutral evidence seeds");
+    }
+
+    private static void GeneratedSliceHasOptionalSoftConnectionsWithoutStaticFactionAssignment()
+    {
+        var result = new WorldGenBridge().Generate(Request());
+        AssertTrue(result.World.Connections.Count >= 2, "Generated Slice provides at least two optional soft connections");
+        AssertTrue(result.World.Connections.All(connection => connection.Tags.Contains("optional")), "Generated connections are optional world context, not quest steps");
+        AssertTrue(result.World.Connections.All(connection => !connection.Tags.Any(tag => tag.StartsWith("faction-", StringComparison.Ordinal))), "Generated connections carry no static faction assignment");
     }
 
     private static WorldGenerationRequest Request()
@@ -1179,9 +1213,9 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Returned, result.ScoutResolutions[0].Status, "Cautious scout returned");
         AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Returned scout available");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Scout report stored");
-        AssertTrue(game.Knowledge.ScoutReports[0].RelatedCoords.Count > 1, "Scout report covers a route corridor");
+        AssertTrue(game.Knowledge.ScoutReports[0].Leads.Any(lead => lead.Scope == ScoutLeadScope.Directional), "Scout report carries an approximate directional lead");
         AssertEqual(KnowledgeLevel.Unknown, game.Knowledge.GetTileKnowledge(new HexCoord(2, 0)), "Scout report does not reveal objective map knowledge");
-        AssertTrue(game.PlayerNotes.Notes.Any(note => note.Coord == new HexCoord(2, 0)), "Scout report adds a note to reported fields");
+        AssertEqual(0, game.PlayerNotes.Notes.Count, "Scout report never creates an exact automatic map note");
         AssertEqual(3, game.Expedition.UnsecuredKnowledge, "Returned scout report adds unsecured knowledge");
     }
 
@@ -1680,7 +1714,7 @@ internal sealed class LocationInteractionFrameworkTests
         TutorialBridgeIsImmediateEdgeLocation();
         TutorialBridgeTileIsMovableFromBase();
         TutorialBridgeBlocksForwardRouteUntilBypassOpensIt();
-        BridgeActionsComeFromArchetypeAndModifiers();
+        BridgeActionsComeFromScenarioProfileAndModifiers();
         LocationActionCostsLockWhenMovementIsMissing();
         BridgeCrossingActionMovesExpeditionAcrossEdge();
         RopeCrossingChangesStateAndRiskWithoutVariantSwitch();
@@ -1736,7 +1770,7 @@ internal sealed class LocationInteractionFrameworkTests
         AssertTrue(opened.Success, "Opened bypass allows forward movement");
     }
 
-    private static void BridgeActionsComeFromArchetypeAndModifiers()
+    private static void BridgeActionsComeFromScenarioProfileAndModifiers()
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
@@ -1753,8 +1787,10 @@ internal sealed class LocationInteractionFrameworkTests
             throw new InvalidOperationException("Bridge interaction model missing.");
         }
 
-        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Route obstacle action is present");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == "action-assess-crossing"), "Scenario profile provides the basic route assessment action");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionFindBypass), "Scenario profile provides its initial additional action");
         AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionRebuildBridge), "Repairable modifier adds rebuild action");
+        AssertTrue(interaction.Options.Any(option => option.Action.Id == LocationInteractionContent.ActionAttemptCrossing), "Scenario profile exposes the obvious but risky crossing attempt");
         AssertTrue(interaction.Options.All(option => option.Action.Id != LocationInteractionContent.ActionDisturb), "Investigation-site action is absent");
     }
 
@@ -1813,6 +1849,13 @@ internal sealed class LocationInteractionFrameworkTests
         var crossingBefore = before?.FindOption(LocationInteractionContent.ActionAttemptCrossing);
         AssertTrue(crossingBefore != null, "Crossing action exists before rope crossing");
         AssertEqual(LocationRiskBand.High, crossingBefore!.RiskBand, "Blocked bridge crossing risk is high");
+
+        AssertTrue(before?.FindOption(LocationInteractionContent.ActionConstructTemporaryPassage) == null,
+            "Temporary-passage option stays hidden until its structural context is confirmed");
+        game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
+        var prepared = app.GetLocationInteraction(game, bridge.Id).Interaction;
+        AssertTrue(prepared?.FindOption(LocationInteractionContent.ActionConstructTemporaryPassage) != null,
+            "Confirmed structural context reveals the temporary-passage option");
 
         var result = app.ResolveLocationAction(game, bridge.Id, LocationInteractionContent.ActionConstructTemporaryPassage, LocationOutcomeTier.SuccessWithCost);
 
@@ -1920,8 +1963,9 @@ internal sealed class LocationDataJsonTests
 {
     public void RunAll()
     {
-        AllTenArchetypesLoadAndAreRepresentable();
+        AllCanonicalArchetypesLoadAndAreRepresentable();
         AllLocationActionsCarrySemanticTags();
+        ActionCommitmentAndRequirementDisclosureLoad();
         ContentProfileSurfacesTitleAndFlavor();
         WeightedOutcomeStaysWithinAuthoredBandRow();
         ForcedTierAppliesAuthoredEffectBundle();
@@ -1942,11 +1986,11 @@ internal sealed class LocationDataJsonTests
 
     private static readonly string[] AllArchetypeIds =
     {
-        "trace-site", "investigation-site", "route-obstacle", "containment-site", "territorial-marker",
-        "contact-site", "resource-site", "hazard-zone", "landmark-site", "dynamic-situation"
+        "investigation-site", "route-obstacle", "containment-site", "territorial-marker", "contact-site",
+        "hazard-site", "natural-phenomenon"
     };
 
-    private static void AllTenArchetypesLoadAndAreRepresentable()
+    private static void AllCanonicalArchetypesLoadAndAreRepresentable()
     {
         var defs = LoadBundle().Definitions;
 
@@ -1979,13 +2023,20 @@ internal sealed class LocationDataJsonTests
         AssertEqual(0, missing.Count, "Every JSON-authored location action has at least one semantic action tag");
     }
 
+    private static void ActionCommitmentAndRequirementDisclosureLoad()
+    {
+        var action = LoadBundle().Definitions.Actions["action-construct-temporary-passage"];
+        AssertEqual(LocationActionCommitment.DayOperation, action.Commitment, "Temporary passage is a day operation");
+        AssertEqual(LocationRequirementDisclosure.Known, action.HardRequirements[0].Disclosure, "Existing hard requirement is visibly disclosed");
+    }
+
     private static void ContentProfileSurfacesTitleAndFlavor()
     {
         var defs = LoadBundle().Definitions;
         var profile = defs.FindContentProfile("content-old-trade-road-bridge");
         AssertTrue(profile != null, "Bridge content profile is present");
         AssertEqual("Zerstoerte Bruecke", profile!.Title, "Content profile carries the authored title");
-        AssertEqual("Die Schlucht trennt die alte Handelsroute.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
+        AssertEqual("Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
     }
 
     private static void WeightedOutcomeStaysWithinAuthoredBandRow()
@@ -2032,12 +2083,12 @@ internal sealed class LocationDataJsonTests
         var defs = LoadBundle().Definitions;
 
         AssertTrue(defs.IsModifierCompatible("investigation-site", "modifier-sacred"), "Sacred is compatible with investigation-site");
-        AssertFalse(defs.IsModifierCompatible("route-obstacle", "modifier-harvestable"), "Harvestable is not compatible with route-obstacle");
+        AssertFalse(defs.IsModifierCompatible("route-obstacle", "modifier-campable"), "Campable is not compatible with route-obstacle");
 
         var okErrors = defs.ValidateModifierSet("route-obstacle", new[] { "modifier-repairable", "modifier-unstable" });
         AssertEqual(0, okErrors.Count, "A valid modifier set has no compatibility errors");
 
-        var incompatible = defs.ValidateModifierSet("hazard-zone", new[] { "modifier-burning", "modifier-flooded" });
+        var incompatible = defs.ValidateModifierSet("hazard-site", new[] { "modifier-burning", "modifier-flooded" });
         AssertTrue(incompatible.Count > 0, "Declared-incompatible modifiers are rejected together");
     }
 
@@ -2058,6 +2109,7 @@ internal sealed class LocationDataJsonTests
         var lockedBypass = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertFalse(lockedBypass.IsAvailable, "OncePerState action locks in the same state");
 
+        game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
         app.ResolveLocationAction(game, bridge.Id, "action-construct-temporary-passage", LocationOutcomeTier.SuccessWithCost);
         var reopened = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertTrue(reopened.IsAvailable, "OncePerState action reopens after the operational state changes");

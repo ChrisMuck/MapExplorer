@@ -11,6 +11,7 @@ internal sealed class WorldPhaseDataTests
     {
         ExpeditionTimeResolvesAStagedConsequenceExactlyOnce();
         BaseTimeAlsoResolvesAStagedConsequence();
+        ExplicitConsequenceBranchesLoadWithSituationReferences();
         UndefinedEvidenceReferencesAreRejectedByTheLoader();
     }
 
@@ -22,13 +23,17 @@ internal sealed class WorldPhaseDataTests
         var command = new EndDayCommand(suppliesPerDay: 0, worldPhaseService: new WorldPhaseService(content));
 
         command.Execute(game);
-        AssertEqual(2, game.World.ScheduledConsequences.Count, "Trigger schedules every fixed consequence stage");
+        AssertEqual(1, game.World.ScheduledConsequences.Count, "Trigger creates one fixed world-process instance");
+        AssertEqual(2, game.World.ScheduledConsequences[0].Stages.Count, "All fixed future stages belong to the same process");
+        AssertEqual("default", game.World.ScheduledConsequences[0].ResolvedBranchId, "Current authored consequences use their fixed default branch");
         AssertEqual(0, game.Knowledge.Evidence.Count, "First stage is not visible before its delay");
 
         command.Execute(game);
         AssertEqual(1, game.Knowledge.Evidence.Count, "Due stage creates world evidence");
         AssertEqual("evidence-grave-disturbance-rumour", game.Knowledge.Evidence[0].DefinitionId, "First defined stage is applied");
         AssertEqual(1, game.Events.PendingCount, "Due stage creates a player-visible event");
+        AssertEqual(1, game.World.ScheduledConsequences[0].CurrentStageIndex, "Only the due stage advances; the later stage remains pending");
+        AssertTrue(game.World.Traces.Count > 0, "World phase records objective causal traces");
 
         new WorldPhaseService(content).Resolve(game);
         AssertEqual(1, game.Knowledge.Evidence.Count, "Applied stage cannot create evidence twice");
@@ -54,6 +59,18 @@ internal sealed class WorldPhaseDataTests
         const string consequences = "{ \"documentType\": \"consequence-definitions\", \"schemaVersion\": 1, \"items\": [ { \"id\": \"consequence-test\", \"stages\": [ { \"id\": \"stage-1\", \"delayDays\": 1, \"evidenceId\": \"evidence-missing\" } ] } ] }";
 
         AssertThrows(() => CrossSystemDataLoader.LoadFromJson(new[] { evidence, consequences }), "Unknown evidence references are rejected");
+    }
+
+    private static void ExplicitConsequenceBranchesLoadWithSituationReferences()
+    {
+        const string consequences = "{ \"documentType\": \"consequence-definitions\", \"schemaVersion\": 2, \"items\": [ { \"id\": \"consequence-branching\", \"branches\": [ { \"id\": \"contained\", \"weight\": 1, \"stages\": [ { \"id\": \"early\", \"delayDays\": 1, \"situationCandidateIds\": [\"situation-test\"] } ] }, { \"id\": \"spread\", \"weight\": 2, \"stages\": [ { \"id\": \"later\", \"delayDays\": 2 } ] } ] } ] }";
+
+        var content = CrossSystemDataLoader.LoadFromJson(new[] { consequences });
+        var definition = content.FindConsequence("consequence-branching") ?? throw new InvalidOperationException("Branching consequence was not loaded.");
+
+        AssertEqual(2, definition.Branches.Count, "Explicit consequence branches are loaded");
+        AssertEqual(1, definition.FindBranch("contained")!.Stages.Count, "Branch keeps its own stages");
+        AssertEqual("situation-test", definition.FindBranch("contained")!.FindStage("early")!.SituationDefinitionIds[0], "Stage keeps situation reference for catalog validation");
     }
 
     private static CrossSystemDataBundle LoadContent()
@@ -98,5 +115,10 @@ internal sealed class WorldPhaseDataTests
         }
 
         throw new InvalidOperationException($"{message}: expected LocationDataException.");
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition) throw new InvalidOperationException(message);
     }
 }

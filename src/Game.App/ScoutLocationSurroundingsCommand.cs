@@ -11,10 +11,15 @@ namespace Game.App
 public sealed class ScoutLocationSurroundingsCommand
 {
     private readonly ScoutContentDefinitionSet? scoutContent;
+    private readonly ScoutMissionResolutionService resolutionService;
 
-    public ScoutLocationSurroundingsCommand(ScoutContentDefinitionSet? scoutContent = null)
+    public ScoutLocationSurroundingsCommand(
+        ScoutContentDefinitionSet? scoutContent = null,
+        EvidenceDefinitionSet? evidenceDefinitions = null,
+        FactionSignatureDefinitionSet? factionSignatures = null)
     {
         this.scoutContent = scoutContent;
+        resolutionService = new ScoutMissionResolutionService(evidenceDefinitions, factionSignatures, scoutContent);
     }
 
     public SendScoutMissionResult Execute(GameState game, string locationId, IReadOnlyList<string> scoutMemberIds)
@@ -46,12 +51,15 @@ public sealed class ScoutLocationSurroundingsCommand
                 return SendScoutMissionResult.Rejected("Selected scout is not available.");
             }
         }
-        var durationDays = missionDefinition?.MinDurationDays ?? 1;
-        var mission = new ScoutMissionState($"scout-mission-{game.Expedition.ScoutMissions.Count + 1}", distinctIds, game.Expedition.Position,
-            ScoutDirection.North, durationDays, game.World.WorldDay + durationDays, ScoutMissionFocus.FactionSigns, ScoutMissionBehavior.Cautious, targetLocationId: locationId, missionTypeId: "location-surroundings");
-        foreach (var id in distinctIds) game.Expedition.FindMember(id)!.SetStatus(ExpeditionMemberStatus.Assigned);
-        game.Expedition.AddScoutMission(mission);
-        return SendScoutMissionResult.Sent(mission);
+        var movementPointCost = missionDefinition?.MovementPointCost ?? 2;
+        if (game.Expedition.MovementPoints < movementPointCost)
+        {
+            return SendScoutMissionResult.Rejected($"Not enough movement points. This local search costs {movementPointCost} movement points.");
+        }
+
+        game.Expedition.SpendMovementPoints(movementPointCost);
+        var report = resolutionService.ResolveLocalSurroundings(game, location.Id, distinctIds);
+        return SendScoutMissionResult.ResolvedLocal(report, movementPointCost);
     }
 }
 }

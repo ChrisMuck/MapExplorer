@@ -1,0 +1,47 @@
+{
+  "id": "scenario-directional-lead",
+  "seed": 41027,
+  "worldKind": "fixture",
+  "width": 8,
+  "height": 6,
+  "initialState": {
+    "expeditionQ": 1,
+    "expeditionR": 1,
+    "members": [
+      { "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }
+    ],
+    "locations": [
+      {
+        "id": "location-rumoured-site",
+        "name": "Buried Markers",
+        "kind": "MarkedGrave",
+        "q": 3,
+        "r": 1,
+        "anchorKind": "Point",
+        "archetypeId": "investigation-site",
+        "variantId": "marked-grave",
+        "modifierIds": ["modifier-sacred"],
+        "operationalStateId": "sealed"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "kind": "send-directional-scout",
+      "scoutMemberIds": [ "scout-1" ],
+      "direction": "East",
+      "durationDays": 1,
+      "focus": "Survey",
+      "behavior": "Cautious"
+    },
+    { "kind": "end-day" },
+    { "kind": "move-expedition", "destinationQ": 2, "destinationR": 1 },
+    { "kind": "move-expedition", "destinationQ": 3, "destinationR": 1 },
+    { "kind": "inspect-location", "locationId": "location-rumoured-site" }
+  ],
+  "assertions": [
+    { "kind": "has-directional-lead" },
+    { "kind": "no-exact-scout-coordinates" },
+    { "kind": "has-trace-kind", "argument": "KnowledgeObserved" }
+  ]
+}

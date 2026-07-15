@@ -130,6 +130,7 @@
       "id": "action-construct-temporary-passage",
       "label": "Seiluebergang bauen",
       "description": "Eine provisorische Querung errichten. Der Bau ist riskant, macht die Passage danach aber berechenbarer.",
+      "commitment": "DayOperation",
       "hardRequirements": [ { "kind": "OperationalStateAny", "values": ["blocked"], "unmetReason": "Nur ein blockierter Uebergang braucht eine provisorische Querung." } ],
       "riskProfile": { "baseRisk": 20, "confidence": "Assessed" },
       "outcomeTableId": "outcome-construct-temporary-passage",
@@ -244,26 +245,6 @@
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
       "outcomeTableId": "outcome-generic-assess",
       "actionTags": [ "assess" ]
-    },
-    {
-      "id": "action-harvest-carefully",
-      "label": "Behutsam ernten",
-      "description": "Vorsichtig entnehmen, um die Quelle zu schonen.",
-      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
-      "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
-      "repeatPolicy": "OncePerState",
-      "actionTags": [ "harvest", "restraint" ]
-    },
-    {
-      "id": "action-harvest-fully",
-      "label": "Vollstaendig ernten",
-      "description": "So viel wie moeglich entnehmen, auf Kosten der Erneuerung.",
-      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
-      "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
-      "repeatPolicy": "OncePerLocation",
-      "actionTags": [ "harvest", "exploit" ]
     },
     {
       "id": "action-assess-risk",

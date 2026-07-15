@@ -10,7 +10,7 @@
       "territorialPolicy": {
         "permittedActionTags": [ "trade", "communicate", "request-passage" ],
         "restrictedActionTags": [ "exploit", "disturb" ],
-        "warningActionTags": [ "harvest" ],
+        "warningActionTags": [ "exploit" ],
         "warningResponse": {
           "angerDelta": 1,
           "awarenessIncrease": 1,
@@ -32,7 +32,9 @@
         }
       },
       "contactStyle": "open",
-      "leadershipStyle": "council"
+      "leadershipStyle": "council",
+      "observationRange": 1,
+      "observationChannels": [ "territory", "route", "watch" ]
     },
     {
       "id": "neutral-cautious",
@@ -41,7 +43,7 @@
       "tabooActionTags": [ "disturb", "ignore-warning", "map" ],
       "territorialPolicy": {
         "permittedActionTags": [ "request-passage", "offer", "restraint" ],
-        "restrictedActionTags": [ "cross", "map", "harvest" ],
+        "restrictedActionTags": [ "cross", "map", "exploit" ],
         "warningActionTags": [ "cross", "map", "ignore-warning" ],
         "warningResponse": {
           "angerDelta": 2,
@@ -65,7 +67,9 @@
         }
       },
       "contactStyle": "guarded",
-      "leadershipStyle": "border-commander"
+      "leadershipStyle": "border-commander",
+      "observationRange": 2,
+      "observationChannels": [ "territory", "route", "watch" ]
     },
     {
       "id": "hostile",
@@ -74,7 +78,7 @@
       "tabooActionTags": [ "cross", "disturb", "map" ],
       "territorialPolicy": {
         "permittedActionTags": [ "withdraw", "leave" ],
-        "restrictedActionTags": [ "cross", "map", "harvest", "repair" ],
+        "restrictedActionTags": [ "cross", "map", "exploit", "repair" ],
         "warningActionTags": [ "approach", "cross", "repair" ],
         "warningResponse": {
           "angerDelta": 3,
@@ -98,7 +102,9 @@
         }
       },
       "contactStyle": "indirect",
-      "leadershipStyle": "hidden-command"
+      "leadershipStyle": "hidden-command",
+      "observationRange": 2,
+      "observationChannels": [ "territory", "route", "watch" ]
     }
   ]
 }

@@ -8,6 +8,12 @@ namespace Game.App
 public sealed class CompleteExpeditionCommand
 {
     public const int NormalPreparationDays = 3;
+    private readonly FindingAnalysisHandoffService? findingAnalysisHandoffService;
+
+    public CompleteExpeditionCommand(FindingAnalysisHandoffService? findingAnalysisHandoffService = null)
+    {
+        this.findingAnalysisHandoffService = findingAnalysisHandoffService;
+    }
 
     public CompleteExpeditionResult Execute(GameState game)
     {
@@ -36,10 +42,11 @@ public sealed class CompleteExpeditionCommand
 
         var securedKnowledge = game.Expedition.ClearUnsecuredKnowledge();
         game.Base.AddKnowledgePoints(securedKnowledge);
+        var returnedFindings = findingAnalysisHandoffService?.TransferReturnedFindings(game) ?? Array.Empty<EvaluationItemState>();
 
         game.Expedition.SetStatus(ExpeditionStatus.Returned);
         game.Base.ScheduleNextExpedition(ExpeditionStatus.Returned, game.World.WorldDay, NormalPreparationDays);
-        var archiveEntry = $"Expedition {game.Expedition.ExpeditionNumber} returned on world day {game.World.WorldDay} after {game.Expedition.ExpeditionDay} day(s). Reports, notes and faction observations were secured. Knowledge secured: {securedKnowledge}.";
+        var archiveEntry = $"Expedition {game.Expedition.ExpeditionNumber} returned on world day {game.World.WorldDay} after {game.Expedition.ExpeditionDay} day(s). Reports, notes and faction observations were secured. Knowledge secured: {securedKnowledge}. Findings queued for analysis: {returnedFindings.Count}.";
         game.Base.AddArchiveEntry(new ArchiveEntryState(
             archiveEntry,
             ArchiveEntryKind.Bericht,

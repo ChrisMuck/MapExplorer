@@ -230,7 +230,7 @@ public static class TutorialGameFactory
                 ViewCoord(-2, 3),
                 "Verlassenes Lager",
                 LocationAnchor.Point(ViewCoord(-2, 3)),
-                "trace-site",
+                "investigation-site",
                 "abandoned-camp",
                 new[] { "modifier-searchable", "modifier-campable" },
                 contentProfileId: "content-abandoned-camp",
@@ -246,6 +246,7 @@ public static class TutorialGameFactory
                 "border-warning-sign",
                 new[] { "modifier-faction-owned", "modifier-watched" },
                 contentProfileId: "content-border-warning",
+                operationalStateId: "standing",
                 presenceStateId: LocationStateIds.Presence.Watched,
                 factionIds: new[] { "border-wardens" }),
             new SpecialLocationState(

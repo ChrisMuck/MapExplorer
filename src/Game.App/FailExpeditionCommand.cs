@@ -44,6 +44,7 @@ public sealed class FailExpeditionCommand
         }
 
         var lostUnsecuredKnowledge = game.Expedition.ClearUnsecuredKnowledge();
+        game.Expedition.ClearFieldFindings();
 
         game.Expedition.SetStatus(ExpeditionStatus.Lost);
         game.Base.ScheduleNextExpedition(ExpeditionStatus.Lost, game.World.WorldDay, recoveryDays);

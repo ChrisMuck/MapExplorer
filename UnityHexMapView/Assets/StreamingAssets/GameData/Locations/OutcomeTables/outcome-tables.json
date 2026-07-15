@@ -221,7 +221,7 @@
     },
     {
       "id": "outcome-search",
-      "appliesTo": { "archetypeId": "trace-site", "actionId": "action-search" },
+      "appliesTo": { "archetypeId": "investigation-site", "actionId": "action-search" },
       "tiers": {
         "Low": [ { "tier": "Success", "weight": 70 }, { "tier": "SuccessWithCost", "weight": 20 }, { "tier": "Failure", "weight": 10 } ],
         "Moderate": [ { "tier": "Success", "weight": 50 }, { "tier": "SuccessWithCost", "weight": 30 }, { "tier": "Failure", "weight": 20 } ]
@@ -271,10 +271,10 @@
       },
       "effectBundles": {
         "Success": [
-          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Expedition ueberschreitet die Grenze unbehelligt." }
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "violated", "text": "Die Expedition ueberschreitet die Grenze unbehelligt." }
         ],
         "SuccessWithCost": [
-          { "kind": "ChangeLocationState", "stateChannel": "interaction", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
+          { "kind": "ChangeLocationState", "stateChannel": "operational", "stateId": "violated", "text": "Die Grenze wird ueberschritten, doch es wird bemerkt." },
           { "kind": "RaiseWorldTrigger", "referenceId": "location-boundary-crossed-observed", "text": "Der Uebertritt wurde offenbar bemerkt." }
         ],
         "Failure": [

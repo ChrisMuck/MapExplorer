@@ -50,7 +50,19 @@ public sealed class FactionTerritorialPolicyResolver
 
             faction.AddMemory(memoryId);
             faction.Adjust(response.TrustDelta, response.AngerDelta, response.FearDelta);
-            for (var i = 0; i < response.AwarenessIncrease; i++)
+            game.World.RecordTrace(
+                SimulationTraceKind.FactionReaction,
+                $"Faction '{faction.Id}' applied territorial policy to trigger '{trigger.TriggerId}'.",
+                game.World.Traces
+                    .Where(trace => trace.SubjectIds.Contains(trigger.Id, StringComparer.Ordinal))
+                    .Select(trace => trace.TraceId)
+                    .Take(1),
+                new[] { faction.Id, trigger.Id, location.Id });
+            // Observation has already established the initial regional attention in this phase.
+            // A policy response may establish attention when none existed, but must not turn one
+            // witnessed action into two arbitrary awareness steps.
+            var awarenessIncrease = awareness < FactionAwarenessLevel.Suspicious ? response.AwarenessIncrease : 0;
+            for (var i = 0; i < awarenessIncrease; i++)
             {
                 game.World.EscalateFactionAwareness(faction.Id, $"location-region:{location.Id}");
             }
@@ -63,7 +75,7 @@ public sealed class FactionTerritorialPolicyResolver
             if (response.EventTitle != null && response.EventBody != null)
             {
                 game.Events.Enqueue(new EventState(
-                    $"faction-policy-{game.Events.Events.Count + 1}",
+                    game.World.RuntimeIds.Allocate("faction-policy"),
                     EventKind.FactionReaction,
                     response.EventTitle,
                     response.RevealsFaction ? faction.Name : "Unbekannte Beobachter",

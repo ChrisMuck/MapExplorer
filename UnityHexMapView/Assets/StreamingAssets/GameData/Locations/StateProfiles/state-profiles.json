@@ -1,0 +1,52 @@
+{
+  "documentType": "location-state-profiles",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    {
+      "id": "state-route-crossing",
+      "archetypeId": "route-obstacle",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected"] },
+        "operational": { "initial": "blocked", "values": ["blocked", "provisional", "risky-passage", "open", "repaired", "destroyed"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-marked-grave",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "documented"] },
+        "operational": { "initial": "sealed", "values": ["sealed", "open", "disturbed"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "empty", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-border-warning",
+      "archetypeId": "territorial-marker",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "interpreted", "documented"] },
+        "operational": { "initial": "standing", "values": ["standing", "respected", "violated"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded"] }
+      }
+    },
+    {
+      "id": "state-sealed-gate",
+      "archetypeId": "containment-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "documented"] },
+        "operational": { "initial": "sealed", "values": ["sealed", "opened", "breached"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-first-contact",
+      "archetypeId": "contact-site",
+      "channels": {
+        "interaction": { "initial": "unapproached", "values": ["unapproached", "contacted", "withdrawn"] },
+        "operational": { "initial": "available", "values": ["available", "closed", "invited"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "present", "guarded"] }
+      }
+    }
+  ]
+}

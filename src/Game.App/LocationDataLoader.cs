@@ -42,6 +42,16 @@ public sealed class LocationDataBundle
 public static class LocationDataLoader
 {
     private const int SupportedSchemaVersion = 1;
+    private static readonly HashSet<string> SupportedDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "location-archetypes",
+        "location-variants",
+        "location-modifiers",
+        "location-actions",
+        "location-outcome-tables",
+        "location-content-profiles",
+        "location-instances"
+    };
 
     /// <summary>Loads every <c>*.json</c> under a folder tree. Returns null if the folder is absent.</summary>
     public static LocationDataBundle? LoadFromDirectory(string rootFolder)
@@ -54,10 +64,26 @@ public static class LocationDataLoader
         var documents = Directory
             .EnumerateFiles(rootFolder, "*.json", SearchOption.AllDirectories)
             .OrderBy(path => path, StringComparer.Ordinal)
+            .Where(IsSupportedDocumentFile)
             .Select(File.ReadAllText)
             .ToList();
 
         return documents.Count == 0 ? null : LoadFromJson(documents);
+    }
+
+    // Directory discovery is a migration convenience. It must ignore target-schema documents that
+    // live alongside legacy location documents; GameDataCatalog dispatches those explicitly.
+    private static bool IsSupportedDocumentFile(string path)
+    {
+        try
+        {
+            var document = JObject.Parse(File.ReadAllText(path));
+            return SupportedDocumentTypes.Contains((string?)document["documentType"] ?? string.Empty);
+        }
+        catch (JsonException ex)
+        {
+            throw new LocationDataException($"Malformed location JSON document '{path}': {ex.Message}");
+        }
     }
 
     public static LocationDataBundle LoadFromJson(IEnumerable<string> jsonDocuments)
@@ -191,7 +217,8 @@ public static class LocationDataLoader
             icon: dto.Presentation?.Icon,
             primaryButtonLabel: dto.Presentation?.PrimaryButtonLabel,
             socialRisk: dto.SocialRisk,
-            actionTags: dto.ActionTags);
+            actionTags: dto.ActionTags,
+            commitment: ParseEnum(dto.Commitment, LocationActionCommitment.Immediate));
     }
 
     private static LocationRequirementDefinition BuildRequirement(RequirementDto dto)
@@ -215,7 +242,8 @@ public static class LocationDataLoader
             dto.Values,
             role,
             anchorKind,
-            string.IsNullOrWhiteSpace(dto.UnmetReason) ? "Requirement is not met." : dto.UnmetReason!);
+            string.IsNullOrWhiteSpace(dto.UnmetReason) ? "Requirement is not met." : dto.UnmetReason!,
+            ParseEnum(dto.Disclosure, LocationRequirementDisclosure.Known));
     }
 
     private static LocationCostDefinition BuildCost(CostDto dto)
@@ -534,6 +562,7 @@ public static class LocationDataLoader
         public RiskProfileDto? RiskProfile { get; set; }
         public string? OutcomeTableId { get; set; }
         public string? RepeatPolicy { get; set; }
+        public string? Commitment { get; set; }
         public ProjectDto? Project { get; set; }
         public PresentationDto? Presentation { get; set; }
         public bool SocialRisk { get; set; }
@@ -547,6 +576,7 @@ public static class LocationDataLoader
         public string? Role { get; set; }
         public string? AnchorKind { get; set; }
         public string? UnmetReason { get; set; }
+        public string? Disclosure { get; set; }
     }
 
     private sealed class CostDto

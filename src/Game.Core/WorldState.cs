@@ -13,6 +13,11 @@ public sealed class WorldState
     private readonly List<WorldTriggerState> worldTriggers;
     private readonly List<ScheduledConsequenceState> scheduledConsequences;
     private readonly List<RegionFactionAwarenessState> factionAwareness;
+    private readonly List<GeneratedContextAssignmentState> generatedContexts;
+    private readonly List<WorldSituationState> situations;
+    private readonly List<WorldConnectionState> connections;
+    private readonly List<SimulationTraceState> traces;
+    private readonly HashSet<string> acquiredFindingKeys;
 
     public WorldState(
         HexMapState map,
@@ -21,7 +26,14 @@ public sealed class WorldState
         int worldDay = 1,
         IEnumerable<WorldTriggerState>? worldTriggers = null,
         IEnumerable<ScheduledConsequenceState>? scheduledConsequences = null,
-        IEnumerable<RegionFactionAwarenessState>? factionAwareness = null)
+        IEnumerable<RegionFactionAwarenessState>? factionAwareness = null,
+        IEnumerable<GeneratedContextAssignmentState>? generatedContexts = null,
+        IEnumerable<WorldSituationState>? situations = null,
+        IEnumerable<SimulationTraceState>? traces = null,
+        RuntimeIdAllocatorState? runtimeIds = null,
+        DeterministicRandomState? random = null,
+        IEnumerable<string>? acquiredFindingKeys = null,
+        IEnumerable<WorldConnectionState>? connections = null)
     {
         if (worldDay < 1)
         {
@@ -34,6 +46,14 @@ public sealed class WorldState
         this.worldTriggers = new List<WorldTriggerState>(worldTriggers ?? Enumerable.Empty<WorldTriggerState>());
         this.scheduledConsequences = new List<ScheduledConsequenceState>(scheduledConsequences ?? Enumerable.Empty<ScheduledConsequenceState>());
         this.factionAwareness = new List<RegionFactionAwarenessState>(factionAwareness ?? Enumerable.Empty<RegionFactionAwarenessState>());
+        this.generatedContexts = new List<GeneratedContextAssignmentState>(generatedContexts ?? Enumerable.Empty<GeneratedContextAssignmentState>());
+        this.situations = new List<WorldSituationState>(situations ?? Enumerable.Empty<WorldSituationState>());
+        this.connections = new List<WorldConnectionState>(connections ?? Enumerable.Empty<WorldConnectionState>());
+        this.traces = new List<SimulationTraceState>(traces ?? Enumerable.Empty<SimulationTraceState>());
+        this.acquiredFindingKeys = new HashSet<string>((acquiredFindingKeys ?? Enumerable.Empty<string>())
+            .Where(key => !string.IsNullOrWhiteSpace(key)).Select(key => key.Trim()), StringComparer.Ordinal);
+        RuntimeIds = runtimeIds ?? new RuntimeIdAllocatorState();
+        Random = random ?? new DeterministicRandomState();
         WorldDay = worldDay;
     }
 
@@ -62,6 +82,25 @@ public sealed class WorldState
     }
 
     public IReadOnlyList<RegionFactionAwarenessState> FactionAwareness => factionAwareness;
+
+    /// <summary>Generated neutral context attached to concrete runtime targets, never static content.</summary>
+    public IReadOnlyList<GeneratedContextAssignmentState> GeneratedContexts => generatedContexts;
+
+    /// <summary>Current world pressures, requests and warnings that can outlive an expedition.</summary>
+    public IReadOnlyList<WorldSituationState> Situations => situations;
+
+    /// <summary>Logical world connections created by processes; they are not a visual map graph.</summary>
+    public IReadOnlyList<WorldConnectionState> Connections => connections;
+
+    /// <summary>Objective developer provenance; normal player UI must not expose it directly.</summary>
+    public IReadOnlyList<SimulationTraceState> Traces => traces;
+
+    /// <summary>Stable repeat-policy keys for findings already recovered in this world.</summary>
+    public IReadOnlyCollection<string> AcquiredFindingKeys => acquiredFindingKeys;
+
+    public RuntimeIdAllocatorState RuntimeIds { get; }
+
+    public DeterministicRandomState Random { get; }
 
     public void AddPath(WorldPathState path)
     {
@@ -118,6 +157,62 @@ public sealed class WorldState
         scheduledConsequences.Add(consequence);
     }
 
+    public void AddGeneratedContext(GeneratedContextAssignmentState context)
+    {
+        if (context == null) throw new ArgumentNullException(nameof(context));
+        if (generatedContexts.Any(existing => existing.Id == context.Id)) return;
+        generatedContexts.Add(context);
+    }
+
+    public bool TryAddSituation(WorldSituationState situation)
+    {
+        if (situation == null) throw new ArgumentNullException(nameof(situation));
+        if (situations.Any(existing => existing.Id == situation.Id)) return false;
+        if (situation.FactionId != null && situations.Any(existing =>
+                existing.FactionId == situation.FactionId &&
+                (existing.Status == WorldSituationStatus.Dormant || existing.Status == WorldSituationStatus.Active)))
+        {
+            return false;
+        }
+        situations.Add(situation);
+        return true;
+    }
+
+    public void AddSituation(WorldSituationState situation)
+    {
+        TryAddSituation(situation);
+    }
+
+    public bool AddConnection(WorldConnectionState connection)
+    {
+        if (connection == null) throw new ArgumentNullException(nameof(connection));
+        if (connections.Any(existing => existing.Id == connection.Id ||
+                                        (existing.SourceId == connection.SourceId && existing.TargetId == connection.TargetId && existing.Kind == connection.Kind)))
+        {
+            return false;
+        }
+
+        connections.Add(connection);
+        return true;
+    }
+
+    public SimulationTraceState RecordTrace(
+        SimulationTraceKind kind,
+        string summary,
+        IEnumerable<string>? causedByTraceIds = null,
+        IEnumerable<string>? subjectIds = null)
+    {
+        var trace = new SimulationTraceState(
+            RuntimeIds.Allocate("trace"),
+            kind,
+            WorldDay,
+            summary,
+            causedByTraceIds,
+            subjectIds);
+        traces.Add(trace);
+        return trace;
+    }
+
     public void EscalateFactionAwareness(string factionId, string regionId)
     {
         var state = factionAwareness.FirstOrDefault(item => item.FactionId == factionId && item.RegionId == regionId);
@@ -128,6 +223,21 @@ public sealed class WorldState
         }
 
         state.Escalate();
+    }
+
+    public bool TryRegisterFinding(string findingDefinitionId, string repeatPolicy, string sourceLocationId)
+    {
+        if (string.IsNullOrWhiteSpace(findingDefinitionId)) throw new ArgumentException("Finding definition ID must not be empty.", nameof(findingDefinitionId));
+        if (string.IsNullOrWhiteSpace(sourceLocationId)) throw new ArgumentException("Finding source location ID must not be empty.", nameof(sourceLocationId));
+
+        var policy = string.IsNullOrWhiteSpace(repeatPolicy) ? "once-per-world" : repeatPolicy.Trim();
+        var key = policy switch
+        {
+            "once-per-location" => $"location:{sourceLocationId.Trim()}:{findingDefinitionId.Trim()}",
+            "once-per-world" => $"world:{findingDefinitionId.Trim()}",
+            _ => $"world:{findingDefinitionId.Trim()}"
+        };
+        return acquiredFindingKeys.Add(key);
     }
 }
 }

@@ -1,0 +1,468 @@
+# Cross-System Foundation Implementation Plan
+
+Status: **Active**
+Branch: `codex/cross-system-foundation`
+Scope: shared simulation foundation for the approved core gameplay concepts.
+Related concepts:
+
+- `docs/gameconcept/cross_system_integration_concept.md`
+- `docs/gameconcept/cross_system_json_authoring_schema.md`
+- `docs/gameconcept/simulation_runner_concept.md`
+
+Follow-up implementation plan:
+
+- `docs/cross_system_phase_2_gameplay_plan.md`
+
+## 1. Objective
+
+Build one authoritative, deterministic game simulation that is shared by Unity, automated tests and
+the future Simulation Runner. The implementation must turn the approved JSON contracts into typed
+content, generated World State and player-facing knowledge without exposing hidden truth through
+the Unity UI.
+
+This plan deliberately does **not** build the WPF interface first. Its foundation is a shared
+headless session API. WPF becomes a thin inspection client only after that API is proven by tests.
+
+## 2. Verified Starting Point
+
+The repository already has useful foundations:
+
+- `Game.Core` and `Game.App` target .NET 8 and do not depend on Unity.
+- `GameApplication` is already a command facade used by Unity and tests.
+- World generation is bridged through `WorldGenBridge` in `Game.App`.
+- Generic location actions, local scouting, basic world triggers, delayed evidence and faction
+  reactions already have proof tests.
+- `Game.Tests` is an executable regression suite with focused end-to-end checks.
+
+The following gaps must be resolved rather than worked around:
+
+- location and cross-system content are loaded through separate directory scans instead of one
+  explicit catalog;
+- the Unity bootstrap currently loads World and Faction data but omits the Scouting folder, so it
+  can diverge from the application/test loading path;
+- the current consequence scheduler stores individual delayed stages, but not a fixed resolved
+  branch, typed world effects, situations or a causal trace;
+- some location presentation text and content decisions remain hardcoded in Unity UI scripts;
+- legacy material-resource terminology still exists and must be isolated from the retained
+  supplies/medicine expedition-logistics model;
+- no shared scenario session, replay trace or headless runner exists yet.
+
+## 3. Delivery Rules
+
+- Every block is independently buildable and covered by focused tests before the next starts.
+- When an audit finds an older concept that contradicts a locked current decision, correct or
+  explicitly supersede that passage in the same implementation block. A stale specialist document
+  must never remain an alternative source of truth for implemented behaviour.
+- Static JSON never names a generated faction instance, coordinate, territory, claim or resolved
+  consequence branch.
+- Runtime IDs, random choices and trace records are deterministic for the same content version,
+  seed and command sequence.
+- Unity sends commands and renders ViewModels. It does not gain simulation exceptions or a second
+  rule path.
+- The runner may inspect World Truth, but must not write player knowledge merely by viewing it.
+- We keep existing authored JSON compatible while its replacement fields are introduced; no broad
+  content migration happens without validation and regression coverage.
+
+## 4. Work Blocks
+
+### Block 0 — Baseline Audit and Compatibility Contract — Complete
+
+**Purpose:** establish an exact boundary before moving code or content.
+
+**Work**
+
+1. Map every gameplay mutation in `Game.Core`, `Game.App`, `UnityHexMapView` and `WorldGen`.
+2. Classify each Unity method as input/presentation, application orchestration or incorrectly
+   embedded authoritative logic.
+3. Record the current JSON document types, their loaders, fallback paths and consumers.
+4. Record all material-resource and expedition-logistics uses. Classify each as obsolete material
+   economy, retained supplies/medicine logistics, presentation wording or test fixture.
+5. Define a compatibility matrix for old content documents and target schema documents.
+
+**Primary files**
+
+- `src/Game.App/GameApplication.cs`
+- `src/Game.App/LocationDataLoader.cs`
+- `src/Game.App/CrossSystemDataLoader.cs`
+- `src/Game.App/WorldPhaseService.cs`
+- `UnityHexMapView/Assets/Scripts/UnityHexMapView.cs`
+- `UnityHexMapView/Assets/UI/ExpeditionScreenController.cs`
+
+**Exit criteria**
+
+- A short audit record identifies the single authoritative path for each current player command.
+- No code changes alter normal gameplay in this block.
+- The existing test suite passes before and after the audit.
+
+### Block 1 — Unified Game-Data Catalog and Validation — Complete
+
+**Purpose:** Unity, tests and future runner load the identical declared content set.
+
+**Work**
+
+1. Add a `GameDataCatalog` in `Game.App` that owns root discovery, manifest loading, document
+   ordering, schema-version checks and consolidated error reporting.
+2. Support the target `game-data-manifest.json` while retaining the current directory-scan fallback
+   for existing content during migration.
+3. Make `LocationDataLoader` and `CrossSystemDataLoader` internal participants of the catalog,
+   rather than separate bootstrapping paths.
+4. Change Unity bootstrap and test setup to request the same catalog from the same game-data root.
+5. Add validation for duplicate IDs, unknown `documentType`, missing required documents, invalid
+   schema versions and unresolved cross-references.
+
+**Acceptance tests**
+
+- Unity, tests and a standalone catalog test resolve the same content IDs.
+- A manifest that omits Scouting fails clearly instead of silently creating a divergent session.
+- Old directory-based content remains loadable until the manifest migration is complete.
+
+### Block 2 — Typed Authoring Definitions and Slice Content Migration
+
+**Purpose:** implement the approved JSON authoring structure without introducing per-location
+special code.
+
+**Progress:** State Profiles, Scenario Profiles, Findings, Context Definitions, Situation
+Definitions, Faction Offers and Faction Memory Definitions now load through the shared catalog.
+Five initial Slice scenario profiles and profile-based offers are authored and validated. Wiring
+those offers into generated faction instances is complete; direct legacy callers retain their
+previous offer set as a compatibility fallback. The active location data now uses only the seven
+canonical archetypes; the remaining work in this block is optional action/disclosure fields and
+the corresponding runtime option resolver.
+
+**Work**
+
+1. Correct the affected master and specialist concepts before data migration. The current rules are:
+   seven canonical location archetypes (no `resource-site`), Knowledge Points as the only general
+   base/trade currency, supplies and medicine as expedition-only consumables, no generic material
+   harvesting loop, and approximate player-facing scout reports without hex values. Record any
+   deliberately deferred replacement separately rather than retaining incompatible legacy rules.
+2. Add typed definitions and loaders for State Profiles, Scenario Profiles, Findings, neutral
+   Context Definitions, Situation Definitions, Faction Offers and Faction Memory Definitions.
+3. Expand existing Action, Evidence, Consequence, Faction Profile, Signature and Scout definitions
+   with the approved optional fields and compatibility defaults.
+4. Extend `CrossSystemContentValidator` with the schema rules from the JSON concept: reference
+   validity, archetype/state compatibility, action cap, no static faction instance IDs, no generic
+   material harvesting rewards, valid expedition-logistics effects, warning path for severe
+   consequence stages and soft-connection requirements.
+5. Add the five Vertical Slice scenario profiles: Route Obstacle, Investigation Site, Territorial
+   Marker, Containment Site and Contact Site.
+6. Keep `content-profiles.json` presentation-only and move rule-bearing data to Scenario Profiles
+   or the appropriate shared definition file.
+
+**Acceptance tests**
+
+- Invalid definitions fail at catalog validation with an actionable file/ID/field error.
+- The master concept and every affected specialist document point to the same current taxonomy,
+  knowledge/trade currency, expedition-logistics and scout-information rule.
+- A reusable scenario profile can produce neutral, watched or claimed generated instances without
+  naming a concrete faction in JSON.
+- Five Slice profiles load through the catalog and preserve the current bridge/gate proof flows.
+
+### Block 3 — Shared Runtime State, Determinism and Causal Trace — Complete
+
+**Purpose:** give every generated or delayed effect durable, inspectable runtime identity.
+
+**Implemented:** `WorldState` now persists generated-context assignments, world
+situations, deterministic ID/random state and objective simulation traces. A scheduled consequence
+is now one fixed process with branch ID, source trigger, affected context IDs and ordered stage
+state; the World Phase advances only due stages. JSON may author weighted branches and
+stage-to-situation references; the selected branch is fixed through the persisted deterministic
+random stream. `WorldRuntimeSnapshot` and its App-layer JSON codec preserve this runtime data for
+the wider campaign save, which separately owns map topology, paths, locations and the remaining
+`GameState` data. The codec does not add player save slots or alter the Base-Camp-only save policy.
+
+**Work**
+
+1. Extend `WorldState` with generated context assignments, active world processes, situations and
+   fixed consequence branches.
+2. Replace stage-only scheduling with a consequence instance that records its definition, resolved
+   branch, source, affected context, current stage and future due stages.
+3. Add deterministic runtime ID allocation and a seeded random abstraction at the application
+   boundary; do not use Unity random APIs in simulation decisions.
+4. Add `SimulationTrace` records with `traceId` and causal-parent references for commands,
+   generator decisions, triggers, observation, reaction, situation and consequence stage changes.
+5. Preserve trace, resolved branch and generated context in save-ready runtime models.
+
+**Acceptance tests**
+
+- The same seed and command sequence creates identical branch IDs, state changes and trace order.
+- A delayed consequence cannot reroll after time advances or after reloading its persisted state.
+- Inspecting the World-truth trace does not alter `KnowledgeState` or `PlayerNotes`.
+
+### Block 4 — Generic Location Interaction and Knowledge Contract — Complete
+
+**Purpose:** make all location archetypes use common action conditions, evidence and persistent
+state changes.
+
+**Implemented:** Scenario Profiles replace the legacy archetype/variant action base for catalog
+sessions. State Profiles validate authored transitions and concrete runtime states; the active
+slice now has compatible bridge, boundary and seal states. Conditional actions consult only
+confirmed `KnowledgeState` context tags, while obvious but risky actions remain visible and generic
+modifiers still compose on top. Inspections and their event text use shared Content Profiles rather
+than `LocationKind` branches. They can acquire deterministic, JSON-authored field findings; these
+remain with the expedition, move into the existing Base evaluation queue only after a successful
+return, and award Knowledge Points only after analysis. Finding repeat state is runtime-persisted.
+The direct no-catalog inspection fallback remains solely for legacy callers and test migration; it
+is not used by the catalog-backed gameplay path.
+
+**Work**
+
+1. Extend interaction-option building from hardcoded variants to Scenario Profile, State Profile,
+   generated context and specialist requirements.
+2. Model known hard requirements, visible disabled reasons, unknown risks and contextual action
+   discovery separately.
+3. Limit each initial location instance to its common actions plus one to three additional actions;
+   later knowledge, specialist or context discoveries may expand it.
+4. Add generic finding acquisition and base-analysis handoff. Findings, inspections and reports
+   generate field knowledge; analysed findings award Knowledge Points and archive entries.
+5. Remove obsolete material-resource reward paths from cross-system content. Make the
+   finding-to-base-analysis-to-Knowledge flow explicit, while retaining supplies and medicine as
+   expedition consumables that can be obtained through defined opportunities such as faction
+   offers.
+6. Move simulation-relevant action labels, state wording and availability reasons out of Unity UI
+   conditionals into shared data/ViewModels.
+
+**Acceptance tests**
+
+- A missing obvious requirement disables the appropriate option with a reason.
+- A hidden risk remains an uncertainty label, not an accidental truth leak.
+- A bridge, a sealed site and a non-bridge/non-crypt profile all use the same option-resolution
+  pipeline.
+- A finding becomes Knowledge Points only through the base-analysis path.
+
+### Block 5 — World Processes, Observation and Faction Reactions — Complete
+
+**Purpose:** replace presentation-only delayed outcomes with generic, fair and spatially grounded
+world development.
+
+**Work**
+
+1. Implement typed generic world effects for location state, route/access, affected cells, evidence,
+   follow-up trigger, situation, faction awareness and connection creation.
+2. Add staged process execution for the approved consequence families: propagation, release,
+   route-or-place change, social aftereffect, knowledge trail, rescue/assistance and external world
+   crisis.
+3. Resolve a branch once when its trigger is scheduled; stages apply in normal world phases.
+4. Implement faction observation based on generated territory/context, observation channels,
+   distance/route constraints and actual evidence. Factions are not all-knowing.
+5. Resolve reactions through profile values, taboo, memory, observation and situation context.
+   Deliver player-visible effects only through reports, contacts, rumours, direct observation or
+   event queue entries.
+6. Enforce a bounded MVP load: at most one direct open situation per faction and a cap on concurrent
+   world processes.
+
+**Acceptance tests**
+
+- A neutral action produces no faction reaction merely because a faction exists elsewhere.
+- A watched/claimed action can produce different reactions from the same generic action.
+- A severe process provides at least one valid warning and response path before its serious stage.
+- Spatial effects update only logical coordinates/relations; no Unity map dependency is introduced.
+
+**Implemented contract:** consequence stages use typed neutral effect objects for location state,
+logical tile access, evidence, follow-up triggers, situations, generated-faction awareness and
+logical connections. Legacy stage fields are translated into the same pipeline. Serious stages
+require an earlier authored warning situation with at least one response action; a command records
+the response and may suppress explicitly authored later effects. Faction observation stays hidden
+and requires generated watch/sacred context or a configured, bounded territory/route channel.
+Concurrent processes are capped at eight and direct faction situations are limited to one open
+instance per generated faction.
+
+### Block 6 — Both Scout Paths and Generated Soft Connections — Complete
+
+**Purpose:** complete the distinct local and directional scouting loops.
+
+**Work**
+
+1. Keep local surroundings scouting tied to a reached location and limited to local evidence.
+2. Expand directional scouting to search a sector for approximate leads about locations, routes,
+   hazards, signatures, traces, witnesses and environmental change.
+3. Scale report quality by scout star rating without turning higher quality into hidden-truth
+   revelation; reports remain directionally vague and evidence-based.
+4. Generate and persist at least two optional soft connections in every Slice world. They may share
+   a signature, make another place intelligible, change access or connect evidence threads, but
+   never create a mandatory quest or automatic conclusion.
+5. Let the WorldGenerator assign candidate contexts, claims, signatures and connections only after
+   terrain and territories are generated.
+
+**Acceptance tests**
+
+- Local scouting cannot reveal a distant exact target or broad route.
+- Directional scouting does not require a location interaction.
+- A veteran report has better evidence quality, not a solved faction/location identity.
+- Every generated Slice fixture has two optional soft connections and no static faction assignment.
+
+**Implemented contract:** directional and local scouting remain separate mission types. Reports now
+store structured, approximate leads with a scope, compass direction, neutral kind and per-lead
+confidence; exact sampled hexes remain transient simulation data and are never written to player
+knowledge or automatic notes. Scout star level improves confidence only. Directional leads also
+create neutral evidence without a target-location reference. The generation bridge creates two
+deterministic optional soft connections after locations, terrain and territory instances exist;
+they remain hidden World Truth until later evidence makes a relationship player-visible.
+
+### Block 7 — Shared Simulation Session and Headless Scenario Runner
+
+**Status:** Complete.
+
+**Purpose:** make the full simulation reproducible before adding a desktop inspection UI.
+
+**Work**
+
+1. Add a `SimulationSession` facade in `Game.App` around `GameApplication`, `GameState`, content
+   version, seed, trace and command history.
+2. Add JSON development scenarios with seed, explicit test overrides, scripted commands and
+   assertions. Keep them separate from normal game content and saves.
+3. Add a headless `Game.Simulation.Runner` executable for one scenario, time advancement, timeline
+   output and reproducible run record export.
+4. Add scenario assertions for player knowledge, World Truth, expected trace chain and fair warning
+   paths.
+5. Create at least three end-to-end scenarios: claimed-but-unidentified crossing, containment
+   release with delayed response, and directional scout lead that later becomes useful.
+
+**Acceptance tests**
+
+- A failing scenario reports seed, content version, command index and trace chain.
+- Replaying a run record yields the same terminal state and player-visible options.
+- The headless runner has no Unity reference.
+
+**Implemented contract:** `SimulationSession` is the shared, deterministic application facade for
+generated, tutorial and explicitly declared development-fixture worlds. The development scenario
+format is deliberately outside `GameData` and save data: it can define a small map, expedition,
+locations, generated faction relations and forced outcome tiers solely for repeatable proofs.
+The runner records seed, content version, command history and objective causal traces, prints a
+day-by-day provenance timeline and can export a run record. Its assertions explicitly distinguish
+player knowledge (evidence and reports), World Truth (triggers/situations) and trace kinds.
+
+The initial proof suite contains three JSON scenarios: a claimed but unidentified crossing whose
+repair has a delayed result, a sealed containment site whose warning can avert its later trigger,
+and a directional scout lead with no exact remote coordinates that is only confirmed later on
+foot. The Core/App test suite serializes each run record, replays it, and compares world day,
+player knowledge and player-visible location options.
+Fixtures are runner-only test overrides; normal world generation remains the sole source of
+runtime claim and context assignment during play.
+
+### Block 8 — Unity Adapter Migration and Regression Pass
+
+**Status:** Complete.
+
+**Purpose:** route normal gameplay through the same catalog/session/option contracts without
+changing its intended player-facing presentation.
+
+**Work**
+
+1. Replace Unity's bespoke bootstrap with the shared `GameDataCatalog` and `SimulationSession`.
+2. Replace simulation-relevant Unity switch statements and string tables with shared interaction
+   ViewModels and content-driven descriptions.
+3. Keep map rendering, camera, panel layout and visual asset resolution in Unity.
+4. Ensure player views show only Knowledge State and earned reports, never runner trace or hidden
+   World Truth.
+5. Add Unity integration checks for catalog-load failure messaging and representative location
+   panels; Core correctness remains covered outside Unity.
+6. Replace the legacy scout-report coordinate focus and marker shortcuts with structured
+   `ScoutLeadState` presentation: show direction, scope, confidence and wording, but never derive
+   a target hex from a report.
+
+**Acceptance tests**
+
+- Unity and the headless runner show identical option IDs, availability and known requirement text
+  for the same scenario state.
+- Unity does not load a content subset that differs from tests/runner.
+- Existing movement, map and panel behavior remains functional.
+
+**Implemented contract:** Unity creates its campaign session through `SimulationSession` and the
+same complete `GameDataCatalog` used by Core/App tests and the headless runner. Presentation calls
+session commands; it no longer creates or calls a separate `GameApplication` command path. Location
+options remain the shared read-only contract, with a Core/App regression test comparing their IDs,
+availability and known requirement text through both access paths.
+
+Scout reports now render structured local/directional leads with scope, compass wording and
+confidence. The Unity report panel neither focuses a map coordinate nor creates a report-derived
+marker. A report can only label a marker at the player's currently selected field. UI accessors also
+withhold unconfirmed locations and unknown factions. Unity's package compilation is kept C#-9
+compatible through block namespaces where needed and an `IsExternalInit` shim for records.
+
+### Block 9 — WPF Simulation Runner Shell
+
+**Status:** Complete.
+
+**Purpose:** provide fast human inspection of the proven headless simulation.
+
+**Work**
+
+1. Add a Windows-only `Game.Simulation.Wpf` project referencing only the shared .NET projects.
+2. Implement scenario selection, command execution, phase/day fast-forward and reproducible run
+   loading.
+3. Show separate Player, World-truth and Causality views.
+4. Show location options as shared interaction ViewModels, not copied Unity windows.
+5. Add timeline, faction observation/reaction inspector and a mapless spatial process inspector
+   based on coordinates, regions and affected-area summaries.
+
+**Acceptance tests**
+
+- The WPF application can load and replay all three headless proof scenarios.
+- Viewing World Truth cannot mutate the session.
+- No Unity assemblies are referenced by the WPF project.
+
+**Implemented contract:** `Game.Simulation.Wpf` is a Windows-only, mapless developer inspector
+which references only `Game.App` and `Game.Core`. It creates the same `SimulationSession` as Unity,
+loads the three JSON proof scenarios or an exported scripted run record, and advances authored
+commands or normal end-day/world phases without a second rule path. Its Player Knowledge tab uses
+the session's shared confirmed-location interaction query; the separate read-only World Truth tab
+shows objective locations, faction observation, triggers, scheduled process stages and situations.
+The causal tab projects authoritative trace and `causedBy` links. Manual time advance is marked and
+cannot be exported as a misleading reproducible scripted run until the equivalent days are authored
+in the scenario. The inspector additionally exposes voluntary direct location commands: inspect,
+local scout-surroundings with a selected free scout, every player-visible shared location action
+and active project progress. These commands never consume a scripted step; they mark the session
+as interactive so it cannot be exported as a misleading script-only run. `DevelopmentScenarioPlayback`
+is presentation-neutral and is covered by the Core/App test suite.
+
+### Block 10 — Batch Simulation, Balance Signals and Release Gate
+
+**Status:** Implementation complete; owner review and Unity playtest release decision pending.
+
+**Purpose:** discover rare generated failures and make the first Slice suitable for human playtests.
+
+**Work**
+
+1. Add batch runs over deterministic seed ranges and record generation/interaction metrics.
+2. Flag invalid content, absent soft connections, excessive concurrent processes, unanswerable
+   situations, missing warning paths and no-op faction observation.
+3. Review the three proof scenarios and a representative batch with the project owner.
+4. Freeze the first Slice content profiles and start Unity playtests for clarity and game feel.
+
+**Release criteria**
+
+- Core test suite, scenario suite and a documented batch run pass.
+- The first Slice has five data-driven profiles, two generated soft connections and three complete
+  end-to-end proof scenarios.
+- No player-facing path reveals hidden faction identity, claim truth, exact remote targets or
+  resolved consequence branches without earned evidence.
+
+**Implemented contract:** `SimulationBatchRunner` runs deterministic generated worlds over a seed
+range and the explicit proof-scenario suite through the same `SimulationSession` and scenario
+executor as Unity and the WPF inspector. It reports generated locations and soft connections,
+open processes/situations, player-visible available/locked options in scenarios, faction
+observation/reaction traces and reproducible seed/scenario issues. The headless runner exposes this
+through `--batch <first-seed> <count> [game-data-root] [report.json]` and writes an optional JSON
+report suitable for CI or handoff. Content is revalidated before a batch, serious consequence
+stages are audited for earlier answerable warnings, and runtime checks flag missing connections,
+excess process load, unanswerable situations, no-op observations and scenario failures. The
+remaining owner review determines whether representative metrics are acceptable and when Unity
+playtests begin; neither decision is automated by the batch tool.
+
+## 5. Explicitly Deferred
+
+- large content libraries and text-variation authoring;
+- advanced contested multi-faction locations;
+- non-human factions and deep diplomacy;
+- a rendered WPF map, final art or final Unity UI polish;
+- broad WorldGenerator parameter redesign beyond data-driven context/connection assignment;
+- save-format migration for old external saves before a save system is formally introduced.
+
+## 6. Working Sequence
+
+We execute one block at a time. A block is only marked complete after its acceptance tests pass and
+the project owner has reviewed any player-facing or generated-world semantics. Block 0 is recorded
+in `docs/cross_system_foundation_audit.md`. The implemented foundation and runner work continues
+in the dedicated Phase-2 gameplay plan; it must not be extended with location-specific or WPF-only
+rule paths.

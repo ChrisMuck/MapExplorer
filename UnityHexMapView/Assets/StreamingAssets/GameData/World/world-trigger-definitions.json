@@ -6,6 +6,8 @@
     { "id": "location-grave-disturbed", "consequenceId": "consequence-grave-disturbed" },
     { "id": "location-infrastructure-repaired", "consequenceId": "consequence-route-restored" },
     { "id": "location-seal-broken", "consequenceId": "consequence-seal-broken" },
+    { "id": "route-traffic-observed" },
+    { "id": "seal-disturbance-observed" },
     { "id": "location-grave-respected" },
     { "id": "location-boundary-crossed-observed" },
     { "id": "location-boundary-crossed" },

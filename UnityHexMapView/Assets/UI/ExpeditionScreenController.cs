@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Game.App;
 using Game.Core;
@@ -241,17 +240,15 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return;
         }
 
-        var rootPath = Path.Combine(Application.streamingAssetsPath, "GameData", "World");
-        try
+        var catalog = mapView?.WorldGenerationCatalog;
+        if (catalog == null)
         {
-            var catalog = WorldGenerationPresetLoader.LoadCatalogFromDirectory(rootPath);
-            campaignPresets.AddRange(catalog.Sizes);
-            campaignOptionPresets.AddRange(catalog.Options);
+            Debug.LogError("World generation presets are unavailable because the shared game-data catalog was not loaded.");
+            return;
         }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"World generation presets could not be loaded: {ex.Message}");
-        }
+
+        campaignPresets.AddRange(catalog.Sizes);
+        campaignOptionPresets.AddRange(catalog.Options);
     }
 
     private void SetCampaignPreset(string presetId)
@@ -768,7 +765,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("report-title-main", report.Title);
         SetText("report-sub-main", $"Expedition · Späher · Tag {state.World.WorldDay}");
         SetText("report-reliability-main", $"Verlässlichkeit: {ReliabilityText(report.Reliability)}");
-        SetText("report-direction-main", report.RelatedCoords.Count > 0 ? report.RelatedCoords[0].ToString() : "Unbekannt");
+        SetText("report-direction-main", ReportLeadHeader(report));
         SetText("report-excerpt-main", $"„{report.Body}”");
         BuildHintList(report);
     }
@@ -796,7 +793,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             title.AddToClassList("report-list__title");
             row.Add(title);
 
-            var meta = new Label($"{ReliabilityText(report.Reliability)} | {report.Hints.Count} Hinweise");
+            var meta = new Label($"{ReliabilityText(report.Reliability)} | {report.Leads.Count} Spuren | {report.Hints.Count} Hinweise");
             meta.AddToClassList("report-list__meta");
             row.Add(meta);
 
@@ -837,6 +834,20 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         label.AddToClassList("hint-list__label");
         list.Add(label);
 
+        foreach (var lead in report.Leads)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("hint-list__row");
+            var scope = lead.Scope == ScoutLeadScope.Local ? "UMGEBUNG" : "RICHTUNG";
+            var heading = new Label($"{scope} · {DirectionText(lead.Direction)} · {lead.Confidence}%");
+            heading.AddToClassList("hint-list__label");
+            row.Add(heading);
+            var text = new Label(lead.Summary);
+            text.AddToClassList("hint-list__text");
+            row.Add(text);
+            list.Add(row);
+        }
+
         for (var i = 0; i < report.Hints.Count; i++)
         {
             var row = new VisualElement();
@@ -859,6 +870,18 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             });
             list.Add(row);
         }
+    }
+
+    private static string ReportLeadHeader(ScoutReportState report)
+    {
+        var lead = report.Leads.FirstOrDefault();
+        if (lead == null)
+        {
+            return "Keine Richtung bestaetigt";
+        }
+
+        var scope = lead.Scope == ScoutLeadScope.Local ? "Umgebung" : "Richtung";
+        return $"{scope}: {DirectionText(lead.Direction)} · Hinweis {lead.Confidence}%";
     }
 
     private void RefreshScoutMissionPopup(GameState state)

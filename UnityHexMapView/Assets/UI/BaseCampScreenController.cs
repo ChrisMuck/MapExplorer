@@ -864,7 +864,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         }
 
         grid.Clear();
-        var factions = state.Factions;
+        var factions = mapView.GetKnownFactionsForUi();
         for (var i = 0; i < factions.Count; i++)
         {
             var faction = factions[i];

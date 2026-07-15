@@ -10,7 +10,7 @@
       "shortDescription": "Die alte Handelsbruecke ist eingestuerzt.",
       "description": "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
       "flavorByState": {
-        "blocked": "Die Schlucht trennt die alte Handelsroute.",
+        "blocked": "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.",
         "risky-passage": "Ein provisorischer Uebergang haengt ueber der Schlucht.",
         "repaired": "Die Bruecke ist wieder passierbar."
       },
@@ -76,12 +76,30 @@
       "shortDescription": "Ein altes, absichtlich versiegeltes Tor.",
       "description": "Schwere Riegel und verwitterte Zeichen halten dieses Tor verschlossen. Warum es versiegelt wurde, bleibt vorerst unklar.",
       "flavorByState": {
-        "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen."
+        "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen.",
+        "opened": "Der Verschluss ist gebrochen; was dahinter liegt, bleibt weiterhin unklar."
       },
       "imageId": "placeholder-gate",
       "journalText": {
         "discovered": "Ein versiegeltes Tor wurde entdeckt.",
         "resolved": "Das versiegelte Tor wurde dokumentiert."
+      }
+    },
+    {
+      "id": "content-first-contact",
+      "title": "Zeichen einer Begegnung",
+      "subtitle": "Kontaktort",
+      "shortDescription": "Ein bewohnter Rastplatz und ein sichtbares Signal deuten auf einen möglichen Kontakt.",
+      "description": "Jemand hat den Platz bewusst vorbereitet, doch wer auf die Expedition wartet und welche Absicht dahintersteht, bleibt offen.",
+      "flavorByState": {
+        "unapproached": "Der Ort wirkt vorbereitet, aber noch still.",
+        "contacted": "Die erste Begegnung hat Spuren und Fragen hinterlassen.",
+        "withdrawn": "Die Expedition hat Abstand gehalten."
+      },
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discovered": "Ein Ort deutet auf eine mögliche Begegnung hin.",
+        "resolved": "Der mögliche Kontakt wurde dokumentiert."
       }
     }
   ]

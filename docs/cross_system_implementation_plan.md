@@ -1,7 +1,10 @@
 # Cross-System Implementation Plan
 
-Status: **Active implementation plan**  
+Status: **Initial integration blocks completed; retained as implementation history**
 Related concept: `docs/gameconcept/cross_system_integration_concept.md`
+
+Successor for the approved JSON, world-process and Simulation Runner foundation:
+`docs/cross_system_foundation_implementation_plan.md`.
 
 This plan implements the shared loop between generated world state, locations, scouts, factions and delayed consequences. It is deliberately staged so that the procedural generator remains pure and the player never receives unearned map knowledge.
 

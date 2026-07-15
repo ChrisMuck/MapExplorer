@@ -56,6 +56,7 @@ public sealed class FactionProfileDefinition
 {
     private readonly List<string> values;
     private readonly List<string> tabooActionTags;
+    private readonly List<string> observationChannels;
 
     public FactionProfileDefinition(
         string id,
@@ -64,7 +65,9 @@ public sealed class FactionProfileDefinition
         IEnumerable<string>? tabooActionTags = null,
         FactionTerritorialPolicyDefinition? territorialPolicy = null,
         string? contactStyle = null,
-        string? leadershipStyle = null)
+        string? leadershipStyle = null,
+        int observationRange = 0,
+        IEnumerable<string>? observationChannels = null)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Faction profile id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Faction profile label must not be empty.", nameof(label));
@@ -80,9 +83,16 @@ public sealed class FactionProfileDefinition
             .Select(tag => tag.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToList();
+        if (observationRange < 0) throw new ArgumentOutOfRangeException(nameof(observationRange));
+        this.observationChannels = (observationChannels ?? new[] { "territory", "watch" })
+            .Where(channel => !string.IsNullOrWhiteSpace(channel))
+            .Select(channel => channel.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
         TerritorialPolicy = territorialPolicy ?? new FactionTerritorialPolicyDefinition();
         ContactStyle = string.IsNullOrWhiteSpace(contactStyle) ? null : contactStyle.Trim();
         LeadershipStyle = string.IsNullOrWhiteSpace(leadershipStyle) ? null : leadershipStyle.Trim();
+        ObservationRange = observationRange;
     }
 
     public string Id { get; }
@@ -92,6 +102,8 @@ public sealed class FactionProfileDefinition
     public FactionTerritorialPolicyDefinition TerritorialPolicy { get; }
     public string? ContactStyle { get; }
     public string? LeadershipStyle { get; }
+    public int ObservationRange { get; }
+    public IReadOnlyList<string> ObservationChannels => observationChannels;
 }
 
 /// <summary>Discoverable conduct preferences. Concrete territories and locations remain generated runtime state.</summary>
@@ -196,7 +208,18 @@ public sealed class WorldTriggerDefinition
 
 public sealed class ConsequenceStageDefinition
 {
-    public ConsequenceStageDefinition(string id, int delayDays, string? evidenceId, string? eventTitle, string? eventBody)
+    private readonly List<string> situationDefinitionIds;
+    private readonly List<WorldStageEffectDefinition> effects;
+
+    public ConsequenceStageDefinition(
+        string id,
+        int delayDays,
+        string? evidenceId,
+        string? eventTitle,
+        string? eventBody,
+        IEnumerable<string>? situationDefinitionIds = null,
+        IEnumerable<WorldStageEffectDefinition>? effects = null,
+        WorldConsequenceSeverity severity = WorldConsequenceSeverity.Informational)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence stage id must not be empty.", nameof(id));
         if (delayDays < 0) throw new ArgumentOutOfRangeException(nameof(delayDays));
@@ -205,6 +228,15 @@ public sealed class ConsequenceStageDefinition
         EvidenceId = string.IsNullOrWhiteSpace(evidenceId) ? null : evidenceId.Trim();
         EventTitle = string.IsNullOrWhiteSpace(eventTitle) ? null : eventTitle.Trim();
         EventBody = string.IsNullOrWhiteSpace(eventBody) ? null : eventBody.Trim();
+        this.situationDefinitionIds = (situationDefinitionIds ?? Enumerable.Empty<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        this.effects = (effects ?? Enumerable.Empty<WorldStageEffectDefinition>()).ToList();
+        if (this.effects.Select(effect => effect.Id).Distinct(StringComparer.Ordinal).Count() != this.effects.Count)
+            throw new ArgumentException("World-stage effect IDs must be unique within one stage.", nameof(effects));
+        Severity = severity;
     }
 
     public string Id { get; }
@@ -212,23 +244,142 @@ public sealed class ConsequenceStageDefinition
     public string? EvidenceId { get; }
     public string? EventTitle { get; }
     public string? EventBody { get; }
+    public IReadOnlyList<string> SituationDefinitionIds => situationDefinitionIds;
+    public IReadOnlyList<WorldStageEffectDefinition> Effects => effects;
+    public WorldConsequenceSeverity Severity { get; }
+}
+
+/// <summary>How urgent a process stage is. Serious stages require a preceding warning situation.</summary>
+public enum WorldConsequenceSeverity
+{
+    Informational,
+    Serious
+}
+
+/// <summary>Neutral, runtime-targeted world change authored by a consequence stage.</summary>
+public enum WorldStageEffectKind
+{
+    AddEvidence,
+    ChangeLocationState,
+    SetLocationFlag,
+    SetTilePassability,
+    RaiseWorldTrigger,
+    CreateSituation,
+    EscalateRelatedFactionAwareness,
+    CreateConnection
+}
+
+/// <summary>
+/// Generic effect schema. It never contains a concrete faction or location ID: targets are the
+/// source runtime location/coordinate or a generated relation attached to it.
+/// </summary>
+public sealed class WorldStageEffectDefinition
+{
+    private readonly List<string> actionTags;
+    private readonly List<string> suppressIfSituationResponseTags;
+
+    public WorldStageEffectDefinition(
+        string id,
+        WorldStageEffectKind kind,
+        string? referenceId = null,
+        string? stateChannel = null,
+        string? stateId = null,
+        bool? isBlocked = null,
+        IEnumerable<string>? actionTags = null,
+        int dueDays = 0,
+        string? connectionKind = null,
+        IEnumerable<string>? suppressIfSituationResponseTags = null)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("World-stage effect id must not be empty.", nameof(id));
+        if (dueDays < 0) throw new ArgumentOutOfRangeException(nameof(dueDays));
+        Id = id.Trim();
+        Kind = kind;
+        ReferenceId = string.IsNullOrWhiteSpace(referenceId) ? null : referenceId.Trim();
+        StateChannel = string.IsNullOrWhiteSpace(stateChannel) ? null : stateChannel.Trim();
+        StateId = string.IsNullOrWhiteSpace(stateId) ? null : stateId.Trim();
+        IsBlocked = isBlocked;
+        this.actionTags = (actionTags ?? Enumerable.Empty<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        DueDays = dueDays;
+        ConnectionKind = string.IsNullOrWhiteSpace(connectionKind) ? null : connectionKind.Trim();
+        this.suppressIfSituationResponseTags = (suppressIfSituationResponseTags ?? Enumerable.Empty<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    public string Id { get; }
+    public WorldStageEffectKind Kind { get; }
+    public string? ReferenceId { get; }
+    public string? StateChannel { get; }
+    public string? StateId { get; }
+    public bool? IsBlocked { get; }
+    public IReadOnlyList<string> ActionTags => actionTags;
+    public int DueDays { get; }
+    public string? ConnectionKind { get; }
+    public IReadOnlyList<string> SuppressIfSituationResponseTags => suppressIfSituationResponseTags;
+}
+
+/// <summary>An authored possible history. Its weight is read only once at process scheduling time.</summary>
+public sealed class ConsequenceBranchDefinition
+{
+    private readonly Dictionary<string, ConsequenceStageDefinition> stages;
+
+    public ConsequenceBranchDefinition(string id, int weight, IEnumerable<ConsequenceStageDefinition> stages)
+    {
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence branch id must not be empty.", nameof(id));
+        if (weight < 1) throw new ArgumentOutOfRangeException(nameof(weight), "Consequence branch weight must be positive.");
+        Id = id.Trim();
+        Weight = weight;
+        this.stages = (stages ?? throw new ArgumentNullException(nameof(stages)))
+            .ToDictionary(stage => stage.Id, StringComparer.Ordinal);
+        if (this.stages.Count == 0) throw new ArgumentException("A consequence branch needs at least one stage.", nameof(stages));
+    }
+
+    public string Id { get; }
+    public int Weight { get; }
+    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => stages.Values;
+    public ConsequenceStageDefinition? FindStage(string stageId) => stages.TryGetValue(stageId, out var stage) ? stage : null;
 }
 
 public sealed class ConsequenceDefinition
 {
-    private readonly Dictionary<string, ConsequenceStageDefinition> stages;
+    private readonly Dictionary<string, ConsequenceBranchDefinition> branches;
 
     public ConsequenceDefinition(string id, IEnumerable<ConsequenceStageDefinition> stages)
+        : this(id, new[] { new ConsequenceBranchDefinition("default", 1, stages) })
+    {
+    }
+
+    public ConsequenceDefinition(string id, IEnumerable<ConsequenceBranchDefinition> branches)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Consequence id must not be empty.", nameof(id));
         Id = id.Trim();
-        this.stages = (stages ?? throw new ArgumentNullException(nameof(stages))).ToDictionary(stage => stage.Id, StringComparer.Ordinal);
-        if (this.stages.Count == 0) throw new ArgumentException("A consequence needs at least one stage.", nameof(stages));
+        this.branches = (branches ?? throw new ArgumentNullException(nameof(branches))).ToDictionary(branch => branch.Id, StringComparer.Ordinal);
+        if (this.branches.Count == 0) throw new ArgumentException("A consequence needs at least one branch.", nameof(branches));
     }
 
     public string Id { get; }
-    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => stages.Values;
-    public ConsequenceStageDefinition? FindStage(string stageId) => stages.TryGetValue(stageId, out var stage) ? stage : null;
+    public IReadOnlyCollection<ConsequenceBranchDefinition> Branches => branches.Values;
+    /// <summary>Compatibility view for legacy callers and stage-only authoring.</summary>
+    public IReadOnlyCollection<ConsequenceStageDefinition> Stages => branches.TryGetValue("default", out var branch)
+        ? branch.Stages
+        : branches.Values.SelectMany(item => item.Stages).ToArray();
+    public ConsequenceBranchDefinition? FindBranch(string branchId) => branches.TryGetValue(branchId, out var branch) ? branch : null;
+    public ConsequenceStageDefinition? FindStage(string branchId, string stageId) => FindBranch(branchId)?.FindStage(stageId);
+    public ConsequenceStageDefinition? FindStage(string stageId) => FindBranch("default")?.FindStage(stageId);
+
+    public ConsequenceBranchDefinition SelectBranch(IDeterministicRandomSource random)
+    {
+        if (random == null) throw new ArgumentNullException(nameof(random));
+        var ordered = branches.Values.OrderBy(branch => branch.Id, StringComparer.Ordinal).ToList();
+        if (ordered.Count == 1) return ordered[0];
+        var total = ordered.Sum(branch => branch.Weight);
+        var roll = random.NextInt(total);
+        foreach (var branch in ordered)
+        {
+            if (roll < branch.Weight) return branch;
+            roll -= branch.Weight;
+        }
+
+        throw new InvalidOperationException("Consequence branch selection did not resolve a branch.");
+    }
 }
 
 public sealed class FactionReactionRuleDefinition
@@ -466,17 +617,20 @@ public sealed class ScoutMissionTypeDefinition
         int minDurationDays,
         int maxDurationDays,
         int maxScouts,
-        IEnumerable<ScoutMissionFocus> allowedFocuses)
+        IEnumerable<ScoutMissionFocus> allowedFocuses,
+        int movementPointCost = 0)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Scout mission type id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Scout mission type label must not be empty.", nameof(label));
         if (minDurationDays < 1 || maxDurationDays < minDurationDays) throw new ArgumentOutOfRangeException(nameof(maxDurationDays));
         if (maxScouts < 1) throw new ArgumentOutOfRangeException(nameof(maxScouts));
+        if (movementPointCost < 0) throw new ArgumentOutOfRangeException(nameof(movementPointCost));
         Id = id.Trim();
         Label = label.Trim();
         MinDurationDays = minDurationDays;
         MaxDurationDays = maxDurationDays;
         MaxScouts = maxScouts;
+        MovementPointCost = movementPointCost;
         this.allowedFocuses = new HashSet<ScoutMissionFocus>(allowedFocuses ?? throw new ArgumentNullException(nameof(allowedFocuses)));
         if (this.allowedFocuses.Count == 0) throw new ArgumentException("Scout mission type needs at least one focus.", nameof(allowedFocuses));
     }
@@ -486,6 +640,8 @@ public sealed class ScoutMissionTypeDefinition
     public int MinDurationDays { get; }
     public int MaxDurationDays { get; }
     public int MaxScouts { get; }
+    /// <summary>Movement spent immediately when this mission category is a local action.</summary>
+    public int MovementPointCost { get; }
     public IReadOnlyCollection<ScoutMissionFocus> AllowedFocuses => allowedFocuses;
     public bool Allows(ScoutMissionFocus focus) => allowedFocuses.Contains(focus);
 }
@@ -627,7 +783,22 @@ public sealed class CrossSystemDataBundle
 /// </summary>
 public static class CrossSystemDataLoader
 {
-    private const int SupportedSchemaVersion = 1;
+    private const int MinimumSupportedSchemaVersion = 1;
+    private const int MaximumSupportedSchemaVersion = 2;
+    private static readonly HashSet<string> SupportedDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "evidence-definitions",
+        "world-trigger-definitions",
+        "consequence-definitions",
+        "faction-signatures",
+        "faction-profiles",
+        "faction-reaction-rules",
+        "faction-territory-entry-rules",
+        "scout-mission-types",
+        "scout-focuses",
+        "scout-outcome-rules",
+        "scout-report-templates"
+    };
 
     public static CrossSystemDataBundle? LoadFromDirectory(string rootFolder)
     {
@@ -643,9 +814,25 @@ public static class CrossSystemDataLoader
             .Where(root => !string.IsNullOrWhiteSpace(root) && Directory.Exists(root))
             .SelectMany(root => Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories))
             .OrderBy(path => path, StringComparer.Ordinal)
+            .Where(IsSupportedDocumentFile)
             .Select(File.ReadAllText)
             .ToList();
         return documents.Count == 0 ? null : LoadFromJson(documents);
+    }
+
+    // Direct directory loading remains available for tests and older callers. It must not consume
+    // schema-v2 authoring documents that are owned by CrossSystemAuthoringDataLoader.
+    private static bool IsSupportedDocumentFile(string path)
+    {
+        try
+        {
+            var document = JObject.Parse(File.ReadAllText(path));
+            return SupportedDocumentTypes.Contains((string?)document["documentType"] ?? string.Empty);
+        }
+        catch (JsonException ex)
+        {
+            throw new LocationDataException($"Malformed cross-system JSON document '{path}': {ex.Message}");
+        }
     }
 
     public static CrossSystemDataBundle LoadFromJson(IEnumerable<string> jsonDocuments)
@@ -676,9 +863,9 @@ public static class CrossSystemDataLoader
             }
 
             var schemaVersion = (int?)envelope["schemaVersion"] ?? 0;
-            if (schemaVersion != SupportedSchemaVersion)
+            if (schemaVersion < MinimumSupportedSchemaVersion || schemaVersion > MaximumSupportedSchemaVersion)
             {
-                throw new LocationDataException($"Unsupported schemaVersion '{schemaVersion}' (expected {SupportedSchemaVersion}).");
+                throw new LocationDataException($"Unsupported schemaVersion '{schemaVersion}' (supported: {MinimumSupportedSchemaVersion}-{MaximumSupportedSchemaVersion}).");
             }
 
             var items = envelope["items"] as JArray ?? new JArray();
@@ -727,7 +914,9 @@ public static class CrossSystemDataLoader
                 item.TabooActionTags,
                 BuildTerritorialPolicy(item.TerritorialPolicy),
                 item.ContactStyle,
-                item.LeadershipStyle))
+                item.LeadershipStyle,
+                item.ObservationRange,
+                item.ObservationChannels))
             .ToList();
         if (builtFactionProfiles.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
@@ -736,16 +925,30 @@ public static class CrossSystemDataLoader
 
         var builtConsequences = consequences.Select(item => new ConsequenceDefinition(
             Require(item.Id, "consequence.id"),
-            (item.Stages ?? new List<ConsequenceStageDto>()).Select(stage => new ConsequenceStageDefinition(
-                Require(stage.Id, "consequence.stage.id"), stage.DelayDays, stage.EvidenceId, stage.Event?.Title, stage.Event?.Body)))).ToList();
+            BuildConsequenceBranches(item))).ToList();
         if (builtConsequences.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
             throw new LocationDataException("Cross-system consequence IDs must be unique.");
         }
-        if (builtConsequences.SelectMany(consequence => consequence.Stages)
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages)
             .Any(stage => stage.EvidenceId != null && !definitions.Any(evidenceDefinition => evidenceDefinition.Id == stage.EvidenceId)))
         {
             throw new LocationDataException("A consequence stage references an unknown evidence definition.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.AddEvidence && (effect.ReferenceId == null || !definitions.Any(evidenceDefinition => evidenceDefinition.Id == effect.ReferenceId))))
+        {
+            throw new LocationDataException("A world-stage evidence effect references an unknown evidence definition.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.ChangeLocationState && (effect.StateChannel == null || effect.StateId == null)))
+        {
+            throw new LocationDataException("A location-state world-stage effect requires stateChannel and stateId.");
+        }
+        if (builtConsequences.SelectMany(consequence => consequence.Branches).SelectMany(branch => branch.Stages).SelectMany(stage => stage.Effects)
+            .Any(effect => effect.Kind == WorldStageEffectKind.SetTilePassability && !effect.IsBlocked.HasValue))
+        {
+            throw new LocationDataException("A tile-passability world-stage effect requires isBlocked.");
         }
 
         var builtTriggers = triggers.Select(item => new WorldTriggerDefinition(Require(item.Id, "trigger.id"), item.ConsequenceId)).ToList();
@@ -801,7 +1004,8 @@ public static class CrossSystemDataLoader
             item.MaxDurationDays,
             item.MaxScouts,
             (item.AllowedFocuses ?? new List<string>())
-                .Select(focus => ParseEnum<ScoutMissionFocus>(focus, "scoutMissionType.allowedFocuses")))).ToList();
+                .Select(focus => ParseEnum<ScoutMissionFocus>(focus, "scoutMissionType.allowedFocuses")),
+            item.MovementPointCost)).ToList();
         if (builtScoutMissionTypes.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
             throw new LocationDataException("Scout mission type IDs must be unique.");
@@ -850,6 +1054,73 @@ public static class CrossSystemDataLoader
         }
 
         return new CrossSystemDataBundle(new EvidenceDefinitionSet(definitions), builtSignatures, builtFactionProfiles, new ScoutContentDefinitionSet(builtScoutOutcomes, builtScoutReports, builtScoutMissionTypes, builtScoutFocuses), builtTriggers, builtConsequences, builtReactionRules, builtTerritoryEntryRules);
+    }
+
+    private static IReadOnlyList<ConsequenceBranchDefinition> BuildConsequenceBranches(ConsequenceDefinitionDto dto)
+    {
+        if (dto.Branches != null && dto.Branches.Count > 0)
+        {
+            if (dto.Stages != null && dto.Stages.Count > 0)
+            {
+                throw new LocationDataException("A consequence definition must use either legacy stages or explicit branches, not both.");
+            }
+
+            return dto.Branches.Select(branch => new ConsequenceBranchDefinition(
+                Require(branch.Id, "consequence.branch.id"),
+                branch.Weight,
+                BuildConsequenceStages(branch.Stages))).ToList();
+        }
+
+        return new[]
+        {
+            new ConsequenceBranchDefinition("default", 1, BuildConsequenceStages(dto.Stages))
+        };
+    }
+
+    private static IReadOnlyList<ConsequenceStageDefinition> BuildConsequenceStages(IEnumerable<ConsequenceStageDto>? stages)
+    {
+        return (stages ?? Enumerable.Empty<ConsequenceStageDto>())
+            .Select(stage =>
+            {
+                var stageId = Require(stage.Id, "consequence.stage.id");
+                var effects = (stage.Effects ?? new List<WorldStageEffectDto>())
+                    .Select((effect, index) => BuildWorldStageEffect(effect, stageId, index))
+                    .ToList();
+
+                // Schema-v1 fields remain a concise authoring form and are translated into the
+                // same generic effect pipeline as schema-v2 effect objects.
+                if (!string.IsNullOrWhiteSpace(stage.EvidenceId))
+                    effects.Add(new WorldStageEffectDefinition($"legacy-evidence:{stageId}", WorldStageEffectKind.AddEvidence, stage.EvidenceId));
+                foreach (var situationId in stage.SituationCandidateIds ?? new List<string>())
+                    effects.Add(new WorldStageEffectDefinition($"legacy-situation:{stageId}:{situationId}", WorldStageEffectKind.CreateSituation, situationId));
+
+                return new ConsequenceStageDefinition(
+                    stageId,
+                    stage.DelayDays,
+                    stage.EvidenceId,
+                    stage.Event?.Title,
+                    stage.Event?.Body,
+                    stage.SituationCandidateIds,
+                    effects,
+                    ParseEnum(stage.Severity, WorldConsequenceSeverity.Informational));
+            })
+            .ToList();
+    }
+
+    private static WorldStageEffectDefinition BuildWorldStageEffect(WorldStageEffectDto dto, string stageId, int index)
+    {
+        var id = string.IsNullOrWhiteSpace(dto.Id) ? $"effect:{stageId}:{index + 1}" : dto.Id;
+        return new WorldStageEffectDefinition(
+            id,
+            ParseEnum<WorldStageEffectKind>(Require(dto.Kind, "consequence.stage.effect.kind"), "consequence.stage.effect.kind"),
+            dto.ReferenceId,
+            dto.StateChannel,
+            dto.StateId,
+            dto.IsBlocked,
+            dto.ActionTags,
+            dto.DueDays,
+            dto.ConnectionKind,
+            dto.SuppressIfSituationResponseTags);
     }
 
     private static FactionReactionRuleDefinition BuildFactionReactionRule(FactionReactionRuleDto dto)
@@ -959,6 +1230,8 @@ public static class CrossSystemDataLoader
         public FactionTerritorialPolicyDto? TerritorialPolicy { get; set; }
         public string? ContactStyle { get; set; }
         public string? LeadershipStyle { get; set; }
+        public int ObservationRange { get; set; }
+        public List<string>? ObservationChannels { get; set; }
     }
 
     private sealed class FactionTerritorialPolicyDto
@@ -989,6 +1262,14 @@ public static class CrossSystemDataLoader
     {
         public string? Id { get; set; }
         public List<ConsequenceStageDto>? Stages { get; set; }
+        public List<ConsequenceBranchDto>? Branches { get; set; }
+    }
+
+    private sealed class ConsequenceBranchDto
+    {
+        public string? Id { get; set; }
+        public int Weight { get; set; }
+        public List<ConsequenceStageDto>? Stages { get; set; }
     }
 
     private sealed class ConsequenceStageDto
@@ -997,6 +1278,23 @@ public static class CrossSystemDataLoader
         public int DelayDays { get; set; }
         public string? EvidenceId { get; set; }
         public ConsequenceEventDto? Event { get; set; }
+        public List<string>? SituationCandidateIds { get; set; }
+        public List<WorldStageEffectDto>? Effects { get; set; }
+        public string? Severity { get; set; }
+    }
+
+    private sealed class WorldStageEffectDto
+    {
+        public string? Id { get; set; }
+        public string? Kind { get; set; }
+        public string? ReferenceId { get; set; }
+        public string? StateChannel { get; set; }
+        public string? StateId { get; set; }
+        public bool? IsBlocked { get; set; }
+        public List<string>? ActionTags { get; set; }
+        public int DueDays { get; set; }
+        public string? ConnectionKind { get; set; }
+        public List<string>? SuppressIfSituationResponseTags { get; set; }
     }
 
     private sealed class ConsequenceEventDto
@@ -1070,6 +1368,7 @@ public static class CrossSystemDataLoader
         public int MinDurationDays { get; set; }
         public int MaxDurationDays { get; set; }
         public int MaxScouts { get; set; }
+        public int MovementPointCost { get; set; }
         public List<string>? AllowedFocuses { get; set; }
     }
 

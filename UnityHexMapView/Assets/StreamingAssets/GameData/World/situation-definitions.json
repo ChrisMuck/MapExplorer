@@ -1,0 +1,10 @@
+{
+  "documentType": "situation-definitions",
+  "schemaVersion": 2,
+  "contentVersion": 2,
+  "items": [
+    { "id": "situation-request-help-with-crossing", "kind": "request", "possibleSourceKinds": ["faction", "local-group", "individual"], "urgencyLabels": ["there-is-still-time", "soon", "immediate"], "responseOptions": [{ "id": "accept", "actionTag": "assist" }, { "id": "ask-for-time", "actionTag": "promise-return" }, { "id": "offer-alternative", "actionTag": "organize-help" }, { "id": "decline", "actionTag": "decline" }], "resolutionTags": ["help-provided", "promise-kept", "promise-broken", "expired"] },
+    { "id": "situation-investigate-disturbance", "kind": "warning", "possibleSourceKinds": ["world-process", "location"], "urgencyLabels": ["soon"], "responseOptions": [{ "id": "return", "actionTag": "investigate" }, { "id": "prepare", "actionTag": "prepare-response" }, { "id": "ignore", "actionTag": "decline" }], "resolutionTags": ["investigated", "prepared", "expired"] },
+    { "id": "situation-investigate-opened-seal", "kind": "warning", "possibleSourceKinds": ["world-process", "location"], "urgencyLabels": ["soon"], "responseOptions": [{ "id": "return", "actionTag": "investigate" }, { "id": "contain", "actionTag": "contain" }, { "id": "ignore", "actionTag": "decline" }], "resolutionTags": ["investigated", "contained", "expired"] }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "id": "scenario-sealed-containment",
+  "seed": 41029,
+  "worldKind": "fixture",
+  "width": 8,
+  "height": 6,
+  "initialState": {
+    "expeditionQ": 2,
+    "expeditionR": 1,
+    "supplies": 12,
+    "confirmedLocationIds": ["location-containment-proof"],
+    "members": [
+      { "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }
+    ],
+    "factions": [
+      { "id": "faction-1", "name": "Unknown Keepers", "reactionProfileId": "neutral-cautious", "signatureProfileId": "stone-watchmarks" }
+    ],
+    "locations": [
+      {
+        "id": "location-containment-proof",
+        "name": "Sealed Entrance",
+        "kind": "Ruin",
+        "q": 2,
+        "r": 1,
+        "anchorKind": "Point",
+        "archetypeId": "containment-site",
+        "variantId": "sealed-gate",
+        "modifierIds": ["modifier-sealed", "modifier-guarded"],
+        "operationalStateId": "sealed",
+        "contextTags": ["dangerous-release"],
+        "evidenceSeedIds": ["evidence-guard-routine"],
+        "factionRelations": [
+          { "factionId": "faction-1", "kind": "Guarded" }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-containment-proof" },
+    { "kind": "scout-location-surroundings", "locationId": "location-containment-proof", "scoutMemberIds": ["scout-1"] },
+    { "kind": "end-day" },
+    { "kind": "resolve-location-action", "locationId": "location-containment-proof", "actionId": "action-open-seal", "outcomeTier": "Success" },
+    { "kind": "end-day" },
+    { "kind": "end-day" },
+    { "kind": "resolve-world-situation", "situationDefinitionId": "situation-investigate-opened-seal", "responseActionTag": "contain" },
+    { "kind": "end-day" },
+    { "kind": "end-day" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-evidence", "argument": "evidence-seal-opened" },
+    { "kind": "has-evidence", "argument": "evidence-seal-disturbance" },
+    { "kind": "has-resolved-situation-response", "argument": "contain" },
+    { "kind": "no-world-trigger", "argument": "seal-disturbance-observed" },
+    { "kind": "has-trace-kind", "argument": "SituationChanged" },
+    { "kind": "has-causality-trace" }
+  ]
+}
