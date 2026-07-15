@@ -320,6 +320,21 @@ public sealed class DevelopmentScenarioExecutor
                 if (!string.IsNullOrWhiteSpace(argument) && session.Game.FindFaction(assertion.FactionId ?? string.Empty)?.HasMemory(argument) == true) return true;
                 error = $"faction '{assertion.FactionId}' does not remember '{argument}'.";
                 return false;
+            case "has-scout-mission-status":
+                if (Enum.TryParse<ScoutMissionStatus>(assertion.StateId, true, out var missionStatus) &&
+                    session.Game.Expedition.ScoutMissions.Any(item => item.Status == missionStatus)) return true;
+                error = $"no scout mission has status '{assertion.StateId}'.";
+                return false;
+            case "has-member-status":
+                if (Enum.TryParse<ExpeditionMemberStatus>(assertion.StateId, true, out var memberStatus) &&
+                    session.Game.Expedition.FindMember(assertion.Argument ?? string.Empty)?.Status == memberStatus) return true;
+                error = $"member '{assertion.Argument}' does not have status '{assertion.StateId}'.";
+                return false;
+            case "has-report-reliability-at-most":
+                if (int.TryParse(argument, out var maximumReliability) &&
+                    session.Game.Knowledge.ScoutReports.Any(report => report.Reliability <= maximumReliability)) return true;
+                error = $"no scout report has reliability at most '{argument}'.";
+                return false;
             case "has-soft-connections":
                 if (session.Game.World.Connections.Count >= 2) return true;
                 error = "generated world has fewer than two soft connections.";

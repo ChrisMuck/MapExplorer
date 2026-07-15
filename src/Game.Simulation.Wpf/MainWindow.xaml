@@ -114,6 +114,47 @@
                     </Grid>
                 </Grid>
             </TabItem>
+            <TabItem Header="Richtungsscouts">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.05*" />
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1.5*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Verfügbare Scouts" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Ein oder zwei Scouts auswählen. Abwesende, verletzte oder bereits eingesetzte Personen werden nicht angeboten."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <ListBox x:Name="DirectionalScoutList" SelectionMode="Multiple" DisplayMemberPath="DisplayName"
+                                 SelectionChanged="DirectionalScoutSelectionChanged" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="Missionsauftrag" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Richtung" />
+                        <ComboBox x:Name="ScoutDirectionSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Dauer" />
+                        <ComboBox x:Name="ScoutDurationSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Fokus" />
+                        <ComboBox x:Name="ScoutFocusSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Verhalten" />
+                        <ComboBox x:Name="ScoutBehaviorSelector" Margin="0,3,0,10" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock x:Name="DirectionalScoutOrderSummary" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <Button x:Name="SendDirectionalScoutButton" Content="Richtungsscout entsenden" Click="SendDirectionalScout" IsEnabled="False" />
+                    </StackPanel>
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Missionsstatus (aktiv, überfällig, verletzt, zurück)" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ListBox Grid.Row="1" x:Name="DirectionalMissionList" />
+                        <TextBlock Grid.Row="2" Text="Zurückgekehrte Richtungsberichte" FontWeight="SemiBold" Margin="0,10,0,6" />
+                        <ListBox Grid.Row="3" x:Name="DirectionalReportList" />
+                    </Grid>
+                </Grid>
+            </TabItem>
             <TabItem Header="Testteam zusammenstellen">
                 <Grid Margin="12">
                     <Grid.ColumnDefinitions>

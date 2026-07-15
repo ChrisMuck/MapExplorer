@@ -1,0 +1,28 @@
+{
+  "id": "scenario-directional-two-scout-team", "seed": 41042, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Directional team proof: send exactly two available scouts through the same mission command and receive one approximate report.",
+    "selectedTeamMemberIds": ["scout-1", "scout-2"],
+    "startingKnowledge": ["Only the expedition position is confirmed; the team receives no exact remote coordinate."],
+    "expectedWorldProcess": "Both scouts share one authored cautious mission and return through normal day advancement.",
+    "outstandingDecisionPoint": "Compare the returned directional lead with local scouting before committing the expedition."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 1, "expeditionR": 1,
+    "members": [
+      { "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 },
+      { "id": "scout-2", "name": "Tovin", "role": "Scout", "starLevel": 1 }
+    ],
+    "locations": [{ "id": "location-team-lead", "name": "Distant Markers", "kind": "Landmark", "q": 4, "r": 1, "archetypeId": "territorial-marker", "variantId": "border-warning-sign", "operationalStateId": "standing" }]
+  },
+  "commands": [
+    { "kind": "send-directional-scout", "scoutMemberIds": ["scout-1", "scout-2"], "direction": "East", "durationDays": 1, "focus": "FactionSigns", "behavior": "Cautious" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-scout-mission-status", "stateId": "Returned" },
+    { "kind": "has-directional-lead" },
+    { "kind": "no-exact-scout-coordinates" }
+  ]
+}

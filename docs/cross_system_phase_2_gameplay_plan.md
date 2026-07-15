@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.5 complete; Block 2.6 next**
+Status: **In progress — Blocks 2.0–2.6 complete; Block 2.7 next**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -324,6 +324,14 @@ they do not introduce a WPF-only world-rule path.
 without Unity and understand why each new option, warning, contact deadline or reaction appeared.
 
 ### Block 2.6 — Directional Scout Controls in WPF
+
+**Status:** Complete. WPF now exposes the shared directional mission contract for one or two free
+scouts, all eight compass sectors, one to five days, every authored focus and every behavior. The
+control sends through `DevelopmentScenarioPlayback` into the ordinary `SimulationSession` scout
+command; reports appear only after normal day advancement. A dedicated status view keeps active,
+overdue, returned and returned-injured missions visible beside approximate lead reports. Explicit
+development scenarios prove a two-scout team, an overdue return, an injured low-confidence return
+and the no-exact-coordinate knowledge contract.
 
 The current WPF runner already supports local surroundings scouting. Add the separate directional
 mission path with generic controls for:

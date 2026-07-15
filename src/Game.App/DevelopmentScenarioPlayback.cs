@@ -120,6 +120,19 @@ public sealed class DevelopmentScenarioPlayback
         return Session.ScoutLocationSurroundings(locationId, scoutMemberIds);
     }
 
+    /// <summary>Sends a directional mission through the shared scout command outside the optional script.</summary>
+    public SendScoutMissionResult SendDirectionalScout(
+        IReadOnlyList<string> scoutMemberIds,
+        ScoutDirection direction,
+        int durationDays,
+        ScoutMissionFocus focus,
+        ScoutMissionBehavior behavior)
+    {
+        if (!CanExecuteInteractive(out var error)) return SendScoutMissionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.SendDirectionalScout(scoutMemberIds, direction, durationDays, focus, behavior);
+    }
+
     /// <summary>Runs one player-selected location intervention through the shared session.</summary>
     public LocationActionResult ResolveLocationAction(string locationId, string actionId)
     {

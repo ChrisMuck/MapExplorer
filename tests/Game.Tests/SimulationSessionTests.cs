@@ -18,6 +18,7 @@ internal sealed class SimulationSessionTests
         ScenarioPlaybackRunsEveryProofScenario();
         InteractiveLocationCommandsRemainOptionalToTheScript();
         TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession();
+        InteractiveDirectionalScoutUsesSharedMissionLifecycle();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -175,6 +176,27 @@ internal sealed class SimulationSessionTests
         AssertTrue(interaction.Success, "A hypothetical team uses the normal shared location option query");
         AssertFalse(rebuild.IsAvailable, "Bridge repair is unavailable in the team preview without an engineer");
         AssertEqual(2, playback.Session.Game.Expedition.Members.Count, "Read-only team preview does not change the active expedition");
+    }
+
+    private static void InteractiveDirectionalScoutUsesSharedMissionLifecycle()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-directional-lead.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var sent = playback.SendDirectionalScout(
+            new[] { "scout-1" }, ScoutDirection.East, 1, ScoutMissionFocus.Ruins, ScoutMissionBehavior.Cautious);
+
+        AssertTrue(sent.Success && sent.Mission != null, "Interactive WPF-facing control delegates to the shared directional mission command");
+        AssertEqual(ScoutMissionStatus.Active, sent.Mission!.Status, "Directional mission starts in the shared active state");
+        AssertEqual(0, playback.Session.Game.Knowledge.ScoutReports.Count, "Sending a mission does not create an immediate report");
+
+        var advanced = playback.AdvanceDays(1);
+
+        AssertTrue(advanced.Success, "Normal day advancement resolves the interactive directional mission");
+        AssertTrue(playback.Session.Game.Knowledge.ScoutReports.Any(report => report.MissionId == sent.Mission.Id),
+            "Directional report appears only through the normal mission lifecycle");
+        AssertTrue(playback.Session.Game.Knowledge.ScoutReports.All(report => !report.HasExactCoordinates),
+            "Interactive directional reports preserve the no-exact-coordinate contract");
     }
 
     private static GameDataCatalog LoadCatalog()
