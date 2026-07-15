@@ -66,6 +66,7 @@ A future `game-data-manifest.json` lists the documents deliberately and makes de
     "Locations/OutcomeTables/outcome-tables.json",
     "Locations/ContentProfiles/content-profiles.json",
     "Findings/findings.json",
+    "Findings/finding-tables.json",
     "World/evidence-definitions.json",
     "World/context-definitions.json",
     "World/consequence-definitions.json",
@@ -100,7 +101,9 @@ Assets/StreamingAssets/GameData/
     Actions/actions.json                          # existing, expanded
     OutcomeTables/outcome-tables.json             # existing, expanded
     ContentProfiles/content-profiles.json         # existing, presentation only
-  Findings/findings.json                          # new
+  Findings/
+    findings.json                                 # existing
+    finding-tables.json                           # next implementation step
   Scouting/
     mission-types.json                            # existing
     focuses.json                                  # existing
@@ -298,6 +301,28 @@ An action outcome or project-completion effect may acquire one explicit authored
 unsecured `FieldFindingState`, applies the finding's repeat policy for that concrete location and
 adds no Knowledge Points. Only the normal expedition return and base analysis can turn it into an
 archive insight and Knowledge Points.
+
+For normal variable discoveries, an outcome uses `RollFindingTable` instead:
+
+```json
+{
+  "kind": "RollFindingTable",
+  "referenceId": "finding-table-restless-marsh",
+  "text": "Die Expedition sichert verwertbare Proben."
+}
+```
+
+Finding Tables live in `Findings/finding-tables.json`. Each entry has a positive weight, a finding
+ID or explicit empty result, and optional generic state/context gates. The catalog validates table
+and finding references. Eligible entries are filtered first and then resolved through the
+deterministic world random source. The resolved entry is persisted for the concrete location and
+table-roll key, including an empty result, so save/load and repeated queries cannot reroll it.
+Finding repeat rules and table repeat rules are independent: the table controls when another roll
+is legal; each finding controls whether that finding can be acquired again.
+
+`AddFinding` is reserved for guaranteed narrative or causal discoveries. `RollFindingTable` is the
+default for ordinary investigation, sample and survey variation. Both effects feed the same
+unsecured return-and-analysis lifecycle and never grant material stockpiles.
 
 ```json
 {

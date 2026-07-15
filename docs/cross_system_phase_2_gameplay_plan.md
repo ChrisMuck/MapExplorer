@@ -191,6 +191,12 @@ chains use this for investigation, containment, hazard containment and natural-p
 The distinct player-knowledge model for a once-observed condition becoming old or doubtful remains
 separate follow-up work; no objective location state is exposed merely to satisfy that requirement.
 
+**Next implementation step:** add validated Finding Tables and a generic `RollFindingTable` effect.
+Normal investigation/sample/survey outcomes should draw from weighted, state/context-filtered
+tables through deterministic World State and persist the resolved entry or empty result. Direct
+`AddFinding` remains available only for guaranteed narrative discoveries. Migrate the current
+ordinary fixed outcome findings to tables once the resolver and save/runtime snapshot tests exist.
+
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
 2. Keep the existing knowledge loop intact: findings and field knowledge only become Knowledge
