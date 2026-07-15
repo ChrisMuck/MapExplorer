@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Game.Core;
 
 namespace Game.App
 {
@@ -30,6 +31,11 @@ public sealed class DevelopmentScenarioPlayback
     public bool HasNextCommand => !isHalted && nextCommandIndex < Scenario.Commands.Count;
     public bool IsHalted => isHalted;
     public bool HasManualTimeAdvance { get; private set; }
+    /// <summary>
+    /// True once a developer chose a command outside the authored script. Such a session is still
+    /// useful for inspection, but its script-only run record must not be presented as replayable.
+    /// </summary>
+    public bool HasInteractiveCommands { get; private set; }
     public IReadOnlyList<string> Failures => failures;
 
     public static DevelopmentScenarioPlayback Create(GameDataCatalog catalog, DevelopmentScenario scenario)
@@ -81,6 +87,7 @@ public sealed class DevelopmentScenarioPlayback
         if (days < 1) return DevelopmentScenarioTimeAdvanceResult.Rejected("At least one day is required.");
         if (assertionsEvaluated) return DevelopmentScenarioTimeAdvanceResult.Rejected("Scenario assertions have already been evaluated.");
 
+        HasInteractiveCommands = true;
         var advanced = 0;
         for (var index = 0; index < days; index++)
         {
@@ -95,6 +102,38 @@ public sealed class DevelopmentScenarioPlayback
 
         HasManualTimeAdvance = true;
         return DevelopmentScenarioTimeAdvanceResult.Succeeded(advanced);
+    }
+
+    /// <summary>Runs the normal location inspection command outside the optional scenario script.</summary>
+    public InspectLocationResult InspectLocation(HexCoord coord)
+    {
+        if (!CanExecuteInteractive(out var error)) return InspectLocationResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.InspectLocation(coord);
+    }
+
+    /// <summary>Dispatches selected free scouts on the standard local-surroundings mission.</summary>
+    public SendScoutMissionResult ScoutLocationSurroundings(string locationId, IReadOnlyList<string> scoutMemberIds)
+    {
+        if (!CanExecuteInteractive(out var error)) return SendScoutMissionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.ScoutLocationSurroundings(locationId, scoutMemberIds);
+    }
+
+    /// <summary>Runs one player-selected location intervention through the shared session.</summary>
+    public LocationActionResult ResolveLocationAction(string locationId, string actionId)
+    {
+        if (!CanExecuteInteractive(out var error)) return LocationActionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.ResolveLocationAction(locationId, actionId);
+    }
+
+    /// <summary>Advances an already started location project through the shared session.</summary>
+    public LocationActionResult AdvanceLocationProject(string locationId)
+    {
+        if (!CanExecuteInteractive(out var error)) return LocationActionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.AdvanceLocationProject(locationId);
     }
 
     public DevelopmentScenarioRunResult RunToCompletion()
@@ -126,6 +165,18 @@ public sealed class DevelopmentScenarioPlayback
                 failures.Add($"assertion '{assertion.Kind}': {error}");
             }
         }
+    }
+
+    private bool CanExecuteInteractive(out string error)
+    {
+        if (assertionsEvaluated)
+        {
+            error = "Scenario assertions have already been evaluated. Load the scenario again to inspect a different command path.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
     }
 }
 

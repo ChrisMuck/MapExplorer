@@ -38,7 +38,6 @@ internal sealed class CrossSystemIntegrationProofTests
 
         AssertTrue(app.InspectLocation(game, bridgeCoord).Success, "The expedition can inspect the route obstacle");
         AssertTrue(app.ScoutLocationSurroundings(game, bridge.Id, new[] { "scout-1" }).Success, "A free scout can investigate the route obstacle surroundings");
-        AssertTrue(app.EndDay(game).Success, "The scout mission advances through the normal day flow");
         AssertEqual("evidence-claim-markers", game.Knowledge.Evidence.Single().DefinitionId, "Scout evidence comes from the generated location evidence seed");
         AssertEqual(FactionAwarenessLevel.Suspicious, game.World.FactionAwareness.Single().Level, "Scout evidence raises generated regional awareness without revealing ownership");
 
@@ -76,7 +75,6 @@ internal sealed class CrossSystemIntegrationProofTests
 
         AssertTrue(app.InspectLocation(game, gateCoord).Success, "The expedition can inspect a sealed containment location");
         AssertTrue(app.ScoutLocationSurroundings(game, sealedLocation.Id, new[] { "scout-1" }).Success, "The location reconnaissance is the same scout mission type used by other archetypes");
-        app.EndDay(game);
         AssertEqual("evidence-guard-routine", game.Knowledge.Evidence.Single().DefinitionId, "The scout report returns neutral generated evidence for the sealed location");
 
         var opening = app.ResolveLocationAction(game, sealedLocation.Id, "action-open-seal", LocationOutcomeTier.Success);

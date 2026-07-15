@@ -25,6 +25,24 @@ public sealed class GetLocationInteractionCommand
             throw new ArgumentNullException(nameof(game));
         }
 
+        return Execute(game, locationId, game.Expedition);
+    }
+
+    /// <summary>
+    /// Read-only option query for an explicitly supplied expedition composition. Development
+    /// planners use this to preview specialist gates without changing the active expedition.
+    /// </summary>
+    public LocationInteractionQueryResult Execute(GameState game, string locationId, ExpeditionState expedition)
+    {
+        if (game == null)
+        {
+            throw new ArgumentNullException(nameof(game));
+        }
+        if (expedition == null)
+        {
+            throw new ArgumentNullException(nameof(expedition));
+        }
+
         var location = FindLocation(game, locationId);
         if (location == null)
         {
@@ -41,7 +59,7 @@ public sealed class GetLocationInteractionCommand
         return LocationInteractionQueryResult.Found(
             interactionService.BuildInteraction(
                 location,
-                game.Expedition,
+                expedition,
                 LocationInteractionSupport.LinkedFactions(game, location),
                 scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge)));
     }

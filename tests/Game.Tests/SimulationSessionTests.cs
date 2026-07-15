@@ -16,6 +16,8 @@ internal sealed class SimulationSessionTests
         FixtureProofScenariosReplayToTheSamePlayerState();
         ScenarioPlaybackStepsSharedCommandsAndNormalDays();
         ScenarioPlaybackRunsEveryProofScenario();
+        InteractiveLocationCommandsRemainOptionalToTheScript();
+        TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -127,6 +129,52 @@ internal sealed class SimulationSessionTests
         }
     }
 
+    private static void InteractiveLocationCommandsRemainOptionalToTheScript()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-claimed-crossing.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var inspect = playback.InspectLocation(new HexCoord(2, 1));
+        var scout = playback.ScoutLocationSurroundings("location-route-proof", new[] { "scout-1" });
+        var rebuild = playback.ResolveLocationAction("location-route-proof", "action-rebuild-bridge");
+
+        AssertTrue(inspect.Success, "Interactive playback can inspect a known location without consuming a scripted command");
+        AssertTrue(inspect.Message.Contains("eingestuerzte Handelsbruecke"), "Inspection uses the shared content-profile description instead of the generic archive fallback");
+        AssertTrue(scout.Success && scout.Report != null, "Interactive playback can resolve a selected local scout search immediately without consuming a scripted command");
+        AssertEqual(2, scout.MovementPointCost, "Interactive local scout search spends its JSON-defined movement cost");
+        AssertEqual(1, playback.Session.Game.World.WorldDay, "Interactive local scout search does not advance the day");
+        AssertTrue(rebuild.Success, "Interactive playback can resolve a selected shared location option without consuming a scripted command");
+        AssertEqual(0, playback.NextCommandIndex, "Direct inspector commands do not force the next scenario script command");
+        AssertTrue(playback.HasInteractiveCommands, "Direct inspector commands are marked so a script-only run record cannot misrepresent the path");
+    }
+
+    private static void TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-claimed-crossing.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+        var active = playback.Session.Game.Expedition;
+        var scoutOnlyPreview = new ExpeditionState(
+            active.ExpeditionNumber,
+            active.Position,
+            active.Members.Where(member => member.Role == ExpeditionMemberRole.Scout),
+            active.ExpeditionDay,
+            active.MovementPoints,
+            active.MaxMovementPoints,
+            active.Supplies,
+            active.Medicine,
+            active.Morale,
+            active.Capacity,
+            active.Status,
+            active.UnsecuredKnowledge);
+
+        var interaction = playback.Session.GetLocationInteraction("location-route-proof", scoutOnlyPreview);
+        var rebuild = interaction.Interaction!.Options.Single(option => option.Action.Id == "action-rebuild-bridge");
+
+        AssertTrue(interaction.Success, "A hypothetical team uses the normal shared location option query");
+        AssertFalse(rebuild.IsAvailable, "Bridge repair is unavailable in the team preview without an engineer");
+        AssertEqual(2, playback.Session.Game.Expedition.Members.Count, "Read-only team preview does not change the active expedition");
+    }
+
     private static GameDataCatalog LoadCatalog()
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
@@ -143,5 +191,10 @@ internal sealed class SimulationSessionTests
     private static void AssertTrue(bool value, string message)
     {
         if (!value) throw new InvalidOperationException(message);
+    }
+
+    private static void AssertFalse(bool value, string message)
+    {
+        if (value) throw new InvalidOperationException(message);
     }
 }

@@ -335,7 +335,7 @@ public static class LocationInteractionContent
                 description: "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
                 flavorByState: new Dictionary<string, string>
                 {
-                    [LocationStateIds.Operational.Blocked] = "Die Schlucht trennt die alte Handelsroute.",
+                    [LocationStateIds.Operational.Blocked] = "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.",
                     [LocationStateIds.Operational.RiskyPassage] = "Ein provisorischer Uebergang haengt ueber der Schlucht.",
                     [LocationStateIds.Operational.Repaired] = "Die Bruecke ist wieder passierbar."
                 },

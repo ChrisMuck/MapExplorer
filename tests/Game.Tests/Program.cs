@@ -2036,7 +2036,7 @@ internal sealed class LocationDataJsonTests
         var profile = defs.FindContentProfile("content-old-trade-road-bridge");
         AssertTrue(profile != null, "Bridge content profile is present");
         AssertEqual("Zerstoerte Bruecke", profile!.Title, "Content profile carries the authored title");
-        AssertEqual("Die Schlucht trennt die alte Handelsroute.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
+        AssertEqual("Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
     }
 
     private static void WeightedOutcomeStaysWithinAuthoredBandRow()

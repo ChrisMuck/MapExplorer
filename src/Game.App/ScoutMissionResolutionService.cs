@@ -62,6 +62,39 @@ public sealed class ScoutMissionResolutionService
         return results;
     }
 
+    /// <summary>
+    /// Resolves reconnaissance around the current location immediately. It deliberately creates no
+    /// travelling mission: local scouting spends today's movement but does not take a scout away
+    /// from the expedition or advance world time.
+    /// </summary>
+    public ScoutReportState ResolveLocalSurroundings(GameState game, string locationId, IReadOnlyList<string> scoutMemberIds)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(locationId)) throw new ArgumentException("Location id must not be empty.", nameof(locationId));
+        if (scoutMemberIds == null || scoutMemberIds.Count == 0) throw new ArgumentException("At least one scout is required.", nameof(scoutMemberIds));
+
+        var mission = new ScoutMissionState(
+            $"scout-local-{game.Knowledge.ScoutReports.Count + 1}",
+            scoutMemberIds,
+            game.Expedition.Position,
+            ScoutDirection.North,
+            durationDays: 1,
+            expectedReturnWorldDay: game.World.WorldDay,
+            ScoutMissionFocus.FactionSigns,
+            ScoutMissionBehavior.Cautious,
+            targetLocationId: locationId,
+            missionTypeId: "location-surroundings");
+        var report = CreateReport(game, mission, ScoutMissionStatus.Returned);
+        game.Knowledge.AddScoutReport(report);
+        AddLocationSurroundingsEvidence(game, mission, report);
+        if (report.Leads.Count > 0 && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(mission)))
+        {
+            game.Expedition.AddUnsecuredKnowledge(3);
+        }
+
+        return report;
+    }
+
     private ScoutMissionStatus DetermineOutcome(ScoutMissionState mission, int worldDay)
     {
         var configured = scoutContent?.FindOutcome(mission);
@@ -224,7 +257,7 @@ public sealed class ScoutMissionResolutionService
 
     private static string ScoutKnowledgeSourceId(ScoutMissionState mission)
     {
-        return $"scout-report:{mission.MissionTypeId}:{mission.Origin.Q}:{mission.Origin.R}:{mission.Direction}:{mission.DurationDays}:{mission.Focus}";
+        return $"scout-report:{mission.MissionTypeId}:{mission.TargetLocationId ?? "directional"}:{mission.Origin.Q}:{mission.Origin.R}:{mission.Direction}:{mission.DurationDays}:{mission.Focus}";
     }
 
     private static int ReliabilityFor(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome)

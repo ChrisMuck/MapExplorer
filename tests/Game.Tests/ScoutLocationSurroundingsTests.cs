@@ -10,7 +10,7 @@ internal sealed class ScoutLocationSurroundingsTests
 {
     public void RunAll()
     {
-        ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness();
+        LocalScoutingResolvesImmediatelyConsumesMovementAndCreatesNeutralEvidence();
         ScoutingRequiresAnAvailableScoutAtTheLocation();
         MissionTypeJsonControlsLocalScoutTeamSize();
         JsonEvidenceDefinitionDrivesScoutReportText();
@@ -29,6 +29,7 @@ internal sealed class ScoutLocationSurroundingsTests
         }) ?? throw new InvalidOperationException("Scout JSON content was not loaded.");
         var localMission = data.ScoutContent.FindMissionType("location-surroundings");
         AssertEqual(1, localMission!.MaxScouts, "Local surroundings mission limit comes from JSON");
+        AssertEqual(2, localMission.MovementPointCost, "Local surroundings movement cost comes from JSON");
         AssertTrue(localMission.Allows(ScoutMissionFocus.FactionSigns), "Local surroundings permits faction-sign focus from JSON");
         AssertFalse(localMission.Allows(ScoutMissionFocus.Ruins), "Local surroundings excludes unrelated focus from JSON");
 
@@ -39,17 +40,20 @@ internal sealed class ScoutLocationSurroundingsTests
         AssertFalse(result.Success, "Local surroundings mission rejects a two-scout team by JSON limit");
     }
 
-    private static void ScoutingLocationSurroundingsCreatesNeutralEvidenceAndRegionalAwareness()
+    private static void LocalScoutingResolvesImmediatelyConsumesMovementAndCreatesNeutralEvidence()
     {
         var game = CreateGame(new HexCoord(1, 1));
         var app = new GameApplication();
 
-        var sent = app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
-        var day = new EndDayCommand(suppliesPerDay: 0).Execute(game);
+        var result = app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
 
-        AssertTrue(sent.Success, "Local surroundings scout mission is sent");
-        AssertEqual("location-1", sent.Mission!.TargetLocationId, "Mission retains its target location");
-        AssertTrue(day.Success, "End day resolves local scout mission");
+        AssertTrue(result.Success, "Local surroundings scouting resolves at the location");
+        AssertTrue(result.Report != null, "Local surroundings scouting returns its report immediately");
+        AssertEqual(2, result.MovementPointCost, "Local surroundings spends the JSON movement cost");
+        AssertEqual(2, game.Expedition.MovementPoints, "Local surroundings spends movement without ending the day");
+        AssertEqual(1, game.World.WorldDay, "Local surroundings does not advance world time");
+        AssertEqual(0, game.Expedition.ScoutMissions.Count, "Local surroundings does not create a travelling scout mission");
+        AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout-1")!.Status, "Local surroundings keeps the selected scout with the expedition");
         AssertTrue(game.Knowledge.ScoutReports[0].Leads.All(lead => lead.Scope == ScoutLeadScope.Local), "Local scouting reports only local leads");
         AssertEqual(1, game.Knowledge.Evidence.Count, "Scouting creates one evidence item");
         AssertEqual("evidence-location-surroundings-signs", game.Knowledge.Evidence[0].DefinitionId, "Evidence reports signs without naming a faction");
@@ -80,7 +84,6 @@ internal sealed class ScoutLocationSurroundingsTests
         var app = new GameApplication(null, data);
 
         app.ScoutLocationSurroundings(game, "location-1", new[] { "scout-1" });
-        app.EndDay(game);
 
         AssertTrue(data != null, "World evidence JSON is loaded");
         AssertTrue(data!.Evidence.Find("evidence-patrol-signs") != null, "Patrol evidence definition is available by stable id");

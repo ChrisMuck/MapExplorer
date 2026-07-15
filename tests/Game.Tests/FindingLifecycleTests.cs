@@ -61,7 +61,7 @@ internal sealed class FindingLifecycleTests
         var game = app.CreateTutorialGame();
         var expected = new[]
         {
-            ("broken-ravine", "Die Schlucht trennt die alte Handelsroute."),
+            ("broken-ravine", "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen."),
             ("marked-grave", "Das Grab ist verschlossen und mit Warnzeichen versehen."),
             ("sealed-gate", "Das Tor ist fest versiegelt und traegt alte Warnzeichen.")
         };

@@ -28,6 +28,7 @@
         "anchorOtherR": 1,
         "archetypeId": "route-obstacle",
         "variantId": "broken-bridge",
+        "contentProfileId": "content-old-trade-road-bridge",
         "modifierIds": ["modifier-repairable", "modifier-watched"],
         "operationalStateId": "blocked",
         "contextTags": ["deliberate-destruction"],

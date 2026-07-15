@@ -10,7 +10,7 @@
       "shortDescription": "Die alte Handelsbruecke ist eingestuerzt.",
       "description": "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
       "flavorByState": {
-        "blocked": "Die Schlucht trennt die alte Handelsroute.",
+        "blocked": "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.",
         "risky-passage": "Ein provisorischer Uebergang haengt ueber der Schlucht.",
         "repaired": "Die Bruecke ist wieder passierbar."
       },

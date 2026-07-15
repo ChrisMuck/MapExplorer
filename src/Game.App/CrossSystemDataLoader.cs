@@ -617,17 +617,20 @@ public sealed class ScoutMissionTypeDefinition
         int minDurationDays,
         int maxDurationDays,
         int maxScouts,
-        IEnumerable<ScoutMissionFocus> allowedFocuses)
+        IEnumerable<ScoutMissionFocus> allowedFocuses,
+        int movementPointCost = 0)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Scout mission type id must not be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Scout mission type label must not be empty.", nameof(label));
         if (minDurationDays < 1 || maxDurationDays < minDurationDays) throw new ArgumentOutOfRangeException(nameof(maxDurationDays));
         if (maxScouts < 1) throw new ArgumentOutOfRangeException(nameof(maxScouts));
+        if (movementPointCost < 0) throw new ArgumentOutOfRangeException(nameof(movementPointCost));
         Id = id.Trim();
         Label = label.Trim();
         MinDurationDays = minDurationDays;
         MaxDurationDays = maxDurationDays;
         MaxScouts = maxScouts;
+        MovementPointCost = movementPointCost;
         this.allowedFocuses = new HashSet<ScoutMissionFocus>(allowedFocuses ?? throw new ArgumentNullException(nameof(allowedFocuses)));
         if (this.allowedFocuses.Count == 0) throw new ArgumentException("Scout mission type needs at least one focus.", nameof(allowedFocuses));
     }
@@ -637,6 +640,8 @@ public sealed class ScoutMissionTypeDefinition
     public int MinDurationDays { get; }
     public int MaxDurationDays { get; }
     public int MaxScouts { get; }
+    /// <summary>Movement spent immediately when this mission category is a local action.</summary>
+    public int MovementPointCost { get; }
     public IReadOnlyCollection<ScoutMissionFocus> AllowedFocuses => allowedFocuses;
     public bool Allows(ScoutMissionFocus focus) => allowedFocuses.Contains(focus);
 }
@@ -999,7 +1004,8 @@ public static class CrossSystemDataLoader
             item.MaxDurationDays,
             item.MaxScouts,
             (item.AllowedFocuses ?? new List<string>())
-                .Select(focus => ParseEnum<ScoutMissionFocus>(focus, "scoutMissionType.allowedFocuses")))).ToList();
+                .Select(focus => ParseEnum<ScoutMissionFocus>(focus, "scoutMissionType.allowedFocuses")),
+            item.MovementPointCost)).ToList();
         if (builtScoutMissionTypes.GroupBy(item => item.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
         {
             throw new LocationDataException("Scout mission type IDs must be unique.");
@@ -1362,6 +1368,7 @@ public static class CrossSystemDataLoader
         public int MinDurationDays { get; set; }
         public int MaxDurationDays { get; set; }
         public int MaxScouts { get; set; }
+        public int MovementPointCost { get; set; }
         public List<string>? AllowedFocuses { get; set; }
     }
 

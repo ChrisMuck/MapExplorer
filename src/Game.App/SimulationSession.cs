@@ -245,6 +245,9 @@ public sealed class SimulationSession
     /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
     public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);
 
+    /// <summary>Read-only option preview for a proposed team; it never changes the session state.</summary>
+    public LocationInteractionQueryResult GetLocationInteraction(string locationId, ExpeditionState expedition) => Application.GetLocationInteraction(Game, locationId, expedition);
+
     public SimulationRunRecord CreateRunRecord()
     {
         return new SimulationRunRecord(

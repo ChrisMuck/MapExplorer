@@ -88,6 +88,8 @@ public sealed class DevelopmentScenarioLocation
     public int? AnchorOtherR { get; set; }
     public string? ArchetypeId { get; set; }
     public string? VariantId { get; set; }
+    /// <summary>Optional shared presentation profile for this development fixture location.</summary>
+    public string? ContentProfileId { get; set; }
     public List<string> ModifierIds { get; set; } = new();
     public string OperationalStateId { get; set; } = LocationStateIds.Operational.None;
     public List<string> ContextTags { get; set; } = new();
@@ -321,7 +323,7 @@ public sealed class DevelopmentScenarioExecutor
             return new LocationFactionRelationState(relation.FactionId, relationKind, relation.ContextTags);
         });
         return new SpecialLocationState(item.Id, kind, position, item.Name, anchor, item.ArchetypeId, item.VariantId,
-            item.ModifierIds, operationalStateId: item.OperationalStateId, factionRelations: relations,
+            item.ModifierIds, contentProfileId: item.ContentProfileId, operationalStateId: item.OperationalStateId, factionRelations: relations,
             contextTags: item.ContextTags, evidenceSeedIds: item.EvidenceSeedIds);
     }
 }

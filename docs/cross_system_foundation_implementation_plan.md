@@ -9,6 +9,10 @@ Related concepts:
 - `docs/gameconcept/cross_system_json_authoring_schema.md`
 - `docs/gameconcept/simulation_runner_concept.md`
 
+Follow-up implementation plan:
+
+- `docs/cross_system_phase_2_gameplay_plan.md`
+
 ## 1. Objective
 
 Build one authoritative, deterministic game simulation that is shared by Unity, automated tests and
@@ -406,8 +410,11 @@ the session's shared confirmed-location interaction query; the separate read-onl
 shows objective locations, faction observation, triggers, scheduled process stages and situations.
 The causal tab projects authoritative trace and `causedBy` links. Manual time advance is marked and
 cannot be exported as a misleading reproducible scripted run until the equivalent days are authored
-in the scenario. `DevelopmentScenarioPlayback` is presentation-neutral and is covered by the Core/
-App test suite.
+in the scenario. The inspector additionally exposes voluntary direct location commands: inspect,
+local scout-surroundings with a selected free scout, every player-visible shared location action
+and active project progress. These commands never consume a scripted step; they mark the session
+as interactive so it cannot be exported as a misleading script-only run. `DevelopmentScenarioPlayback`
+is presentation-neutral and is covered by the Core/App test suite.
 
 ### Block 10 — Batch Simulation, Balance Signals and Release Gate
 
@@ -456,5 +463,6 @@ playtests begin; neither decision is automated by the batch tool.
 
 We execute one block at a time. A block is only marked complete after its acceptance tests pass and
 the project owner has reviewed any player-facing or generated-world semantics. Block 0 is recorded
-in `docs/cross_system_foundation_audit.md`. Blocks 0 and 1 are complete; the immediate next
-implementation block is **Block 2**. No WPF work begins before Block 7.
+in `docs/cross_system_foundation_audit.md`. The implemented foundation and runner work continues
+in the dedicated Phase-2 gameplay plan; it must not be extended with location-specific or WPF-only
+rule paths.

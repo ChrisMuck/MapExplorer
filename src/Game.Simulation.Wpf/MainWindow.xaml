@@ -30,8 +30,8 @@
                 <Button Content="Szenario laden" Click="LoadSelectedScenario" />
                 <Button Content="Datei laden…" Click="LoadScenarioFile" />
                 <Button Content="Run-Record laden…" Click="LoadRunRecord" />
-                <Button Content="Nächster Skriptbefehl" Click="ExecuteNextCommand" />
-                <Button Content="Skript fertig ausführen" Click="RunRemainingCommands" />
+                <Button Content="Nächster Skriptbefehl (optional)" Click="ExecuteNextCommand" />
+                <Button Content="Skriptpfad ausführen (optional)" Click="RunRemainingCommands" />
             </WrapPanel>
             <WrapPanel Margin="0,0,0,10">
                 <Button Content="1 Tag fortschreiben" Click="AdvanceOneDay" />
@@ -59,9 +59,82 @@
                         <TextBlock Text="Berichte, Hinweise und Belege" FontWeight="SemiBold" Margin="0,0,0,6" />
                         <ListBox x:Name="PlayerReportsList" />
                     </StackPanel>
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Ortsbefehle und bekannte Optionen" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ListBox Grid.Row="1" x:Name="PlayerOptionsList" SelectionChanged="PlayerOptionsSelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="2">
+                                        <TextBlock Text="{Binding LocationName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding AvailabilityText}" Foreground="#AFC0D7" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Grid.Row="2" Margin="0,8,0,4">
+                            <TextBlock x:Name="SelectedLocationCommandDetails" TextWrapping="Wrap" Foreground="#AFC0D7" />
+                            <WrapPanel Margin="0,6,0,0">
+                                <TextBlock Text="Scout für Umgebung:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <ComboBox x:Name="AvailableScoutSelector" Width="160" DisplayMemberPath="DisplayName" Margin="0,0,8,0" />
+                                <Button x:Name="ExecuteLocationCommandButton" Content="Ausgewählten Befehl ausführen" Click="ExecuteSelectedLocationCommand" IsEnabled="False" />
+                            </WrapPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Text="Skriptbefehle sind nur ein optionaler reproduzierbarer Testpfad; Ortsbefehle werden hier direkt über die gemeinsame App-Schicht ausgeführt."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,4,0,0" />
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Testteam zusammenstellen">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.05*" />
+                        <ColumnDefinition Width="1.15*" />
+                        <ColumnDefinition Width="1.5*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Verfügbare Personen" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Mehrfachauswahl. Verletzte oder abwesende Personen werden in der Vorschau nicht eingesetzt." TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <ListBox x:Name="TestTeamMemberList" SelectionMode="Multiple" SelectionChanged="TestTeamSelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="2">
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Detail}" Foreground="#AFC0D7" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <WrapPanel Margin="0,8,0,0">
+                            <Button Content="Alle verfügbaren" Click="SelectAllAvailableTestMembers" />
+                            <Button Content="Aktive Expedition" Click="SelectActiveExpeditionTestMembers" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                        <TextBlock Text="Testzusammenstellung" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock x:Name="TestTeamSummary" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <TextBlock Text="Diese Auswahl ist eine reine Vorschau. Sie verändert weder die aktive Expedition noch den Skriptpfad." TextWrapping="Wrap" Foreground="#AFC0D7" />
+                    </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Bekannte Ortsoptionen (gemeinsamer App-Vertrag)" FontWeight="SemiBold" Margin="0,0,0,6" />
-                        <ListBox x:Name="PlayerOptionsList" />
+                        <TextBlock Text="Ortsoptionen mit diesem Testteam" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Die Verfügbarkeit stammt aus der gleichen Game.App-Abfrage wie die Spielansicht. Gesperrte Optionen nennen nur bekannte Voraussetzungen." TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <ListBox x:Name="TestTeamOptionsList">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="2">
+                                        <TextBlock Text="{Binding LocationName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding AvailabilityText}" Foreground="#AFC0D7" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
                 </Grid>
             </TabItem>

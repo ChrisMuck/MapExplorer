@@ -113,7 +113,10 @@ public sealed class GameApplication
             new LocationInspectionPresentationResolver(locationInteractionDefinitions));
         completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
-        scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(crossSystemData?.ScoutContent);
+        scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(
+            crossSystemData?.ScoutContent,
+            crossSystemData?.Evidence,
+            crossSystemData?.FactionSignatures);
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
@@ -207,6 +210,12 @@ public sealed class GameApplication
     public LocationInteractionQueryResult GetLocationInteraction(GameState game, string locationId)
     {
         return getLocationInteractionCommand.Execute(game, locationId);
+    }
+
+    /// <summary>Read-only preview of location options for a proposed expedition composition.</summary>
+    public LocationInteractionQueryResult GetLocationInteraction(GameState game, string locationId, ExpeditionState expedition)
+    {
+        return getLocationInteractionCommand.Execute(game, locationId, expedition);
     }
 
     public LocationActionResult ResolveLocationAction(
