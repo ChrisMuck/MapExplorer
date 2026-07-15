@@ -1,6 +1,8 @@
 using Game.Core;
 using Game.App;
 
+try
+{
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
@@ -87,6 +89,12 @@ var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
+}
+catch (Exception exception)
+{
+    Console.Error.WriteLine($"Game.Tests failed: {exception}");
+    Environment.ExitCode = 1;
+}
 
 internal sealed class HexCoordTests
 {

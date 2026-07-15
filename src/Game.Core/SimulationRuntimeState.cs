@@ -168,7 +168,8 @@ public enum WorldSituationStatus
     Dormant,
     Active,
     Resolved,
-    Expired
+    Expired,
+    Promised
 }
 
 /// <summary>A logical relationship discovered or created by a world process; presentation chooses how to show it.</summary>
@@ -241,16 +242,24 @@ public sealed class WorldSituationState
     public string? ResolutionActionTag { get; private set; }
 
     public void Activate() { if (Status == WorldSituationStatus.Dormant) Status = WorldSituationStatus.Active; }
-    public void Resolve() { if (Status == WorldSituationStatus.Active || Status == WorldSituationStatus.Dormant) Status = WorldSituationStatus.Resolved; }
+    public void Resolve() { if (Status == WorldSituationStatus.Active || Status == WorldSituationStatus.Dormant || Status == WorldSituationStatus.Promised) Status = WorldSituationStatus.Resolved; }
     public void Resolve(string responseActionTag)
     {
         if (string.IsNullOrWhiteSpace(responseActionTag)) throw new ArgumentException("Response action tag must not be empty.", nameof(responseActionTag));
         Resolve();
         if (Status == WorldSituationStatus.Resolved) ResolutionActionTag = responseActionTag.Trim();
     }
+    public void Promise(string responseActionTag)
+    {
+        if (string.IsNullOrWhiteSpace(responseActionTag)) throw new ArgumentException("Response action tag must not be empty.", nameof(responseActionTag));
+        if (Status != WorldSituationStatus.Active) return;
+        Status = WorldSituationStatus.Promised;
+        ResolutionActionTag = responseActionTag.Trim();
+    }
     public void Expire(int worldDay)
     {
-        if (DueWorldDay.HasValue && worldDay >= DueWorldDay.Value && Status == WorldSituationStatus.Active) Status = WorldSituationStatus.Expired;
+        if (DueWorldDay.HasValue && worldDay >= DueWorldDay.Value &&
+            (Status == WorldSituationStatus.Active || Status == WorldSituationStatus.Promised)) Status = WorldSituationStatus.Expired;
     }
 
     private static string RequireText(string value, string name)

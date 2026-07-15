@@ -12,6 +12,8 @@ internal sealed class WorldProcessEffectTests
         CapacityDefersATriggerWithoutDiscardingIt();
         TerritoryObservationStaysHiddenWithoutGeneratedLocationRelation();
         WarningResponseCanPreventAnAuthoredSeriousEffect();
+        UnansweredSituationExpiresExactlyOnceAtItsDeadline();
+        PromiseCanBeFulfilledOrBreakWithAuthoredFactionMemory();
     }
 
     private static void TypedEffectsChangeOnlyLogicalRuntimeState()
@@ -118,6 +120,65 @@ internal sealed class WorldProcessEffectTests
         phase.Resolve(game);
 
         AssertEqual(1, game.World.WorldTriggers.Count, "Resolved containment suppresses the later authored spread trigger");
+    }
+
+    private static void UnansweredSituationExpiresExactlyOnceAtItsDeadline()
+    {
+        var game = CreateGame();
+        var situation = new WorldSituationState("situation-1", "situation-request", 1,
+            sourceLocationId: "location-1", dueWorldDay: 4, status: WorldSituationStatus.Active);
+        game.World.AddSituation(situation);
+        var phase = new WorldPhaseService();
+
+        game.World.AdvanceDays(2);
+        phase.Resolve(game);
+        AssertEqual(WorldSituationStatus.Active, situation.Status, "Situation remains active before its authored deadline");
+        game.World.AdvanceDays(1);
+        phase.Resolve(game);
+        AssertEqual(WorldSituationStatus.Expired, situation.Status, "Unanswered situation expires on its authored deadline");
+        var traceCount = game.World.Traces.Count(trace => trace.Kind == SimulationTraceKind.SituationChanged);
+        var eventCount = game.Events.PendingCount;
+
+        phase.Resolve(game);
+        AssertEqual(traceCount, game.World.Traces.Count(trace => trace.Kind == SimulationTraceKind.SituationChanged), "Expired situation is not traced twice");
+        AssertEqual(eventCount, game.Events.PendingCount, "Expired situation does not enqueue duplicate messages");
+    }
+
+    private static void PromiseCanBeFulfilledOrBreakWithAuthoredFactionMemory()
+    {
+        const string definitionId = "situation-promise";
+        var authoring = new CrossSystemAuthoringBundle(
+            Array.Empty<LocationStateProfileDefinition>(), Array.Empty<LocationScenarioProfileDefinition>(),
+            Array.Empty<FindingDefinition>(), Array.Empty<ContextDefinition>(),
+            new[] { new SituationDefinition(definitionId, "request", new[] { "faction" }, new[] { "soon" },
+                new[] { ResolveWorldSituationCommand.PromiseReturnActionTag, "assist" }, new[] { "kept", "broken" }, -3, "promise-broken") },
+            Array.Empty<FactionOfferContentDefinition>(), Array.Empty<FactionMemoryDefinition>());
+
+        var fulfilledGame = CreateGame();
+        var fulfilled = new WorldSituationState("situation-fulfilled", definitionId, 1, dueWorldDay: 3,
+            status: WorldSituationStatus.Active, factionId: "faction-1");
+        fulfilledGame.World.AddSituation(fulfilled);
+        var command = new ResolveWorldSituationCommand(authoring);
+        AssertTrue(command.Execute(fulfilledGame, fulfilled.Id, ResolveWorldSituationCommand.PromiseReturnActionTag), "Ask-for-time records a promise");
+        AssertEqual(WorldSituationStatus.Promised, fulfilled.Status, "Promise remains open until fulfilled or expired");
+        AssertTrue(command.Execute(fulfilledGame, fulfilled.Id, "assist"), "Promised situation can still be fulfilled through an authored response");
+        fulfilledGame.World.AdvanceDays(2);
+        new WorldPhaseService(authoring: authoring).Resolve(fulfilledGame);
+        AssertEqual(WorldSituationStatus.Resolved, fulfilled.Status, "Fulfilled promise does not expire");
+        AssertTrue(!fulfilledGame.FindFaction("faction-1")!.HasMemory("promise-broken"), "Fulfilled promise adds no broken-promise memory");
+
+        var brokenGame = CreateGame();
+        var broken = new WorldSituationState("situation-broken", definitionId, 1, dueWorldDay: 3,
+            status: WorldSituationStatus.Active, factionId: "faction-1");
+        brokenGame.World.AddSituation(broken);
+        brokenGame.FindFaction("faction-1")!.Adjust(trustDelta: 5);
+        AssertTrue(command.Execute(brokenGame, broken.Id, ResolveWorldSituationCommand.PromiseReturnActionTag), "Second request records the same generic promise response");
+        var trustBefore = brokenGame.FindFaction("faction-1")!.Trust;
+        brokenGame.World.AdvanceDays(2);
+        new WorldPhaseService(authoring: authoring).Resolve(brokenGame);
+        AssertEqual(WorldSituationStatus.Expired, broken.Status, "Unfulfilled promise expires at its deadline");
+        AssertEqual(trustBefore - 3, brokenGame.FindFaction("faction-1")!.Trust, "Broken promise applies authored trust consequence");
+        AssertTrue(brokenGame.FindFaction("faction-1")!.HasMemory("promise-broken"), "Broken promise persists authored faction memory");
     }
 
     private static GameState CreateGame(LocationFactionRelationState? relation = null, IEnumerable<ScheduledConsequenceState>? scheduledConsequences = null)

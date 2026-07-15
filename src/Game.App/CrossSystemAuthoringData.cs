@@ -316,7 +316,8 @@ public sealed class ContextDefinition
 
 public sealed class SituationDefinition
 {
-    public SituationDefinition(string id, string kind, IEnumerable<string>? possibleSourceKinds, IEnumerable<string>? urgencyLabels, IEnumerable<string>? responseActionTags, IEnumerable<string>? resolutionTags)
+    public SituationDefinition(string id, string kind, IEnumerable<string>? possibleSourceKinds, IEnumerable<string>? urgencyLabels, IEnumerable<string>? responseActionTags, IEnumerable<string>? resolutionTags,
+        int brokenPromiseTrustDelta = 0, string? brokenPromiseMemoryId = null)
     {
         Id = LocationStateChannelDefinition.RequireText(id, nameof(id));
         Kind = LocationStateChannelDefinition.RequireText(kind, nameof(kind));
@@ -324,6 +325,8 @@ public sealed class SituationDefinition
         UrgencyLabels = LocationContextActionRuleDefinition.NormalizeOptional(urgencyLabels);
         ResponseActionTags = LocationStateChannelDefinition.Normalize(responseActionTags, nameof(responseActionTags));
         ResolutionTags = LocationStateChannelDefinition.Normalize(resolutionTags, nameof(resolutionTags));
+        BrokenPromiseTrustDelta = brokenPromiseTrustDelta;
+        BrokenPromiseMemoryId = string.IsNullOrWhiteSpace(brokenPromiseMemoryId) ? null : brokenPromiseMemoryId.Trim();
     }
 
     public string Id { get; }
@@ -332,6 +335,8 @@ public sealed class SituationDefinition
     public IReadOnlyList<string> UrgencyLabels { get; }
     public IReadOnlyList<string> ResponseActionTags { get; }
     public IReadOnlyList<string> ResolutionTags { get; }
+    public int BrokenPromiseTrustDelta { get; }
+    public string? BrokenPromiseMemoryId { get; }
 }
 
 /// <summary>A reusable offer effect. It may grant expedition logistics or information, never materials.</summary>
@@ -541,7 +546,8 @@ public static class CrossSystemAuthoringDataLoader
     private static SituationDefinition ParseSituation(JObject item)
     {
         var responseTags = (item["responseOptions"] as JArray ?? new JArray()).OfType<JObject>().Select(option => Text(option, "actionTag"));
-        return new SituationDefinition(Text(item, "id"), Text(item, "kind"), Strings(item, "possibleSourceKinds"), Strings(item, "urgencyLabels"), responseTags, Strings(item, "resolutionTags"));
+        return new SituationDefinition(Text(item, "id"), Text(item, "kind"), Strings(item, "possibleSourceKinds"), Strings(item, "urgencyLabels"), responseTags, Strings(item, "resolutionTags"),
+            (int?)item["brokenPromiseTrustDelta"] ?? 0, (string?)item["brokenPromiseMemoryId"]);
     }
 
     private static FactionOfferContentDefinition ParseFactionOffer(JObject item)

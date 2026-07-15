@@ -10,9 +10,18 @@
       "shortDescription": "Die alte Handelsbruecke ist eingestuerzt.",
       "description": "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
       "flavorByState": {
+        "untouched": "Der Uebergang wurde noch nicht aus der Naehe beurteilt.",
+        "inspected": "Der Zustand des Uebergangs wurde vor Ort aufgenommen.",
         "blocked": "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.",
+        "provisional": "Eine behelfsmassige Passage ist vorhanden, ihre Belastbarkeit bleibt begrenzt.",
         "risky-passage": "Ein provisorischer Uebergang haengt ueber der Schlucht.",
-        "repaired": "Die Bruecke ist wieder passierbar."
+        "open": "Der Uebergang ist ohne das fruehere Hindernis passierbar.",
+        "repaired": "Die Bruecke ist wieder passierbar.",
+        "destroyed": "Der fruehere Uebergang ist vollstaendig zerstoert.",
+        "unknown": "Ob jemand den Uebergang beobachtet, ist nicht bekannt.",
+        "watched": "Spuren deuten darauf hin, dass der Uebergang beobachtet wird.",
+        "guarded": "Am Uebergang ist eine erkennbare Bewachung praesent.",
+        "abandoned": "Es gibt keine frischen Hinweise auf Nutzung oder Bewachung."
       },
       "imageId": "placeholder-bridge",
       "journalText": {
@@ -27,8 +36,18 @@
       "shortDescription": "Ein sorgfaeltig markiertes Grab am Wegesrand.",
       "description": "Zeichen und Steine deuten auf eine Grenzwaechter-Bestattung hin.",
       "flavorByState": {
+        "untouched": "Das Grab wurde noch nicht naeher untersucht.",
+        "inspected": "Die sichtbaren Zeichen und der Aufbau wurden aufgenommen.",
+        "searched": "Die zugaenglichen Bereiche wurden nach Spuren abgesucht.",
+        "investigated": "Die Untersuchung hat verwertbare Beobachtungen ergeben.",
+        "documented": "Der bekannte Zustand des Grabes ist dokumentiert.",
         "sealed": "Das Grab ist verschlossen und mit Warnzeichen versehen.",
-        "open": "Das Grab wurde geoeffnet."
+        "open": "Das Grab wurde geoeffnet.",
+        "disturbed": "Die Anordnung des Grabes ist sichtbar gestoert.",
+        "unknown": "Ob sich jemand am Grab aufhaelt oder es beobachtet, ist unbekannt.",
+        "empty": "Es gibt keine sichtbare Anwesenheit am Grab.",
+        "watched": "Hinweise sprechen fuer eine Beobachtung des Grabes.",
+        "abandoned": "Das Grab zeigt keine frischen Zeichen von Pflege oder Bewachung."
       },
       "imageId": "placeholder-grave",
       "journalText": {
@@ -60,8 +79,15 @@
       "description": "Geschnitzte Pfaehle und Zeichen markieren eine Grenze der Grenzwaechter — eine unausgesprochene Aufforderung, fernzubleiben.",
       "flavorByState": {
         "untouched": "Die Zeichen stehen frisch und deutlich am Wegesrand.",
+        "observed": "Form und Anordnung der Zeichen wurden beobachtet.",
         "interpreted": "Die Bedeutung der Zeichen ist nun verstanden.",
-        "violated": "Die Grenze wurde ueberschritten."
+        "documented": "Die Grenzzeichen und ihre bekannte Bedeutung sind dokumentiert.",
+        "standing": "Die Markierung steht unveraendert an ihrem Platz.",
+        "respected": "Die Expedition hat die erkennbare Grenze respektiert.",
+        "violated": "Die Grenze wurde ueberschritten.",
+        "unknown": "Ob die Markierung aktuell beobachtet wird, ist unbekannt.",
+        "watched": "Frische Spuren deuten auf Beobachter in der Umgebung.",
+        "guarded": "Die Markierung wird erkennbar bewacht."
       },
       "imageId": "placeholder-warning",
       "journalText": {
@@ -76,8 +102,18 @@
       "shortDescription": "Ein altes, absichtlich versiegeltes Tor.",
       "description": "Schwere Riegel und verwitterte Zeichen halten dieses Tor verschlossen. Warum es versiegelt wurde, bleibt vorerst unklar.",
       "flavorByState": {
+        "untouched": "Der Verschluss wurde noch nicht aus der Naehe untersucht.",
+        "inspected": "Riegel, Zeichen und sichtbare Schwachstellen wurden aufgenommen.",
+        "investigated": "Der zugaengliche Bereich hinter dem Verschluss wurde untersucht.",
+        "secured": "Die Expedition hat den Zugang nach ihrer Untersuchung gesichert.",
+        "documented": "Der bekannte Zustand des Verschlusses ist dokumentiert.",
         "sealed": "Das Tor ist fest versiegelt und traegt alte Warnzeichen.",
-        "opened": "Der Verschluss ist gebrochen; was dahinter liegt, bleibt weiterhin unklar."
+        "opened": "Der Verschluss ist gebrochen; was dahinter liegt, bleibt weiterhin unklar.",
+        "breached": "Der Verschluss ist gewaltsam durchbrochen und bietet keine verlaessliche Sicherung mehr.",
+        "unknown": "Ob sich jemand am Tor oder dahinter aufhaelt, ist unbekannt.",
+        "watched": "Spuren deuten auf eine Beobachtung des Zugangs.",
+        "guarded": "Der Zugang wird erkennbar bewacht.",
+        "abandoned": "Am Zugang sind keine frischen Zeichen von Nutzung oder Bewachung zu erkennen."
       },
       "imageId": "placeholder-gate",
       "journalText": {
@@ -93,8 +129,15 @@
       "description": "Jemand hat den Platz bewusst vorbereitet, doch wer auf die Expedition wartet und welche Absicht dahintersteht, bleibt offen.",
       "flavorByState": {
         "unapproached": "Der Ort wirkt vorbereitet, aber noch still.",
+        "approached": "Die Expedition hat sich sichtbar und vorsichtig angenaehert.",
         "contacted": "Die erste Begegnung hat Spuren und Fragen hinterlassen.",
-        "withdrawn": "Die Expedition hat Abstand gehalten."
+        "withdrawn": "Die Expedition hat Abstand gehalten.",
+        "available": "Der Ort scheint weiterhin fuer eine Annaeherung offen.",
+        "closed": "Der moegliche Kontakt ist derzeit nicht zugaenglich.",
+        "invited": "Ein erkennbares Signal laedt zu einem weiteren Kontakt ein.",
+        "unknown": "Wer am Ort anwesend ist, bleibt unbekannt.",
+        "present": "Mindestens eine Person ist am Kontaktort erkennbar anwesend.",
+        "guarded": "Der Kontaktort ist sichtbar gesichert."
       },
       "imageId": "placeholder-contact",
       "journalText": {
@@ -109,9 +152,17 @@
       "shortDescription": "Dunst, unsicherer Grund und dunkles Wasser machen diese Senke unberechenbar.",
       "description": "Zwischen den Grasinseln liegen verborgene Wasserlaeufe und Spuren einer Gefahr, die sich mit dem Moor bewegen kann.",
       "flavorByState": {
+        "untouched": "Die Gefahrenzone wurde noch nicht systematisch beurteilt.",
+        "assessed": "Die sichtbaren Risiken und moeglichen Wege wurden eingeschaetzt.",
+        "documented": "Der bekannte Zustand der Gefahrenzone ist dokumentiert.",
         "active": "Das Moor wirkt unruhig; jeder Schritt neben dem festen Grund kann Konsequenzen haben.",
+        "avoided": "Die Expedition hat einen Abstand zur unmittelbaren Gefahr festgelegt.",
+        "traversed": "Die Gefahrenzone wurde durchquert, ohne sie dadurch sicher zu machen.",
         "restricted": "Ein begrenzter, sicherer Verlauf am Rand des Moors ist vermerkt.",
-        "contained": "Die unmittelbare Gefahr ist eingegrenzt, aber der Ort bleibt vorsichtshalber markiert."
+        "contained": "Die unmittelbare Gefahr ist eingegrenzt, aber der Ort bleibt vorsichtshalber markiert.",
+        "unknown": "Ausdehnung und weitere Entwicklung der Gefahr sind unbekannt.",
+        "spreading": "Beobachtbare Zeichen deuten auf eine Ausbreitung der Gefahr.",
+        "watched": "Der Ort oder die Arbeiten dort werden offenbar beobachtet."
       },
       "imageId": "placeholder-hazard",
       "journalText": {
@@ -126,8 +177,17 @@
       "shortDescription": "Eine auffaellige Felsnadel ragt ueber die umliegenden Wege.",
       "description": "Wind und Wetter haben den Fels zu einer weithin sichtbaren Form geschliffen; von hier koennte sich die Landschaft neu lesen lassen.",
       "flavorByState": {
+        "untouched": "Das Naturphaenomen wurde noch nicht aus der Naehe beobachtet.",
+        "observed": "Form, Lage und sichtbare Bedingungen wurden aus der Distanz beobachtet.",
+        "approached": "Die Expedition hat den unmittelbaren Bereich des Gipfels erreicht.",
+        "surveyed": "Der Gipfel wurde vermessen und mit der Umgebung in Beziehung gesetzt.",
+        "documented": "Der bekannte Zustand des Naturphaenomens ist dokumentiert.",
         "stable": "Die Felsnadel ist ein ferner, unverwechselbarer Bezugspunkt.",
-        "mapped": "Der Gipfel und seine Umgebung sind als verlaesslicher Kartenbezug festgehalten."
+        "accessible": "Ein gangbarer Zugang zum Gipfel ist bekannt.",
+        "mapped": "Der Gipfel und seine Umgebung sind als verlaesslicher Kartenbezug festgehalten.",
+        "unknown": "Ob der Ort genutzt oder beobachtet wird, ist unbekannt.",
+        "watched": "Spuren deuten auf regelmaessige Beobachtung oder Nutzung.",
+        "abandoned": "Es gibt keine frischen Hinweise auf menschliche Anwesenheit."
       },
       "imageId": "placeholder-landmark",
       "journalText": {

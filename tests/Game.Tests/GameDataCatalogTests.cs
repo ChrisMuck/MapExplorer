@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Game.App;
 
 internal sealed class GameDataCatalogTests
@@ -12,6 +13,7 @@ internal sealed class GameDataCatalogTests
     {
         ManifestLoadsOneCompleteContentSet();
         ManifestRejectsAnOmittedScoutingGroup();
+        ManifestRejectsMissingStateWording();
         LegacyDirectoryScanRemainsAvailableDuringMigration();
     }
 
@@ -41,6 +43,24 @@ internal sealed class GameDataCatalogTests
             AssertThrows(
                 () => GameDataCatalog.LoadFromDirectory(root),
                 "Manifest without scouting documents must be rejected");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static void ManifestRejectsMissingStateWording()
+    {
+        var root = CopyGameData(includeManifest: true, includeScouting: true);
+        try
+        {
+            var path = Path.Combine(root, "Locations", "ContentProfiles", "content-profiles.json");
+            var document = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+            var bridge = document["items"]!.AsArray()[0]!.AsObject();
+            bridge["flavorByState"]!.AsObject().Remove("destroyed");
+            File.WriteAllText(path, document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            AssertThrows(() => GameDataCatalog.LoadFromDirectory(root), "Every authored state needs neutral player-facing wording");
         }
         finally
         {

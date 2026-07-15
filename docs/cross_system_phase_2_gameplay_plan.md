@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.2 complete; Block 2.3 in progress**
+Status: **In progress — Blocks 2.0–2.3 complete; Block 2.4 next**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -184,6 +184,8 @@ continues after its first intervention, and reaches a persistent local or world 
 
 ### Block 2.3 — Findings, Knowledge and Persistent Local Results
 
+**Status:** Complete.
+
 **In progress:** `AddFinding` is now a generic location-outcome/project-completion effect. It
 creates only an unsecured field finding, observes the authored repeat policy, transfers through
 the existing return handoff and awards Knowledge Points only after normal base analysis. Initial
@@ -209,6 +211,11 @@ separate from `WorldRuntimeSnapshot` and rejects duplicate saved identities. A n
 roundtrip test proves that an unobserved objective location change does not refresh saved player
 knowledge.
 
+**Implemented:** every valid interaction, operational and presence state in all seven current State
+Profiles has neutral player-facing wording in its presentation-only Content Profile. Catalog
+validation rejects a Scenario Profile whose state vocabulary is not fully covered, preventing a
+new gameplay state from silently falling back to misleading generic text.
+
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
 2. Keep the existing knowledge loop intact: findings and field knowledge only become Knowledge
@@ -223,6 +230,24 @@ without requiring a separate reward system or a special code path, and its falli
 condition survives save/load without exposing the current objective condition.
 
 ### Block 2.4 — Follow-Up World Processes and Fair Responses
+
+**Status:** In progress. The sealed-containment reference path now proves the complete generic
+chain from opening through delayed earned evidence and an active warning situation to an authored
+containment response. The response persists and suppresses the later escalation trigger without
+erasing the later evidence or historical trace. The route-obstacle reference path now likewise
+turns observed post-repair traffic into a response situation; coordination preserves the immediate
+authored traffic reaction while suppressing only the later unmanaged-attention escalation. The
+investigation-site reference path distinguishes a respectful choice that starts no
+disturbance process from a known risky intervention that produces an uncertain rumour, warning and
+preparation response; preparation suppresses only the later related-awareness escalation while
+preserving the physical disturbance and later evidence.
+
+The generic situation lifecycle now expires unanswered situations exactly once at their authored
+deadline and records both causal trace and player-facing notice. `promise-return` creates a
+persistent `Promised` state rather than resolving the request; it remains fulfillable until the
+deadline. A fulfilled promise resolves normally, while an expired promise applies only its authored
+trust delta and memory ID. World runtime snapshots preserve the open promise and response tag.
+Faction/contact delivery of the initial request remains the next missing reference path.
 
 1. Connect relevant action chains to existing generic triggers, consequence branches, observation
    channels, faction reactions and situations.

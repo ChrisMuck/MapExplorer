@@ -41,11 +41,24 @@
           "effects": [
             { "id": "route-evidence", "kind": "addEvidence", "referenceId": "evidence-route-restored" },
             { "id": "route-open", "kind": "setTilePassability", "isBlocked": false },
-            { "id": "route-follow-up", "kind": "raiseWorldTrigger", "referenceId": "route-traffic-observed", "actionTags": [ "route", "traffic" ] }
+            { "id": "route-follow-up", "kind": "raiseWorldTrigger", "referenceId": "route-traffic-observed", "actionTags": [ "route", "traffic" ] },
+            { "id": "route-response", "kind": "createSituation", "referenceId": "situation-route-use-changed", "dueDays": 3 }
           ],
           "event": {
             "title": "Spuren auf der wiederhergestellten Route",
             "body": "Erst nach einigen Tagen zeigen frische Spuren, dass der veränderte Übergang auch von anderen bemerkt wurde."
+          }
+        },
+        {
+          "id": "route-use-settles",
+          "delayDays": 5,
+          "severity": "serious",
+          "effects": [
+            { "id": "route-unmanaged-attention", "kind": "escalateRelatedFactionAwareness", "suppressIfSituationResponseTags": [ "investigate", "organize-help" ] }
+          ],
+          "event": {
+            "title": "Die neue Route etabliert sich",
+            "body": "Die Nutzung des wiederhergestellten Uebergangs wird zu einem dauerhaften Muster. Ob sie abgestimmt wurde, beeinflusst die Aufmerksamkeit in der Umgebung."
           }
         }
       ]

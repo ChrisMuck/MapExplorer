@@ -96,7 +96,7 @@ public sealed class WorldStageEffectResolver
         var factionId = location?.FactionRelations.Count == 1 ? location.FactionRelations[0].FactionId : null;
         var situation = new WorldSituationState(
             game.World.RuntimeIds.Allocate("situation"), effect.ReferenceId, game.World.WorldDay,
-            process.Id, location?.Id, game.World.WorldDay + effect.DueDays, factionId: factionId);
+            process.Id, location?.Id, effect.DueDays > 0 ? game.World.WorldDay + effect.DueDays : null, factionId: factionId);
         situation.Activate();
         if (!game.World.TryAddSituation(situation)) return 0;
         return Trace(game, process, effect, stageTraceId, situation.Id, "activated a situation");
