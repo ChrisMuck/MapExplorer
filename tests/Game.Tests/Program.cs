@@ -11,6 +11,8 @@ var knowledgeTests = new KnowledgeServiceTests();
 knowledgeTests.RunAll();
 var locationConditionKnowledgeTests = new LocationConditionKnowledgeTests();
 locationConditionKnowledgeTests.RunAll();
+var knowledgeRuntimeSnapshotTests = new KnowledgeRuntimeSnapshotTests();
+knowledgeRuntimeSnapshotTests.RunAll();
 var gameStateTests = new GameStateTests();
 gameStateTests.RunAll();
 var moveCommandTests = new MoveExpeditionCommandTests();

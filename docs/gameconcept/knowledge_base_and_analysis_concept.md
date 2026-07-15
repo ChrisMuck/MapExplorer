@@ -788,6 +788,25 @@ Knowledge should be valuable, but not absolute.
 
 Unsecured field knowledge from an active expedition only persists if the expedition returns or if a later recovery event explicitly preserves part of it.
 
+#### Save Requirement for Fallible Location Knowledge
+
+The campaign save must persist `KnowledgeState` independently from objective `WorldState` and from
+`PlayerNotes`. In particular, every last-known location-condition record must survive save/load
+with its stable location ID, observed interaction/operational/presence states, observation world
+day and explicit reliability flags such as doubtful or contradicted. Loading a campaign must not
+reconstruct these records from the current `SpecialLocationState`, because doing so would reveal
+unobserved world changes and erase the historical observation.
+
+The save contract must also preserve known location context, evidence and their reliability,
+claimed knowledge-source IDs, tile knowledge, scout reports and other secured knowledge needed by
+later expeditions. Unsecured expedition knowledge and physical findings continue to follow their
+own return, loss and recovery rules; they must not be promoted into secured `KnowledgeState` merely
+because a save was created.
+
+This requires a serialization-safe `KnowledgeRuntimeSnapshot` (or an equivalent campaign-save
+section) with a tested roundtrip. It complements `WorldRuntimeSnapshot`; it must not be folded into
+it, because truth and knowledge remain separate sources of state.
+
 ### 16A.9 Meta-Progression Pillars
 
 Meta-progression should come from four sources:

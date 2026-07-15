@@ -61,6 +61,11 @@ public sealed class KnowledgeState
 
     public IReadOnlyCollection<LocationConditionKnowledgeState> KnownLocationConditions => knownLocationConditions.Values;
 
+    public IReadOnlyCollection<string> ClaimedKnowledgeSources => claimedKnowledgeSources;
+
+    public IReadOnlyDictionary<string, IReadOnlyCollection<string>> KnownLocationContexts =>
+        knownLocationContextTags.ToDictionary(pair => pair.Key, pair => (IReadOnlyCollection<string>)pair.Value.ToArray(), StringComparer.Ordinal);
+
     public void ObserveLocationCondition(SpecialLocationState location, int worldDay)
     {
         if (location == null) throw new ArgumentNullException(nameof(location));
@@ -72,6 +77,14 @@ public sealed class KnowledgeState
     {
         if (string.IsNullOrWhiteSpace(locationId)) return null;
         return knownLocationConditions.TryGetValue(locationId.Trim(), out var condition) ? condition : null;
+    }
+
+    public void RestoreLocationCondition(LocationConditionKnowledgeState condition)
+    {
+        if (condition == null) throw new ArgumentNullException(nameof(condition));
+        if (knownLocationConditions.ContainsKey(condition.LocationId))
+            throw new InvalidOperationException($"Location condition '{condition.LocationId}' occurs more than once in saved knowledge.");
+        knownLocationConditions.Add(condition.LocationId, condition);
     }
 
     public bool MarkLocationConditionDoubtful(string locationId)

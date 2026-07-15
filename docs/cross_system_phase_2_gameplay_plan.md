@@ -188,8 +188,8 @@ continues after its first intervention, and reaches a persistent local or world 
 creates only an unsecured field finding, observes the authored repeat policy, transfers through
 the existing return handoff and awards Knowledge Points only after normal base analysis. Initial
 chains use this for investigation, containment, hazard containment and natural-phenomenon survey.
-The distinct player-knowledge model for a once-observed condition becoming old or doubtful remains
-separate follow-up work; no objective location state is exposed merely to satisfy that requirement.
+The distinct player-knowledge model for a once-observed condition becoming old or doubtful now has
+its Core representation; no objective location state is exposed merely to satisfy that requirement.
 
 **Implemented:** validated Finding Tables and the generic `RollFindingTable` effect now resolve
 weighted, state/context-filtered candidates through deterministic World State and persist the
@@ -202,6 +202,13 @@ not update this record omnisciently. The record can become old against a caller/
 freshness window or explicitly doubtful through earned conflicting evidence; the gameplay
 balancing threshold is intentionally not hardcoded before human review.
 
+**Implemented:** the serialization-safe `KnowledgeRuntimeSnapshot` roundtrips last-known location
+states, observation days, old/doubtful flags, known context, evidence, approximate scout reports,
+claimed sources and tile knowledge without rebuilding any of them from current World Truth. It is
+separate from `WorldRuntimeSnapshot` and rejects duplicate saved identities. A no-truth-leakage
+roundtrip test proves that an unobserved objective location change does not refresh saved player
+knowledge.
+
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
 2. Keep the existing knowledge loop intact: findings and field knowledge only become Knowledge
@@ -212,7 +219,8 @@ balancing threshold is intentionally not hardcoded before human review.
    after the first paths are functionally complete.
 
 **Exit criteria:** a location can be empty, informative, useful, dangerous or politically relevant
-without requiring a separate reward system or a special code path.
+without requiring a separate reward system or a special code path, and its fallible last-known
+condition survives save/load without exposing the current objective condition.
 
 ### Block 2.4 — Follow-Up World Processes and Fair Responses
 
@@ -335,7 +343,7 @@ usable in Unity and judged by human playtest rather than only automated success.
 - broad text-variation libraries, final art and audio polish;
 - a second rule path for WPF or Unity;
 - map rendering in WPF;
-- save-format migration beyond the existing runtime snapshot work.
+- broad legacy save-format migration beyond the explicit Phase-2 Knowledge snapshot requirement.
 
 An opened location uses state-driven actions in the current logical location first. Dynamic
 interior locations may be added later only if the state/action model cannot express the intended
