@@ -245,6 +245,9 @@ public sealed class SimulationSession
     public FactionContactPresentation? GetActiveFactionContactPresentation() =>
         Application.GetActiveFactionContactPresentation(Game);
 
+    public FactionContactPresentation? GetCurrentEventContactPresentation() =>
+        Application.GetCurrentEventContactPresentation(Game);
+
     /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
     public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);
 

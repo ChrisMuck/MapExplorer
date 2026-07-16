@@ -1269,11 +1269,14 @@ human review.
    and roles until identity is established. Signature recognition requires matching earned evidence;
    `Rumored` alone is insufficient. Representative role, description and dialogue are selected from
    localized JSON contact profiles through reusable faction `contactStyle`; concrete faction IDs no
-   longer choose representatives or dialogue. Faction-memory/history fragments and delivered
-   situation scenes remain in this package. Authored faction-memory definitions may now expose
-   generic visible-conduct tags to contact fragments; remembered help, resentment and broken
-   promises therefore alter the scene without branching on a concrete faction ID or narrating the
-   hidden memory directly.
+   longer choose representatives or dialogue. Authored faction-memory definitions expose generic
+   visible-conduct tags to contact fragments; remembered help, resentment and broken promises
+   therefore alter the scene without branching on a concrete faction ID or narrating the hidden
+   memory directly. Faction-reaction events are also rendered through this shared contact projection:
+   their already-delivered authored body replaces the generic opening, while identity, visible
+   attitude and history obey the same knowledge gates as a direct interaction. This completes the
+   initial MVP contact-scene package; broader report, urgent-event and base-return scenes belong to
+   package 5.
    Contact availability, territory reactions, representative selection and production offers are
    resolved through authored profiles/rules. Runtime commands contain no concrete faction-ID
    branches; an application instance without a content catalog receives only neutral fallback

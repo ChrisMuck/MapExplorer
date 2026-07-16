@@ -13,6 +13,8 @@ internal sealed class FactionContactSceneTests
         RumoredSignatureCanBeRecognisedWithoutNamingFaction();
         EstablishedContactMayNameFaction();
         AuthoredMemoryChangesVisibleContactHistory();
+        DeliveredFactionEventUsesTheSharedContactScene();
+        AnonymousDeliveredEventDoesNotRevealFactionIdentity();
     }
 
     private static void UnknownContactRemainsAnonymous()
@@ -64,6 +66,47 @@ internal sealed class FactionContactSceneTests
             "Contact history is localized scene content rather than faction-specific command text");
     }
 
+    private static void DeliveredFactionEventUsesTheSharedContactScene()
+    {
+        var (catalog, _, game, faction) = Create(FactionContactStatus.Contacted);
+        faction.AddMemory("memory-route-restored-welcome");
+        var eventState = new EventState("event-generated-contact", EventKind.FactionReaction,
+            "Eine Abordnung nähert sich", faction.Name, "Eine Botin wartet am Rand des Lagers.",
+            new[] { new EventOptionState("answer", "Antworten", "Die Expedition antwortet.", EventOptionEffectKind.None) },
+            game.Expedition.Position, faction.Id);
+        game.Events.Enqueue(eventState);
+
+        var presentation = new GameApplication(catalog).GetCurrentEventContactPresentation(game);
+
+        AssertTrue(presentation != null, "Faction reaction event resolves a delivered contact scene");
+        AssertTrue(presentation!.Scene.Message.Contains(eventState.Body, StringComparison.Ordinal),
+            "The already-delivered authored event body becomes the scene opening");
+        AssertTrue(presentation.Scene.Message.Contains("frühere Hilfe", StringComparison.Ordinal),
+            "Visible faction history is composed into the delivered event scene");
+        AssertFalse(FragmentIds(presentation).Contains("frag-contact-opening"),
+            "Delivered event prose supersedes the generic direct-contact opening");
+    }
+
+    private static void AnonymousDeliveredEventDoesNotRevealFactionIdentity()
+    {
+        var (catalog, _, game, faction) = Create(FactionContactStatus.Rumored);
+        var eventState = new EventState("event-anonymous-contact", EventKind.FactionReaction,
+            "Zeichen am Wegrand", faction.Name, "Über Nacht wurde ein neues Zeichen aufgestellt.",
+            new[] { new EventOptionState("note", "Notieren", "Das Zeichen wurde notiert.", EventOptionEffectKind.None) },
+            game.Expedition.Position, faction.Id);
+        game.Events.Enqueue(eventState);
+
+        var presentation = new GameApplication(catalog).GetCurrentEventContactPresentation(game);
+
+        AssertEqual("anonymous", presentation!.IdentityStage, "Event without an earned faction reference remains anonymous");
+        AssertFalse(presentation.Scene.Message.Contains(faction.Name, StringComparison.Ordinal),
+            "Anonymous event scene cannot infer the matching world faction");
+        AssertFalse(string.Equals(presentation.Scene.Subtitle, faction.Name, StringComparison.Ordinal),
+            "Internal event faction reference cannot leak through its source label");
+        AssertTrue(FragmentIds(presentation).Contains("frag-contact-anonymous"),
+            "Anonymous relationship wording is composed into the delivered event");
+    }
+
     private static (GameDataCatalog Catalog, OpenFactionInteractionCommand Command, GameState Game, FactionState Faction) Create(FactionContactStatus status)
     {
         var catalog = LoadCatalog();
@@ -81,6 +124,9 @@ internal sealed class FactionContactSceneTests
     }
 
     private static string[] FragmentIds(FactionInteractionResult result) => result.Presentation!.Scene.Paragraphs
+        .SelectMany(paragraph => paragraph.FragmentIds).ToArray();
+
+    private static string[] FragmentIds(FactionContactPresentation presentation) => presentation.Scene.Paragraphs
         .SelectMany(paragraph => paragraph.FragmentIds).ToArray();
 
     private static GameDataCatalog LoadCatalog()

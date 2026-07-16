@@ -80,7 +80,7 @@ public sealed class ContactSceneView
 {
     public ContactSceneView(string subjectRef, string title, string? subtitle, string? visualId,
         string identityStage, string contactStatus, IEnumerable<string>? knownContextTags,
-        string? subjectLabel = null, string? locale = null)
+        string? subjectLabel = null, string? locale = null, string? deliveredText = null)
     {
         SubjectRef = Require(subjectRef, nameof(subjectRef));
         Title = Require(title, nameof(title));
@@ -92,6 +92,7 @@ public sealed class ContactSceneView
             .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
         SubjectLabel = Normalize(subjectLabel);
         Locale = Normalize(locale);
+        DeliveredText = Normalize(deliveredText);
     }
 
     public string SubjectRef { get; }
@@ -103,6 +104,8 @@ public sealed class ContactSceneView
     public IReadOnlyList<string> KnownContextTags { get; }
     public string? SubjectLabel { get; }
     public string? Locale { get; }
+    /// <summary>Player-facing text already delivered by an event; never objective event causality.</summary>
+    public string? DeliveredText { get; }
 
     private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -227,6 +230,11 @@ public sealed class SceneDescriptionResolver
             .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
                 Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
                 fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        if (view.DeliveredText != null)
+        {
+            eligible.Add(new ResolvedFragment("delivered:" + view.SubjectRef, "opening", view.DeliveredText,
+                "delivered-outcome", 90, new[] { "frag-contact-opening" }, null));
+        }
         var selected = Select(policy, eligible, view.SubjectRef);
         var paragraphs = AssembleParagraphs(policy, selected);
         if (paragraphs.Count == 0) throw new LocationDataException($"Contact scene for '{view.SubjectRef}' contains no eligible fragment.");

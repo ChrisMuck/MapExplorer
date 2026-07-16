@@ -1223,13 +1223,17 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         popup.style.display = DisplayStyle.Flex;
-        SetText("event-source", eventState.Source);
-        SetText("event-title", eventState.Title);
-        SetText("event-body", eventState.Body);
+        var contactPresentation = mapView?.GetCurrentEventContactPresentationForUi();
+        var scene = contactPresentation?.Scene;
+        SetText("event-source", scene?.Subtitle ?? eventState.Source);
+        SetText("event-title", scene?.Title ?? eventState.Title);
+        SetText("event-body", scene?.Message ?? eventState.Body);
         var eventImage = root?.Q<VisualElement>("event-image");
         if (eventImage != null)
         {
-            eventImage.tooltip = $"Platzhalterbild: {eventState.Kind}";
+            eventImage.tooltip = string.IsNullOrWhiteSpace(scene?.VisualId)
+                ? $"Platzhalterbild: {eventState.Kind}"
+                : $"Bildreferenz: {scene.VisualId}";
         }
 
         options.Clear();

@@ -27,14 +27,38 @@ public sealed class FactionContactSceneResolver
         if (game == null) throw new ArgumentNullException(nameof(game));
         if (interaction == null) throw new ArgumentNullException(nameof(interaction));
         var faction = game.FindFaction(interaction.FactionId) ?? throw new InvalidOperationException("Active contact references an unknown faction.");
-        var identityStage = IdentityStage(game.Knowledge, faction);
-        var identified = identityStage == "identified";
-        var tags = new List<string> { AttitudeTag(faction) };
-        tags.AddRange(VisibleMemoryTags(faction));
-        var scene = resolver.ResolveContact(new ContactSceneView(
-            interaction.Id, identified ? faction.Name : "Unbekannte Abordnung", "Direkte Begegnung",
-            "placeholder-contact", identityStage, faction.ContactStatus.ToString(), tags,
-            identified ? faction.Name : null));
+        var title = IdentityStage(game.Knowledge, faction) == "identified" ? faction.Name : "Unbekannte Abordnung";
+        return ResolveView(game, faction, interaction.Id, title, "Direkte Begegnung", null);
+    }
+
+    /// <summary>Resolves only information already delivered by a faction-reaction event.</summary>
+    public FactionContactPresentation? ResolveDeliveredEvent(GameState game, EventState eventState)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (eventState == null) throw new ArgumentNullException(nameof(eventState));
+        if (eventState.Kind != EventKind.FactionReaction) return null;
+        var faction = eventState.FactionId == null ? null : game.FindFaction(eventState.FactionId);
+        var identityStage = faction == null ? "anonymous" : IdentityStage(game.Knowledge, faction);
+        var safeSource = faction == null || identityStage == "identified"
+            ? eventState.Source
+            : identityStage == "signature-recognised" ? "Nicht bestätigte Abordnung" : "Unbekannte Quelle";
+        return ResolveView(game, faction, eventState.Id, eventState.Title, safeSource, eventState.Body);
+    }
+
+    private FactionContactPresentation ResolveView(GameState game, FactionState? faction, string subjectRef,
+        string title, string? subtitle, string? deliveredText)
+    {
+        var identityStage = faction == null ? "anonymous" : IdentityStage(game.Knowledge, faction);
+        var identified = faction != null && identityStage == "identified";
+        var tags = new List<string>();
+        if (faction != null)
+        {
+            tags.Add(AttitudeTag(faction));
+            tags.AddRange(VisibleMemoryTags(faction));
+        }
+        var scene = resolver.ResolveContact(new ContactSceneView(subjectRef, title, subtitle,
+            "placeholder-contact", identityStage, faction?.ContactStatus.ToString() ?? "Unknown", tags,
+            identified ? faction!.Name : null, deliveredText: deliveredText));
         return new FactionContactPresentation(identityStage, scene);
     }
 
