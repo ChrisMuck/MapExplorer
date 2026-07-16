@@ -11,11 +11,14 @@ public sealed class GetLocationInteractionCommand
 {
     private readonly LocationInteractionService interactionService;
     private readonly LocationScenarioActionResolver? scenarioActionResolver;
+    private readonly SceneDescriptionResolver? sceneResolver;
 
-    public GetLocationInteractionCommand(LocationInteractionService interactionService, LocationScenarioActionResolver? scenarioActionResolver = null)
+    public GetLocationInteractionCommand(LocationInteractionService interactionService,
+        LocationScenarioActionResolver? scenarioActionResolver = null, SceneDescriptionCatalog? scenes = null)
     {
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
         this.scenarioActionResolver = scenarioActionResolver;
+        sceneResolver = scenes == null ? null : new SceneDescriptionResolver(scenes);
     }
 
     public LocationInteractionQueryResult Execute(GameState game, string locationId)
@@ -64,7 +67,7 @@ public sealed class GetLocationInteractionCommand
         return LocationInteractionQueryResult.Found(interaction, BuildPresentation(game, interaction));
     }
 
-    private static LocationInteractionPresentation BuildPresentation(GameState game, LocationInteractionModel interaction)
+    private LocationInteractionPresentation BuildPresentation(GameState game, LocationInteractionModel interaction)
     {
         var location = interaction.Location;
         var profile = interaction.ContentProfile;
@@ -80,6 +83,26 @@ public sealed class GetLocationInteractionCommand
         var description = known == null
             ? profile?.ShortDescription ?? "Der Ort ist bestaetigt, wurde aber noch nicht aus der Naehe aufgenommen."
             : string.Join(" ", new[] { interactionText, operationalText, presenceText });
+        SceneDescriptionResult? scene = null;
+        if (sceneResolver != null && known != null && profile != null &&
+            !string.IsNullOrWhiteSpace(location.ArchetypeId) && !string.IsNullOrWhiteSpace(location.VariantId))
+        {
+            var tags = game.Knowledge.KnownLocationContextTags(location.Id);
+            var relationKinds = tags.Where(tag => tag.StartsWith("inspection-relation:", StringComparison.Ordinal))
+                .Select(tag => tag["inspection-relation:".Length..]);
+            var factionId = tags.Where(tag => tag.StartsWith("inspection-faction:", StringComparison.Ordinal))
+                .Select(tag => tag["inspection-faction:".Length..]).OrderBy(id => id, StringComparer.Ordinal).FirstOrDefault();
+            var faction = factionId == null ? null : game.FindFaction(factionId);
+            var identified = faction != null && faction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile;
+            var view = new LocationSceneView(location.Id, SceneTrigger.RemoteLocationView, location.ArchetypeId!, location.VariantId!,
+                profile.Title, profile.Subtitle, profile.ImageId, known.InteractionStateId, known.OperationalStateId,
+                known.PresenceStateId, game.World.WorldDay, known, game.Knowledge.GetTileKnowledge(location.Coord), tags,
+                null, relationKinds, identified ? "identified" : "anonymous",
+                faction?.ContactStatus.ToString() ?? FactionContactStatus.Unknown.ToString(), identified ? faction!.Name : null,
+                knowledgeLabel);
+            scene = sceneResolver.ResolveLocation(view);
+            description = scene.Message;
+        }
         return new LocationInteractionPresentation(
             profile?.Title ?? location.Name,
             profile?.Subtitle ?? "Bestaetigter besonderer Ort",
@@ -89,7 +112,7 @@ public sealed class GetLocationInteractionCommand
             interactionText,
             operationalText,
             presenceText,
-            game.Knowledge.KnownLocationContextTags(location.Id).OrderBy(item => item, StringComparer.Ordinal).ToList());
+            game.Knowledge.KnownLocationContextTags(location.Id).OrderBy(item => item, StringComparer.Ordinal).ToList(), scene);
     }
 
     private static bool IsKnownEnough(GameState game, SpecialLocationState location)

@@ -33,7 +33,7 @@ internal sealed class GameDataCatalogTests
         AssertEqual(3, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");
         AssertEqual(12, catalog.WorldGeneration.Options.Count, "World option presets load through the same catalog");
-        AssertEqual(62, catalog.Scenes.Fragments.Count, "Location state and faction-relation scene fragments load from JSON");
+        AssertEqual(63, catalog.Scenes.Fragments.Count, "Location state, uncertainty and faction-relation scene fragments load from JSON");
         AssertEqual(7, catalog.Scenes.Policies.Count, "Every current location archetype has a scene policy");
         AssertEqual("de", catalog.Scenes.Texts.DefaultLocale, "German is the current default scene locale");
         AssertEqual(

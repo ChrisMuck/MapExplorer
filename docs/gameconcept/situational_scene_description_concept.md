@@ -1248,11 +1248,12 @@ human review.
    per archetype; hidden context/unrevealed modifier/undelivered outcome never surfaces; previous-
    versus-current comparison occurs before knowledge commit; doubt/age handling.
    **Implementation status:** the read-only location view, deterministic localized resolver,
-   structured result, inspection-command migration and generic anonymous/identified relation
-   fragments are implemented. Inspection coverage exists for all seven archetypes, and a faction is
-   named only for `Contacted`, `Open` or `Hostile`. Arrival and remote-view wiring, stored-observation
-   age/doubt coverage, supersession/exclusive selection and the final content-profile parity gate
-   remain in this package.
+   structured result, inspection-command migration, remote location view and generic
+   anonymous/identified relation fragments are implemented. Inspection coverage exists for all
+   seven archetypes, and a faction is named only for `Contacted`, `Open` or `Hostile`. Stored sources
+   enforce their authored age/doubt contract; doubtful observations receive explicit uncertainty
+   wording. Supersession and exclusive-tag selection are active. Arrival wiring, broader age
+   content/tests and the final content-profile parity gate remain in this package.
 3. **Contact scenes.** Identity-stage derivation from `FactionContactStatus`, earned signature
    context tags and delivered contact events; wire faction interaction and situation delivery.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no

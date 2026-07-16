@@ -117,7 +117,7 @@ public sealed class GameApplication
             crossSystemData?.ScoutContent,
             crossSystemData?.Evidence,
             crossSystemData?.FactionSignatures);
-        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver);
+        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver, dataCatalog?.Scenes);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver, findingAcquisitionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions, findingAcquisitionService);
         var worldPhaseService = new WorldPhaseService(crossSystemData, dataCatalog?.Authoring);

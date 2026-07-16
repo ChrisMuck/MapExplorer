@@ -81,7 +81,7 @@ public sealed class LocationInspectionPresentationResolver
                 game.Knowledge.GetTileKnowledge(location.Coord), game.Knowledge.KnownLocationContextTags(location.Id),
                 observableModifiers, observableRelationKinds.Select(kind => kind.ToString().ToLowerInvariant()), identityStage,
                 identifiedFaction?.ContactStatus.ToString() ?? FactionContactStatus.Unknown.ToString(),
-                identityStage == "identified" ? identifiedFaction!.Name : null, locale));
+                identityStage == "identified" ? identifiedFaction!.Name : null, null, locale));
         }
 
         var message = scene?.Message ?? (impressions.Count == 0

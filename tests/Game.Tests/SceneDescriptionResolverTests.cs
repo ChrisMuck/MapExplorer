@@ -11,6 +11,69 @@ internal sealed class SceneDescriptionResolverTests
     {
         EveryAuthoredArchetypeResolvesThroughOnePipeline();
         ResolutionIsDeterministicAndDoesNotInferHiddenModifiers();
+        RemoteViewUsesStoredKnowledgeAndHandlesDoubt();
+        SupersessionAndExclusiveTagsSelectOneCoherentSet();
+    }
+
+    private static void SupersessionAndExclusiveTagsSelectOneCoherentSet()
+    {
+        var catalog = SceneDescriptionDataLoader.LoadFromJson(new[]
+        {
+            """
+            { "documentType": "scene-fragments", "schemaVersion": 1, "contentVersion": 1, "items": [
+              { "id": "frag-base", "group": "opening", "subjectKind": "location", "source": { "kind": "direct-observation" }, "priority": 10, "textId": "scene.base" },
+              { "id": "frag-replacement", "group": "opening", "subjectKind": "location", "source": { "kind": "direct-observation" }, "priority": 20, "supersedesFragmentIds": ["frag-base"], "textId": "scene.replacement" },
+              { "id": "frag-tone-low", "group": "opening", "subjectKind": "location", "source": { "kind": "direct-observation" }, "priority": 30, "exclusiveTag": "tone", "textId": "scene.low" },
+              { "id": "frag-tone-high", "group": "opening", "subjectKind": "location", "source": { "kind": "direct-observation" }, "priority": 40, "exclusiveTag": "tone", "textId": "scene.high" }
+            ] }
+            """,
+            """
+            { "documentType": "scene-policies", "schemaVersion": 1, "contentVersion": 1, "items": [
+              { "id": "policy-test", "subjectKind": "location", "archetypeId": "test-archetype", "questionTextId": "scene.question",
+                "questionResolvedWhen": { "knownInteractionStatesAny": ["resolved"] }, "ordering": ["opening"],
+                "paragraphing": [["opening"]], "maxFragments": 4, "maxPerGroup": {} }
+            ] }
+            """,
+            """
+            { "documentType": "scene-localization", "schemaVersion": 1, "contentVersion": 1, "locale": "de", "fallbackLocale": null, "isDefault": true, "items": [
+              { "id": "scene.base", "text": "Basis." }, { "id": "scene.replacement", "text": "Ersatz." },
+              { "id": "scene.low", "text": "Leise." }, { "id": "scene.high", "text": "Deutlich." },
+              { "id": "scene.question", "text": "Was nun?" }
+            ] }
+            """
+        });
+        var scene = new SceneDescriptionResolver(catalog).ResolveLocation(new LocationSceneView(
+            "selection-test", SceneTrigger.Arrival, "test-archetype", "test-variant", "Test", null, null,
+            "open", "open", "unknown", 1, null, KnowledgeLevel.Confirmed, null, null, null));
+        var ids = scene.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).ToList();
+        AssertTrue(ids.Contains("frag-replacement"), "Superseding fragment remains selected");
+        AssertFalse(ids.Contains("frag-base"), "Superseded fragment is removed before caps are applied");
+        AssertTrue(ids.Contains("frag-tone-high"), "Highest-priority exclusive fragment wins");
+        AssertFalse(ids.Contains("frag-tone-low"), "Only one fragment per exclusive tag remains");
+    }
+
+    private static void RemoteViewUsesStoredKnowledgeAndHandlesDoubt()
+    {
+        var catalog = LoadCatalog();
+        var app = new GameApplication(catalog);
+        var game = app.CreateTutorialGame();
+        var location = game.World.Locations.Single(item => item.Id == "broken-ravine");
+        new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, location.Coord);
+        var inspection = app.InspectLocation(game, location.Coord);
+        AssertTrue(inspection.Success, "Location inspection establishes a stored observation");
+
+        var remote = app.GetLocationInteraction(game, location.Id).Presentation;
+        AssertTrue(remote?.Scene != null, "Known location remote view uses the shared scene resolver");
+        AssertFalse(remote!.Scene!.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Contains("frag-open-broken-bridge"),
+            "Remote view does not replay a direct sensory opening");
+        AssertEqual(remote.Scene.Message, remote.Description, "Remote presentation renders the structured scene message");
+
+        game.Knowledge.FindLocationCondition(location.Id)!.MarkDoubtful();
+        var doubtful = app.GetLocationInteraction(game, location.Id).Presentation!.Scene!;
+        AssertTrue(doubtful.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Contains("frag-loc-history-doubtful"),
+            "Doubtful stored knowledge resolves to an explicit uncertainty fragment");
+        AssertFalse(doubtful.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Any(id => id.StartsWith("frag-loc-route-op-", StringComparison.Ordinal)),
+            "Doubt-intolerant operational fragments do not present stale state as current truth");
     }
 
     private static void EveryAuthoredArchetypeResolvesThroughOnePipeline()

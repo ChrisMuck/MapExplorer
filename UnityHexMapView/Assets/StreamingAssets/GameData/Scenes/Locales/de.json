@@ -79,6 +79,7 @@
     { "id": "scene.fragment.relation.claimed.identified", "text": "Die sichtbaren Zeichen lassen sich {subjectLabel} zuordnen; die Fraktion erhebt offenbar Anspruch auf diesen Ort." },
     { "id": "scene.fragment.relation.watched.identified", "text": "Die Spuren der Beobachtung lassen sich {subjectLabel} zuordnen." },
     { "id": "scene.fragment.relation.sacred.identified", "text": "Die besondere Bedeutung dieses Ortes ist mit {subjectLabel} verbunden." },
-    { "id": "scene.fragment.relation.guarded.identified", "text": "Die sichtbaren Spuren der Bewachung lassen sich {subjectLabel} zuordnen." }
+    { "id": "scene.fragment.relation.guarded.identified", "text": "Die sichtbaren Spuren der Bewachung lassen sich {subjectLabel} zuordnen." },
+    { "id": "scene.fragment.history.doubtful", "text": "Die letzte überlieferte Beobachtung gilt als zweifelhaft; der heutige Zustand ist daraus nicht sicher abzuleiten." }
   ]
 }

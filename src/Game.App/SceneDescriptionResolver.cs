@@ -86,7 +86,8 @@ public sealed class LocationSceneView
         string presenceStateId, int currentWorldDay, LocationConditionKnowledgeState? previousKnownCondition,
         KnowledgeLevel knowledgeLevel, IEnumerable<string>? knownContextTags,
         IEnumerable<ObservableModifierScenePart>? observableModifiers, IEnumerable<string>? observableRelationKinds,
-        string identityStage = "anonymous", string contactStatus = "Unknown", string? subjectLabel = null, string? locale = null)
+        string identityStage = "anonymous", string contactStatus = "Unknown", string? subjectLabel = null,
+        string? knowledgeAgeLabel = null, string? locale = null)
     {
         SubjectRef = Require(subjectRef, nameof(subjectRef));
         Trigger = trigger;
@@ -107,6 +108,7 @@ public sealed class LocationSceneView
         IdentityStage = Require(identityStage, nameof(identityStage));
         ContactStatus = Require(contactStatus, nameof(contactStatus));
         SubjectLabel = Normalize(subjectLabel);
+        KnowledgeAgeLabel = Normalize(knowledgeAgeLabel);
         Locale = Normalize(locale);
     }
 
@@ -129,6 +131,7 @@ public sealed class LocationSceneView
     public string IdentityStage { get; }
     public string ContactStatus { get; }
     public string? SubjectLabel { get; }
+    public string? KnowledgeAgeLabel { get; }
     public string? Locale { get; }
     public bool HasCurrentObservation => Trigger is SceneTrigger.Arrival or SceneTrigger.InspectionResult;
     public bool CurrentObservationDiffersFromStored => PreviousKnownCondition != null &&
@@ -164,16 +167,20 @@ public sealed class SceneDescriptionResolver
             .Where(fragment => SourceAllowed(fragment.Source, view))
             .Where(fragment => Matches(fragment.When, view))
             .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
-                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority))
+                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag))
             .ToList();
 
         eligible.AddRange(view.ObservableModifiers.Select(modifier => new ResolvedFragment(
-            "modifier:" + modifier.ModifierId, "modifier", modifier.Text, "observable-modifier", 50)));
+            "modifier:" + modifier.ModifierId, "modifier", modifier.Text, "observable-modifier", 50,
+            Array.Empty<string>(), null)));
         var selected = Select(policy, eligible, view.SubjectRef);
         var paragraphs = AssembleParagraphs(policy, selected);
         if (paragraphs.Count == 0) throw new LocationDataException($"Scene for '{view.SubjectRef}' contains no eligible fragment.");
-        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
-        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+        var questionResolved = !(view.Trigger == SceneTrigger.RemoteLocationView && view.PreviousKnownCondition?.IsDoubtful == true)
+            && Matches(policy.QuestionResolvedWhen, view);
+        var question = questionResolved ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question, view.KnowledgeAgeLabel);
     }
 
     private static bool Applies(SceneFragmentDefinition fragment, LocationSceneView view) =>
@@ -182,6 +189,12 @@ public sealed class SceneDescriptionResolver
 
     private static bool SourceAllowed(SceneFragmentSourceDefinition source, LocationSceneView view)
     {
+        if (!view.HasCurrentObservation && source.Kind == "stored-observation")
+        {
+            var known = view.PreviousKnownCondition;
+            if (known == null || known.IsDoubtful && !source.ToleratesDoubt) return false;
+            if (source.MaxKnownStateAgeDays != null && view.CurrentWorldDay - known.ObservedWorldDay > source.MaxKnownStateAgeDays) return false;
+        }
         return source.Kind switch
         {
             "direct-observation" => view.HasCurrentObservation,
@@ -247,7 +260,16 @@ public sealed class SceneDescriptionResolver
     private static IReadOnlyList<ResolvedFragment> Select(ScenePolicyDefinition policy, IEnumerable<ResolvedFragment> candidates, string subjectRef)
     {
         var allowedGroups = policy.Ordering.ToHashSet(StringComparer.Ordinal);
-        var selected = candidates.Where(item => allowedGroups.Contains(item.Group))
+        var eligible = candidates.Where(item => allowedGroups.Contains(item.Group)).ToList();
+        var superseded = eligible.SelectMany(item => item.SupersedesFragmentIds).ToHashSet(StringComparer.Ordinal);
+        eligible.RemoveAll(item => superseded.Contains(item.Id));
+        var exclusiveWinners = eligible.Where(item => item.ExclusiveTag != null)
+            .GroupBy(item => item.ExclusiveTag!, StringComparer.Ordinal)
+            .Select(group => group.OrderByDescending(item => item.Priority).ThenBy(item => StableRank(subjectRef, item.Id)).First())
+            .ToHashSet();
+        eligible.RemoveAll(item => item.ExclusiveTag != null && !exclusiveWinners.Contains(item));
+
+        var selected = eligible
             .GroupBy(item => item.Group, StringComparer.Ordinal)
             .SelectMany(group => group.OrderByDescending(item => item.Priority).ThenBy(item => StableRank(subjectRef, item.Id))
                 .Take(policy.MaxPerGroup.TryGetValue(group.Key, out var cap) ? cap : int.MaxValue))
@@ -289,7 +311,8 @@ public sealed class SceneDescriptionResolver
         return hash;
     }
 
-    private sealed record ResolvedFragment(string Id, string Group, string Text, string Provenance, int Priority);
+    private sealed record ResolvedFragment(string Id, string Group, string Text, string Provenance, int Priority,
+        IReadOnlyList<string> SupersedesFragmentIds, string? ExclusiveTag);
 }
 
 }
