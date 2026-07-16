@@ -1,6 +1,7 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **Planned**
+Status: **In progress — Blocks 2.0–2.8 complete; Block 2.9 automated gates complete, human review pending**
+Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
 catalog, deterministic simulation, world processes, scouting, Unity adapter and WPF runner.
@@ -36,7 +37,7 @@ future archetypes.
 - `Game.Core` and `Game.App` remain the only rule implementation. Unity and WPF only render shared
   queries and send shared commands.
 - No action, action chain, faction, coordinate, claim, hidden consequence or WPF scenario behavior
-  is hardcoded by location ID, `LocationKind`, Unity UI branch or WPF UI branch.
+  is hardcoded by location ID, variant ID, `LocationKind`, Unity UI branch or WPF UI branch.
 - Reusable authored content lives in JSON with stable IDs. The WorldGenerator alone assigns runtime
   territory, claim, signature, local context and resolved consequence branches.
 - `WorldState`, `KnowledgeState` and `PlayerNotes` remain separate. A new option may be visible
@@ -46,6 +47,22 @@ future archetypes.
 - A delayed severe consequence needs an earned warning and at least one feasible response path.
 - Development scenarios and the WPF runner may inspect objective World Truth, but never create
   player knowledge merely by displaying it.
+
+### 2.1 Confirmed Archetype-Flow Boundary
+
+The common interaction pipeline must preserve distinct archetype questions rather than flattening
+every location into one generic menu. `Game.App` therefore owns one registered interaction-flow
+policy for each supported **archetype**. The selected policy is identified by the authored
+`ScenarioProfile.ArchetypeId`, never by `LocationKind`, a variant ID, a location ID or a Unity/WPF
+branch.
+
+An archetype flow owns the order and meaning of its decision phases: Route Obstacle owns
+access/bypass/infrastructure choices; Investigation Site owns interpretation/respect/recovery;
+Containment Site owns protection/temptation/release. The shared Core/App pipeline still owns
+requirements, costs, state persistence, evidence, findings, triggers, processes and option
+presentation. JSON supplies the action IDs, state/context gates, text and effects used by that
+archetype flow. A variant only composes a particular scenario and presentation; an individual
+generated location supplies runtime state and context. Neither may add a separate code path.
 
 ## 3. Phase-2 Data Contract
 
@@ -66,8 +83,10 @@ catalog or create a second content format.
 - repeat policy and persistent local effects.
 
 Scenario Profiles define which generic action IDs belong to an archetype/variant and under which
-state/context conditions additional action IDs become available. Content Profiles remain strictly
-presentation-only: titles, descriptions, state wording and visual IDs, never hidden world truth.
+state/context conditions additional action IDs become available. The registered archetype flow
+interprets that authored action surface; it does not infer a flow from a concrete variant. Content
+Profiles remain strictly presentation-only: titles, descriptions, state wording and visual IDs,
+never hidden world truth.
 
 ### 3.2 Follow-Up Model
 
@@ -86,8 +105,8 @@ scenario-sealed-gate
   -> when opened + known danger context: add action-secure-entrance
 ```
 
-The resolver recalculates the same option contract after every command. It does not contain an
-archetype-specific continuation table.
+The resolver recalculates the same option contract after every command. It invokes the registered
+archetype flow, but contains no special-variant continuation table.
 
 ### 3.3 Development Scenario Contract
 
@@ -98,7 +117,7 @@ these actions; it does not contain one button or workflow per location.
 
 ## 4. Implementation Blocks
 
-### Block 2.0 — Plan and Content Audit
+### Block 2.0 — Plan and Content Audit — Complete
 
 1. Mark the completed foundation blocks accurately and remove stale sequencing from the Phase-1
    plan.
@@ -109,25 +128,39 @@ these actions; it does not contain one button or workflow per location.
    document, defer and leave. The vocabulary is reusable IDs/tags, not a mandatory action list for
    every location.
 
+**Audit record:** [`cross_system_phase_2_audit.md`](cross_system_phase_2_audit.md)
+
 **Exit criteria:** the audit maps every initial Slice location to a proposed non-hardcoded path and
 identifies the JSON field needed for every missing transition or condition.
 
-### Block 2.1 — State-Driven Follow-Up Option Resolver
+### Block 2.1 — State-Driven Follow-Up Option Resolver — Complete
 
-1. Extend the typed JSON schema and validator with state-gated additional-action rules.
-2. Make the shared interaction resolver evaluate operational, interaction and presence state along
-   with existing known context and role requirements.
-3. Preserve information honesty: only known prerequisite failures can be shown as disabled reasons;
+1. Introduce the registered archetype-flow boundary in `Game.App`; prove that it is selected by
+   `ScenarioProfile.ArchetypeId` and cannot fall back to a variant or `LocationKind` branch.
+2. Extend the typed JSON schema and validator with state-gated additional-action rules.
+3. Make the shared interaction resolver evaluate operational, interaction and presence state along
+   with existing known context and role requirements through the selected archetype flow.
+4. Preserve information honesty: only known prerequisite failures can be shown as disabled reasons;
    hidden context only changes uncertainty or later discovery.
-4. Re-query options after inspect, scout report, action resolution, project progress and world-stage
+5. Re-query options after inspect, scout report, action resolution, project progress and world-stage
    location changes.
-5. Add Core/App tests proving that different generated instances of the same profile expose
-   different legal options without variant-specific code.
+6. Add Core/App tests proving that different generated instances of the same profile expose
+   different legal options without variant-specific code, while different archetypes select their
+   own flow policies.
 
 **Exit criteria:** changing a location to `opened`, `repaired`, `searched` or comparable authored
 state can expose a generic follow-up action through JSON alone.
 
+**Implemented:** `Game.App` now selects a registered interaction-flow policy from the authored
+archetype ID, including all seven current archetypes. Scenario Profiles support
+`stateActionRules` over interaction, operational and presence states; the catalog validates state
+and action references. The shared option query runs the selected flow after every normal command
+query. Core/App tests prove state-only follow-up availability, compound channel gates, archetype
+selection and rejection of invalid state/flow authoring without a variant or `LocationKind` branch.
+
 ### Block 2.2 — Complete Initial Slice Location Chains
+
+**Status:** Complete for the seven currently defined archetype profiles; runner and Unity path-library coverage remains in Blocks 2.5 and 2.7.
 
 Author and test at least one complete decision chain for every current Scenario Profile.
 
@@ -138,16 +171,50 @@ Author and test at least one complete decision chain for every current Scenario 
 | Territorial Marker | observe -> interpret -> respect / cross / communicate -> territorial response only if observed and relevant |
 | Containment Site | inspect seal -> open -> investigate interior / scout inside / secure / leave -> delayed release or contained result |
 | Contact Site | observe -> approach / communicate / withdraw -> contact knowledge, offer, warning or social memory |
+| Hazard Site | observe -> assess -> avoid / traverse / find safe route / contain -> persistent risk or route knowledge |
+| Natural Phenomenon | observe -> approach -> survey / map -> persistent landmark knowledge |
 
 Each chain must contain a safe or deferrable choice, a contextually risky choice and at least one
 specialist-sensitive branch where it makes sense. A location may be atmospheric and yield only
 knowledge; rewards are never mandatory material loot.
 
-**Exit criteria:** every initial profile has a playable path that begins with Inspect and local
-scouting where applicable, continues after its first intervention, and reaches a persistent local
-or world result.
+**Exit criteria:** all seven current archetype profiles have a playable, data-authored path that
+begins with the appropriate first investigation action (including inspection where applicable),
+continues after its first intervention, and reaches a persistent local or world result.
 
 ### Block 2.3 — Findings, Knowledge and Persistent Local Results
+
+**Status:** Complete.
+
+**In progress:** `AddFinding` is now a generic location-outcome/project-completion effect. It
+creates only an unsecured field finding, observes the authored repeat policy, transfers through
+the existing return handoff and awards Knowledge Points only after normal base analysis. Initial
+chains use this for investigation, containment, hazard containment and natural-phenomenon survey.
+The distinct player-knowledge model for a once-observed condition becoming old or doubtful now has
+its Core representation; no objective location state is exposed merely to satisfy that requirement.
+
+**Implemented:** validated Finding Tables and the generic `RollFindingTable` effect now resolve
+weighted, state/context-filtered candidates through deterministic World State and persist the
+resolved entry or empty result. Direct `AddFinding` remains available for guaranteed narrative
+discoveries; ordinary fixed investigation/sample/survey findings have been migrated to tables.
+
+**Current implementation step:** `KnowledgeState` records the last directly observed interaction,
+operational and presence state of a location with its observation day. Later World-State changes do
+not update this record omnisciently. The record can become old against a caller/content-supplied
+freshness window or explicitly doubtful through earned conflicting evidence; the gameplay
+balancing threshold is intentionally not hardcoded before human review.
+
+**Implemented:** the serialization-safe `KnowledgeRuntimeSnapshot` roundtrips last-known location
+states, observation days, old/doubtful flags, known context, evidence, approximate scout reports,
+claimed sources and tile knowledge without rebuilding any of them from current World Truth. It is
+separate from `WorldRuntimeSnapshot` and rejects duplicate saved identities. A no-truth-leakage
+roundtrip test proves that an unobserved objective location change does not refresh saved player
+knowledge.
+
+**Implemented:** every valid interaction, operational and presence state in all seven current State
+Profiles has neutral player-facing wording in its presentation-only Content Profile. Catalog
+validation rejects a Scenario Profile whose state vocabulary is not fully covered, preventing a
+new gameplay state from silently falling back to misleading generic text.
 
 1. Ensure every chain can use the common outputs independently: description, evidence, field
    finding, unsecured knowledge, persistent state, route/access, trigger and situation.
@@ -159,9 +226,34 @@ or world result.
    after the first paths are functionally complete.
 
 **Exit criteria:** a location can be empty, informative, useful, dangerous or politically relevant
-without requiring a separate reward system or a special code path.
+without requiring a separate reward system or a special code path, and its fallible last-known
+condition survives save/load without exposing the current objective condition.
 
 ### Block 2.4 — Follow-Up World Processes and Fair Responses
+
+**Status:** Complete. The sealed-containment reference path proves the complete generic
+chain from opening through delayed earned evidence and an active warning situation to an authored
+containment response. The response persists and suppresses the later escalation trigger without
+erasing the later evidence or historical trace. The route-obstacle reference path now likewise
+turns observed post-repair traffic into a response situation; coordination preserves the immediate
+authored traffic reaction while suppressing only the later unmanaged-attention escalation. The
+investigation-site reference path distinguishes a respectful choice that starts no
+disturbance process from a known risky intervention that produces an uncertain rumour, warning and
+preparation response; preparation suppresses only the later related-awareness escalation while
+preserving the physical disturbance and later evidence.
+
+The generic situation lifecycle now expires unanswered situations exactly once at their authored
+deadline and records both causal trace and player-facing notice. `promise-return` creates a
+persistent `Promised` state rather than resolving the request; it remains fulfillable until the
+deadline. A fulfilled promise resolves normally, while an expired promise applies only its authored
+trust delta and memory ID. World runtime snapshots preserve the open promise and response tag.
+The contact-site reference path establishes contact only with one concrete generated related
+faction, then schedules a request through the ordinary trigger/process contract. The runtime
+situation records `SourceKind=faction` and `DeliveryChannel=direct-contact`; a generated relation
+without established local contact cannot deliver the request. Source and delivery survive the
+World runtime snapshot. Together the containment, route, investigation and contact proofs cover
+earned warnings, mitigation, coordination, respectful non-escalation, unanswered expiry and kept
+or broken promises without a variant or location-specific simulation branch.
 
 1. Connect relevant action chains to existing generic triggers, consequence branches, observation
    channels, faction reactions and situations.
@@ -202,6 +294,18 @@ through causal traces and persist in World State/faction memory rather than a tr
 
 ### Block 2.5 — WPF Path Library for Every Existing Location Type
 
+**Status:** Complete. The development-scenario contract now carries purpose, selected team, starting
+knowledge, expected world process and outstanding decision metadata, and WPF displays that context
+without changing simulation state. Generic assertions cover player-visible/available/locked
+options, objective and last-known state channels, situation delivery channels, evidence, triggers
+and causal trace. The automatically discovered path library now exercises all seven current
+archetypes, including separate respectful and disturbing investigation branches, territorial
+respect, established-contact delivery, hazard routing and scholar-gated landmark survey. The
+explicit event-chain matrix also proves a silent unobserved remote passability change, an earned
+neutral external crisis, a fulfilled direct-contact request, a broken promise after deadline and an
+ignored warning expiry. Development fixture triggers enter the ordinary trigger/process pipeline;
+they do not introduce a WPF-only world-rule path.
+
 1. Add one or more explicit JSON development scenarios for every current Scenario Profile and key
    state branch, including sealed-opened follow-up, bridge repair, respectful/disturbing
    investigation, territorial choice and contact choice.
@@ -221,6 +325,14 @@ without Unity and understand why each new option, warning, contact deadline or r
 
 ### Block 2.6 — Directional Scout Controls in WPF
 
+**Status:** Complete. WPF now exposes the shared directional mission contract for one or two free
+scouts, all eight compass sectors, one to five days, every authored focus and every behavior. The
+control sends through `DevelopmentScenarioPlayback` into the ordinary `SimulationSession` scout
+command; reports appear only after normal day advancement. A dedicated status view keeps active,
+overdue, returned and returned-injured missions visible beside approximate lead reports. Explicit
+development scenarios prove a two-scout team, an overdue return, an injured low-confidence return
+and the no-exact-coordinate knowledge contract.
+
 The current WPF runner already supports local surroundings scouting. Add the separate directional
 mission path with generic controls for:
 
@@ -239,6 +351,17 @@ overdue, injured or lower-confidence result when authored scenario content calls
 
 ### Block 2.7 — Unity Player-Facing Parity
 
+**Status:** Complete for implementation; final human Unity play-through remains part of Block 2.9.
+Unity already obtained option IDs, availability and known locked reasons from the shared
+`SimulationSession` query. Its location header now also consumes a `Game.App` player-facing
+presentation projection built from authored Content Profiles and the last observed
+`KnowledgeState` condition. It no longer renders live operational/presence World Truth, objective
+modifier IDs or variant-specific fallback prose. Action glyphs are selected from generic authored
+action tags rather than special action IDs. Action, project, scout and end-day/world-process paths
+all refresh the shared UI query, while report and event surfaces retain explicit portrait/scene
+placeholder anchors. Tests prove that an unobserved repaired state does not replace the last-known
+blocked wording and that earned context, not hidden modifiers, reaches presentation.
+
 1. Display the same dynamic follow-up options, availability reasons and location state wording in
    the Unity location panel.
 2. Refresh the panel after each action, scout report, world message or project step.
@@ -251,6 +374,14 @@ text for every Phase-2 scenario state.
 
 ### Block 2.8 — WPF Directional Movement Controls (Last)
 
+**Status:** Complete. WPF now provides a six-direction logical hex pad. Every press derives exactly
+one adjacent `HexCoord` through `HexCoord.Neighbor` and delegates to the ordinary
+`SimulationSession.MoveExpedition` path. The runner displays the returned cost or rejection and
+then refreshes location options, player knowledge, movement points and scout controls from the same
+session. It contains no map, teleport, alternative passability check or WPF movement-cost rule. A
+deterministic test proves adjacency, normal terrain cost, ordinary knowledge revelation and that
+interactive movement does not consume the authored JSON command path.
+
 Only after the fixed paths and directional scout controls are trustworthy, add a convenience
 movement pad to WPF. It sends the ordinary `MoveExpeditionCommand` to the adjacent logical hex in
 the selected approximate direction and displays the normal movement result/cost. It does not add a
@@ -261,6 +392,39 @@ mission with buttons alone, while movement points, terrain restrictions and know
 the shared simulation behavior.
 
 ### Block 2.9 — Regression, Batch and Human Review
+
+**Status:** In progress. Deterministic regression and batch gates now cover every authored proof
+scenario and all seven initial archetype profiles. The batch runner steps scenario commands through
+the shared application path and flags unreachable scripts, state changes without follow-up, missing
+leave/mark/defer choices, specialist-gated dead ends, unanswerable situations and severe branches
+without an earlier answerable warning. The checks operate on scenario profiles, action tags,
+requirements and runtime interaction queries; they contain no concrete location, variant or
+`LocationKind` branches. The remaining gate is the project-owner WPF/Unity play-through recorded in
+`docs/phase_2_human_review_checklist.md`.
+
+**Capacity and exit-text tuning:** The seven archetype chains now use the existing reusable action
+cost contract consistently: brief field interaction generally costs one Movement Point,
+substantial investigation generally costs two, and `DayOperation` commits the remaining daily
+capacity through the shared command path. Insufficient capacity is a known option lock; End Day
+restores capacity while persistent location state keeps the follow-up available. Shared leave text
+no longer claims that an already investigated or changed place is untouched. The natural-phenomenon
+profile explicitly retains mapping as a data-authored follow-up after surveying, proving next-day
+continuation without a landmark-specific code path.
+
+**Inspection-context tuning:** Normal inspection now resolves a content profile through the authored
+scenario profile when a runtime instance does not redundantly carry a Content Profile ID. Its
+player-facing result combines the known state wording with explicitly observable modifier
+impressions. Modifier authoring controls whether visible signs reveal an anonymous claimed,
+watched, sacred or guarded relation. A concrete faction name is recorded and shown only when that
+faction was already known; otherwise both the message and persisted `KnowledgeState` remain
+anonymous. Hidden modifiers and faction relations never reach WPF or Unity through this path.
+
+**Confirmed presentation direction beyond the current inspection slice:**
+`docs/gameconcept/situational_scene_description_concept.md` defines a shared text-adventure-inspired
+scene projection for locations, faction contacts, returning scouts, reports and important events.
+The current inspection composition is its first implemented slice. Scout return-state scenes,
+contact descriptions, visible action history and broader fragment variation remain follow-up work;
+they must use the same Knowledge boundary and must not become presentation-specific rule paths.
 
 1. Add deterministic tests for every new state transition, follow-up option, missing specialist,
    local/directional scout distinction, warning path and persistence rule.
@@ -282,7 +446,7 @@ usable in Unity and judged by human playtest rather than only automated success.
 - broad text-variation libraries, final art and audio polish;
 - a second rule path for WPF or Unity;
 - map rendering in WPF;
-- save-format migration beyond the existing runtime snapshot work.
+- broad legacy save-format migration beyond the explicit Phase-2 Knowledge snapshot requirement.
 
 An opened location uses state-driven actions in the current logical location first. Dynamic
 interior locations may be added later only if the state/action model cannot express the intended

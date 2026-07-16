@@ -15,10 +15,14 @@ namespace Game.App
 public sealed class LocationScenarioActionResolver
 {
     private readonly CrossSystemAuthoringBundle authoring;
+    private readonly LocationArchetypeInteractionFlowRegistry archetypeFlows;
 
-    public LocationScenarioActionResolver(CrossSystemAuthoringBundle authoring)
+    public LocationScenarioActionResolver(
+        CrossSystemAuthoringBundle authoring,
+        LocationArchetypeInteractionFlowRegistry? archetypeFlows = null)
     {
         this.authoring = authoring ?? throw new ArgumentNullException(nameof(authoring));
+        this.archetypeFlows = archetypeFlows ?? LocationArchetypeInteractionFlowRegistry.CreateInitialSlice();
     }
 
     public IReadOnlyList<string>? ResolveBaseActionIds(SpecialLocationState location, KnowledgeState knowledge)
@@ -31,18 +35,7 @@ public sealed class LocationScenarioActionResolver
         if (profile == null) return null;
         ValidateRuntimeState(location, profile);
 
-        var actionIds = new List<string>();
-        AddDistinct(actionIds, profile.ActionSet.SharedActionIds);
-        AddDistinct(actionIds, profile.ActionSet.InitialAdditionalActionIds.Take(profile.ActionSet.MaximumVisibleAdditionalActions));
-
-        foreach (var rule in profile.ActionSet.ContextActionRules)
-        {
-            var allRequiredTags = rule.KnownContextTags.Concat(rule.HiddenContextTags).Distinct(StringComparer.Ordinal).ToList();
-            if (allRequiredTags.Count == 0 || !allRequiredTags.Any(tag => knowledge.KnowsLocationContextTag(location.Id, tag))) continue;
-            AddDistinct(actionIds, rule.ActionIds);
-        }
-
-        return actionIds;
+        return archetypeFlows.Get(profile.ArchetypeId).ResolveActionIds(profile, location, knowledge);
     }
 
     public LocationScenarioProfileDefinition? FindProfile(SpecialLocationState location)
@@ -90,12 +83,5 @@ public sealed class LocationScenarioActionResolver
             $"Location '{location.Id}' has {channelId} state '{actualValue}', which is invalid for scenario '{scenario.Id}' and state profile '{stateProfile.Id}'.");
     }
 
-    private static void AddDistinct(ICollection<string> target, IEnumerable<string> actionIds)
-    {
-        foreach (var actionId in actionIds)
-        {
-            if (!target.Contains(actionId)) target.Add(actionId);
-        }
-    }
 }
 }

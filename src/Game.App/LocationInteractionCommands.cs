@@ -56,12 +56,40 @@ public sealed class GetLocationInteractionCommand
 
         scenarioActionResolver?.ValidateRuntimeState(location);
 
-        return LocationInteractionQueryResult.Found(
-            interactionService.BuildInteraction(
+        var interaction = interactionService.BuildInteraction(
                 location,
                 expedition,
                 LocationInteractionSupport.LinkedFactions(game, location),
-                scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge)));
+                scenarioActionResolver?.ResolveBaseActionIds(location, game.Knowledge));
+        return LocationInteractionQueryResult.Found(interaction, BuildPresentation(game, interaction));
+    }
+
+    private static LocationInteractionPresentation BuildPresentation(GameState game, LocationInteractionModel interaction)
+    {
+        var location = interaction.Location;
+        var profile = interaction.ContentProfile;
+        var known = game.Knowledge.KnownLocationConditions.FirstOrDefault(item => item.LocationId == location.Id);
+        var knowledgeLabel = known == null
+            ? "Bestaetigt, Zustand noch nicht aufgenommen"
+            : known.IsDoubtful ? $"Zweifelhaft, zuletzt beobachtet an Tag {known.ObservedWorldDay}" : $"Bestaetigt an Tag {known.ObservedWorldDay}";
+        string Wording(string? stateId, string fallback) =>
+            stateId != null && profile?.FlavorByState.TryGetValue(stateId, out var text) == true ? text : fallback;
+        var interactionText = Wording(known?.InteractionStateId, "Der Interaktionszustand ist noch nicht bekannt.");
+        var operationalText = Wording(known?.OperationalStateId, "Der aktuelle Zustand ist noch nicht bekannt.");
+        var presenceText = Wording(known?.PresenceStateId, "Die aktuelle Anwesenheit ist nicht bekannt.");
+        var description = known == null
+            ? profile?.ShortDescription ?? "Der Ort ist bestaetigt, wurde aber noch nicht aus der Naehe aufgenommen."
+            : string.Join(" ", new[] { interactionText, operationalText, presenceText });
+        return new LocationInteractionPresentation(
+            profile?.Title ?? location.Name,
+            profile?.Subtitle ?? "Bestaetigter besonderer Ort",
+            description,
+            profile?.ImageId,
+            knowledgeLabel,
+            interactionText,
+            operationalText,
+            presenceText,
+            game.Knowledge.KnownLocationContextTags(location.Id).OrderBy(item => item, StringComparer.Ordinal).ToList());
     }
 
     private static bool IsKnownEnough(GameState game, SpecialLocationState location)
@@ -106,11 +134,16 @@ public sealed class ResolveLocationActionCommand
 {
     private readonly LocationInteractionService interactionService;
     private readonly LocationScenarioActionResolver? scenarioActionResolver;
+    private readonly LocationFindingAcquisitionService? findingAcquisitionService;
 
-    public ResolveLocationActionCommand(LocationInteractionService interactionService, LocationScenarioActionResolver? scenarioActionResolver = null)
+    public ResolveLocationActionCommand(
+        LocationInteractionService interactionService,
+        LocationScenarioActionResolver? scenarioActionResolver = null,
+        LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         this.interactionService = interactionService ?? throw new ArgumentNullException(nameof(interactionService));
         this.scenarioActionResolver = scenarioActionResolver;
+        this.findingAcquisitionService = findingAcquisitionService;
     }
 
     public LocationActionResult Execute(
@@ -200,8 +233,9 @@ public sealed class ResolveLocationActionCommand
         }
 
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
-        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId);
+        var effectTexts = ApplyEffects(game, location, resolution.Effects, recovery, out var expeditionMoved, option.Action.ActionTags, commandTrace.TraceId, findingAcquisitionService);
         scenarioActionResolver?.ValidateRuntimeState(location);
+        game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
         QueueGenericActionTriggerIfNeeded(game, location, option.Action, triggerCountBeforeEffects, commandTrace.TraceId);
         var texts = new List<string>(costTexts);
         texts.AddRange(effectTexts);
@@ -224,6 +258,11 @@ public sealed class ResolveLocationActionCommand
 
     private static string? FirstUnpayableCost(LocationActionDefinition action, ExpeditionState expedition)
     {
+        if (action.Commitment == LocationActionCommitment.DayOperation && expedition.MovementPoints == 0)
+        {
+            return "No daily capacity remains. End the day before starting this operation.";
+        }
+
         foreach (var cost in action.Costs)
         {
             if (cost.Amount <= 0)
@@ -298,6 +337,13 @@ public sealed class ResolveLocationActionCommand
             }
         }
 
+        if (action.Commitment == LocationActionCommitment.DayOperation && expedition.MovementPoints > 0)
+        {
+            var committedMovement = expedition.MovementPoints;
+            expedition.SpendMovementPoints(committedMovement);
+            texts.Add("Die Expedition ist fuer den restlichen Tag gebunden.");
+        }
+
         return texts;
     }
 
@@ -342,7 +388,8 @@ public sealed class ResolveLocationActionCommand
         LocationRecoveryOutcome? recovery,
         out bool expeditionMoved,
         IReadOnlyList<string>? actionTags = null,
-        string? causedByTraceId = null)
+        string? causedByTraceId = null,
+        LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         var texts = new List<string>();
         expeditionMoved = false;
@@ -354,7 +401,7 @@ public sealed class ResolveLocationActionCommand
                 continue;
             }
 
-            expeditionMoved |= ApplyEffect(game, location, effect, actionTags, causedByTraceId);
+            expeditionMoved |= ApplyEffect(game, location, effect, actionTags, causedByTraceId, findingAcquisitionService);
             texts.Add(effect.Text);
         }
 
@@ -366,7 +413,8 @@ public sealed class ResolveLocationActionCommand
         SpecialLocationState location,
         LocationEffectDefinition effect,
         IReadOnlyList<string>? actionTags,
-        string? causedByTraceId)
+        string? causedByTraceId,
+        LocationFindingAcquisitionService? findingAcquisitionService)
     {
         switch (effect.Kind)
         {
@@ -428,6 +476,33 @@ public sealed class ResolveLocationActionCommand
                     $"Location effect '{effect.Id}' created evidence '{effect.ReferenceId ?? effect.Id}'.",
                     causedByTraceId == null ? null : new[] { causedByTraceId },
                     new[] { location.Id, effect.ReferenceId ?? effect.Id });
+                return false;
+            case LocationEffectKind.AddFinding:
+                if (effect.ReferenceId == null)
+                {
+                    throw new InvalidOperationException("AddFinding effect needs a finding definition reference.");
+                }
+
+                if (findingAcquisitionService == null)
+                {
+                    throw new InvalidOperationException("AddFinding effect requires authored finding content.");
+                }
+
+                findingAcquisitionService.TryAcquire(game, location, effect.ReferenceId);
+                return false;
+            case LocationEffectKind.RollFindingTable:
+                if (effect.ReferenceId == null) throw new InvalidOperationException("RollFindingTable effect needs a table reference.");
+                if (findingAcquisitionService == null) throw new InvalidOperationException("RollFindingTable effect requires authored finding content.");
+                findingAcquisitionService.RollTable(game, location, effect.ReferenceId);
+                return false;
+            case LocationEffectKind.EstablishRelatedFactionContact:
+                var relatedFactionIds = location.FactionRelations.Select(relation => relation.FactionId)
+                    .Distinct(StringComparer.Ordinal).ToList();
+                if (relatedFactionIds.Count != 1) return false;
+                var relatedFaction = game.FindFaction(relatedFactionIds[0]);
+                if (relatedFaction == null) return false;
+                if (relatedFaction.ContactStatus == FactionContactStatus.Unknown || relatedFaction.ContactStatus == FactionContactStatus.Rumored)
+                    relatedFaction.SetContactStatus(FactionContactStatus.Contacted);
                 return false;
             case LocationEffectKind.RaiseWorldTrigger:
                 var triggerTrace = game.World.RecordTrace(
@@ -548,10 +623,12 @@ public sealed class ResolveLocationActionCommand
 public sealed class AdvanceLocationProjectCommand
 {
     private readonly LocationInteractionDefinitionSet definitions;
+    private readonly LocationFindingAcquisitionService? findingAcquisitionService;
 
-    public AdvanceLocationProjectCommand(LocationInteractionDefinitionSet definitions)
+    public AdvanceLocationProjectCommand(LocationInteractionDefinitionSet definitions, LocationFindingAcquisitionService? findingAcquisitionService = null)
     {
         this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+        this.findingAcquisitionService = findingAcquisitionService;
     }
 
     public LocationActionResult Execute(GameState game, string locationId)
@@ -584,8 +661,9 @@ public sealed class AdvanceLocationProjectCommand
         }
 
         var triggerCountBeforeEffects = game.World.WorldTriggers.Count;
-        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags);
+        var texts = ResolveLocationActionCommand.ApplyEffects(game, location, action.ProjectCompletionEffects, null, out var expeditionMoved, action.ActionTags, findingAcquisitionService: findingAcquisitionService);
         ResolveLocationActionCommand.QueueGenericActionTriggerIfNeeded(game, location, action, triggerCountBeforeEffects);
+        game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
         location.ClearProject();
         return LocationActionResult.Resolved(location, action, null, null, texts, expeditionMoved);
     }

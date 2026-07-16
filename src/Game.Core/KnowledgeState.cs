@@ -12,6 +12,7 @@ public sealed class KnowledgeState
     private readonly List<EvidenceState> evidence = new();
     private readonly HashSet<string> claimedKnowledgeSources = new();
     private readonly Dictionary<string, HashSet<string>> knownLocationContextTags = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, LocationConditionKnowledgeState> knownLocationConditions = new(StringComparer.Ordinal);
 
     public KnowledgeLevel GetTileKnowledge(HexCoord coord)
     {
@@ -56,6 +57,42 @@ public sealed class KnowledgeState
     public IReadOnlyList<EvidenceState> Evidence
     {
         get { return evidence; }
+    }
+
+    public IReadOnlyCollection<LocationConditionKnowledgeState> KnownLocationConditions => knownLocationConditions.Values;
+
+    public IReadOnlyCollection<string> ClaimedKnowledgeSources => claimedKnowledgeSources;
+
+    public IReadOnlyDictionary<string, IReadOnlyCollection<string>> KnownLocationContexts =>
+        knownLocationContextTags.ToDictionary(pair => pair.Key, pair => (IReadOnlyCollection<string>)pair.Value.ToArray(), StringComparer.Ordinal);
+
+    public void ObserveLocationCondition(SpecialLocationState location, int worldDay)
+    {
+        if (location == null) throw new ArgumentNullException(nameof(location));
+        knownLocationConditions[location.Id] = new LocationConditionKnowledgeState(
+            location.Id, location.InteractionStateId, location.OperationalStateId, location.PresenceStateId, worldDay);
+    }
+
+    public LocationConditionKnowledgeState? FindLocationCondition(string locationId)
+    {
+        if (string.IsNullOrWhiteSpace(locationId)) return null;
+        return knownLocationConditions.TryGetValue(locationId.Trim(), out var condition) ? condition : null;
+    }
+
+    public void RestoreLocationCondition(LocationConditionKnowledgeState condition)
+    {
+        if (condition == null) throw new ArgumentNullException(nameof(condition));
+        if (knownLocationConditions.ContainsKey(condition.LocationId))
+            throw new InvalidOperationException($"Location condition '{condition.LocationId}' occurs more than once in saved knowledge.");
+        knownLocationConditions.Add(condition.LocationId, condition);
+    }
+
+    public bool MarkLocationConditionDoubtful(string locationId)
+    {
+        var condition = FindLocationCondition(locationId);
+        if (condition == null || condition.IsDoubtful) return false;
+        condition.MarkDoubtful();
+        return true;
     }
 
     public bool ClaimKnowledgeSource(string sourceId)
@@ -152,6 +189,7 @@ public sealed class KnowledgeState
         evidence.Clear();
         claimedKnowledgeSources.Clear();
         knownLocationContextTags.Clear();
+        knownLocationConditions.Clear();
     }
 
     private static int KnowledgeRank(KnowledgeLevel knowledge)

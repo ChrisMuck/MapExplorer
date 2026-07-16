@@ -25,6 +25,7 @@ public sealed class WorldRuntimeSnapshot
     public List<WorldConnectionRuntimeSnapshot> Connections { get; set; } = new();
     public List<SimulationTraceRuntimeSnapshot> Traces { get; set; } = new();
     public List<string> AcquiredFindingKeys { get; set; } = new();
+    public List<FindingTableRollRuntimeSnapshot> FindingTableRolls { get; set; } = new();
 
     public static WorldRuntimeSnapshot Capture(WorldState world)
     {
@@ -42,7 +43,8 @@ public sealed class WorldRuntimeSnapshot
             Situations = world.Situations.Select(WorldSituationRuntimeSnapshot.FromState).ToList(),
             Connections = world.Connections.Select(WorldConnectionRuntimeSnapshot.FromState).ToList(),
             Traces = world.Traces.Select(SimulationTraceRuntimeSnapshot.FromState).ToList(),
-            AcquiredFindingKeys = world.AcquiredFindingKeys.OrderBy(key => key, StringComparer.Ordinal).ToList()
+            AcquiredFindingKeys = world.AcquiredFindingKeys.OrderBy(key => key, StringComparer.Ordinal).ToList(),
+            FindingTableRolls = world.FindingTableRolls.Select(FindingTableRollRuntimeSnapshot.FromState).ToList()
         };
     }
 
@@ -80,8 +82,27 @@ public sealed class WorldRuntimeSnapshot
             new RuntimeIdAllocatorState(RuntimeIdNextNumbers ?? new Dictionary<string, int>()),
             new DeterministicRandomState(RandomSeed, RandomCurrentState),
             AcquiredFindingKeys,
-            connections);
+            connections,
+            (FindingTableRolls ?? new List<FindingTableRollRuntimeSnapshot>()).Select(roll => roll.ToState()));
     }
+}
+
+public sealed class FindingTableRollRuntimeSnapshot
+{
+    public string Key { get; set; } = string.Empty;
+    public string TableId { get; set; } = string.Empty;
+    public string SourceLocationId { get; set; } = string.Empty;
+    public string StateKey { get; set; } = string.Empty;
+    public string? FindingDefinitionId { get; set; }
+    public int ResolvedWorldDay { get; set; }
+
+    public static FindingTableRollRuntimeSnapshot FromState(FindingTableRollState state) => new()
+    {
+        Key = state.Key, TableId = state.TableId, SourceLocationId = state.SourceLocationId,
+        StateKey = state.StateKey, FindingDefinitionId = state.FindingDefinitionId, ResolvedWorldDay = state.ResolvedWorldDay
+    };
+
+    public FindingTableRollState ToState() => new(Key, TableId, SourceLocationId, StateKey, FindingDefinitionId, ResolvedWorldDay);
 }
 
 public sealed class RuntimeHexCoordSnapshot
@@ -241,6 +262,8 @@ public sealed class WorldSituationRuntimeSnapshot
     public WorldSituationStatus Status { get; set; }
     public string? FactionId { get; set; }
     public string? ResolutionActionTag { get; set; }
+    public string? SourceKind { get; set; }
+    public string? DeliveryChannel { get; set; }
 
     public static WorldSituationRuntimeSnapshot FromState(WorldSituationState state) => new()
     {
@@ -252,10 +275,12 @@ public sealed class WorldSituationRuntimeSnapshot
         DueWorldDay = state.DueWorldDay,
         Status = state.Status,
         FactionId = state.FactionId,
-        ResolutionActionTag = state.ResolutionActionTag
+        ResolutionActionTag = state.ResolutionActionTag,
+        SourceKind = state.SourceKind,
+        DeliveryChannel = state.DeliveryChannel
     };
 
-    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status, FactionId, ResolutionActionTag);
+    public WorldSituationState ToState() => new(Id, DefinitionId, CreatedWorldDay, SourceProcessId, SourceLocationId, DueWorldDay, Status, FactionId, ResolutionActionTag, SourceKind, DeliveryChannel);
 }
 
 public sealed class WorldConnectionRuntimeSnapshot

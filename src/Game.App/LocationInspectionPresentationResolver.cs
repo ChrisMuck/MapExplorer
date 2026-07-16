@@ -1,35 +1,113 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
 {
 
 /// <summary>
-/// Resolves player-facing inspection wording from the shared content profile. It deliberately
-/// reads no generated context, faction truth or hidden consequences.
+/// Records and presents only impressions earned by a normal location inspection. Objective context,
+/// hidden modifiers and unidentified faction relations never pass through to presentation.
 /// </summary>
 public sealed class LocationInspectionPresentationResolver
 {
+    private const string ObservedModifierPrefix = "inspection-modifier:";
+    private const string ObservedRelationPrefix = "inspection-relation:";
+    private const string IdentifiedFactionPrefix = "inspection-faction:";
     private readonly LocationInteractionDefinitionSet definitions;
+    private readonly CrossSystemAuthoringBundle? authoring;
 
-    public LocationInspectionPresentationResolver(LocationInteractionDefinitionSet definitions)
+    public LocationInspectionPresentationResolver(LocationInteractionDefinitionSet definitions, CrossSystemAuthoringBundle? authoring = null)
     {
         this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+        this.authoring = authoring;
     }
 
-    public LocationInspectionPresentation? Resolve(SpecialLocationState location)
+    public LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location)
     {
+        if (game == null) throw new ArgumentNullException(nameof(game));
         if (location == null) throw new ArgumentNullException(nameof(location));
-        var profile = definitions.FindContentProfile(location.ContentProfileId);
+        var profile = ResolveContentProfile(location);
         if (profile == null) return null;
 
-        var message = profile.FlavorForState(location.OperationalStateId)
-            ?? profile.Description
-            ?? profile.ShortDescription
-            ?? $"{profile.Title} wurde dokumentiert.";
-        var journalText = profile.JournalDiscovered ?? message;
-        return new LocationInspectionPresentation(profile.Title, message, journalText);
+        var impressions = new List<string>();
+        var observableRelationKinds = new HashSet<LocationFactionRelationKind>();
+        AddDistinct(impressions, profile.FlavorForState(location.OperationalStateId) ?? profile.Description ?? profile.ShortDescription);
+
+        foreach (var modifierId in location.ModifierIds.OrderBy(id => id, StringComparer.Ordinal))
+        {
+            if (!definitions.Modifiers.TryGetValue(modifierId, out var modifier) ||
+                !modifier.AppliesTo(location) || string.IsNullOrWhiteSpace(modifier.InspectionText)) continue;
+            game.Knowledge.LearnLocationContextTag(location.Id, ObservedModifierPrefix + modifier.Id);
+            AddDistinct(impressions, modifier.InspectionText);
+            foreach (var relationKind in modifier.RevealedFactionRelationKinds) observableRelationKinds.Add(relationKind);
+        }
+
+        var relation = location.FactionRelations
+            .Where(item => observableRelationKinds.Contains(item.Kind))
+            .OrderBy(item => item.Kind)
+            .ThenBy(item => item.FactionId, StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (relation != null)
+        {
+            game.Knowledge.LearnLocationContextTag(location.Id, ObservedRelationPrefix + relation.Kind.ToString().ToLowerInvariant());
+            var faction = game.FindFaction(relation.FactionId);
+            var identified = faction != null && faction.ContactStatus != FactionContactStatus.Unknown;
+            if (identified)
+            {
+                game.Knowledge.LearnLocationContextTag(location.Id, IdentifiedFactionPrefix + relation.FactionId);
+            }
+            AddDistinct(impressions, RelationImpression(relation.Kind, identified ? faction!.Name : null));
+        }
+
+        var message = impressions.Count == 0
+            ? profile.ShortDescription ?? $"{profile.Title} wurde dokumentiert."
+            : string.Join(" ", impressions);
+        return new LocationInspectionPresentation(profile.Title, message, profile.JournalDiscovered ?? message);
+    }
+
+    private LocationContentProfileDefinition? ResolveContentProfile(SpecialLocationState location)
+    {
+        var direct = definitions.FindContentProfile(location.ContentProfileId);
+        if (direct != null) return direct;
+        if (authoring == null || string.IsNullOrWhiteSpace(location.ArchetypeId) || string.IsNullOrWhiteSpace(location.VariantId)) return null;
+        var profileId = authoring.ScenarioProfiles.Values
+            .Where(candidate => candidate.ArchetypeId == location.ArchetypeId && candidate.VariantId == location.VariantId)
+            .OrderBy(candidate => candidate.Id, StringComparer.Ordinal)
+            .Select(candidate => candidate.ContentProfileId)
+            .FirstOrDefault();
+        return definitions.FindContentProfile(profileId);
+    }
+
+    private static string RelationImpression(LocationFactionRelationKind kind, string? factionName)
+    {
+        if (factionName == null)
+        {
+            return kind switch
+            {
+                LocationFactionRelationKind.Claimed => "Zeichen deuten darauf hin, dass eine unbekannte Gruppe Anspruch auf diesen Ort erhebt.",
+                LocationFactionRelationKind.Watched => "Wer diesen Ort beobachtet, laesst sich noch nicht erkennen.",
+                LocationFactionRelationKind.Sacred => "Die sichtbare Bedeutung des Ortes scheint mit einer noch unbekannten Gruppe verbunden zu sein.",
+                LocationFactionRelationKind.Guarded => "Wer den Ort bewacht, laesst sich noch nicht erkennen.",
+                _ => "Die erkennbare Verbindung zu einer Gruppe ist noch nicht geklaert."
+            };
+        }
+
+        return kind switch
+        {
+            LocationFactionRelationKind.Claimed => $"Die sichtbaren Zeichen werden {factionName} zugeordnet; die Fraktion erhebt offenbar Anspruch auf diesen Ort.",
+            LocationFactionRelationKind.Watched => $"Die sichtbaren Beobachtungsspuren werden {factionName} zugeordnet.",
+            LocationFactionRelationKind.Sacred => $"Die sichtbare Bedeutung des Ortes wird mit {factionName} verbunden.",
+            LocationFactionRelationKind.Guarded => $"Die sichtbaren Spuren der Bewachung werden {factionName} zugeordnet.",
+            _ => $"Die sichtbare Verbindung wird {factionName} zugeordnet."
+        };
+    }
+
+    private static void AddDistinct(ICollection<string> target, string? text)
+    {
+        if (!string.IsNullOrWhiteSpace(text) && !target.Contains(text.Trim())) target.Add(text.Trim());
     }
 }
 

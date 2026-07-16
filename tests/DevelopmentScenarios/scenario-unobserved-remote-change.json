@@ -1,0 +1,27 @@
+{
+  "id": "scenario-unobserved-remote-change", "seed": 41036, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Prove that a remote external process can change objective passability without creating player knowledge or a message.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["Only the expedition start is confirmed; the remote route location and its collapse are unknown."],
+    "expectedWorldProcess": "An authored external-route-collapse trigger blocks the source tile silently after one day.",
+    "outstandingDecisionPoint": "There is no player-facing decision until the change is plausibly observed later."
+  },
+  "width": 7, "height": 5,
+  "initialState": {
+    "expeditionQ": 1, "expeditionR": 1,
+    "members": [{ "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-remote-route", "name": "Remote Route", "kind": "BrokenRavine", "q": 5, "r": 1,
+      "archetypeId": "route-obstacle", "variantId": "broken-bridge", "operationalStateId": "open"
+    }],
+    "worldTriggers": [{ "triggerId": "external-route-collapse", "sourceLocationId": "location-remote-route", "actionTags": ["external", "route"] }]
+  },
+  "commands": [{ "kind": "end-day" }],
+  "assertions": [
+    { "kind": "has-tile-blocked-state", "q": 5, "r": 1, "argument": "true" },
+    { "kind": "has-no-evidence" },
+    { "kind": "has-world-trigger", "argument": "external-route-collapse" },
+    { "kind": "has-causality-trace" }
+  ]
+}

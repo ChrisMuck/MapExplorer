@@ -626,8 +626,10 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         if (mapView.TryGetTileForUi(coord, out var tile))
         {
             location = mapView.GetLocationForUi(coord);
-            var locationText = location == null ? "keine Landmarke" : $"{location.Name} · {LocationKindText(location.Kind)}";
-            SetText("selected-meta", $"{tile.Terrain} · Höhe {tile.Elevation} · {locationText}");
+            var locationText = location == null || knowledge != KnowledgeLevel.Confirmed ? "keine bestaetigte Landmarke" : location.Name;
+            SetText("selected-meta", knowledge == KnowledgeLevel.Unknown
+                ? "Noch nicht erkundet"
+                : $"{tile.Terrain} · {locationText}");
         }
         else
         {
@@ -678,10 +680,11 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
         SetText("selected-location-kind", LocationKindText(location.Kind));
         var hasInteractionModel = !string.IsNullOrWhiteSpace(location.ArchetypeId);
-        var touched = location.IsInspected || location.InteractionStateId != LocationStateIds.Interaction.Untouched;
-        SetText("selected-location-status", touched ? LocationInteractionStateText(location.InteractionStateId) : "Neu");
-        SetText("selected-location-name", location.Name);
-        SetText("selected-location-risk", LocationRiskText(location));
+        var interaction = hasInteractionModel ? mapView.GetLocationInteractionForUi(location.Id) : null;
+        var presentation = interaction?.Presentation;
+        SetText("selected-location-status", presentation?.KnowledgeLabel ?? "Bestaetigt");
+        SetText("selected-location-name", presentation?.Title ?? location.Name);
+        SetText("selected-location-risk", presentation?.Description ?? "Der Ort wurde noch nicht aus der Naehe aufgenommen.");
         SetText("selected-location-action", hasInteractionModel
             ? "Aktion: Entscheidungen oeffnen."
             : location.IsInspected ? "Archiviert. Weitere Hinweise im Journal pruefen." : "Aktion: Ort untersuchen und Ereignis ausloesen.");
@@ -762,6 +765,15 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         BuildReportList(state);
 
         var report = state.Knowledge.ScoutReports[selectedReportIndex];
+        var reportAvatar = root?.Q<VisualElement>("report-avatar-main");
+        if (reportAvatar != null)
+        {
+            var mission = state.Expedition.ScoutMissions.FirstOrDefault(item => item.Id == report.MissionId);
+            var names = mission == null
+                ? "berichtender Scout"
+                : string.Join(" und ", mission.ScoutMemberIds.Select(id => state.Expedition.FindMember(id)?.Name ?? id));
+            reportAvatar.tooltip = $"Platzhalterporträt: {names}";
+        }
         SetText("report-title-main", report.Title);
         SetText("report-sub-main", $"Expedition · Späher · Tag {state.World.WorldDay}");
         SetText("report-reliability-main", $"Verlässlichkeit: {ReliabilityText(report.Reliability)}");
@@ -1214,6 +1226,11 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("event-source", eventState.Source);
         SetText("event-title", eventState.Title);
         SetText("event-body", eventState.Body);
+        var eventImage = root?.Q<VisualElement>("event-image");
+        if (eventImage != null)
+        {
+            eventImage.tooltip = $"Platzhalterbild: {eventState.Kind}";
+        }
 
         options.Clear();
         for (var i = 0; i < eventState.Options.Count; i++)
@@ -1268,7 +1285,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             locationInteractionView = LocationInteractionView.Project;
         }
 
-        RenderLocationHeader(interaction);
+        RenderLocationHeader(interaction, result.Presentation);
         RenderLocationViews(interaction);
     }
 
@@ -1288,27 +1305,30 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshLocationInteractionPopup(mapView?.CurrentGameState);
     }
 
-    private void RenderLocationHeader(LocationInteractionModel interaction)
+    private void RenderLocationHeader(LocationInteractionModel interaction, LocationInteractionPresentation presentation)
     {
         var location = interaction.Location;
-        var profile = interaction.ContentProfile;
-        var subtitle = string.IsNullOrWhiteSpace(profile?.Subtitle)
-            ? $"{ArchetypeText(location.ArchetypeId)} - Variante: {VariantText(location.VariantId)}"
-            : profile!.Subtitle!;
-        var flavor = profile?.FlavorForState(location.OperationalStateId);
 
         SetText("location-icon-glyph", LocationIconText(location));
         SetText("location-eyebrow", "FUNDSTELLE");
         SetText("location-anchor", LocationAnchorText(location.Anchor));
-        SetText("location-title", string.IsNullOrWhiteSpace(profile?.Title) ? location.Name : profile!.Title);
-        SetText("location-subtitle", subtitle);
-        SetText("state-knowledge", "Wissensstand: Bestaetigt");
-        SetText("state-operational", $"Zustand: {LocationOperationalStateText(location.OperationalStateId)}");
-        SetText("state-presence", $"Anwesenheit: {LocationPresenceStateText(location.PresenceStateId)}");
-        SetText("location-flavor", string.IsNullOrWhiteSpace(flavor) ? LocationFlavorText(location) : flavor);
+        SetText("location-title", presentation?.Title ?? location.Name);
+        SetText("location-subtitle", presentation?.Subtitle ?? "Bestaetigter besonderer Ort");
+        SetText("state-knowledge", $"Wissensstand: {presentation?.KnowledgeLabel ?? "Unbekannt"}");
+        SetText("state-operational", presentation?.OperationalStateText ?? "Der aktuelle Zustand ist unbekannt.");
+        SetText("state-presence", presentation?.PresenceStateText ?? "Die aktuelle Anwesenheit ist unbekannt.");
+        SetText("location-flavor", presentation?.Description ?? "Der Ort wurde noch nicht aus der Naehe aufgenommen.");
 
         var operational = root?.Q<Label>("state-operational");
-        operational?.EnableInClassList("bi-state-pill--alert", IsOperationalAlert(location.OperationalStateId));
+        operational?.EnableInClassList("bi-state-pill--alert", false);
+
+        var icon = root?.Q<Label>("location-icon-glyph");
+        if (icon != null)
+        {
+            icon.tooltip = string.IsNullOrWhiteSpace(presentation?.ImageId)
+                ? "Platzhalterbild: unbekannter Ort"
+                : $"Bildreferenz: {presentation.ImageId}";
+        }
 
         var modifierRow = root?.Q<VisualElement>("modifier-row");
         modifierRow?.Clear();
@@ -1317,11 +1337,10 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return;
         }
 
-        foreach (var modifierId in location.ModifierIds)
+        foreach (var contextTag in presentation?.KnownContextTags ?? Array.Empty<string>())
         {
-            var modifier = new Label(ModifierText(modifierId));
+            var modifier = new Label($"Bekannt: {contextTag}");
             modifier.AddToClassList("bi-modifier");
-            modifier.EnableInClassList("bi-modifier--warn", modifierId == LocationInteractionContent.ModifierUnstable);
             modifierRow.Add(modifier);
         }
     }
@@ -1379,7 +1398,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         row.EnableInClassList("locked", !option.IsAvailable);
         row.tooltip = option.IsAvailable ? option.Action.Description : option.LockedReason;
 
-        var glyph = new Label(ActionGlyphText(option.Action.Id));
+        var glyph = new Label(ActionGlyphText(option.Action));
         glyph.AddToClassList("bi-action-glyph");
         row.Add(glyph);
 
@@ -1838,103 +1857,15 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         return $"{coord.Q:00}/{coord.R:00}";
     }
 
-    private static string ArchetypeText(string archetypeId)
+    private static string ActionGlyphText(LocationActionDefinition action)
     {
-        switch (archetypeId)
-        {
-            case LocationInteractionContent.ArchetypeRouteObstacle:
-                return "Streckenhindernis";
-            case LocationInteractionContent.ArchetypeInvestigationSite:
-                return "Untersuchungsort";
-            default:
-                return string.IsNullOrWhiteSpace(archetypeId) ? "Fundstelle" : archetypeId;
-        }
-    }
-
-    private static string VariantText(string variantId)
-    {
-        switch (variantId)
-        {
-            case LocationInteractionContent.VariantBrokenBridge:
-                return "Zerstoerte Bruecke";
-            case LocationInteractionContent.VariantMarkedGrave:
-                return "Markiertes Grab";
-            default:
-                return string.IsNullOrWhiteSpace(variantId) ? "Unbekannt" : variantId;
-        }
-    }
-
-    private static string ModifierText(string modifierId)
-    {
-        switch (modifierId)
-        {
-            case LocationInteractionContent.ModifierRepairable:
-                return "Reparierbar";
-            case LocationInteractionContent.ModifierUnstable:
-                return "Instabil";
-            case LocationInteractionContent.ModifierWatched:
-                return "Beobachtet";
-            case LocationInteractionContent.ModifierSacred:
-                return "Sakral";
-            case LocationInteractionContent.ModifierFactionOwned:
-                return "Fraktionsgebiet";
-            default:
-                return string.IsNullOrWhiteSpace(modifierId) ? "Modifier" : modifierId;
-        }
-    }
-
-    private static string LocationFlavorText(SpecialLocationState location)
-    {
-        if (location == null)
-        {
-            return "Die Expedition steht vor einer Entscheidung.";
-        }
-
-        if (location.VariantId == LocationInteractionContent.VariantBrokenBridge)
-        {
-            return "Die alte Handelsbruecke ist eingestuerzt. Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.";
-        }
-
-        if (location.VariantId == LocationInteractionContent.VariantMarkedGrave)
-        {
-            return "Ein gesetztes Zeichen markiert diesen Ort. Die Bedeutung ist noch unsicher, aber die Expedition sollte nicht achtlos handeln.";
-        }
-
-        return LocationRiskText(location);
-    }
-
-    private static bool IsOperationalAlert(string stateId)
-    {
-        return stateId == LocationStateIds.Operational.Blocked ||
-            stateId == LocationStateIds.Operational.RiskyPassage ||
-            stateId == LocationStateIds.Operational.Destroyed ||
-            stateId == LocationStateIds.Operational.Sealed;
-    }
-
-    private static string ActionGlyphText(string actionId)
-    {
-        switch (actionId)
-        {
-            case LocationInteractionContent.ActionAssessCrossing:
-            case LocationInteractionContent.ActionInspect:
-            case LocationInteractionContent.ActionInvestigate:
-                return "?";
-            case LocationInteractionContent.ActionFindBypass:
-                return "->";
-            case LocationInteractionContent.ActionConstructTemporaryPassage:
-                return "~";
-            case LocationInteractionContent.ActionAttemptCrossing:
-                return ">";
-            case LocationInteractionContent.ActionRebuildBridge:
-                return "#";
-            case LocationInteractionContent.ActionDocument:
-            case LocationInteractionContent.ActionMark:
-                return "+";
-            case LocationInteractionContent.ActionLeave:
-                return "X";
-            default:
-                return "-";
-        }
+        if (action == null) return "-";
+        if (action.ActionTags.Contains("inspect") || action.ActionTags.Contains("observe") || action.ActionTags.Contains("investigate")) return "?";
+        if (action.ActionTags.Contains("repair") || action.ActionTags.Contains("contain")) return "#";
+        if (action.ActionTags.Contains("route") || action.ActionTags.Contains("bypass") || action.ActionTags.Contains("cross")) return "->";
+        if (action.ActionTags.Contains("document") || action.ActionTags.Contains("map") || action.ActionTags.Contains("mark")) return "+";
+        if (action.ActionTags.Contains("leave") || action.ActionTags.Contains("withdraw")) return "X";
+        return "-";
     }
 
     private static string RiskPillText(LocationRiskBand risk)
@@ -1964,21 +1895,25 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return "Kosten unbekannt";
         }
 
-        if (action.StartsProject)
+        var parts = new List<string>();
+        if (action.Commitment == LocationActionCommitment.DayOperation)
         {
-            return $"{action.ProjectDurationDays} Projekttage";
+            parts.Add("restliche Tageskapazitaet");
+        }
+        else if (action.StartsProject)
+        {
+            parts.Add($"{action.ProjectDurationDays} Projekttage");
         }
 
         if (action.Costs.Count > 0)
         {
-            var parts = new List<string>();
             foreach (var cost in action.Costs)
             {
                 parts.Add($"{cost.Amount} {CostKindText(cost.Kind)}");
             }
-
-            return string.Join(", ", parts);
         }
+
+        if (parts.Count > 0) return string.Join(", ", parts);
 
         if (action.RepeatPolicy == LocationActionRepeatPolicy.RepeatableWithCost)
         {

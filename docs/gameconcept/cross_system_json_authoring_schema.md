@@ -66,6 +66,7 @@ A future `game-data-manifest.json` lists the documents deliberately and makes de
     "Locations/OutcomeTables/outcome-tables.json",
     "Locations/ContentProfiles/content-profiles.json",
     "Findings/findings.json",
+    "Findings/finding-tables.json",
     "World/evidence-definitions.json",
     "World/context-definitions.json",
     "World/consequence-definitions.json",
@@ -100,7 +101,9 @@ Assets/StreamingAssets/GameData/
     Actions/actions.json                          # existing, expanded
     OutcomeTables/outcome-tables.json             # existing, expanded
     ContentProfiles/content-profiles.json         # existing, presentation only
-  Findings/findings.json                          # new
+  Findings/
+    findings.json                                 # existing
+    finding-tables.json                           # next implementation step
   Scouting/
     mission-types.json                            # existing
     focuses.json                                  # existing
@@ -202,6 +205,18 @@ presentation-only.
         "addActionIds": ["action-rebuild-bridge"],
         "knownRequirementDisclosure": "hidden-until-supported"
       }
+    ],
+    "stateActionRules": [
+      {
+        "whenOperationalStatesAny": ["repaired", "provisional"],
+        "addActionIds": ["action-confirm-passage"]
+      },
+      {
+        "whenInteractionStatesAny": ["inspected"],
+        "whenOperationalStatesAny": ["opened"],
+        "whenPresenceStatesAny": ["guarded"],
+        "addActionIds": ["action-secure-entrance"]
+      }
     ]
   },
   "evidencePoolIds": ["evidence-removed-supports", "evidence-fresh-marker"],
@@ -213,6 +228,11 @@ presentation-only.
 
 `claimEligibility` only permits the generator to evaluate a claim. It never selects a faction or
 asserts that a claim exists.
+
+`stateActionRules` adds ordinary reusable action IDs once a persistent location state matches.
+The three channel conditions are combined with AND; values within a channel are alternatives. The
+selected archetype interaction flow evaluates the rules, while the Scenario Profile supplies the
+state values and action IDs. State rules must not name a location, a variant or a generated faction.
 
 ### 4. Actions and Outcome Tables
 
@@ -266,6 +286,43 @@ journal wording and visual asset IDs. It does not own actions, outcome rules, cl
 
 `findings.json` defines physical or documented material that becomes an analysis item only after a
 return to base. A finding is not a trade good or material resource.
+
+An action outcome or project-completion effect may acquire one explicit authored finding:
+
+```json
+{
+  "kind": "AddFinding",
+  "referenceId": "finding-wind-carved-survey",
+  "text": "Die Vermessungsskizze wird als Feldfund gesichert."
+}
+```
+
+`referenceId` must name an item in `findings.json`. The shared effect pipeline creates an
+unsecured `FieldFindingState`, applies the finding's repeat policy for that concrete location and
+adds no Knowledge Points. Only the normal expedition return and base analysis can turn it into an
+archive insight and Knowledge Points.
+
+For normal variable discoveries, an outcome uses `RollFindingTable` instead:
+
+```json
+{
+  "kind": "RollFindingTable",
+  "referenceId": "finding-table-restless-marsh",
+  "text": "Die Expedition sichert verwertbare Proben."
+}
+```
+
+Finding Tables live in `Findings/finding-tables.json`. Each entry has a positive weight, a finding
+ID or explicit empty result, and optional generic state/context gates. The catalog validates table
+and finding references. Eligible entries are filtered first and then resolved through the
+deterministic world random source. The resolved entry is persisted for the concrete location and
+table-roll key, including an empty result, so save/load and repeated queries cannot reroll it.
+Finding repeat rules and table repeat rules are independent: the table controls when another roll
+is legal; each finding controls whether that finding can be acquired again.
+
+`AddFinding` is reserved for guaranteed narrative or causal discoveries. `RollFindingTable` is the
+default for ordinary investigation, sample and survey variation. Both effects feed the same
+unsecured return-and-analysis lifecycle and never grant material stockpiles.
 
 ```json
 {

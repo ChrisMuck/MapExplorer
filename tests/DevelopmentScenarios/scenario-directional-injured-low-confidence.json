@@ -1,0 +1,26 @@
+{
+  "id": "scenario-directional-injured-low-confidence", "seed": 41041, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Directional scouting consequence proof: a bold route mission returns injured with a lower-confidence approximate report.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["The eastern sector is mostly unknown and no exact target coordinate is known."],
+    "expectedWorldProcess": "Normal day advancement applies ReturnedInjured, preserves the report and makes the scout unavailable.",
+    "outstandingDecisionPoint": "Use the uncertain lead, mark it doubtful or defer travel while the scout is injured."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 1, "expeditionR": 1,
+    "members": [{ "id": "scout-1", "name": "Tovin", "role": "Scout", "starLevel": 0 }],
+    "locations": [{ "id": "location-risky-route", "name": "Unknown Crossing", "kind": "BrokenRavine", "q": 4, "r": 1, "archetypeId": "route-obstacle", "variantId": "broken-bridge", "operationalStateId": "blocked" }]
+  },
+  "commands": [
+    { "kind": "send-directional-scout", "scoutMemberIds": ["scout-1"], "direction": "East", "durationDays": 1, "focus": "Route", "behavior": "Bold" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-scout-mission-status", "stateId": "ReturnedInjured" },
+    { "kind": "has-member-status", "argument": "scout-1", "stateId": "Injured" },
+    { "kind": "has-report-reliability-at-most", "argument": "55" },
+    { "kind": "no-exact-scout-coordinates" }
+  ]
+}

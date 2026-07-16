@@ -15,8 +15,99 @@ internal sealed class CrossSystemIntegrationProofTests
     public void RunAll()
     {
         RouteObstacleFlowConnectsInspectionScoutingProjectAndWorldReaction();
+        InvestigationSiteDisturbanceOffersAResponseWithoutPunishingRespect();
+        ContactSiteDeliversFactionRequestOnlyThroughEstablishedLocalContact();
         SealedContainmentFlowConnectsInspectionScoutingOpeningAndDelayedConsequences();
         SealedModifierCanReuseTheOpeningFlowOnAnotherCompatibleArchetype();
+    }
+
+    private static void ContactSiteDeliversFactionRequestOnlyThroughEstablishedLocalContact()
+    {
+        var coord = new HexCoord(1, 2);
+        var contactSite = new SpecialLocationState(
+            "location-contact-proof", LocationKind.Settlement, coord, "Prepared Meeting Place",
+            LocationAnchor.Point(coord), "contact-site", "first-contact", interactionStateId: "unapproached",
+            operationalStateId: "available", presenceStateId: "present",
+            factionRelations: new[] { new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Guarded) });
+        var (app, game) = CreateGame(contactSite, coord,
+            new FactionState("faction-1", "Unknown Locals", contactStatus: FactionContactStatus.Unknown, reactionProfileId: "welcoming"));
+
+        AssertTrue(app.ResolveLocationAction(game, contactSite.Id, "action-approach-cautiously", LocationOutcomeTier.Success).Success,
+            "Contact archetype approaches through its authored action");
+        AssertTrue(app.ResolveLocationAction(game, contactSite.Id, "action-communicate", LocationOutcomeTier.Success).Success,
+            "Successful communication uses the shared contact outcome");
+        AssertEqual(FactionContactStatus.Contacted, game.FindFaction("faction-1")!.ContactStatus,
+            "Generic effect establishes contact with the one generated related faction");
+        app.EndDay(game);
+
+        var request = game.World.Situations.Single(item => item.DefinitionId == "situation-request-help-with-crossing");
+        AssertEqual("faction", request.SourceKind, "Delivered request records its plausible runtime source kind");
+        AssertEqual("direct-contact", request.DeliveryChannel, "Delivered request records the earned local contact channel");
+        AssertEqual("faction-1", request.FactionId, "Request keeps the concrete generated faction only in runtime state");
+        var authoring = app.DataCatalog?.Authoring ?? throw new InvalidOperationException("Authored game data was not loaded.");
+        AssertTrue(new ResolveWorldSituationCommand(authoring).Execute(game, request.Id, "assist"),
+            "Delivered request accepts an authored response through the generic command");
+
+        var silentSite = new SpecialLocationState(
+            "location-contact-silent-proof", LocationKind.Settlement, coord, "Distant Signs",
+            LocationAnchor.Point(coord), "contact-site", "first-contact", interactionStateId: "unapproached",
+            operationalStateId: "available", presenceStateId: "unknown",
+            factionRelations: new[] { new LocationFactionRelationState("faction-2", LocationFactionRelationKind.Watched) });
+        var (silentApp, silentGame) = CreateGame(silentSite, coord,
+            new FactionState("faction-2", "Unknown Watchers", contactStatus: FactionContactStatus.Unknown, reactionProfileId: "neutral-cautious"));
+        silentGame.World.QueueWorldTrigger(new WorldTriggerState("trigger-undeliverable", "contact-help-requested", 1, sourceLocationId: silentSite.Id, sourceCoord: coord));
+        silentApp.EndDay(silentGame);
+        AssertTrue(!silentGame.World.Situations.Any(item => item.DefinitionId == "situation-request-help-with-crossing"),
+            "Generated relation alone cannot deliver a faction request without established contact");
+    }
+
+    private static void InvestigationSiteDisturbanceOffersAResponseWithoutPunishingRespect()
+    {
+        var coord = new HexCoord(2, 2);
+        var disturbedSite = new SpecialLocationState(
+            "location-investigation-proof", LocationKind.MarkedGrave, coord, "Marked Grave",
+            LocationAnchor.Point(coord), "investigation-site", "marked-grave",
+            modifierIds: new[] { "modifier-sacred", "modifier-watched" }, operationalStateId: "sealed",
+            factionRelations: new[] { new LocationFactionRelationState("faction-1", LocationFactionRelationKind.Sacred) },
+            contextTags: new[] { "protected-remains" });
+        var (app, game) = CreateGame(disturbedSite, coord,
+            new FactionState("faction-1", "Unknown Mourners", reactionProfileId: "neutral-cautious", signatureProfileId: "carved-boundaries"));
+        game.Knowledge.LearnLocationContextTag(disturbedSite.Id, "protected-remains");
+
+        AssertTrue(app.ResolveLocationAction(game, disturbedSite.Id, "action-inspect", LocationOutcomeTier.Success).Success,
+            "The investigation archetype begins with its generic inspection action");
+        AssertTrue(app.ResolveLocationAction(game, disturbedSite.Id, "action-disturb", LocationOutcomeTier.SuccessWithCost).Success,
+            "Known protected remains expose the authored risky disturbance choice");
+        AssertEqual("disturbed", disturbedSite.OperationalStateId, "The disturbance persists as objective location state");
+
+        app.EndDay(game);
+        app.EndDay(game);
+        AssertTrue(game.Knowledge.Evidence.Any(item => item.DefinitionId == "evidence-grave-disturbance-rumour"),
+            "The delayed process first reaches the player as an earned, uncertain rumour");
+        var awarenessBeforeResponse = game.World.FactionAwareness.FirstOrDefault()?.Level;
+        var warning = game.World.Situations.Single(item => item.DefinitionId == "situation-investigate-disturbance");
+        var authoring = app.DataCatalog?.Authoring ?? throw new InvalidOperationException("Authored game data was not loaded.");
+        AssertTrue(new ResolveWorldSituationCommand(authoring).Execute(game, warning.Id, "prepare-response"),
+            "The warning accepts its authored preparation response");
+
+        app.EndDay(game);
+        app.EndDay(game);
+        app.EndDay(game);
+        AssertEqual(awarenessBeforeResponse, game.World.FactionAwareness.FirstOrDefault()?.Level,
+            "Preparation prevents the later related-faction awareness escalation without erasing the disturbance");
+        AssertTrue(game.Knowledge.Evidence.Any(item => item.DefinitionId == "evidence-grave-disturbance-change"),
+            "The later observable change remains player knowledge despite mitigation");
+
+        var respectfulSite = new SpecialLocationState(
+            "location-investigation-respect-proof", LocationKind.MarkedGrave, coord, "Marked Grave",
+            LocationAnchor.Point(coord), "investigation-site", "marked-grave", operationalStateId: "sealed");
+        var (respectfulApp, respectfulGame) = CreateGame(respectfulSite, coord,
+            new FactionState("faction-2", "Unknown Mourners", reactionProfileId: "neutral-cautious"));
+        AssertTrue(respectfulApp.ResolveLocationAction(respectfulGame, respectfulSite.Id, "action-leave-offering", LocationOutcomeTier.Success).Success,
+            "The safe respectful choice remains available without the risky context branch");
+        respectfulApp.EndDay(respectfulGame);
+        AssertTrue(!respectfulGame.World.ScheduledConsequences.Any(process => process.DefinitionId == "consequence-grave-disturbed"),
+            "Respect does not start the disturbance process");
     }
 
     private static void RouteObstacleFlowConnectsInspectionScoutingProjectAndWorldReaction()
@@ -54,6 +145,21 @@ internal sealed class CrossSystemIntegrationProofTests
 
         AssertTrue(app.EndDay(game).Success, "Delayed route consequence advances through later world time");
         AssertTrue(game.Knowledge.Evidence.Any(item => item.DefinitionId == "evidence-route-restored"), "The delayed consequence becomes player-facing evidence later");
+        var awarenessBeforeResponse = game.World.FactionAwareness.Single().Level;
+        var routeSituation = game.World.Situations.Single(item => item.DefinitionId == "situation-route-use-changed");
+        var authoring = app.DataCatalog?.Authoring ?? throw new InvalidOperationException("Authored game data was not loaded.");
+        AssertTrue(new ResolveWorldSituationCommand(authoring).Execute(game, routeSituation.Id, "organize-help"),
+            "The observed route use offers a generic authored coordination response");
+
+        app.EndDay(game);
+        var awarenessAfterFollowUpTrigger = game.World.FactionAwareness.Single().Level;
+        app.EndDay(game);
+        app.EndDay(game);
+        AssertEqual(WorldSituationStatus.Resolved, routeSituation.Status, "The route response persists through later World Phases");
+        AssertTrue((int)awarenessAfterFollowUpTrigger >= (int)awarenessBeforeResponse,
+            "The independent observed-traffic trigger may still produce its authored immediate reaction");
+        AssertEqual(awarenessAfterFollowUpTrigger, game.World.FactionAwareness.Single().Level,
+            "Coordinating the route response prevents the later unmanaged attention escalation");
     }
 
     private static void SealedContainmentFlowConnectsInspectionScoutingOpeningAndDelayedConsequences()
@@ -86,6 +192,20 @@ internal sealed class CrossSystemIntegrationProofTests
         AssertEqual(5, game.FindFaction("faction-1")!.Anger, "The guarded generated context evaluates the generic disturb tag through its profile policy");
         app.EndDay(game);
         AssertTrue(game.Knowledge.Evidence.Any(item => item.DefinitionId == "evidence-seal-disturbance"), "A delayed stage turns the opening into later player knowledge");
+        var warning = game.World.Situations.Single(item => item.DefinitionId == "situation-investigate-opened-seal");
+        AssertEqual(WorldSituationStatus.Active, warning.Status, "The earned disturbance observation creates an active response situation");
+        var authoring = app.DataCatalog?.Authoring ?? throw new InvalidOperationException("Authored game data was not loaded.");
+        AssertTrue(new ResolveWorldSituationCommand(authoring).Execute(game, warning.Id, "contain"),
+            "The generic situation command accepts an authored containment response");
+
+        app.EndDay(game);
+        app.EndDay(game);
+        app.EndDay(game);
+        AssertEqual(WorldSituationStatus.Resolved, warning.Status, "The response remains persistent after later World Phases");
+        AssertTrue(!game.World.WorldTriggers.Any(trigger => trigger.TriggerId == "seal-disturbance-observed"),
+            "The authored containment response suppresses the later escalation trigger");
+        AssertTrue(game.Knowledge.Evidence.Any(item => item.DefinitionId == "evidence-seal-consequence"),
+            "Mitigation suppresses escalation without erasing the observed history");
     }
 
     private static void SealedModifierCanReuseTheOpeningFlowOnAnotherCompatibleArchetype()
@@ -112,14 +232,8 @@ internal sealed class CrossSystemIntegrationProofTests
     private static (GameApplication App, GameState Game) CreateGame(SpecialLocationState location, HexCoord locationCoord, FactionState faction)
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
-        var locations = LocationDataLoader.LoadFromDirectory(Path.Combine(root, "Locations"))
-            ?? throw new InvalidOperationException("Location content was not loaded.");
-        var content = CrossSystemDataLoader.LoadFromDirectories(new[]
-        {
-            Path.Combine(root, "World"),
-            Path.Combine(root, "Factions"),
-            Path.Combine(root, "Scouting")
-        }) ?? throw new InvalidOperationException("Cross-system content was not loaded.");
+        var catalog = GameDataCatalog.LoadFromDirectory(root)
+            ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         var knowledge = new KnowledgeState();
         knowledge.SetTileKnowledge(locationCoord, KnowledgeLevel.Confirmed);
@@ -140,7 +254,7 @@ internal sealed class CrossSystemIntegrationProofTests
             new BaseState(new HexCoord(5, 5)),
             factions: new[] { faction });
 
-        return (new GameApplication(locations, content), game);
+        return (new GameApplication(catalog), game);
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

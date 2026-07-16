@@ -18,6 +18,7 @@ public sealed class WorldState
     private readonly List<WorldConnectionState> connections;
     private readonly List<SimulationTraceState> traces;
     private readonly HashSet<string> acquiredFindingKeys;
+    private readonly List<FindingTableRollState> findingTableRolls;
 
     public WorldState(
         HexMapState map,
@@ -33,7 +34,8 @@ public sealed class WorldState
         RuntimeIdAllocatorState? runtimeIds = null,
         DeterministicRandomState? random = null,
         IEnumerable<string>? acquiredFindingKeys = null,
-        IEnumerable<WorldConnectionState>? connections = null)
+        IEnumerable<WorldConnectionState>? connections = null,
+        IEnumerable<FindingTableRollState>? findingTableRolls = null)
     {
         if (worldDay < 1)
         {
@@ -52,6 +54,7 @@ public sealed class WorldState
         this.traces = new List<SimulationTraceState>(traces ?? Enumerable.Empty<SimulationTraceState>());
         this.acquiredFindingKeys = new HashSet<string>((acquiredFindingKeys ?? Enumerable.Empty<string>())
             .Where(key => !string.IsNullOrWhiteSpace(key)).Select(key => key.Trim()), StringComparer.Ordinal);
+        this.findingTableRolls = new List<FindingTableRollState>(findingTableRolls ?? Enumerable.Empty<FindingTableRollState>());
         RuntimeIds = runtimeIds ?? new RuntimeIdAllocatorState();
         Random = random ?? new DeterministicRandomState();
         WorldDay = worldDay;
@@ -97,6 +100,8 @@ public sealed class WorldState
 
     /// <summary>Stable repeat-policy keys for findings already recovered in this world.</summary>
     public IReadOnlyCollection<string> AcquiredFindingKeys => acquiredFindingKeys;
+
+    public IReadOnlyList<FindingTableRollState> FindingTableRolls => findingTableRolls;
 
     public RuntimeIdAllocatorState RuntimeIds { get; }
 
@@ -230,14 +235,31 @@ public sealed class WorldState
         if (string.IsNullOrWhiteSpace(findingDefinitionId)) throw new ArgumentException("Finding definition ID must not be empty.", nameof(findingDefinitionId));
         if (string.IsNullOrWhiteSpace(sourceLocationId)) throw new ArgumentException("Finding source location ID must not be empty.", nameof(sourceLocationId));
 
-        var policy = string.IsNullOrWhiteSpace(repeatPolicy) ? "once-per-world" : repeatPolicy.Trim();
-        var key = policy switch
-        {
-            "once-per-location" => $"location:{sourceLocationId.Trim()}:{findingDefinitionId.Trim()}",
-            "once-per-world" => $"world:{findingDefinitionId.Trim()}",
-            _ => $"world:{findingDefinitionId.Trim()}"
-        };
+        var key = FindingRepeatKey(findingDefinitionId, repeatPolicy, sourceLocationId);
         return acquiredFindingKeys.Add(key);
+    }
+
+    public bool CanRegisterFinding(string findingDefinitionId, string repeatPolicy, string sourceLocationId) =>
+        !acquiredFindingKeys.Contains(FindingRepeatKey(findingDefinitionId, repeatPolicy, sourceLocationId));
+
+    public FindingTableRollState? FindFindingTableRoll(string key) =>
+        findingTableRolls.FirstOrDefault(roll => roll.Key == key);
+
+    public void RecordFindingTableRoll(FindingTableRollState roll)
+    {
+        if (roll == null) throw new ArgumentNullException(nameof(roll));
+        if (FindFindingTableRoll(roll.Key) != null) throw new InvalidOperationException($"Finding table roll '{roll.Key}' is already resolved.");
+        findingTableRolls.Add(roll);
+    }
+
+    private static string FindingRepeatKey(string findingDefinitionId, string repeatPolicy, string sourceLocationId)
+    {
+        if (string.IsNullOrWhiteSpace(findingDefinitionId)) throw new ArgumentException("Finding definition ID must not be empty.", nameof(findingDefinitionId));
+        if (string.IsNullOrWhiteSpace(sourceLocationId)) throw new ArgumentException("Finding source location ID must not be empty.", nameof(sourceLocationId));
+        var policy = string.IsNullOrWhiteSpace(repeatPolicy) ? "once-per-world" : repeatPolicy.Trim();
+        return policy == "once-per-location"
+            ? $"location:{sourceLocationId.Trim()}:{findingDefinitionId.Trim()}"
+            : $"world:{findingDefinitionId.Trim()}";
     }
 }
 }

@@ -11,12 +11,16 @@
       "contentProfileId": "content-old-trade-road-bridge",
       "worldgen": { "anchorKinds": ["Edge"], "terrainTagsAny": ["river-crossing", "ravine-crossing"], "initialModifierPoolIds": ["modifier-repairable", "modifier-unstable", "modifier-watched"], "claimEligibility": "if-inside-current-territory" },
       "actionSet": {
-        "sharedActionIds": ["action-assess-crossing", "action-attempt-crossing", "action-mark", "action-leave"],
-        "initialAdditionalActionIds": ["action-find-bypass"],
+        "sharedActionIds": ["action-assess-crossing", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": ["action-find-bypass", "action-attempt-crossing"],
         "maximumVisibleAdditionalActions": 3,
         "contextActionRules": [
           { "whenKnownContextTagsAny": ["structural-failure"], "addActionIds": ["action-construct-temporary-passage"], "knownRequirementDisclosure": "show-disabled-when-missing" },
           { "whenHiddenContextTagsAny": ["deliberate-destruction"], "addActionIds": ["action-rebuild-bridge"], "knownRequirementDisclosure": "hidden-until-supported" }
+        ],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["inspected"], "whenOperationalStatesAny": ["blocked"], "addActionIds": ["action-find-bypass", "action-construct-temporary-passage", "action-rebuild-bridge", "action-attempt-crossing"] },
+          { "whenOperationalStatesAny": ["risky-passage", "repaired", "open"], "addActionIds": ["action-attempt-crossing"] }
         ]
       },
       "evidencePoolIds": ["evidence-old-structure", "evidence-claim-markers"],
@@ -31,7 +35,13 @@
       "stateProfileId": "state-marked-grave",
       "contentProfileId": "content-marked-grave",
       "worldgen": { "anchorKinds": ["Point"], "terrainTagsAny": ["old-route", "burial-ground"], "initialModifierPoolIds": ["modifier-sacred", "modifier-watched"], "claimEligibility": "if-inside-current-territory" },
-      "actionSet": { "sharedActionIds": ["action-inspect", "action-document", "action-mark", "action-leave"], "initialAdditionalActionIds": ["action-leave-offering"], "maximumVisibleAdditionalActions": 3, "contextActionRules": [{ "whenHiddenContextTagsAny": ["protected-remains"], "addActionIds": ["action-disturb"], "knownRequirementDisclosure": "hidden-until-supported" }] },
+      "actionSet": {
+        "sharedActionIds": ["action-inspect", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": ["action-leave-offering"],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [{ "whenHiddenContextTagsAny": ["protected-remains"], "addActionIds": ["action-disturb"], "knownRequirementDisclosure": "hidden-until-supported" }],
+        "stateActionRules": [{ "whenInteractionStatesAny": ["inspected"], "addActionIds": ["action-document", "action-search", "action-investigate", "action-leave-offering", "action-disturb"] }]
+      },
       "evidencePoolIds": ["evidence-ritual-signs"],
       "findingPoolIds": ["finding-grave-inscription-rubbing"],
       "consequencePoolIds": ["consequence-grave-disturbed"],
@@ -44,7 +54,16 @@
       "stateProfileId": "state-border-warning",
       "contentProfileId": "content-border-warning",
       "worldgen": { "anchorKinds": ["Edge"], "terrainTagsAny": ["territory-edge", "route"], "initialModifierPoolIds": ["modifier-faction-owned", "modifier-watched"], "claimEligibility": "if-inside-current-territory" },
-      "actionSet": { "sharedActionIds": ["action-observe", "action-interpret", "action-mark", "action-leave"], "initialAdditionalActionIds": ["action-cross-boundary"], "maximumVisibleAdditionalActions": 3, "contextActionRules": [{ "whenKnownContextTagsAny": ["claim-sign"], "addActionIds": ["action-leave-offering"], "knownRequirementDisclosure": "show-disabled-when-missing" }] },
+      "actionSet": {
+        "sharedActionIds": ["action-observe-sign", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": ["action-cross-boundary"],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["observed"], "addActionIds": ["action-interpret"] },
+          { "whenInteractionStatesAny": ["interpreted"], "whenOperationalStatesAny": ["standing"], "addActionIds": ["action-respect-warning", "action-cross-boundary", "action-request-passage"] }
+        ]
+      },
       "evidencePoolIds": ["evidence-claim-markers", "evidence-patrol-signs"],
       "findingPoolIds": ["finding-boundary-symbol-rubbing"],
       "consequencePoolIds": [],
@@ -57,7 +76,16 @@
       "stateProfileId": "state-sealed-gate",
       "contentProfileId": "content-sealed-gate",
       "worldgen": { "anchorKinds": ["Point", "Edge"], "terrainTagsAny": ["ruin", "underground"], "initialModifierPoolIds": ["modifier-sealed", "modifier-guarded"], "claimEligibility": "if-inside-current-territory" },
-      "actionSet": { "sharedActionIds": ["action-observe", "action-inspect-seal", "action-document", "action-mark", "action-leave"], "initialAdditionalActionIds": [], "maximumVisibleAdditionalActions": 3, "contextActionRules": [{ "whenHiddenContextTagsAny": ["dangerous-release"], "addActionIds": ["action-open-seal"], "knownRequirementDisclosure": "hidden-until-supported" }] },
+      "actionSet": {
+        "sharedActionIds": ["action-inspect-seal", "action-document", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": ["action-open-seal"],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["inspected"], "whenOperationalStatesAny": ["sealed"], "addActionIds": ["action-open-seal"] },
+          { "whenOperationalStatesAny": ["opened", "breached"], "addActionIds": ["action-investigate-interior", "action-secure-site"] }
+        ]
+      },
       "evidencePoolIds": ["evidence-seal-opened"],
       "findingPoolIds": ["finding-seal-fragment"],
       "consequencePoolIds": ["consequence-seal-broken"],
@@ -70,11 +98,64 @@
       "stateProfileId": "state-first-contact",
       "contentProfileId": "content-first-contact",
       "worldgen": { "anchorKinds": ["Point", "Area"], "terrainTagsAny": ["route", "camp"], "initialModifierPoolIds": ["modifier-invitation", "modifier-guarded"], "claimEligibility": "if-inside-current-territory" },
-      "actionSet": { "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-communicate", "action-withdraw"], "initialAdditionalActionIds": ["action-request-passage"], "maximumVisibleAdditionalActions": 3, "contextActionRules": [] },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-withdraw"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["approached"], "addActionIds": ["action-communicate"] },
+          { "whenInteractionStatesAny": ["contacted"], "addActionIds": ["action-trade", "action-request-passage", "action-negotiate"] }
+        ]
+      },
       "evidencePoolIds": ["evidence-patrol-signs"],
       "findingPoolIds": [],
       "consequencePoolIds": [],
       "connectionTags": ["contact-network", "route-account"]
+    },
+    {
+      "id": "scenario-restless-marsh",
+      "archetypeId": "hazard-site",
+      "variantId": "restless-marsh",
+      "stateProfileId": "state-hazard-zone",
+      "contentProfileId": "content-restless-marsh",
+      "worldgen": { "anchorKinds": ["Point", "Area"], "terrainTagsAny": ["marsh", "floodplain", "wetland"], "initialModifierPoolIds": ["modifier-flooded", "modifier-contaminated", "modifier-spreading"], "claimEligibility": "never" },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-assess-risk", "action-avoid", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["assessed"], "whenOperationalStatesAny": ["active"], "addActionIds": ["action-traverse-cautiously", "action-find-safe-route", "action-contain-hazard"] }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["hazard-route", "wetland"]
+    },
+    {
+      "id": "scenario-wind-carved-peak",
+      "archetypeId": "natural-phenomenon",
+      "variantId": "wind-carved-peak",
+      "stateProfileId": "state-natural-landmark",
+      "contentProfileId": "content-wind-carved-peak",
+      "worldgen": { "anchorKinds": ["Point", "Area"], "terrainTagsAny": ["peak", "ridge", "highland"], "initialModifierPoolIds": ["modifier-climbable", "modifier-signal-capable", "modifier-watched"], "claimEligibility": "never" },
+      "actionSet": {
+        "sharedActionIds": ["action-observe-from-distance", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["observed"], "addActionIds": ["action-approach"] },
+          { "whenInteractionStatesAny": ["approached"], "addActionIds": ["action-survey", "action-map-surroundings"] },
+          { "whenInteractionStatesAny": ["surveyed"], "addActionIds": ["action-map-surroundings"] }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["landmark", "highland-route"]
     }
   ]
 }

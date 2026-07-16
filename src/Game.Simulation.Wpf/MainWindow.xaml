@@ -40,6 +40,29 @@
                 <Button Content="Fortschreiben" Click="AdvanceSpecifiedDays" />
                 <Button Content="Skript-Run speichern…" Click="SaveScriptedRun" />
             </WrapPanel>
+            <Border BorderBrush="#4A5970" BorderThickness="1" Background="#202630" Padding="10" Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.4*" />
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1.2*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                        <TextBlock Text="Zweck und Startwissen" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioPurpose" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                        <TextBlock x:Name="ScenarioStartingKnowledge" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                        <TextBlock Text="Ausgewähltes Team" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioSelectedTeam" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Erwarteter Prozess / Entscheidung" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ScenarioExpectedProcess" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                        <TextBlock x:Name="ScenarioDecisionPoint" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
             <TextBox x:Name="SessionStatus" IsReadOnly="True" TextWrapping="Wrap" MinHeight="48" Padding="8" Margin="0,0,0,12" />
         </StackPanel>
 
@@ -88,6 +111,89 @@
                         </StackPanel>
                         <TextBlock Grid.Row="3" Text="Skriptbefehle sind nur ein optionaler reproduzierbarer Testpfad; Ortsbefehle werden hier direkt über die gemeinsame App-Schicht ausgeführt."
                                    TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,4,0,0" />
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Bewegung">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*" />
+                        <ColumnDefinition Width="1.4*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                        <TextBlock Text="Angrenzendes Hex betreten" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Jede Taste sendet genau einen gewöhnlichen MoveExpeditionCommand. Kosten, Hindernisse und Kartenwissen stammen aus der gemeinsamen Simulation."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,14" />
+                        <Grid Width="330" HorizontalAlignment="Left">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Row="0" Grid.Column="0" Content="Nordwest" Tag="NorthWest" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="0" Grid.Column="2" Content="Nordost" Tag="NorthEast" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="1" Grid.Column="0" Content="West" Tag="West" Click="MoveExpeditionDirection" />
+                            <Border Grid.Row="1" Grid.Column="1" BorderBrush="#4A5970" BorderThickness="1" Padding="8" Margin="0,0,8,0">
+                                <TextBlock Text="Expedition" HorizontalAlignment="Center" />
+                            </Border>
+                            <Button Grid.Row="1" Grid.Column="2" Content="Ost" Tag="East" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="2" Grid.Column="0" Content="Südwest" Tag="SouthWest" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="2" Grid.Column="2" Content="Südost" Tag="SouthEast" Click="MoveExpeditionDirection" />
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Gemeinsamer Bewegungszustand" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock x:Name="MovementStateText" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <TextBlock Text="Letztes Ergebnis" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBox x:Name="MovementResultText" IsReadOnly="True" TextWrapping="Wrap" MinHeight="72" Padding="8" />
+                        <TextBlock Text="Nach einer Bewegung werden Ortsoptionen, Wissen, Weltansicht und Scout-Steuerung aus derselben Session neu abgefragt."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Richtungsscouts">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.05*" />
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1.5*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Verfügbare Scouts" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Ein oder zwei Scouts auswählen. Abwesende, verletzte oder bereits eingesetzte Personen werden nicht angeboten."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <ListBox x:Name="DirectionalScoutList" SelectionMode="Multiple" DisplayMemberPath="DisplayName"
+                                 SelectionChanged="DirectionalScoutSelectionChanged" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="Missionsauftrag" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Richtung" />
+                        <ComboBox x:Name="ScoutDirectionSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Dauer" />
+                        <ComboBox x:Name="ScoutDurationSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Fokus" />
+                        <ComboBox x:Name="ScoutFocusSelector" Margin="0,3,0,8" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock Text="Verhalten" />
+                        <ComboBox x:Name="ScoutBehaviorSelector" Margin="0,3,0,10" SelectionChanged="DirectionalScoutParametersChanged" />
+                        <TextBlock x:Name="DirectionalScoutOrderSummary" TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,8" />
+                        <Button x:Name="SendDirectionalScoutButton" Content="Richtungsscout entsenden" Click="SendDirectionalScout" IsEnabled="False" />
+                    </StackPanel>
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Missionsstatus (aktiv, überfällig, verletzt, zurück)" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ListBox Grid.Row="1" x:Name="DirectionalMissionList" />
+                        <TextBlock Grid.Row="2" Text="Zurückgekehrte Richtungsberichte" FontWeight="SemiBold" Margin="0,10,0,6" />
+                        <ListBox Grid.Row="3" x:Name="DirectionalReportList" />
                     </Grid>
                 </Grid>
             </TabItem>

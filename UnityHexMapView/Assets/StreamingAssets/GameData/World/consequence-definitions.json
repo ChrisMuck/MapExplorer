@@ -41,11 +41,24 @@
           "effects": [
             { "id": "route-evidence", "kind": "addEvidence", "referenceId": "evidence-route-restored" },
             { "id": "route-open", "kind": "setTilePassability", "isBlocked": false },
-            { "id": "route-follow-up", "kind": "raiseWorldTrigger", "referenceId": "route-traffic-observed", "actionTags": [ "route", "traffic" ] }
+            { "id": "route-follow-up", "kind": "raiseWorldTrigger", "referenceId": "route-traffic-observed", "actionTags": [ "route", "traffic" ] },
+            { "id": "route-response", "kind": "createSituation", "referenceId": "situation-route-use-changed", "dueDays": 3 }
           ],
           "event": {
             "title": "Spuren auf der wiederhergestellten Route",
             "body": "Erst nach einigen Tagen zeigen frische Spuren, dass der veränderte Übergang auch von anderen bemerkt wurde."
+          }
+        },
+        {
+          "id": "route-use-settles",
+          "delayDays": 5,
+          "severity": "serious",
+          "effects": [
+            { "id": "route-unmanaged-attention", "kind": "escalateRelatedFactionAwareness", "suppressIfSituationResponseTags": [ "investigate", "organize-help" ] }
+          ],
+          "event": {
+            "title": "Die neue Route etabliert sich",
+            "body": "Die Nutzung des wiederhergestellten Uebergangs wird zu einem dauerhaften Muster. Ob sie abgestimmt wurde, beeinflusst die Aufmerksamkeit in der Umgebung."
           }
         }
       ]
@@ -76,6 +89,46 @@
           "event": {
             "title": "Etwas hat sich verändert",
             "body": "Die spätere Entwicklung bestätigt nur, dass der geöffnete Verschluss nicht folgenlos blieb. Die Expedition muss die Zeichen weiter deuten."
+          }
+        }
+      ]
+    },
+    {
+      "id": "consequence-contact-help-request",
+      "stages": [
+        {
+          "id": "request-delivered",
+          "delayDays": 1,
+          "effects": [
+            { "id": "deliver-help-request", "kind": "createSituation", "referenceId": "situation-request-help-with-crossing", "dueDays": 4 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consequence-external-route-collapse",
+      "stages": [
+        {
+          "id": "remote-collapse",
+          "delayDays": 1,
+          "effects": [
+            { "id": "block-remote-route", "kind": "setTilePassability", "isBlocked": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consequence-neutral-local-crisis",
+      "stages": [
+        {
+          "id": "crisis-observed",
+          "delayDays": 1,
+          "effects": [
+            { "id": "deliver-neutral-crisis", "kind": "createSituation", "referenceId": "situation-neutral-local-crisis", "dueDays": 3 }
+          ],
+          "event": {
+            "title": "Ein Weg ist unpassierbar geworden",
+            "body": "Neue Spuren und Umwege zeigen, dass ein lokaler Weg eingebrochen ist. Wer oder was betroffen ist, bleibt offen."
           }
         }
       ]

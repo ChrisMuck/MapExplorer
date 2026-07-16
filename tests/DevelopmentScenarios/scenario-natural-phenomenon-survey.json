@@ -1,0 +1,29 @@
+{
+  "id": "scenario-natural-phenomenon-survey", "seed": 41035, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Natural-phenomenon path: observe, approach and survey a landmark with the required scholar.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The visible landmark is confirmed; its useful survey result is not yet known."],
+    "expectedWorldProcess": "No mandatory crisis; survey produces persistent landmark knowledge and a deterministic finding-table result.",
+    "outstandingDecisionPoint": "Survey with a scholar, map only the surroundings or leave the landmark for a later expedition."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-peak"],
+    "members": [{ "id": "scholar-1", "name": "Elian", "role": "Scholar", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-peak", "name": "Wind-carved Peak", "kind": "Landmark", "q": 2, "r": 1,
+      "archetypeId": "natural-phenomenon", "variantId": "wind-carved-peak", "operationalStateId": "stable"
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-peak" },
+    { "kind": "resolve-location-action", "locationId": "location-peak", "actionId": "action-observe-from-distance", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-peak", "actionId": "action-approach", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-peak", "actionId": "action-survey", "outcomeTier": "Success" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-peak", "stateChannel": "interaction", "stateId": "surveyed" },
+    { "kind": "has-known-location-state", "locationId": "location-peak", "stateChannel": "interaction", "stateId": "surveyed" }
+  ]
+}

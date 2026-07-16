@@ -1,0 +1,38 @@
+{
+  "id": "scenario-investigation-disturbing",
+  "seed": 41031,
+  "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Investigation-site risky branch: inspect a protected grave, disturb it and expose the authored delayed reaction.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The grave is confirmed; local scouting supplies the evidence that makes the risky intervention understandable."],
+    "expectedWorldProcess": "Disturbance raises a neutral trigger that can become a warning and later awareness process.",
+    "outstandingDecisionPoint": "Prepare for the warned reaction or ignore it and accept expiry/escalation."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "supplies": 10,
+    "confirmedLocationIds": ["location-grave-disturb"],
+    "members": [
+      { "id": "scholar-1", "name": "Elian", "role": "Scholar", "starLevel": 2 },
+      { "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }
+    ],
+    "locations": [{
+      "id": "location-grave-disturb", "name": "Marked Grave", "kind": "MarkedGrave", "q": 2, "r": 1,
+      "archetypeId": "investigation-site", "variantId": "marked-grave", "modifierIds": ["modifier-sacred", "modifier-watched"],
+      "operationalStateId": "sealed", "contextTags": ["protected-remains"], "evidenceSeedIds": ["evidence-ritual-signs"]
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-grave-disturb" },
+    { "kind": "scout-location-surroundings", "locationId": "location-grave-disturb", "scoutMemberIds": ["scout-1"] },
+    { "kind": "resolve-location-action", "locationId": "location-grave-disturb", "actionId": "action-inspect", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-grave-disturb", "actionId": "action-disturb", "outcomeTier": "SuccessWithCost" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-grave-disturb", "stateChannel": "operational", "stateId": "disturbed" },
+    { "kind": "has-world-trigger", "argument": "location-grave-disturbed" },
+    { "kind": "has-causality-trace" }
+  ]
+}

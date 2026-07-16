@@ -22,10 +22,16 @@ internal sealed class SimulationBatchRunnerTests
         var first = new SimulationBatchRunner().Run(catalog, request);
         var second = new SimulationBatchRunner().Run(catalog, request);
 
-        AssertTrue(first.Success, $"Batch report has no release-gate issues: {string.Join("; ", first.Issues.Select(issue => issue.Kind + ": " + issue.Message))}");
+        AssertTrue(first.Success, $"Batch report has no release-gate issues: {string.Join("; ", first.Issues.Select(issue => issue.Kind + " [" + issue.ScenarioId + "]: " + issue.Message))}");
         AssertEqual(3, first.GeneratedWorlds.Count, "Batch creates every requested deterministic generated world");
-        AssertEqual(3, first.Scenarios.Count, "Batch includes all proof scenarios");
+        AssertEqual(ProofScenarios().Count, first.Scenarios.Count, "Batch includes all proof scenarios");
         AssertTrue(first.Scenarios.All(result => result.Success), "All proof scenarios pass through the batch runner");
+        AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Batch release gates cover all seven initial archetype profiles");
+        AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.MissingStateChangeFollowUp), "State-changing scenario actions retain a follow-up choice");
+        AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.MissingLeaveOrDeferChoice), "Every archetype path retains a generic leave, mark or defer choice");
+        AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.SpecialistGateDeadEnd), "Specialist gates retain a safe alternative");
+        AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.UnanswerableSituation || issue.Kind == SimulationBatchIssueKind.MissingWarningPath), "Severe situations retain an answerable warning path");
+        AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.UnreachableScenarioPath), "Every authored proof path is reachable");
         AssertTrue(first.GeneratedWorlds.All(result => result.SoftConnectionCount >= SimulationBatchRunner.RequiredSoftConnectionCount), "Each generated world has the required soft connections");
         AssertEqual(
             string.Join("|", first.GeneratedWorlds.Select(result => $"{result.Seed}:{result.LocationCount}:{result.SoftConnectionCount}")),

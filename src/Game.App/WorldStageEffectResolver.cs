@@ -92,11 +92,27 @@ public sealed class WorldStageEffectResolver
 
     private int CreateSituation(GameState game, ScheduledConsequenceState process, SpecialLocationState? location, WorldStageEffectDefinition effect, string stageTraceId)
     {
-        if (effect.ReferenceId == null || authoring == null || !authoring.Situations.ContainsKey(effect.ReferenceId)) return 0;
+        if (effect.ReferenceId == null || authoring == null || !authoring.Situations.TryGetValue(effect.ReferenceId, out var definition)) return 0;
         var factionId = location?.FactionRelations.Count == 1 ? location.FactionRelations[0].FactionId : null;
+        var sourceKind = definition.PossibleSourceKinds.Contains("world-process", StringComparer.Ordinal) ||
+                         definition.PossibleSourceKinds.Contains("world", StringComparer.Ordinal)
+            ? "world-process"
+            : factionId != null && definition.PossibleSourceKinds.Contains("faction", StringComparer.Ordinal) ? "faction" : null;
+        string? deliveryChannel = sourceKind == "world-process" ? "earned-observation" : null;
+        if (sourceKind == "faction")
+        {
+            var faction = game.FindFaction(factionId!);
+            if (faction == null || (faction.ContactStatus != FactionContactStatus.Contacted && faction.ContactStatus != FactionContactStatus.Open))
+                return Trace(game, process, effect, stageTraceId, factionId!, "could not deliver a faction situation without established contact");
+            if (location == null || game.Expedition.Position.DistanceTo(location.Coord) > 1)
+                return Trace(game, process, effect, stageTraceId, factionId!, "could not deliver a direct faction situation outside local contact range");
+            deliveryChannel = "direct-contact";
+        }
+        if (sourceKind == null || deliveryChannel == null) return 0;
         var situation = new WorldSituationState(
             game.World.RuntimeIds.Allocate("situation"), effect.ReferenceId, game.World.WorldDay,
-            process.Id, location?.Id, game.World.WorldDay + effect.DueDays, factionId: factionId);
+            process.Id, location?.Id, effect.DueDays > 0 ? game.World.WorldDay + effect.DueDays : null,
+            factionId: factionId, sourceKind: sourceKind, deliveryChannel: deliveryChannel);
         situation.Activate();
         if (!game.World.TryAddSituation(situation)) return 0;
         return Trace(game, process, effect, stageTraceId, situation.Id, "activated a situation");

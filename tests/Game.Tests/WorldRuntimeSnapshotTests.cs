@@ -28,9 +28,16 @@ internal sealed class WorldRuntimeSnapshotTests
         var situation = new WorldSituationState("situation-1", "situation-request-help-with-crossing", 2, "process-1", location.Id, 8);
         situation.Activate();
         world.AddSituation(situation);
+        world.AddSituation(new WorldSituationState(
+            "situation-promise", "situation-request-help-with-crossing", 3, sourceLocationId: location.Id,
+            dueWorldDay: 9, status: WorldSituationStatus.Promised, factionId: "faction-1", resolutionActionTag: ResolveWorldSituationCommand.PromiseReturnActionTag,
+            sourceKind: "faction", deliveryChannel: "direct-contact"));
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
         world.EscalateFactionAwareness("faction-1", "location-region:location-1");
         AssertTrue(world.TryRegisterFinding("finding-seal-fragment", "once-per-world", location.Id), "World registers acquired finding before snapshot");
+        world.RecordFindingTableRoll(new FindingTableRollState(
+            "table-sealed:location:location-1", "table-sealed", location.Id,
+            "opened|inactive|unknown", null, world.WorldDay));
 
         var commandTrace = world.RecordTrace(SimulationTraceKind.Command, "Opened an old site.", subjectIds: new[] { location.Id });
         var trigger = new WorldTriggerState("trigger-1", "location-seal-broken", 2, new[] { "open" }, location.Id, location.Coord, commandTrace.TraceId);
@@ -61,6 +68,11 @@ internal sealed class WorldRuntimeSnapshotTests
         AssertEqual("trace-3", restored.RuntimeIds.Allocate("trace"), "Runtime ID sequence resumes after restored trace history");
         AssertEqual(1, restored.GeneratedContexts.Count, "Generated context survives runtime snapshot roundtrip");
         AssertEqual(WorldSituationStatus.Active, restored.Situations[0].Status, "Active situation survives runtime snapshot roundtrip");
+        var restoredPromise = restored.Situations.Single(item => item.Id == "situation-promise");
+        AssertEqual(WorldSituationStatus.Promised, restoredPromise.Status, "Open promise survives runtime snapshot roundtrip");
+        AssertEqual(ResolveWorldSituationCommand.PromiseReturnActionTag, restoredPromise.ResolutionActionTag, "Promise response tag survives runtime snapshot roundtrip");
+        AssertEqual("faction", restoredPromise.SourceKind, "Situation source kind survives runtime snapshot roundtrip");
+        AssertEqual("direct-contact", restoredPromise.DeliveryChannel, "Situation delivery channel survives runtime snapshot roundtrip");
         AssertEqual(FactionAwarenessLevel.Alert, restored.FactionAwareness[0].Level, "Faction awareness survives runtime snapshot roundtrip");
         AssertTrue(restored.WorldTriggers[0].IsResolved, "Trigger resolution state survives runtime snapshot roundtrip");
         AssertEqual(commandTrace.TraceId, restored.WorldTriggers[0].CausedByTraceId, "Trigger trace parent survives runtime snapshot roundtrip");
@@ -70,6 +82,8 @@ internal sealed class WorldRuntimeSnapshotTests
         AssertEqual(2, restored.Traces.Count, "Causal trace entries survive runtime snapshot roundtrip");
         AssertEqual(commandTrace.TraceId, restored.Traces[1].CausedByTraceIds[0], "Trace parent link survives runtime snapshot roundtrip");
         AssertTrue(!restored.TryRegisterFinding("finding-seal-fragment", "once-per-world", location.Id), "Finding repeat state survives runtime snapshot roundtrip");
+        AssertEqual(1, restored.FindingTableRolls.Count, "Finding-table history survives runtime snapshot roundtrip");
+        AssertTrue(restored.FindingTableRolls[0].IsEmpty, "An empty finding-table result survives without becoming rerollable");
 
         var content = new CrossSystemDataBundle(
             new EvidenceDefinitionSet(Array.Empty<EvidenceDefinition>()),

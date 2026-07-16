@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Game.App;
 
 internal sealed class GameDataCatalogTests
@@ -12,6 +13,7 @@ internal sealed class GameDataCatalogTests
     {
         ManifestLoadsOneCompleteContentSet();
         ManifestRejectsAnOmittedScoutingGroup();
+        ManifestRejectsMissingStateWording();
         LegacyDirectoryScanRemainsAvailableDuringMigration();
     }
 
@@ -21,11 +23,12 @@ internal sealed class GameDataCatalogTests
             ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         AssertTrue(catalog.UsesManifest, "Authored game data uses an explicit manifest");
-        AssertEqual(26, catalog.Documents.Count, "Manifest declares legacy and target authoring documents");
+        AssertEqual(27, catalog.Documents.Count, "Manifest declares legacy and target authoring documents");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-report-templates"), "Scouting reports are in the shared catalog");
-        AssertEqual(5, catalog.Authoring.ScenarioProfiles.Count, "Five initial Slice scenario profiles load from the catalog");
-        AssertEqual(4, catalog.Authoring.Findings.Count, "Findings are separate from material-resource content");
+        AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Seven initial archetype scenario profiles load from the catalog");
+        AssertEqual(10, catalog.Authoring.Findings.Count, "Findings are separate from material-resource content");
+        AssertEqual(4, catalog.Authoring.FindingTables.Count, "Generic weighted finding tables load from the catalog");
         AssertEqual(4, catalog.Authoring.FactionOffers.Count, "Faction offers load without static faction assignments");
         AssertEqual(3, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");
@@ -47,6 +50,24 @@ internal sealed class GameDataCatalogTests
         }
     }
 
+    private static void ManifestRejectsMissingStateWording()
+    {
+        var root = CopyGameData(includeManifest: true, includeScouting: true);
+        try
+        {
+            var path = Path.Combine(root, "Locations", "ContentProfiles", "content-profiles.json");
+            var document = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+            var bridge = document["items"]!.AsArray()[0]!.AsObject();
+            bridge["flavorByState"]!.AsObject().Remove("destroyed");
+            File.WriteAllText(path, document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            AssertThrows(() => GameDataCatalog.LoadFromDirectory(root), "Every authored state needs neutral player-facing wording");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static void LegacyDirectoryScanRemainsAvailableDuringMigration()
     {
         var root = CopyGameData(includeManifest: false, includeScouting: true);
@@ -55,7 +76,7 @@ internal sealed class GameDataCatalogTests
             var catalog = GameDataCatalog.LoadFromDirectory(root)
                 ?? throw new InvalidOperationException("Legacy game-data catalog was not loaded.");
             AssertFalse(catalog.UsesManifest, "Catalog reports legacy directory discovery");
-        AssertEqual(26, catalog.Documents.Count, "Legacy discovery still finds legacy and target authoring documents");
+        AssertEqual(27, catalog.Documents.Count, "Legacy discovery still finds legacy and target authoring documents");
         }
         finally
         {

@@ -18,6 +18,13 @@ internal sealed class SimulationSessionTests
         ScenarioPlaybackRunsEveryProofScenario();
         InteractiveLocationCommandsRemainOptionalToTheScript();
         TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession();
+        InteractiveDirectionalScoutUsesSharedMissionLifecycle();
+        InteractiveDirectionalMovementUsesSharedAdjacentMoveCommand();
+        DeeperLocationWorkConsumesDailyMovementCapacity();
+        DayOperationsConsumeTheRemainingDayCapacity();
+        InspectionUsesObservableContextWithoutRevealingUnknownFaction();
+        InspectionNamesOnlyAnAlreadyKnownFaction();
+        InspectionDoesNotRevealAnUnobservableFactionRelation();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -121,11 +128,13 @@ internal sealed class SimulationSessionTests
 
     private static void ScenarioPlaybackRunsEveryProofScenario()
     {
-        foreach (var fileName in new[] { "scenario-claimed-crossing.json", "scenario-sealed-containment.json", "scenario-directional-lead.json" })
+        var scenarioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios");
+        foreach (var path in Directory.GetFiles(scenarioDirectory, "scenario-*.json").OrderBy(Path.GetFileName))
         {
-            var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", fileName));
+            var fileName = Path.GetFileName(path);
+            var scenario = DevelopmentScenarioLoader.LoadFile(path);
             var result = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario).RunToCompletion();
-            AssertTrue(result.Success, $"The presentation-neutral playback used by WPF runs proof scenario '{fileName}'");
+            AssertTrue(result.Success, $"The presentation-neutral playback used by WPF runs proof scenario '{fileName}': {result.FailureSummary}");
         }
     }
 
@@ -173,6 +182,136 @@ internal sealed class SimulationSessionTests
         AssertTrue(interaction.Success, "A hypothetical team uses the normal shared location option query");
         AssertFalse(rebuild.IsAvailable, "Bridge repair is unavailable in the team preview without an engineer");
         AssertEqual(2, playback.Session.Game.Expedition.Members.Count, "Read-only team preview does not change the active expedition");
+    }
+
+    private static void InteractiveDirectionalScoutUsesSharedMissionLifecycle()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-directional-lead.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var sent = playback.SendDirectionalScout(
+            new[] { "scout-1" }, ScoutDirection.East, 1, ScoutMissionFocus.Ruins, ScoutMissionBehavior.Cautious);
+
+        AssertTrue(sent.Success && sent.Mission != null, "Interactive WPF-facing control delegates to the shared directional mission command");
+        AssertEqual(ScoutMissionStatus.Active, sent.Mission!.Status, "Directional mission starts in the shared active state");
+        AssertEqual(0, playback.Session.Game.Knowledge.ScoutReports.Count, "Sending a mission does not create an immediate report");
+
+        var advanced = playback.AdvanceDays(1);
+
+        AssertTrue(advanced.Success, "Normal day advancement resolves the interactive directional mission");
+        AssertTrue(playback.Session.Game.Knowledge.ScoutReports.Any(report => report.MissionId == sent.Mission.Id),
+            "Directional report appears only through the normal mission lifecycle");
+        AssertTrue(playback.Session.Game.Knowledge.ScoutReports.All(report => !report.HasExactCoordinates),
+            "Interactive directional reports preserve the no-exact-coordinate contract");
+    }
+
+    private static void InteractiveDirectionalMovementUsesSharedAdjacentMoveCommand()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-directional-lead.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+        var beforeMovement = playback.Session.Game.Expedition.MovementPoints;
+
+        var moved = playback.MoveExpedition(HexDirection.East);
+
+        AssertTrue(moved.Success, "WPF-facing direction pad delegates to the shared adjacent movement command");
+        AssertEqual(new HexCoord(2, 1), playback.Session.Game.Expedition.Position, "Direction pad moves exactly one logical neighboring hex");
+        AssertEqual(beforeMovement - moved.Cost, playback.Session.Game.Expedition.MovementPoints, "Direction pad uses normal terrain movement cost");
+        AssertEqual(KnowledgeLevel.Confirmed, playback.Session.Game.Knowledge.GetTileKnowledge(new HexCoord(2, 1)),
+            "Direction pad uses normal movement knowledge revelation");
+        AssertEqual(0, playback.NextCommandIndex, "Interactive movement does not consume or replace the authored script path");
+        AssertTrue(playback.HasInteractiveCommands, "Interactive movement prevents a script-only run record from misrepresenting the path");
+    }
+
+    private static void DeeperLocationWorkConsumesDailyMovementCapacity()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-natural-phenomenon-survey.json");
+        var result = new DevelopmentScenarioExecutor().Execute(LoadCatalog(), DevelopmentScenarioLoader.LoadFile(path));
+        var interaction = result.Session.GetLocationInteraction("location-peak").Interaction!;
+        var map = interaction.Options.Single(option => option.Action.Id == "action-map-surroundings");
+        var leave = interaction.Options.Single(option => option.Action.Id == "action-leave");
+
+        AssertTrue(result.Success, "Natural-phenomenon proof path still resolves through shared actions");
+        AssertEqual(1, result.Session.Game.Expedition.MovementPoints, "Approach and survey consume three of four daily movement points");
+        AssertFalse(map.IsAvailable, "Further fieldwork locks when its authored movement cost exceeds remaining daily capacity");
+        AssertTrue(map.LockedReason!.Contains("Bewegungspunkte", StringComparison.Ordinal), "Fieldwork lock explains the known movement-point requirement");
+        AssertTrue(leave.Action.Description.Contains("Bereits vorgenommene Untersuchungen", StringComparison.Ordinal), "Generic leave wording remains true after prior intervention");
+
+        AssertTrue(result.Session.EndDay().Success, "Player can explicitly finish the day after fieldwork");
+        AssertEqual(4, result.Session.Game.Expedition.MovementPoints, "A new day restores the normal movement capacity");
+        AssertTrue(result.Session.GetLocationInteraction("location-peak").Interaction!.FindOption("action-map-surroundings")!.IsAvailable,
+            "Persistent location state allows fieldwork to continue on the next day");
+    }
+
+    private static void DayOperationsConsumeTheRemainingDayCapacity()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-hazard-safe-route.json");
+        var scenario = DevelopmentScenarioLoader.LoadFile(path);
+        scenario.InitialState!.Members.Add(new DevelopmentScenarioMember { Id = "medic-1", Name = "Tala", Role = "Medic", StarLevel = 1 });
+        scenario.Metadata.SelectedTeamMemberIds.Add("medic-1");
+        scenario.Commands.RemoveAt(scenario.Commands.Count - 1);
+        scenario.Assertions.Clear();
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+        while (playback.HasNextCommand) AssertTrue(playback.ExecuteNext().Success, "Hazard setup reaches the assessed state");
+
+        var active = playback.Session.Game.Expedition;
+        var zeroCapacityPreview = new ExpeditionState(active.ExpeditionNumber, active.Position, active.Members, active.ExpeditionDay,
+            0, active.MaxMovementPoints, active.Supplies, active.Medicine, active.Morale, active.Capacity, active.Status, active.UnsecuredKnowledge);
+        var locked = playback.Session.GetLocationInteraction("location-hazard", zeroCapacityPreview).Interaction!.FindOption("action-contain-hazard")!;
+        AssertFalse(locked.IsAvailable, "A day operation cannot start after daily capacity is exhausted");
+        AssertTrue(locked.LockedReason!.Contains("Tag beenden", StringComparison.Ordinal), "Day-operation lock tells the player how to continue");
+
+        var contained = playback.ResolveLocationAction("location-hazard", "action-contain-hazard");
+        AssertTrue(contained.Success, "Available specialist day operation resolves through the shared command");
+        AssertEqual(0, active.MovementPoints, "Day operation commits every remaining movement point without a UI-specific rule");
+        AssertEqual(1, active.ExpeditionDay, "Day operation does not secretly end the day");
+    }
+
+    private static void InspectionUsesObservableContextWithoutRevealingUnknownFaction()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-sealed-containment.json");
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), DevelopmentScenarioLoader.LoadFile(path));
+        var result = playback.InspectLocation(new HexCoord(2, 1));
+
+        AssertTrue(result.Success, "Profile-backed containment inspection succeeds");
+        AssertTrue(result.Message.Contains("fest versiegelt", StringComparison.Ordinal), "Scenario profile supplies contextual location description without a redundant instance profile id");
+        AssertTrue(result.Message.Contains("weiterhin bewacht", StringComparison.Ordinal), "Observable guarded modifier contributes an authored first impression");
+        AssertTrue(result.Message.Contains("Wer den Ort bewacht", StringComparison.Ordinal), "Unknown claimant remains a general observed relation");
+        AssertFalse(result.Message.Contains("Unknown Keepers", StringComparison.Ordinal), "Objective faction identity is not exposed before contact knowledge exists");
+        AssertFalse(result.Message.Contains("modifier-", StringComparison.Ordinal), "Player-facing inspection never exposes technical modifier ids");
+
+        var restored = KnowledgeRuntimeSnapshotSerializer.Deserialize(KnowledgeRuntimeSnapshotSerializer.Serialize(playback.Session.Game.Knowledge));
+        AssertTrue(restored.KnowsLocationContextTag("location-containment-proof", "inspection-modifier:modifier-guarded"), "Observed modifier impression persists in KnowledgeState");
+        AssertTrue(restored.KnowsLocationContextTag("location-containment-proof", "inspection-relation:guarded"), "Observed anonymous relation persists without WorldState lookup");
+        AssertFalse(restored.KnownLocationContextTags("location-containment-proof").Any(tag => tag.StartsWith("inspection-faction:", StringComparison.Ordinal)),
+            "Unknown faction identity is absent from saved player knowledge");
+    }
+
+    private static void InspectionNamesOnlyAnAlreadyKnownFaction()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-sealed-containment.json");
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), DevelopmentScenarioLoader.LoadFile(path));
+        playback.Session.Game.FindFaction("faction-1")!.SetContactStatus(FactionContactStatus.Contacted);
+
+        var result = playback.InspectLocation(new HexCoord(2, 1));
+
+        AssertTrue(result.Success && result.Message.Contains("Unknown Keepers", StringComparison.Ordinal), "An already known faction may be named in the observed guarded relation");
+        AssertTrue(playback.Session.Game.Knowledge.KnowsLocationContextTag("location-containment-proof", "inspection-faction:faction-1"),
+            "Earned claimant identification is recorded separately from the objective relation");
+    }
+
+    private static void InspectionDoesNotRevealAnUnobservableFactionRelation()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-sealed-containment.json");
+        var scenario = DevelopmentScenarioLoader.LoadFile(path);
+        scenario.InitialState!.Locations[0].ModifierIds.Remove("modifier-guarded");
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var result = playback.InspectLocation(new HexCoord(2, 1));
+
+        AssertTrue(result.Success, "Location inspection remains possible without a visible faction modifier");
+        AssertFalse(result.Message.Contains("Wer den Ort bewacht", StringComparison.Ordinal), "Objective guarded relation is not even anonymously revealed without observable signs");
+        AssertFalse(playback.Session.Game.Knowledge.KnownLocationContextTags("location-containment-proof").Any(tag => tag.StartsWith("inspection-relation:", StringComparison.Ordinal)),
+            "Unobservable objective relation is absent from KnowledgeState");
     }
 
     private static GameDataCatalog LoadCatalog()

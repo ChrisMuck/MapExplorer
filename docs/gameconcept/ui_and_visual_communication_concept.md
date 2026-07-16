@@ -2,6 +2,10 @@
 
 Source of truth for information presentation, map notes, reports, archive interaction, portraits and discovery imagery.
 
+Situational prose for locations, contacts, returning scouts and important events follows
+`situational_scene_description_concept.md`. The same knowledge-honesty and visual-anchor rules apply
+whether the subject is a place, person, report arrival or changed world situation.
+
 The UI organizes evidence but does not solve interpretation.
 
 ---

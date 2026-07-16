@@ -552,6 +552,28 @@ Current rule:
 - Lost expeditions should lose their unsecured analysis items unless a later recovery action restores
   them.
 
+### 9.2 Campaign Save Boundaries
+
+Campaign persistence must serialize the three information domains as separate save sections:
+
+```text
+WorldRuntimeSnapshot      = objective runtime truth and resolved world history
+KnowledgeRuntimeSnapshot  = earned, last-known and fallible player knowledge
+PlayerNotesSnapshot       = player-authored assumptions and annotations
+```
+
+`KnowledgeRuntimeSnapshot` must roundtrip tile knowledge, scout reports, evidence and reliability,
+claimed knowledge-source IDs, known location context and last-known location conditions. A saved
+location condition includes the stable location ID, observed interaction/operational/presence
+states, observation world day and explicit doubt/contradiction state. Restore must use the saved
+observation verbatim; it must never query current `WorldState` to "refresh" knowledge.
+
+Snapshot DTOs remain serialization-safe data structures. Restore code validates stable references
+and duplicates without introducing Unity dependencies. Save compatibility and schema-version
+migration require explicit human review before merging; at minimum, roundtrip tests must prove that
+an unobserved World-State change remains unknown after save/load and that old/doubtful history is
+not silently reset to confirmed.
+
 ---
 
 ## 10. Simplified Map Presentation
@@ -717,6 +739,7 @@ Because core logic is separated from Unity, unit tests should cover:
 - event creation
 - base phase time advancement
 - save/load roundtrip
+- separate World/Knowledge/Notes snapshot roundtrips without truth leakage
 - visual asset fallback ID resolution in presentation-facing services
 
 Early tests should prioritize game-state correctness over visual behavior.

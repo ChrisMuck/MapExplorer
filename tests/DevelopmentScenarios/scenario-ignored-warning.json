@@ -1,0 +1,31 @@
+{
+  "id": "scenario-ignored-warning", "seed": 41038, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Containment warning expiry: open a seal, receive an earned warning and take no response until it expires.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["The entrance is confirmed; local scouting earns evidence before the seal is opened."],
+    "expectedWorldProcess": "The seal process delivers a warning, records expiry once and continues its unsuppressed later stage.",
+    "outstandingDecisionPoint": "This scripted branch deliberately ignores the available contain/investigate responses."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-ignored-seal"],
+    "members": [{ "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-ignored-seal", "name": "Sealed Entrance", "kind": "Ruin", "q": 2, "r": 1,
+      "archetypeId": "containment-site", "variantId": "sealed-gate", "modifierIds": ["modifier-sealed"],
+      "operationalStateId": "sealed", "contextTags": ["dangerous-release"], "evidenceSeedIds": ["evidence-guard-routine"]
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-ignored-seal" },
+    { "kind": "scout-location-surroundings", "locationId": "location-ignored-seal", "scoutMemberIds": ["scout-1"] },
+    { "kind": "resolve-location-action", "locationId": "location-ignored-seal", "actionId": "action-open-seal", "outcomeTier": "Success" },
+    { "kind": "end-day" }, { "kind": "end-day" }, { "kind": "end-day" }, { "kind": "end-day" }, { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-situation-delivery", "situationDefinitionId": "situation-investigate-opened-seal", "deliveryChannel": "earned-observation" },
+    { "kind": "has-situation-status", "situationDefinitionId": "situation-investigate-opened-seal", "stateId": "Expired" },
+    { "kind": "has-world-trigger", "argument": "seal-disturbance-observed" }
+  ]
+}

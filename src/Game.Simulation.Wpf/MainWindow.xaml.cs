@@ -21,6 +21,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ScoutDirectionSelector.ItemsSource = Enum.GetValues<ScoutDirection>();
+        ScoutDurationSelector.ItemsSource = Enumerable.Range(1, 5).ToArray();
+        ScoutFocusSelector.ItemsSource = Enum.GetValues<ScoutMissionFocus>();
+        ScoutBehaviorSelector.ItemsSource = Enum.GetValues<ScoutMissionBehavior>();
+        ScoutDirectionSelector.SelectedItem = ScoutDirection.North;
+        ScoutDurationSelector.SelectedItem = 1;
+        ScoutFocusSelector.SelectedItem = ScoutMissionFocus.Survey;
+        ScoutBehaviorSelector.SelectedItem = ScoutMissionBehavior.Cautious;
         TryInitializeCatalogAndScenarios();
     }
 
@@ -61,6 +69,7 @@ public partial class MainWindow : Window
             var scenario = DevelopmentScenarioLoader.LoadFile(path);
             playback = DevelopmentScenarioPlayback.Create(catalog!, scenario);
             ResetTestTeamSelection();
+            ShowScenarioMetadata(scenario);
             SessionStatus.Text = $"Szenario '{scenario.Id}' geladen. Seed {scenario.Seed}; {scenario.Commands.Count} Skriptbefehle.";
             RefreshInspector();
         }
@@ -84,6 +93,7 @@ public partial class MainWindow : Window
             playback = DevelopmentScenarioPlayback.Create(catalog!, result.Scenario);
             playback.RunToCompletion();
             ResetTestTeamSelection();
+            ShowScenarioMetadata(result.Scenario);
             SessionStatus.Text = $"Run-Record '{result.ScenarioId}' reproduziert: {(result.Success ? "erfolgreich" : result.FailureSummary)}";
             RefreshInspector();
         }
@@ -172,12 +182,131 @@ public partial class MainWindow : Window
         var scouts = BuildAvailableScouts(game);
         AvailableScoutSelector.ItemsSource = scouts;
         AvailableScoutSelector.SelectedItem = scouts.FirstOrDefault(entry => entry.Id == selectedScoutId) ?? scouts.FirstOrDefault();
+        RefreshDirectionalScouts(game, scouts);
+        MovementStateText.Text = $"Position: {game.Expedition.Position} · Bewegungspunkte: {game.Expedition.MovementPoints}/{game.Expedition.MaxMovementPoints} · Status: {game.Expedition.Status}";
         WorldLocationsList.ItemsSource = BuildWorldLocations(game);
         WorldFactionsList.ItemsSource = BuildWorldFactions(game);
         WorldProcessesList.ItemsSource = BuildWorldProcesses(game);
         CausalityList.ItemsSource = BuildCausality(game);
         RefreshTestTeam(game);
         UpdateLocationCommandSelection();
+    }
+
+    private void MoveExpeditionDirection(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPlayback(out var current)) return;
+        if (sender is not Button { Tag: string directionText } ||
+            !Enum.TryParse<HexDirection>(directionText, out var direction))
+        {
+            MovementResultText.Text = "Die gewählte Hex-Richtung ist ungültig.";
+            return;
+        }
+
+        var result = current.MoveExpedition(direction);
+        MovementResultText.Text = result.Success
+            ? $"Bewegt: {direction}. Normale Bewegungskosten: {result.Cost}."
+            : $"Bewegung {direction} abgelehnt: {result.Error}";
+        SessionStatus.Text = result.Success
+            ? $"Expedition über den gemeinsamen Bewegungsbefehl nach {direction} bewegt. Kosten: {result.Cost}."
+            : result.Error ?? "Bewegung abgelehnt.";
+        RefreshInspector();
+    }
+
+    private void RefreshDirectionalScouts(GameState game, IReadOnlyList<AvailableScoutEntry> availableScouts)
+    {
+        var selectedIds = DirectionalScoutList.SelectedItems.OfType<AvailableScoutEntry>()
+            .Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        DirectionalScoutList.ItemsSource = availableScouts;
+        foreach (var scout in availableScouts.Where(item => selectedIds.Contains(item.Id)).Take(2))
+        {
+            DirectionalScoutList.SelectedItems.Add(scout);
+        }
+
+        DirectionalMissionList.ItemsSource = game.Expedition.ScoutMissions
+            .Where(mission => mission.MissionTypeId == "directional-recon")
+            .Select(mission => $"{string.Join(" + ", mission.ScoutMemberIds.Select(id => MemberName(game, id)))} | {mission.Direction}, {mission.DurationDays} Tag(e), {mission.Focus}, {mission.Behavior} | Rückkehr Tag {mission.ExpectedReturnWorldDay} | {mission.Status}")
+            .ToList();
+        var directionalMissionIds = game.Expedition.ScoutMissions
+            .Where(mission => mission.MissionTypeId == "directional-recon")
+            .Select(mission => mission.Id).ToHashSet(StringComparer.Ordinal);
+        DirectionalReportList.ItemsSource = game.Knowledge.ScoutReports
+            .Where(report => directionalMissionIds.Contains(report.MissionId))
+            .Select(report => $"{report.Title} | Verlässlichkeit {report.Reliability}% | {string.Join("; ", report.Leads.Select(lead => $"{lead.Direction}/{lead.Scope}: {lead.Summary} ({lead.Confidence}%)"))}")
+            .ToList();
+        UpdateDirectionalScoutOrder();
+    }
+
+    private static string MemberName(GameState game, string memberId) =>
+        game.Expedition.Members.FirstOrDefault(member => member.Id == memberId)?.Name ?? memberId;
+
+    private void DirectionalScoutSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DirectionalScoutList.SelectedItems.Count <= 2)
+        {
+            UpdateDirectionalScoutOrder();
+            return;
+        }
+
+        foreach (var added in e.AddedItems.Cast<object>().ToList()) DirectionalScoutList.SelectedItems.Remove(added);
+        SessionStatus.Text = "Eine Richtungsmission kann höchstens zwei Scouts entsenden.";
+        UpdateDirectionalScoutOrder();
+    }
+
+    private void DirectionalScoutParametersChanged(object sender, SelectionChangedEventArgs e) => UpdateDirectionalScoutOrder();
+
+    private void UpdateDirectionalScoutOrder()
+    {
+        if (DirectionalScoutOrderSummary == null || DirectionalScoutList == null) return;
+        var scouts = DirectionalScoutList.SelectedItems.OfType<AvailableScoutEntry>().ToList();
+        var valid = scouts.Count is 1 or 2 &&
+                    ScoutDirectionSelector.SelectedItem is ScoutDirection &&
+                    ScoutDurationSelector.SelectedItem is int &&
+                    ScoutFocusSelector.SelectedItem is ScoutMissionFocus &&
+                    ScoutBehaviorSelector.SelectedItem is ScoutMissionBehavior;
+        DirectionalScoutOrderSummary.Text = valid
+            ? $"{string.Join(" und ", scouts.Select(item => item.DisplayName))} nach {ScoutDirectionSelector.SelectedItem} · {ScoutDurationSelector.SelectedItem} Tag(e) · Fokus {ScoutFocusSelector.SelectedItem} · {ScoutBehaviorSelector.SelectedItem}. Bericht erst nach normalem Tagesfortschritt."
+            : "Ein oder zwei freie Scouts und alle Auftragsparameter auswählen.";
+        SendDirectionalScoutButton.IsEnabled = valid;
+    }
+
+    private void SendDirectionalScout(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPlayback(out var current)) return;
+        var scouts = DirectionalScoutList.SelectedItems.OfType<AvailableScoutEntry>().Select(item => item.Id).ToList();
+        if (scouts.Count is < 1 or > 2 ||
+            ScoutDirectionSelector.SelectedItem is not ScoutDirection direction ||
+            ScoutDurationSelector.SelectedItem is not int duration ||
+            ScoutFocusSelector.SelectedItem is not ScoutMissionFocus focus ||
+            ScoutBehaviorSelector.SelectedItem is not ScoutMissionBehavior behavior)
+        {
+            SessionStatus.Text = "Der Richtungsauftrag ist unvollständig.";
+            return;
+        }
+
+        var result = current.SendDirectionalScout(scouts, direction, duration, focus, behavior);
+        SessionStatus.Text = result.Success
+            ? $"Richtungsmission '{result.Mission!.Id}' entsandt. Erwartete Rückkehr: Welttag {result.Mission.ExpectedReturnWorldDay}."
+            : result.Error ?? "Richtungsmission konnte nicht entsandt werden.";
+        RefreshInspector();
+    }
+
+    private void ShowScenarioMetadata(DevelopmentScenario scenario)
+    {
+        var metadata = scenario.Metadata;
+        ScenarioPurpose.Text = string.IsNullOrWhiteSpace(metadata.Purpose) ? "Kein Zweck beschrieben." : metadata.Purpose;
+        ScenarioStartingKnowledge.Text = metadata.StartingKnowledge.Count == 0
+            ? "Startwissen: keines ausgewiesen."
+            : $"Startwissen: {string.Join("; ", metadata.StartingKnowledge)}";
+        var names = scenario.InitialState?.Members
+            .Where(member => metadata.SelectedTeamMemberIds.Contains(member.Id, StringComparer.Ordinal))
+            .Select(member => $"{member.Name} ({member.Role})") ?? Enumerable.Empty<string>();
+        ScenarioSelectedTeam.Text = names.Any() ? string.Join(", ", names) : "Kein Testteam ausgewiesen.";
+        ScenarioExpectedProcess.Text = string.IsNullOrWhiteSpace(metadata.ExpectedWorldProcess)
+            ? "Erwarteter Prozess: keiner."
+            : $"Erwarteter Prozess: {metadata.ExpectedWorldProcess}";
+        ScenarioDecisionPoint.Text = string.IsNullOrWhiteSpace(metadata.OutstandingDecisionPoint)
+            ? "Offene Entscheidung: keine beschrieben."
+            : $"Offene Entscheidung: {metadata.OutstandingDecisionPoint}";
     }
 
     private void TestTeamSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -429,7 +558,7 @@ public partial class MainWindow : Window
                 LocationCommandKind.LocationAction,
                 option.Action.Id,
                 option.Action.Label,
-                $"{option.Action.Description} Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
+                $"{option.Action.Description} Kosten: {LocationActionCostText(option.Action)}. Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
                 option.IsAvailable,
                 option.LockedReason)));
 
@@ -451,6 +580,21 @@ public partial class MainWindow : Window
         }
 
         return commands;
+    }
+
+    private static string LocationActionCostText(LocationActionDefinition action)
+    {
+        var parts = action.Costs.Select(cost => $"{cost.Amount} {cost.Kind}").ToList();
+        if (action.Commitment == LocationActionCommitment.DayOperation)
+        {
+            parts.Add("restliche Tageskapazitaet");
+        }
+        else if (action.StartsProject)
+        {
+            parts.Add($"{action.ProjectDurationDays} Projekttage");
+        }
+
+        return parts.Count == 0 ? "keine Tageskapazitaet" : string.Join(", ", parts);
     }
 
     private static IReadOnlyList<AvailableScoutEntry> BuildAvailableScouts(GameState game) => game.Expedition.Members

@@ -1,6 +1,8 @@
 using Game.Core;
 using Game.App;
 
+try
+{
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
@@ -9,6 +11,10 @@ var movementTests = new MovementCostServiceTests();
 movementTests.RunAll();
 var knowledgeTests = new KnowledgeServiceTests();
 knowledgeTests.RunAll();
+var locationConditionKnowledgeTests = new LocationConditionKnowledgeTests();
+locationConditionKnowledgeTests.RunAll();
+var knowledgeRuntimeSnapshotTests = new KnowledgeRuntimeSnapshotTests();
+knowledgeRuntimeSnapshotTests.RunAll();
 var gameStateTests = new GameStateTests();
 gameStateTests.RunAll();
 var moveCommandTests = new MoveExpeditionCommandTests();
@@ -75,12 +81,20 @@ var gameDataCatalogTests = new GameDataCatalogTests();
 gameDataCatalogTests.RunAll();
 var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
 crossSystemAuthoringDataTests.RunAll();
+var archetypeFlowResolverTests = new ArchetypeFlowResolverTests();
+archetypeFlowResolverTests.RunAll();
 var worldGenerationPresetTests = new WorldGenerationPresetTests();
 worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
+}
+catch (Exception exception)
+{
+    Console.Error.WriteLine($"Game.Tests failed: {exception}");
+    Environment.ExitCode = 1;
+}
 
 internal sealed class HexCoordTests
 {
@@ -2111,6 +2125,8 @@ internal sealed class LocationDataJsonTests
 
         game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
         app.ResolveLocationAction(game, bridge.Id, "action-construct-temporary-passage", LocationOutcomeTier.SuccessWithCost);
+        AssertEqual(0, game.Expedition.MovementPoints, "Day operation commits the remaining daily capacity");
+        app.EndDay(game);
         var reopened = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertTrue(reopened.IsAvailable, "OncePerState action reopens after the operational state changes");
     }

@@ -18,6 +18,7 @@
     "Factions/signatures.json",
     "Factions/territory-entry-rules.json",
     "Findings/findings.json",
+    "Findings/finding-tables.json",
     "Scouting/focuses.json",
     "Scouting/mission-types.json",
     "Scouting/outcome-tables.json",

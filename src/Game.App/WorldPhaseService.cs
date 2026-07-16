@@ -126,6 +126,39 @@ public sealed class WorldPhaseService
             }
         }
 
+        foreach (var situation in game.World.Situations.Where(item =>
+                     (item.Status == WorldSituationStatus.Active || item.Status == WorldSituationStatus.Promised) &&
+                     item.DueWorldDay.HasValue && game.World.WorldDay >= item.DueWorldDay.Value))
+        {
+            var wasPromised = situation.Status == WorldSituationStatus.Promised;
+            situation.Expire(game.World.WorldDay);
+            var location = situation.SourceLocationId == null
+                ? null
+                : game.World.Locations.FirstOrDefault(item => item.Id == situation.SourceLocationId);
+            game.World.RecordTrace(
+                SimulationTraceKind.SituationChanged,
+                $"Situation '{situation.Id}' expired unanswered on world day {game.World.WorldDay}.",
+                subjectIds: new[] { situation.Id, situation.DefinitionId });
+            if (wasPromised && situation.FactionId != null && authoring?.Situations.TryGetValue(situation.DefinitionId, out var definition) == true)
+            {
+                var faction = game.FindFaction(situation.FactionId);
+                faction?.Adjust(trustDelta: definition.BrokenPromiseTrustDelta);
+                if (definition.BrokenPromiseMemoryId != null) faction?.AddMemory(definition.BrokenPromiseMemoryId);
+            }
+            game.Events.Enqueue(new EventState(
+                game.World.RuntimeIds.Allocate("situation-expired"),
+                EventKind.WorldConsequence,
+                "Eine Gelegenheit ist verstrichen",
+                "World",
+                wasPromised
+                    ? "Eine zugesagte Rueckmeldung oder Hilfe ist nicht rechtzeitig erfolgt."
+                    : "Eine bekannte Anfrage oder Warnung wurde nicht rechtzeitig beantwortet.",
+                new[] { new EventOptionState("acknowledge", "Zur Kenntnis nehmen", "Der Ablauf wird im Bericht festgehalten.", EventOptionEffectKind.Archive) },
+                location?.Coord,
+                situation.FactionId));
+            messages.Add($"World situation expired: {situation.DefinitionId}.");
+        }
+
         return messages;
     }
 

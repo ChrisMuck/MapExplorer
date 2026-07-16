@@ -1,0 +1,34 @@
+{
+  "id": "scenario-territorial-respect",
+  "seed": 41032,
+  "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Territorial-marker choice: observe and interpret a boundary before deliberately respecting it.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The marker is confirmed but its meaning is initially unknown."],
+    "expectedWorldProcess": "No hostile reaction is created by the respectful branch; observed crossing remains a separate authored option.",
+    "outstandingDecisionPoint": "Respect the warning, cross it knowingly or request passage when contact permits."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-border"],
+    "members": [{ "id": "scholar-1", "name": "Elian", "role": "Scholar", "starLevel": 2 }],
+    "locations": [{
+      "id": "location-border", "name": "Boundary Posts", "kind": "Landmark", "q": 2, "r": 1,
+      "anchorKind": "Edge", "anchorOtherQ": 1, "anchorOtherR": 1,
+      "archetypeId": "territorial-marker", "variantId": "border-warning-sign", "modifierIds": ["modifier-faction-owned"],
+      "operationalStateId": "standing"
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-border" },
+    { "kind": "resolve-location-action", "locationId": "location-border", "actionId": "action-observe-sign", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-border", "actionId": "action-interpret", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-border", "actionId": "action-respect-warning", "outcomeTier": "Success" }
+  ],
+  "assertions": [
+    { "kind": "has-location-state", "locationId": "location-border", "stateChannel": "interaction", "stateId": "interpreted" },
+    { "kind": "has-location-state", "locationId": "location-border", "stateChannel": "operational", "stateId": "respected" },
+    { "kind": "option-visible", "locationId": "location-border", "actionId": "action-cross-boundary" }
+  ]
+}

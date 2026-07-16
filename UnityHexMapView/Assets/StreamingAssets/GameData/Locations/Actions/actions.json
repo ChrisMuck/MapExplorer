@@ -19,6 +19,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
       "outcomeTableId": "outcome-inspect",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "inspect" ]
     },
     {
@@ -28,6 +29,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
       "outcomeTableId": "outcome-search",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "repeatPolicy": "OncePerState",
       "actionTags": [ "search" ]
     },
@@ -38,6 +40,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 25, "confidence": "Guess" },
       "outcomeTableId": "outcome-investigate",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "investigate" ]
     },
     {
@@ -47,6 +50,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
       "outcomeTableId": "outcome-document",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "document", "map" ]
     },
     {
@@ -57,6 +61,7 @@
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
       "outcomeTableId": "outcome-generic-observe",
       "repeatPolicy": "OncePerState",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "collect" ]
     },
     {
@@ -75,7 +80,28 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
       "outcomeTableId": "outcome-interpret",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "interpret" ]
+    },
+    {
+      "id": "action-observe-sign",
+      "label": "Zeichen beobachten",
+      "description": "Die sichtbaren Markierungen und ihre Umgebung betrachten, ohne sie zu beruehren.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-observe-sign",
+      "repeatPolicy": "OncePerState",
+      "actionTags": [ "observe", "warning" ]
+    },
+    {
+      "id": "action-respect-warning",
+      "label": "Warnung respektieren",
+      "description": "Die Expedition erkennt die Grenze an und laesst ihre Markierung unangetastet.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-respect-warning",
+      "repeatPolicy": "OncePerLocation",
+      "actionTags": [ "respect", "withdraw", "warning" ]
     },
     {
       "id": "action-leave-offering",
@@ -84,6 +110,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
       "outcomeTableId": "outcome-leave-offering",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "respect", "offer" ]
     },
     {
@@ -93,6 +120,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 45, "confidence": "Assessed" },
       "outcomeTableId": "outcome-disturb",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "disturb", "open" ]
     },
     {
@@ -102,6 +130,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
       "outcomeTableId": "outcome-cross-boundary",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "socialRisk": true,
       "actionTags": [ "cross", "ignore-warning" ]
     },
@@ -112,6 +141,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
       "outcomeTableId": "outcome-assess-crossing",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "repeatPolicy": "OncePerLocation",
       "actionTags": [ "assess", "cross" ]
     },
@@ -177,7 +207,8 @@
       "description": "Das Siegel und seine Warnzeichen aus der Naehe betrachten.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-inspect-seal",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "inspect", "seal" ]
     },
     {
@@ -187,8 +218,34 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 35, "confidence": "Guess" },
       "outcomeTableId": "outcome-open-seal",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "repeatPolicy": "OncePerLocation",
       "actionTags": [ "open", "seal", "disturb" ]
+    },
+    {
+      "id": "action-investigate-interior",
+      "label": "Zugaenglichen Bereich untersuchen",
+      "description": "Den nun zugaenglichen Bereich vorsichtig untersuchen und seine Spuren sichern.",
+      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
+      "outcomeTableId": "outcome-investigate-interior",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
+      "repeatPolicy": "OncePerState",
+      "actionTags": [ "investigate", "enter" ]
+    },
+    {
+      "id": "action-secure-site",
+      "label": "Ort sichern",
+      "description": "Den zugaenglichen Bereich mit geeigneter Fachkenntnis wieder sichern oder stabilisieren.",
+      "hardRequirements": [
+        { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." },
+        { "kind": "RolePresent", "role": "Engineer", "unmetReason": "Erfordert eine Ingenieurin oder einen Ingenieur." }
+      ],
+      "riskProfile": { "baseRisk": 10, "confidence": "Assessed" },
+      "outcomeTableId": "outcome-secure-site",
+      "commitment": "DayOperation",
+      "repeatPolicy": "OncePerState",
+      "actionTags": [ "secure", "contain", "repair" ]
     },
     {
       "id": "action-approach-cautiously",
@@ -196,7 +253,8 @@
       "description": "Sich dem Ort behutsam naehern und die Lage einschaetzen.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-approach-contact",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "approach", "restraint" ]
     },
     {
@@ -205,7 +263,8 @@
       "description": "Kontakt aufnehmen und ein Gespraech versuchen.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-communicate",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "socialRisk": true,
       "actionTags": [ "communicate", "contact" ]
     },
@@ -216,6 +275,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-observe",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "socialRisk": true,
       "actionTags": [ "trade", "contact" ]
     },
@@ -226,6 +286,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-note",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "socialRisk": true,
       "actionTags": [ "request-passage", "contact" ]
     },
@@ -234,7 +295,7 @@
       "label": "Zurueckziehen",
       "description": "Sich vom Ort zurueckziehen, ohne zu handeln.",
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-withdraw",
+      "outcomeTableId": "outcome-withdraw-contact",
       "actionTags": [ "withdraw", "restraint" ]
     },
     {
@@ -244,6 +305,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
       "outcomeTableId": "outcome-generic-assess",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "assess" ]
     },
     {
@@ -252,7 +314,8 @@
       "description": "Die Bedrohung der Zone lesen, bevor man sie betritt.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-assess",
+      "outcomeTableId": "outcome-assess-hazard",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "assess", "hazard" ]
     },
     {
@@ -260,7 +323,7 @@
       "label": "Ausweichen",
       "description": "Die Zone meiden und einen anderen Weg nehmen.",
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-withdraw",
+      "outcomeTableId": "outcome-avoid-hazard",
       "actionTags": [ "avoid", "restraint" ]
     },
     {
@@ -269,7 +332,8 @@
       "description": "Die Zone langsam und geschuetzt durchqueren.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 30, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-traverse-hazard",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "cross", "hazard", "restraint" ]
     },
     {
@@ -278,15 +342,30 @@
       "description": "Einen gangbaren Pfad durch die Gefahr suchen.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 15, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-note",
+      "outcomeTableId": "outcome-safe-hazard",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "route", "hazard" ]
+    },
+    {
+      "id": "action-contain-hazard",
+      "label": "Gefahr eindammen",
+      "description": "Mit medizinischer oder technischer Fachkenntnis die lokale Gefahr begrenzen.",
+      "hardRequirements": [
+        { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." },
+        { "kind": "RolePresent", "role": "Medic", "unmetReason": "Erfordert eine Medizinerin oder einen Mediziner." }
+      ],
+      "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
+      "outcomeTableId": "outcome-contain-hazard",
+      "commitment": "DayOperation",
+      "repeatPolicy": "OncePerState",
+      "actionTags": [ "contain", "assist", "hazard" ]
     },
     {
       "id": "action-observe-from-distance",
       "label": "Aus der Ferne beobachten",
       "description": "Das Wahrzeichen aus der Distanz betrachten und einordnen.",
       "riskProfile": { "baseRisk": 0, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-observe-phenomenon",
       "actionTags": [ "observe" ]
     },
     {
@@ -295,16 +374,21 @@
       "description": "Sich dem Ort naehern.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Guess" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-approach-phenomenon",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "actionTags": [ "approach" ]
     },
     {
       "id": "action-survey",
       "label": "Vermessen",
       "description": "Die Umgebung vom Wahrzeichen aus vermessen.",
-      "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
+      "hardRequirements": [
+        { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." },
+        { "kind": "RolePresent", "role": "Scholar", "unmetReason": "Erfordert eine Gelehrte oder einen Gelehrten." }
+      ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-observe",
+      "outcomeTableId": "outcome-survey-phenomenon",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "survey", "map" ]
     },
     {
@@ -313,7 +397,8 @@
       "description": "Die weitere Umgebung aufnehmen und als Kartenwissen sichern.",
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 5, "confidence": "Assessed" },
-      "outcomeTableId": "outcome-generic-note",
+      "outcomeTableId": "outcome-map-phenomenon",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "map", "document" ]
     },
     {
@@ -323,6 +408,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 20, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-observe",
+      "costs": [ { "kind": "MovementPoints", "amount": 2, "timing": "onCommit" } ],
       "actionTags": [ "assist" ]
     },
     {
@@ -332,6 +418,7 @@
       "hardRequirements": [ { "kind": "PositionOnOrAdjacent", "unmetReason": "Die Expedition muss am Ort oder angrenzend sein." } ],
       "riskProfile": { "baseRisk": 10, "confidence": "Guess" },
       "outcomeTableId": "outcome-generic-observe",
+      "costs": [ { "kind": "MovementPoints", "amount": 1, "timing": "onCommit" } ],
       "socialRisk": true,
       "actionTags": [ "negotiate", "contact" ]
     },
@@ -352,8 +439,8 @@
     },
     {
       "id": "action-leave",
-      "label": "Verlassen",
-      "description": "Die Fundstelle unangetastet lassen.",
+      "label": "Fuer jetzt verlassen",
+      "description": "Die Beschaeftigung mit diesem Ort beenden und weiterziehen. Bereits vorgenommene Untersuchungen und Veraenderungen bleiben bestehen.",
       "outcomeTableId": "outcome-leave",
       "actionTags": [ "leave", "restraint" ]
     }

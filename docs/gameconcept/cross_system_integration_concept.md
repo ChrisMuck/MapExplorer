@@ -1032,6 +1032,21 @@ progress that day: choosing it is deliberately a choice to spend time, expose th
 World Phase and postpone movement. A project occupies the main expedition for each committed day
 until it is completed, suspended or abandoned.
 
+**Decision — fieldwork spends daily capacity.** Movement Points represent travel and the main
+expedition's practical work capacity. Brief approach or inspection normally costs one point;
+substantial surveying, mapping, searching or investigation normally costs two. Pure observation,
+reading, marking and leaving normally remain free. Exact costs are authored on reusable actions,
+not inferred from a concrete location, variant or presentation. If the remaining capacity is too
+low, the option stays visible with a known lock and becomes available again after the normal end-day
+reset. A day-consuming operation commits every remaining Movement Point but does not secretly press
+End Day for the player.
+
+**Decision — exit wording must remain historically true.** A reusable leave/defer action must not
+claim that a location remains untouched after the expedition has already investigated or changed
+it. Shared exit text therefore describes ending the current engagement while preserving prior
+work and consequences. More specific future wording may vary through authored interaction-state
+text, never through object-, archetype-, Unity- or WPF-specific branches.
+
 **Decision — projects pause only at a day boundary and persist.** A project can be suspended or
 abandoned at the end of a committed day, never by erasing the work already performed. Its partial
 progress, consumed resources, incomplete structure, local risks and visible traces become
@@ -1145,6 +1160,19 @@ The game does not summarize these into an explained conflict; the player can for
 interpretation through notes and chronology.
 
 #### 13.9.6 Interaction-State Communication
+
+**Decision — inspection reports impressions, not bookkeeping.** Inspecting a location first presents
+the authored state description and then any modifier impressions explicitly declared observable by
+inspection. A modifier without inspection text remains hidden. Observable modifier content may
+also declare which faction-relation kind its signs reveal; the objective relation alone never makes
+even an anonymous claim visible.
+
+**Decision — claimant identity is separate knowledge.** Visible signs may establish that an unknown
+group claims, watches, guards or treats a place as sacred. A faction name appears only when the
+expedition already knows that faction well enough to identify it. The anonymous relation,
+observable modifier impressions and any earned faction attribution are recorded separately in
+`KnowledgeState`, persist through its normal snapshot and never expose `WorldState.FactionRelations`
+directly to Unity or WPF.
 
 **Decision — every action has a readable text state.** Available actions, known requirement locks,
 known risk, newly available options, active work, completed interventions and time-critical

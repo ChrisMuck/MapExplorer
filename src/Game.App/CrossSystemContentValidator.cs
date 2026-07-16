@@ -30,6 +30,7 @@ public static class CrossSystemContentValidator
                 action.ProjectCompletionEffects,
                 $"Action '{action.Id}' project completion",
                 crossSystem,
+                authoring,
                 errors);
         }
 
@@ -37,7 +38,7 @@ public static class CrossSystemContentValidator
         {
             foreach (var effects in table.EffectBundles)
             {
-                ValidateEffects(effects, $"Outcome table '{table.Id}'", crossSystem, errors);
+                ValidateEffects(effects, $"Outcome table '{table.Id}'", crossSystem, authoring, errors);
             }
         }
 
@@ -69,14 +70,27 @@ public static class CrossSystemContentValidator
         foreach (var scenario in authoring.ScenarioProfiles.Values)
         {
             if (!locations.Definitions.Archetypes.ContainsKey(scenario.ArchetypeId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown archetype '{scenario.ArchetypeId}'.");
+            try
+            {
+                LocationArchetypeInteractionFlowRegistry.CreateInitialSlice().Get(scenario.ArchetypeId);
+            }
+            catch (InvalidOperationException)
+            {
+                errors.Add($"Scenario profile '{scenario.Id}' references archetype '{scenario.ArchetypeId}', which has no registered interaction flow.");
+            }
             // The legacy Core variant definition intentionally does not retain its authored
             // archetype. The target scenario profile is the first typed owner of that pairing;
             // migration of the legacy DTO follows once profiles replace legacy variant routing.
             if (!locations.Definitions.Variants.ContainsKey(scenario.VariantId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown variant '{scenario.VariantId}'.");
             if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown state profile '{scenario.StateProfileId}'.");
             else if (stateProfile.ArchetypeId != scenario.ArchetypeId) errors.Add($"Scenario profile '{scenario.Id}' combines state profile '{scenario.StateProfileId}' with a different archetype.");
-            if (!locations.Definitions.ContentProfiles.ContainsKey(scenario.ContentProfileId)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
-            foreach (var actionId in scenario.ActionSet.SharedActionIds.Concat(scenario.ActionSet.InitialAdditionalActionIds).Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds)))
+            if (!locations.Definitions.ContentProfiles.TryGetValue(scenario.ContentProfileId, out var contentProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
+            else if (stateProfile != null) ValidateStateWording(scenario, stateProfile, contentProfile, errors);
+            ValidateStateActionRules(scenario, stateProfile, errors);
+            foreach (var actionId in scenario.ActionSet.SharedActionIds
+                .Concat(scenario.ActionSet.InitialAdditionalActionIds)
+                .Concat(scenario.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds))
+                .Concat(scenario.ActionSet.StateActionRules.SelectMany(rule => rule.ActionIds)))
             {
                 if (!locations.Definitions.Actions.TryGetValue(actionId, out var action))
                 {
@@ -86,7 +100,7 @@ public static class CrossSystemContentValidator
 
                 if (stateProfile != null)
                 {
-                    ValidateActionStateEffects(scenario, stateProfile, action, locations.Definitions, errors);
+                    ValidateActionStateEffects(scenario, stateProfile, action, locations.Definitions, authoring, errors);
                 }
             }
             foreach (var modifierId in scenario.InitialModifierPoolIds)
@@ -117,6 +131,16 @@ public static class CrossSystemContentValidator
             {
                 if (crossSystem.Evidence.Find(evidenceId) == null) errors.Add($"Context '{context.Id}' references unknown evidence '{evidenceId}'.");
             }
+        }
+
+        foreach (var table in authoring.FindingTables.Values)
+        {
+            if (table.Rolls != 1) errors.Add($"Finding table '{table.Id}' must use exactly one roll in the Vertical Slice.");
+            if (table.RepeatPolicy != "once-per-location" && table.RepeatPolicy != "once-per-state" && table.RepeatPolicy != "repeatable")
+                errors.Add($"Finding table '{table.Id}' has unsupported repeat policy '{table.RepeatPolicy}'.");
+            if (table.Entries.Count == 0) errors.Add($"Finding table '{table.Id}' has no entries.");
+            foreach (var findingId in table.Entries.Select(entry => entry.FindingId).Where(id => id != null).Cast<string>())
+                if (!authoring.Findings.ContainsKey(findingId)) errors.Add($"Finding table '{table.Id}' references unknown finding '{findingId}'.");
         }
 
         foreach (var consequence in crossSystem.Consequences.Values)
@@ -168,20 +192,92 @@ public static class CrossSystemContentValidator
         }
     }
 
+    private static void ValidateStateActionRules(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition? stateProfile,
+        ICollection<string> errors)
+    {
+        if (stateProfile == null) return;
+
+        foreach (var rule in scenario.ActionSet.StateActionRules)
+        {
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Interaction, rule.InteractionStateIds, errors);
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Operational, rule.OperationalStateIds, errors);
+            ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Presence, rule.PresenceStateIds, errors);
+        }
+    }
+
+    private static void ValidateStateWording(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition stateProfile,
+        LocationContentProfileDefinition contentProfile,
+        ICollection<string> errors)
+    {
+        foreach (var channel in stateProfile.Channels)
+        {
+            foreach (var stateId in channel.Value.Values)
+            {
+                if (!contentProfile.FlavorByState.TryGetValue(stateId, out var text) || string.IsNullOrWhiteSpace(text))
+                    errors.Add($"Scenario profile '{scenario.Id}' content profile '{contentProfile.Id}' lacks neutral wording for {channel.Key} state '{stateId}'.");
+            }
+        }
+    }
+
+    private static void ValidateRuleStates(
+        LocationScenarioProfileDefinition scenario,
+        LocationStateProfileDefinition stateProfile,
+        string channelId,
+        IReadOnlyList<string> stateIds,
+        ICollection<string> errors)
+    {
+        if (stateIds.Count == 0) return;
+        if (!stateProfile.Channels.TryGetValue(channelId, out var channel))
+        {
+            errors.Add($"Scenario profile '{scenario.Id}' has a state action rule for undefined '{channelId}' state.");
+            return;
+        }
+
+        foreach (var stateId in stateIds.Where(stateId => !channel.Values.Contains(stateId, StringComparer.Ordinal)))
+        {
+            errors.Add($"Scenario profile '{scenario.Id}' state action rule references invalid '{channelId}' state '{stateId}' for state profile '{stateProfile.Id}'.");
+        }
+    }
+
     private static void ValidateActionStateEffects(
         LocationScenarioProfileDefinition scenario,
         LocationStateProfileDefinition stateProfile,
         LocationActionDefinition action,
         LocationInteractionDefinitionSet definitions,
+        CrossSystemAuthoringBundle authoring,
         ICollection<string> errors)
     {
         ValidateStateEffects(scenario, stateProfile, action.Id, action.ProjectCompletionEffects, errors);
+        ValidateFindingEffects(scenario, action.Id, action.ProjectCompletionEffects, authoring, errors);
         var table = definitions.FindOutcomeTable(action.OutcomeTableId);
         if (table == null) return;
 
         foreach (var bundle in table.EffectBundles)
         {
             ValidateStateEffects(scenario, stateProfile, action.Id, bundle, errors);
+            ValidateFindingEffects(scenario, action.Id, bundle, authoring, errors);
+        }
+    }
+
+    private static void ValidateFindingEffects(
+        LocationScenarioProfileDefinition scenario,
+        string actionId,
+        IEnumerable<LocationEffectDefinition> effects,
+        CrossSystemAuthoringBundle authoring,
+        ICollection<string> errors)
+    {
+        foreach (var effect in effects.Where(effect => effect.Kind == LocationEffectKind.AddFinding || effect.Kind == LocationEffectKind.RollFindingTable))
+        {
+            var exists = effect.Kind == LocationEffectKind.AddFinding
+                ? effect.ReferenceId != null && authoring.Findings.ContainsKey(effect.ReferenceId)
+                : effect.ReferenceId != null && authoring.FindingTables.ContainsKey(effect.ReferenceId);
+            if (exists) continue;
+            var id = string.IsNullOrWhiteSpace(effect.ReferenceId) ? "<missing>" : effect.ReferenceId;
+            errors.Add($"Scenario profile '{scenario.Id}' action '{actionId}' references unknown {(effect.Kind == LocationEffectKind.AddFinding ? "finding" : "finding table")} '{id}'.");
         }
     }
 
@@ -218,6 +314,7 @@ public static class CrossSystemContentValidator
         IEnumerable<LocationEffectDefinition> effects,
         string source,
         CrossSystemDataBundle crossSystem,
+        CrossSystemAuthoringBundle? authoring,
         ICollection<string> errors)
     {
         foreach (var effect in effects)

@@ -310,6 +310,11 @@ public sealed class LocationInteractionService
 
     private static string? FirstUnpayableCost(LocationActionDefinition action, ExpeditionState expedition)
     {
+        if (action.Commitment == LocationActionCommitment.DayOperation && expedition.MovementPoints == 0)
+        {
+            return "Keine Tageskapazitaet mehr. Die Expedition muss den Tag beenden, bevor sie diese Arbeit beginnen kann.";
+        }
+
         foreach (var cost in action.Costs)
         {
             if (cost.Amount <= 0)

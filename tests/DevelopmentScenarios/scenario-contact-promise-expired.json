@@ -1,0 +1,36 @@
+{
+  "id": "scenario-contact-promise-expired", "seed": 41039, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Faction-request expiry: establish direct contact, promise to return and miss the authored deadline.",
+    "selectedTeamMemberIds": ["scholar-1"],
+    "startingKnowledge": ["The meeting place is confirmed; the request exists only after successful local communication."],
+    "expectedWorldProcess": "Direct contact delivers the request; an unfulfilled promise expires and writes only its authored trust memory.",
+    "outstandingDecisionPoint": "The script chooses ask-for-time and deliberately fails to fulfil the promise."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 2, "expeditionR": 1, "confirmedLocationIds": ["location-expiring-contact"],
+    "members": [{ "id": "scholar-1", "name": "Sera", "role": "Scholar", "starLevel": 2 }],
+    "factions": [{ "id": "faction-1", "name": "River Delegation", "reactionProfileId": "welcoming", "signatureProfileId": "stone-watchmarks" }],
+    "locations": [{
+      "id": "location-expiring-contact", "name": "Quiet Meeting Place", "kind": "Settlement", "q": 2, "r": 1,
+      "archetypeId": "contact-site", "variantId": "first-contact", "interactionStateId": "unapproached",
+      "operationalStateId": "available", "presenceStateId": "present",
+      "factionRelations": [{ "factionId": "faction-1", "kind": "Guarded" }]
+    }]
+  },
+  "commands": [
+    { "kind": "inspect-location", "locationId": "location-expiring-contact" },
+    { "kind": "resolve-location-action", "locationId": "location-expiring-contact", "actionId": "action-approach-cautiously", "outcomeTier": "Success" },
+    { "kind": "resolve-location-action", "locationId": "location-expiring-contact", "actionId": "action-communicate", "outcomeTier": "Success" },
+    { "kind": "end-day" },
+    { "kind": "resolve-world-situation", "situationDefinitionId": "situation-request-help-with-crossing", "responseActionTag": "promise-return" },
+    { "kind": "end-day" }, { "kind": "end-day" }, { "kind": "end-day" }, { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-situation-delivery", "situationDefinitionId": "situation-request-help-with-crossing", "deliveryChannel": "direct-contact" },
+    { "kind": "has-situation-status", "situationDefinitionId": "situation-request-help-with-crossing", "stateId": "Expired" },
+    { "kind": "has-faction-memory", "factionId": "faction-1", "argument": "broken-promise" },
+    { "kind": "has-trace-kind", "argument": "SituationChanged" }
+  ]
+}

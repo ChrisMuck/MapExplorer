@@ -1,0 +1,25 @@
+{
+  "id": "scenario-directional-overdue", "seed": 41040, "worldKind": "fixture",
+  "metadata": {
+    "purpose": "Directional scouting status proof: a balanced mission becomes visibly overdue after its expected return day.",
+    "selectedTeamMemberIds": ["scout-1"],
+    "startingKnowledge": ["Only the expedition position is confirmed; the selected direction remains approximate."],
+    "expectedWorldProcess": "Normal day advancement applies the authored Balanced outcome and keeps the scout absent as Overdue.",
+    "outstandingDecisionPoint": "Wait another day or respond to the overdue scout through later gameplay controls."
+  },
+  "width": 6, "height": 5,
+  "initialState": {
+    "expeditionQ": 1, "expeditionR": 1,
+    "members": [{ "id": "scout-1", "name": "Mira", "role": "Scout", "starLevel": 1 }],
+    "locations": [{ "id": "location-overdue-lead", "name": "Distant Ridge", "kind": "Landmark", "q": 4, "r": 1, "archetypeId": "natural-phenomenon", "variantId": "wind-carved-peak", "operationalStateId": "stable" }]
+  },
+  "commands": [
+    { "kind": "send-directional-scout", "scoutMemberIds": ["scout-1"], "direction": "East", "durationDays": 1, "focus": "Survey", "behavior": "Balanced" },
+    { "kind": "end-day" }
+  ],
+  "assertions": [
+    { "kind": "has-scout-mission-status", "stateId": "Overdue" },
+    { "kind": "has-member-status", "argument": "scout-1", "stateId": "Assigned" },
+    { "kind": "has-causality-trace" }
+  ]
+}

@@ -110,7 +110,7 @@ public sealed class GameApplication
             : null;
         inspectLocationCommand = new InspectLocationCommand(
             findingAcquisitionService,
-            new LocationInspectionPresentationResolver(locationInteractionDefinitions));
+            new LocationInspectionPresentationResolver(locationInteractionDefinitions, dataCatalog?.Authoring));
         completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
         scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(
@@ -118,8 +118,8 @@ public sealed class GameApplication
             crossSystemData?.Evidence,
             crossSystemData?.FactionSignatures);
         getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver);
-        resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver);
-        advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions);
+        resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver, findingAcquisitionService);
+        advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions, findingAcquisitionService);
         var worldPhaseService = new WorldPhaseService(crossSystemData, dataCatalog?.Authoring);
         moveExpeditionCommand = new MoveExpeditionCommand(
             movementCostService,

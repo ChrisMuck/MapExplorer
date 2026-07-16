@@ -300,6 +300,55 @@ Rules:
 - `unlocks` can point to map questions, faction topics, trade offers, warnings, routes or events.
 - `repeatPolicy` prevents farming.
 
+#### Finding Tables
+
+Normal exploration findings should usually come from authored **Finding Tables** rather than a
+single guaranteed finding. This provides variation between generated locations without turning
+findings into material loot or adding location-specific code. A direct finding reference remains
+valid for deliberate narrative discoveries that must always occur.
+
+A Finding Table contains weighted finding candidates and may also contain an explicit empty
+result. Entries can be gated by archetype, interaction/operational/presence state, generated
+context tags and already acquired findings. Hidden context influences the roll in World State but
+is never disclosed by the player UI.
+
+Rules:
+
+- table resolution uses the deterministic world random source;
+- the resolved result, including an empty result, is stored immediately in World State;
+- loading, reopening a panel or repeating a query never rolls again;
+- unavailable entries are removed before weights are evaluated;
+- a finding's own repeat policy still prevents duplicate farming;
+- table repeat policy controls whether the table rolls once per location, once per state or for a
+  specifically repeatable action;
+- an empty result is a valid atmospheric outcome and does not require compensation loot;
+- only acquired findings enter the unsecured field inventory and normal return/analysis lifecycle;
+- guaranteed story findings continue to use a direct `AddFinding` effect.
+
+Suggested authoring shape:
+
+```json
+{
+  "id": "finding-table-restless-marsh",
+  "rolls": 1,
+  "repeatPolicy": "once-per-location",
+  "entries": [
+    { "findingId": "finding-marsh-water-sample", "weight": 40 },
+    {
+      "findingId": "finding-unusual-spores",
+      "weight": 25,
+      "requiresContextTagsAny": ["contaminated", "spreading"]
+    },
+    {
+      "findingId": "finding-animal-traces",
+      "weight": 20,
+      "requiresContextTagsAny": ["creature-presence"]
+    },
+    { "findingId": null, "weight": 15 }
+  ]
+}
+```
+
 ---
 
 ### Analysis Cost Rule
@@ -738,6 +787,25 @@ The following should not be assumed permanently reliable:
 Knowledge should be valuable, but not absolute.
 
 Unsecured field knowledge from an active expedition only persists if the expedition returns or if a later recovery event explicitly preserves part of it.
+
+#### Save Requirement for Fallible Location Knowledge
+
+The campaign save must persist `KnowledgeState` independently from objective `WorldState` and from
+`PlayerNotes`. In particular, every last-known location-condition record must survive save/load
+with its stable location ID, observed interaction/operational/presence states, observation world
+day and explicit reliability flags such as doubtful or contradicted. Loading a campaign must not
+reconstruct these records from the current `SpecialLocationState`, because doing so would reveal
+unobserved world changes and erase the historical observation.
+
+The save contract must also preserve known location context, evidence and their reliability,
+claimed knowledge-source IDs, tile knowledge, scout reports and other secured knowledge needed by
+later expeditions. Unsecured expedition knowledge and physical findings continue to follow their
+own return, loss and recovery rules; they must not be promoted into secured `KnowledgeState` merely
+because a save was created.
+
+This requires a serialization-safe `KnowledgeRuntimeSnapshot` (or an equivalent campaign-save
+section) with a tested roundtrip. It complements `WorldRuntimeSnapshot`; it must not be folded into
+it, because truth and knowledge remain separate sources of state.
 
 ### 16A.9 Meta-Progression Pillars
 
