@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Phase 2 closure
+
+Cross-System Phase 2 was accepted for the current Vertical Slice on 2026-07-16 after the project
+owner tested representative scenarios. Blocks 2.0–2.9 are complete. Additional wording, balance
+and interaction-flow refinement remains deferred to later playtests rather than blocking the
+functional phase closure.
+
+The next player-facing priority is the shared situational scene-description system. It should give
+players enough atmospheric, state-aware and knowledge-honest context to make the data-driven
+archetype decisions introduced in Phase 2.
+
 ## Situational scene description elaboration
 
 `situational_scene_description_concept.md` was elaborated from a direction document into an

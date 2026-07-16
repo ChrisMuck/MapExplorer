@@ -1,7 +1,8 @@
 # Phase 2 Human Review Checklist
 
-Status: **Pending project-owner review**  
-Branch: `codex/phase-2-archetype-flows`
+Status: **Accepted for Phase-2 closure; detailed game-feel tuning deferred**
+Integration: Phase-2 implementation merged into `master`; closure recorded on
+`codex/close-phase-2`
 
 This review is the final manual gate in Block 2.9. Automated tests establish deterministic rule
 parity; they do not decide whether the chains are readable, useful or enjoyable.
@@ -48,13 +49,19 @@ not through a location-kind or concrete-object branch.
 
 ## Sign-off record
 
-Record the date, reviewer and observations here before marking Phase 2 complete.
+The owner reviewed representative scenarios and explicitly accepted the functional Phase-2 scope.
+This sign-off does not claim a final wording, balance or UX pass over every scenario; those remain
+normal later playtest work.
 
-- Reviewer: pending
-- Date: pending
-- WPF result: pending
-- Unity result: pending
-- Game-feel decision: pending
-- Follow-up issues: pending
+- Reviewer: project owner
+- Date: 2026-07-16
+- Scenario result: representative tested scenarios function as intended for Phase-2 closure
+- Cross-client result: automated shared-contract/parity gates accepted as the current release gate;
+  further hands-on WPF/Unity comparison remains desirable during later playtests
+- Game-feel decision: sufficient to continue; fine tuning is deferred
+- Follow-up issues: improve decision context through the shared situational scene-description
+  system; revisit wording, costs and flow clarity during subsequent playtests
 
-Do not mark Block 2.9 or Phase 2 complete until the project owner has performed this review.
+**Decision:** Block 2.9 and Phase 2 are complete. The next player-facing priority is the
+knowledge-honest scene-description foundation, because readable situational context is necessary
+for meaningful decisions.
