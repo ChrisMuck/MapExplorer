@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Situational scene description elaboration
+
+`situational_scene_description_concept.md` was elaborated from a direction document into an
+implementable specification.
+
+Main changes:
+
+- mapped the information-honesty sources to concrete Core state (KnowledgeState, LocationConditionKnowledgeState, delivered reports and member states)
+- defined the full scene-fragment authoring schema (`scene-fragments`, `scene-policies` document types under `Scenes/`)
+- specified the resolver selection algorithm, determinism rules and the SceneDescriptionResult contract
+- reused modifier `inspectionText` as the modifier fragment layer instead of re-authoring it
+- added a curated German MVP starter library (~90 fragments, 11 policies) bound to existing state profiles, modifiers and status enums
+- added validator rules for scene content and an eight-package implementation path including the `flavorByState` migration
+
 ## Modular concept revision
 
 The uploaded single-file concept was reviewed and reorganized.
