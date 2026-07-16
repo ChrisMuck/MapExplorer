@@ -156,6 +156,9 @@ public sealed class SimulationSession
     public SceneDescriptionResult? GetBaseReturnPresentation(CompleteExpeditionResult result, string? locale = null) =>
         Application.GetBaseReturnPresentation(result, locale);
 
+    public SceneDescriptionResult? GetExpeditionMemorialPresentation(string expeditionId, string? locale = null) =>
+        Application.GetExpeditionMemorialPresentation(Game, expeditionId, locale);
+
     public AdvanceBaseTimeResult AdvanceBaseTime(int days = 1)
     {
         var result = Application.AdvanceBaseTime(Game, days);

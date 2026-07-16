@@ -362,7 +362,14 @@
 .hint-list__text { font-size: 14px; color: rgb(201, 195, 180); white-space: normal; }
 .archive-empty { font-size: 15px; color: rgb(190, 184, 169); white-space: normal; }
 .archive-entry { margin-bottom: 9px; }
+.archive-entry__image {
+    height: 72px; margin-bottom: 10px; border-radius: 6px;
+    background-color: rgb(42, 46, 42);
+    border-width: 1px; border-color: rgba(240, 207, 122, 0.18);
+}
+.archive-entry__subtitle { margin-top: 3px; font-size: 11px; color: rgb(143, 137, 124); }
 .archive-entry__body { margin-top: 6px; font-size: 14px; color: rgb(201, 195, 180); white-space: normal; }
+.archive-entry__facts { margin-top: 9px; font-size: 11px; color: rgb(143, 137, 124); white-space: normal; }
 
 .event-popup {
     position: absolute;

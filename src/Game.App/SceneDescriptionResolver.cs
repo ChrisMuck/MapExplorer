@@ -221,6 +221,33 @@ public sealed class BaseReturnSceneView
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
+/// <summary>Read-only memorial projection of one record already secured at the base.</summary>
+public sealed class ExpeditionMemorialSceneView
+{
+    public ExpeditionMemorialSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        IEnumerable<string>? knownContextTags, string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
 /// <summary>
 /// Read-only, already-authorized location observation. It contains no hidden context, modifier or
 /// faction claim that the inspection did not make visible.
@@ -408,6 +435,24 @@ public sealed class SceneDescriptionResolver
         return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
     }
 
+    public SceneDescriptionResult ResolveExpeditionMemorial(ExpeditionMemorialSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "base-return" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic base-return scene policy exists for expedition memorials.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "base-return")
+            .Where(fragment => fragment.Source.Kind == "stored-observation")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                catalog.Texts.Resolve(fragment.TextId, view.Locale), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Expedition memorial for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
     private static bool Applies(SceneFragmentDefinition fragment, LocationSceneView view) =>
         (fragment.AppliesTo.ArchetypeIds.Count == 0 || fragment.AppliesTo.ArchetypeIds.Contains(view.ArchetypeId, StringComparer.Ordinal)) &&
         (fragment.AppliesTo.VariantIds.Count == 0 || fragment.AppliesTo.VariantIds.Contains(view.VariantId, StringComparer.Ordinal));
@@ -538,6 +583,20 @@ public sealed class SceneDescriptionResolver
             when.ContactStatusAny.Count == 0 && when.IdentityStage == null && when.MissionStatusAny.Count == 0 &&
             when.MemberStatusAny.Count == 0 && when.ReportReliabilityAtLeast == null && when.ReportReliabilityBelow == null &&
             when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null && when.HasOwnArchiveEntryForLocation == null &&
+            when.CurrentObservationDiffersFromStored == null && when.HasLostExpeditionRecordForLocation == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ExpeditionMemorialSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.ContactStatusAny.Count == 0 && when.IdentityStage == null && when.MissionStatusAny.Count == 0 &&
+            when.MemberStatusAny.Count == 0 && when.TeamOutcome == null && when.ReportReliabilityAtLeast == null &&
+            when.ReportReliabilityBelow == null && when.HasFindings == null && when.HasLeads == null &&
+            when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
             when.IsSecondHandAccount == null && when.IsUrgent == null && when.HasOwnArchiveEntryForLocation == null &&
             when.CurrentObservationDiffersFromStored == null && when.HasLostExpeditionRecordForLocation == null;
     }

@@ -807,6 +807,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         return simulationSession?.GetCurrentEventScenePresentation();
     }
 
+    public SceneDescriptionResult GetExpeditionMemorialPresentationForUi(string expeditionId)
+    {
+        return simulationSession?.GetExpeditionMemorialPresentation(expeditionId);
+    }
+
     public void RefreshToolkitHud()
     {
         expeditionScreenController?.Refresh();

@@ -33,7 +33,7 @@ internal sealed class GameDataCatalogTests
         AssertEqual(8, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs and visible contact tags");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");
         AssertEqual(12, catalog.WorldGeneration.Options.Count, "World option presets load through the same catalog");
-        AssertEqual(94, catalog.Scenes.Fragments.Count, "Location, contact, scout-return, event and base-return fragments load from JSON");
+        AssertEqual(100, catalog.Scenes.Fragments.Count, "Location, contact, scout-return, event, base-return and memorial fragments load from JSON");
         AssertEqual(11, catalog.Scenes.Policies.Count, "Locations, contacts, scout returns, events and base returns have scene policies");
         AssertEqual(4, catalog.Scenes.ContactProfiles.Count, "Generic contact styles have authored presentation profiles and a fallback");
         AssertEqual("de", catalog.Scenes.Texts.DefaultLocale, "German is the current default scene locale");

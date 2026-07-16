@@ -91,6 +91,8 @@ var reportEventSceneTests = new ReportEventSceneTests();
 reportEventSceneTests.RunAll();
 var baseReturnSceneTests = new BaseReturnSceneTests();
 baseReturnSceneTests.RunAll();
+var expeditionMemorialSceneTests = new ExpeditionMemorialSceneTests();
+expeditionMemorialSceneTests.RunAll();
 var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
 crossSystemAuthoringDataTests.RunAll();
 var archetypeFlowResolverTests = new ArchetypeFlowResolverTests();

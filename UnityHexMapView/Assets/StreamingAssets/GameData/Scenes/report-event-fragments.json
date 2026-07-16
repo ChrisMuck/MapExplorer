@@ -42,6 +42,48 @@
       "group": "base-return",
       "when": { "teamOutcome": "all-returned", "hasFindings": false },
       "textId": "scene.fragment.base-return.empty-handed"
+    },
+    {
+      "id": "frag-memorial-missing",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:Missing"] },
+      "textId": "scene.fragment.memorial.missing"
+    },
+    {
+      "id": "frag-memorial-presumed-lost",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:PresumedLost"] },
+      "textId": "scene.fragment.memorial.presumed-lost"
+    },
+    {
+      "id": "frag-memorial-partially-recovered",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:PartiallyRecovered"] },
+      "textId": "scene.fragment.memorial.partially-recovered"
+    },
+    {
+      "id": "frag-memorial-survivor-found",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:SurvivorFound"] },
+      "textId": "scene.fragment.memorial.survivor-found"
+    },
+    {
+      "id": "frag-memorial-records-recovered",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:RecordsRecovered"] },
+      "textId": "scene.fragment.memorial.records-recovered"
+    },
+    {
+      "id": "frag-memorial-fully-resolved",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:FullyResolved"] },
+      "textId": "scene.fragment.memorial.fully-resolved"
     }
   ]
 }

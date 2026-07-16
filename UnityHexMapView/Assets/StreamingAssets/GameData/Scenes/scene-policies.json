@@ -118,7 +118,7 @@
       "subjectKind": "base-return",
       "archetypeId": null,
       "questionTextId": "scene.question.base-return",
-      "questionResolvedWhen": { "knownContextTagsAny": ["base-return-delivered"] },
+      "questionResolvedWhen": { "knownContextTagsAny": ["base-return-delivered", "memorial-recorded"] },
       "ordering": ["base-return"],
       "paragraphing": [["base-return"]],
       "maxFragments": 2,

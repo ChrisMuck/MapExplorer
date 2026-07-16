@@ -38,6 +38,7 @@ public sealed class GameApplication
     private readonly ScoutReturnSceneResolver? scoutReturnSceneResolver;
     private readonly ReportEventSceneResolver? reportEventSceneResolver;
     private readonly BaseReturnSceneResolver? baseReturnSceneResolver;
+    private readonly ExpeditionMemorialSceneResolver? expeditionMemorialSceneResolver;
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
@@ -94,6 +95,7 @@ public sealed class GameApplication
         scoutReturnSceneResolver = dataCatalog == null ? null : new ScoutReturnSceneResolver(dataCatalog.Scenes);
         reportEventSceneResolver = dataCatalog == null ? null : new ReportEventSceneResolver(dataCatalog.Scenes);
         baseReturnSceneResolver = dataCatalog == null ? null : new BaseReturnSceneResolver(dataCatalog.Scenes);
+        expeditionMemorialSceneResolver = dataCatalog == null ? null : new ExpeditionMemorialSceneResolver(dataCatalog.Scenes);
         var contactProfileService = dataCatalog == null || crossSystemData == null ? null
             : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
@@ -263,6 +265,15 @@ public sealed class GameApplication
     {
         if (result == null) throw new ArgumentNullException(nameof(result));
         return !result.Success || baseReturnSceneResolver == null ? null : baseReturnSceneResolver.Resolve(result, locale);
+    }
+
+    public SceneDescriptionResult? GetExpeditionMemorialPresentation(GameState game, string expeditionId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(expeditionId)) throw new ArgumentException("Expedition id is required.", nameof(expeditionId));
+        var record = game.Base.LostExpeditions.FirstOrDefault(item => item.ExpeditionId == expeditionId);
+        return record == null || expeditionMemorialSceneResolver == null
+            ? null : expeditionMemorialSceneResolver.Resolve(record, locale);
     }
 
     public FailExpeditionResult FailExpedition(GameState game, string reason)

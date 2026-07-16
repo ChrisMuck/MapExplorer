@@ -1168,22 +1168,38 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         for (var i = state.Base.LostExpeditions.Count - 1; i >= 0; i--)
         {
             var lost = state.Base.LostExpeditions[i];
+            var scene = mapView?.GetExpeditionMemorialPresentationForUi(lost.ExpeditionId);
             var card = new VisualElement();
             card.AddToClassList("card");
             card.AddToClassList("card--plain");
             card.AddToClassList("archive-entry");
 
-            var title = new Label($"Expedition {lost.ExpeditionNumber:00} vermisst");
+            var image = new VisualElement();
+            image.AddToClassList("archive-entry__image");
+            image.tooltip = $"Bildreferenz: {scene?.VisualId ?? "placeholder-expedition-memorial"}";
+            card.Add(image);
+
+            var title = new Label(scene?.Title ?? $"Expedition {lost.ExpeditionNumber:00}");
             title.AddToClassList("card__title");
             title.AddToClassList("serif");
             card.Add(title);
 
-            var body = new Label(
-                $"Letzte bekannte Position: Feld {lost.LastKnownPosition.Q:00} / {lost.LastKnownPosition.R:00}\n" +
-                $"Status: {LostExpeditionStatusText(lost.Status)}\n" +
-                $"Geschaetztes verlorenes Wissen: {lost.EstimatedLostKnowledge}");
+            if (!string.IsNullOrWhiteSpace(scene?.Subtitle))
+            {
+                var subtitle = new Label(scene.Subtitle);
+                subtitle.AddToClassList("archive-entry__subtitle");
+                card.Add(subtitle);
+            }
+
+            var body = new Label(scene?.Message ?? "Für diese Expedition liegt ein Verlustdatensatz vor.");
             body.AddToClassList("archive-entry__body");
             card.Add(body);
+
+            var facts = new Label(
+                $"Letzte bekannte Position: Feld {lost.LastKnownPosition.Q:00} / {lost.LastKnownPosition.R:00}\n" +
+                $"Geschätztes verlorenes Wissen: {lost.EstimatedLostKnowledge} · Geborgen: {lost.RecoveredKnowledge}");
+            facts.AddToClassList("archive-entry__facts");
+            card.Add(facts);
 
             list.Add(card);
         }
@@ -1205,27 +1221,6 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             card.Add(body);
 
             list.Add(card);
-        }
-    }
-
-    private static string LostExpeditionStatusText(LostExpeditionStatus status)
-    {
-        switch (status)
-        {
-            case LostExpeditionStatus.Missing:
-                return "Vermisst";
-            case LostExpeditionStatus.PresumedLost:
-                return "Vermutlich verloren";
-            case LostExpeditionStatus.PartiallyRecovered:
-                return "Teilweise geborgen";
-            case LostExpeditionStatus.SurvivorFound:
-                return "Ueberlebende gefunden";
-            case LostExpeditionStatus.RecordsRecovered:
-                return "Aufzeichnungen geborgen";
-            case LostExpeditionStatus.FullyResolved:
-                return "Abgeschlossen";
-            default:
-                return status.ToString();
         }
     }
 

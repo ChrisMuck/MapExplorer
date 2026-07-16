@@ -1320,7 +1320,10 @@ human review.
    implemented: the completion result preserves its world day, team outcome and handed-off finding
    count, and the JSON resolver composes the arrival scene from those immutable facts. Unity opens
    this scene over the existing base screen and `Weiter zur Basis` reveals the normal planning view.
-   Lost-expedition memorial scenes and WPF event/base-return parity remain open.
+   Lost-expedition memorial scenes are implemented for every current `LostExpeditionStatus`. They
+   resolve only the secured `LostExpeditionRecord`, preserve uncertainty for missing expeditions and
+   supplement rather than replace last-position and recovery facts in the Unity archive. WPF
+   event/base-return/memorial parity remains open.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated
    state fragments. Before removal, capture snapshot coverage for every current content profile,
    all seven archetypes and both clients. Remove `flavorByState`,
