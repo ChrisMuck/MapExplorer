@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     private bool isRefreshingTestTeamSelection;
     private SimulationSession? reportPresentationSession;
     private readonly HashSet<string> openedScoutReturnReportIds = new(StringComparer.Ordinal);
+    private SceneDescriptionResult? transientScene;
+    private string? transientSceneFacts;
 
     public MainWindow()
     {
@@ -178,6 +180,8 @@ public partial class MainWindow : Window
         {
             reportPresentationSession = playback.Session;
             openedScoutReturnReportIds.Clear();
+            transientScene = null;
+            transientSceneFacts = null;
         }
 
         PlayerStateList.ItemsSource = BuildPlayerState(game);
@@ -186,6 +190,7 @@ public partial class MainWindow : Window
         PlayerReportsList.ItemsSource = playerReports;
         PlayerReportsList.SelectedItem = playerReports.FirstOrDefault(item => item.Id == selectedReportId) ?? playerReports.LastOrDefault();
         RefreshPlayerReportDetails();
+        RefreshSceneInspector();
         var selectedCommandId = (PlayerOptionsList.SelectedItem as LocationCommandEntry)?.Id;
         var locationCommands = BuildLocationCommands(playback.Session, game);
         PlayerOptionsList.ItemsSource = locationCommands;
@@ -560,6 +565,82 @@ public partial class MainWindow : Window
         ContinueToPlayerReportButton.Visibility = Visibility.Collapsed;
     }
 
+    private void CompleteExpeditionForInspection(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPlayback(out var current)) return;
+        var result = current.CompleteExpedition();
+        if (!result.Success)
+        {
+            SessionStatus.Text = result.Error ?? "Expedition konnte nicht abgeschlossen werden.";
+            RefreshInspector();
+            return;
+        }
+
+        transientScene = current.Session.GetBaseReturnPresentation(result);
+        transientSceneFacts = $"Gesichertes Wissen: {result.SecuredKnowledge} · Funde: {result.ReturnedFindingsCount} · Expeditionstag: {result.ExpeditionDay}";
+        SessionStatus.Text = $"Expedition {result.ExpeditionNumber} über den gemeinsamen Abschlussbefehl beendet.";
+        RefreshInspector();
+    }
+
+    private void RefreshSceneInspector()
+    {
+        if (playback == null) return;
+        var scene = playback.Session.GetCurrentEventScenePresentation() ?? transientScene;
+        if (scene == null)
+        {
+            CurrentSceneImage.Text = "Bildreferenz: --";
+            CurrentSceneTitle.Text = "Keine aktuelle Szene";
+            CurrentSceneSubtitle.Text = string.Empty;
+            CurrentSceneBody.Text = "Der Szenariolauf hat noch keine Szene geliefert.";
+            CurrentSceneFacts.Text = string.Empty;
+        }
+        else
+        {
+            CurrentSceneImage.Text = $"Bildreferenz: {scene.VisualId ?? "generischer Platzhalter"}";
+            CurrentSceneTitle.Text = scene.Title;
+            CurrentSceneSubtitle.Text = scene.Subtitle ?? string.Empty;
+            CurrentSceneBody.Text = scene.Message;
+            CurrentSceneFacts.Text = ReferenceEquals(scene, transientScene) ? transientSceneFacts ?? string.Empty : "Aktuelles Ereignis aus der Ereigniswarteschlange";
+        }
+
+        var game = playback.Session.Game;
+        CompleteExpeditionButton.IsEnabled = game.Expedition.Status == ExpeditionStatus.Active &&
+            game.Expedition.Position == game.Base.Location &&
+            game.Expedition.ScoutMissions.All(mission => mission.Status is not (ScoutMissionStatus.Active or ScoutMissionStatus.Overdue));
+
+        var selectedId = (MemorialList.SelectedItem as MemorialEntry)?.Id;
+        var entries = game.Base.LostExpeditions.Select(record => new MemorialEntry(record)).ToList();
+        MemorialList.ItemsSource = entries;
+        MemorialList.SelectedItem = entries.FirstOrDefault(entry => entry.Id == selectedId) ?? entries.LastOrDefault();
+        RefreshMemorialDetails();
+    }
+
+    private void MemorialSelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMemorialDetails();
+
+    private void RefreshMemorialDetails()
+    {
+        if (playback == null || MemorialList.SelectedItem is not MemorialEntry entry)
+        {
+            MemorialDetails.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var scene = playback.Session.GetExpeditionMemorialPresentation(entry.Id);
+        if (scene == null)
+        {
+            MemorialDetails.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        MemorialDetails.Visibility = Visibility.Visible;
+        MemorialImage.Text = $"Bildreferenz: {scene.VisualId ?? "placeholder-expedition-memorial"}";
+        MemorialTitle.Text = scene.Title;
+        MemorialSubtitle.Text = scene.Subtitle ?? string.Empty;
+        MemorialBody.Text = scene.Message;
+        var record = entry.Record;
+        MemorialFacts.Text = $"Letzte Position: {record.LastKnownPosition} · Verlorenes Wissen: {record.EstimatedLostKnowledge} · Geborgen: {record.RecoveredKnowledge}";
+    }
+
     private static IReadOnlyList<LocationCommandEntry> BuildLocationCommands(SimulationSession session, GameState game)
     {
         var commands = new List<LocationCommandEntry>();
@@ -878,6 +959,18 @@ public partial class MainWindow : Window
         public ScoutReportState Report { get; }
         public string Id => Report.Id;
         public string DisplayName => $"{Report.Title} · Verlässlichkeit {Report.Reliability}%";
+    }
+
+    private sealed class MemorialEntry
+    {
+        public MemorialEntry(LostExpeditionRecord record)
+        {
+            Record = record ?? throw new ArgumentNullException(nameof(record));
+        }
+
+        public LostExpeditionRecord Record { get; }
+        public string Id => Record.ExpeditionId;
+        public string DisplayName => $"Expedition {Record.ExpeditionNumber} · {Record.Status}";
     }
 
     private sealed class TestTeamMemberEntry
