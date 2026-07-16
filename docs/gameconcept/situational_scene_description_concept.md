@@ -1267,8 +1267,14 @@ human review.
    anonymous/signature-recognised/identified plus visible-attitude fragments are implemented. The
    active faction-interaction UI resolves this read-only presentation and suppresses internal names
    and roles until identity is established. Signature recognition requires matching earned evidence;
-   `Rumored` alone is insufficient. Generic representative authoring, faction-memory/history
-   fragments and delivered situation scenes remain in this package.
+   `Rumored` alone is insufficient. Representative role, description and dialogue are selected from
+   localized JSON contact profiles through reusable faction `contactStyle`; concrete faction IDs no
+   longer choose representatives or dialogue. Faction-memory/history fragments and delivered
+   situation scenes remain in this package.
+   Contact availability, territory reactions, representative selection and production offers are
+   resolved through authored profiles/rules. Runtime commands contain no concrete faction-ID
+   branches; an application instance without a content catalog receives only neutral fallback
+   presentation and no fabricated faction-specific offers.
 4. **Scout returns.** Wire mission completion to the immutable delivered outcome: mission status,
    actual return timing, participant outcomes, lost equipment, team outcome, report reliability and
    findings/leads. The scene precedes the existing report presentation.

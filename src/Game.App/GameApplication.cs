@@ -85,9 +85,11 @@ public sealed class GameApplication
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
         var factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(dataCatalog.Scenes, crossSystemData?.FactionSignatures);
+        var contactProfileService = dataCatalog == null || crossSystemData == null ? null
+            : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
-            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring), factionSceneResolver)
-            : new OpenFactionInteractionCommand(sceneResolver: factionSceneResolver);
+            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring), factionSceneResolver, contactProfileService)
+            : new OpenFactionInteractionCommand(sceneResolver: factionSceneResolver, contactProfileService: contactProfileService);
         resolveEventCommand = new ResolveEventCommand(new AddMapMarkerCommand(), openFactionInteractionCommand);
         if (locationData != null)
         {

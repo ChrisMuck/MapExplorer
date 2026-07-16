@@ -23,7 +23,7 @@ internal sealed class GameDataCatalogTests
             ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         AssertTrue(catalog.UsesManifest, "Authored game data uses an explicit manifest");
-        AssertEqual(33, catalog.Documents.Count, "Manifest declares simulation, scene and localization documents");
+        AssertEqual(34, catalog.Documents.Count, "Manifest declares simulation, scene, contact-profile and localization documents");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-report-templates"), "Scouting reports are in the shared catalog");
         AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Seven initial archetype scenario profiles load from the catalog");
@@ -35,6 +35,7 @@ internal sealed class GameDataCatalogTests
         AssertEqual(12, catalog.WorldGeneration.Options.Count, "World option presets load through the same catalog");
         AssertEqual(71, catalog.Scenes.Fragments.Count, "Location and initial contact scene fragments load from JSON");
         AssertEqual(8, catalog.Scenes.Policies.Count, "Every current location archetype and generic contact flow have a scene policy");
+        AssertEqual(4, catalog.Scenes.ContactProfiles.Count, "Generic contact styles have authored presentation profiles and a fallback");
         AssertEqual("de", catalog.Scenes.Texts.DefaultLocale, "German is the current default scene locale");
         AssertEqual(
             catalog.Scenes.Texts.Resolve("scene.question.route-obstacle", "de"),
@@ -84,7 +85,7 @@ internal sealed class GameDataCatalogTests
             var catalog = GameDataCatalog.LoadFromDirectory(root)
                 ?? throw new InvalidOperationException("Legacy game-data catalog was not loaded.");
             AssertFalse(catalog.UsesManifest, "Catalog reports legacy directory discovery");
-        AssertEqual(33, catalog.Documents.Count, "Legacy discovery still finds simulation and scene documents");
+            AssertEqual(34, catalog.Documents.Count, "Legacy discovery still finds simulation, scene and contact-profile documents");
         }
         finally
         {

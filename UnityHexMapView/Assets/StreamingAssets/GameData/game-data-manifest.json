@@ -20,6 +20,7 @@
     "Findings/findings.json",
     "Findings/finding-tables.json",
     "Scenes/contact-fragments.json",
+    "Scenes/contact-profiles.json",
     "Scenes/location-fragments.json",
     "Scenes/Locales/de.json",
     "Scenes/report-event-fragments.json",

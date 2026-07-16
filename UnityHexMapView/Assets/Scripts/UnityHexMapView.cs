@@ -81,7 +81,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private SpecialLocationState inspectedLocation;
     private PlayerMapMarkerKind selectedMarkerKind = PlayerMapMarkerKind.Question;
     private string markerLabelDraft = "";
-    private string markerFactionIdDraft = "border-wardens";
+    private string markerFactionIdDraft = string.Empty;
     private string noteDraftText = "";
     private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
@@ -1211,10 +1211,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         CreateHexNatureMaterialTemplate();
     }
 
-    // Distinct, well-separated hues for the faction-ownership debug overlay. The three tutorial-map
-    // factions keep their own tuned colors (FactionOwnerCoastal/Wardens/Hidden); anything else
-    // (e.g. a generated campaign's dynamic "faction-0", "faction-1", ... ids) is deterministically
-    // hashed into this broader palette instead of collapsing into one shared fallback color.
+    // Distinct, well-separated hues for the faction-ownership debug overlay. Every faction ID is
+    // deterministically hashed into this palette instead of requiring faction-specific materials.
     private static readonly string[] FactionOwnerPaletteHex =
     {
         "4f94a8", "b76857", "6f5a9d", "6f9d5a", "c2984a", "9d5a7a", "5a7a9d", "9d9d5a"
@@ -2082,24 +2080,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private Material DebugFactionOwnershipMaterial(string ownerId)
     {
-        if (ownerId == "coastal-people")
-        {
-            return featureMaterials["FactionOwnerCoastal"];
-        }
-
-        if (ownerId == "border-wardens")
-        {
-            return featureMaterials["FactionOwnerWardens"];
-        }
-
-        if (ownerId == "hidden-ones")
-        {
-            return featureMaterials["FactionOwnerHidden"];
-        }
-
-        // Generated campaigns mint their own faction ids (e.g. "faction-0", "faction-1", ...) that
-        // don't match the tutorial map's fixed three above; give each a stable, distinct color from
-        // the broader palette instead of collapsing every non-tutorial faction into one fallback hue.
+        // Every generated or tutorial faction receives a stable color from the same palette.
         // (Modulo, not Mathf.Abs, so int.MinValue can never produce a negative index.)
         var length = FactionOwnerPaletteHex.Length;
         var index = ((StableStringHash(ownerId) % length) + length) % length;

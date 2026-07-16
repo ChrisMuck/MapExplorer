@@ -9,12 +9,14 @@ public sealed class OpenFactionInteractionCommand
 {
     private readonly AuthoredFactionOfferService? authoredOfferService;
     private readonly FactionContactSceneResolver? sceneResolver;
+    private readonly FactionContactProfileService? contactProfileService;
 
     public OpenFactionInteractionCommand(AuthoredFactionOfferService? authoredOfferService = null,
-        FactionContactSceneResolver? sceneResolver = null)
+        FactionContactSceneResolver? sceneResolver = null, FactionContactProfileService? contactProfileService = null)
     {
         this.authoredOfferService = authoredOfferService;
         this.sceneResolver = sceneResolver;
+        this.contactProfileService = contactProfileService;
     }
 
     public FactionInteractionResult Execute(GameState game, string factionId, HexCoord coord)
@@ -35,11 +37,6 @@ public sealed class OpenFactionInteractionCommand
             return FactionInteractionResult.Rejected("Unknown faction.");
         }
 
-        if (faction.Id == "hidden-ones" && faction.ContactStatus != FactionContactStatus.Open)
-        {
-            return FactionInteractionResult.Rejected("This faction is not willing to speak directly.");
-        }
-
         var interaction = CreateInteraction(game, faction, coord);
         game.SetActiveFactionInteraction(interaction);
         faction.AddMemory($"interaction-opened:{game.Expedition.ExpeditionNumber}:{game.World.WorldDay}:{coord.Q}:{coord.R}");
@@ -51,7 +48,13 @@ public sealed class OpenFactionInteractionCommand
 
     private FactionInteractionState CreateInteraction(GameState game, FactionState faction, HexCoord coord)
     {
-        var representative = RepresentativeFor(faction);
+        var authored = contactProfileService?.Resolve(faction) ?? new FactionContactAuthoredPresentation(
+            FactionRepresentativeRole.Watcher, "Beobachtende Person",
+            "Eine vorsichtige Person tritt vor, deren Stellung innerhalb der Gruppe unklar bleibt.",
+            "Wir hören euch an. Was danach geschieht, ist noch offen.");
+        var representative = new FactionRepresentativeState(
+            $"{faction.Id}-{authored.Role.ToString().ToLowerInvariant()}", faction.Id,
+            authored.RepresentativeName, authored.Role, authored.Description);
         return new FactionInteractionState(
             $"interaction-{faction.Id}-{game.Expedition.ExpeditionNumber}-{game.World.WorldDay}",
             faction.Id,
@@ -59,36 +62,8 @@ public sealed class OpenFactionInteractionCommand
             coord,
             representative,
             AttitudeFor(faction),
-            DialogueFor(faction),
-            authoredOfferService?.BuildOffers(faction) ?? FactionInteractionDefinitions.BuildOffers(game, faction));
-    }
-
-    private static FactionRepresentativeState RepresentativeFor(FactionState faction)
-    {
-        switch (faction.Id)
-        {
-            case "coastal-people":
-                return new FactionRepresentativeState(
-                    "coastal-messenger",
-                    faction.Id,
-                    "River Messenger",
-                    FactionRepresentativeRole.Messenger,
-                    "A messenger from the river villages, cautious but not hostile.");
-            case "border-wardens":
-                return new FactionRepresentativeState(
-                    "warden-guard",
-                    faction.Id,
-                    "Warden Scout",
-                    FactionRepresentativeRole.Guard,
-                    "A border scout who speaks for the patrol, not for the leaders.");
-            default:
-                return new FactionRepresentativeState(
-                    $"{faction.Id}-watcher",
-                    faction.Id,
-                    "Watcher",
-                    FactionRepresentativeRole.Watcher,
-                    "A cautious representative whose authority is unclear.");
-        }
+            authored.Dialogue,
+            authoredOfferService?.BuildOffers(faction) ?? Array.Empty<FactionOfferState>());
     }
 
     private static string AttitudeFor(FactionState faction)
@@ -104,19 +79,6 @@ public sealed class OpenFactionInteractionCommand
         }
 
         return "Watchful";
-    }
-
-    private static string DialogueFor(FactionState faction)
-    {
-        switch (faction.Id)
-        {
-            case "coastal-people":
-                return "You have come far from your shore camp. We can trade a little, but we will not speak for every village.";
-            case "border-wardens":
-                return "You crossed watched land. A warning is not a wall, but it is still a warning. Bring proof of respect if you want more than words.";
-            default:
-                return "The representative watches the expedition carefully and waits for a reason to continue.";
-        }
     }
 
 }

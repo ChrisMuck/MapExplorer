@@ -89,7 +89,8 @@ public sealed class GameDataCatalog
     {
         "scene-fragments",
         "scene-policies",
-        "scene-localization"
+        "scene-localization",
+        "contact-presentation-profiles"
     };
 
     private static readonly string[] RequiredManifestDocumentTypes =
@@ -122,6 +123,7 @@ public sealed class GameDataCatalog
         "scene-fragments",
         "scene-policies",
         "scene-localization",
+        "contact-presentation-profiles",
         "world-generation-presets",
         "world-generation-option-presets"
     };

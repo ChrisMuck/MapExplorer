@@ -345,16 +345,19 @@ public sealed class SceneTextCatalog
 
 public sealed class SceneDescriptionCatalog
 {
-    public SceneDescriptionCatalog(IEnumerable<SceneFragmentDefinition> fragments, IEnumerable<ScenePolicyDefinition> policies, SceneTextCatalog texts)
+    public SceneDescriptionCatalog(IEnumerable<SceneFragmentDefinition> fragments, IEnumerable<ScenePolicyDefinition> policies,
+        IEnumerable<ContactPresentationProfileDefinition> contactProfiles, SceneTextCatalog texts)
     {
         Fragments = Unique(fragments, item => item.Id, "scene fragment");
         Policies = Unique(policies, item => item.Id, "scene policy");
+        ContactProfiles = Unique(contactProfiles, item => item.Id, "contact presentation profile");
         Texts = texts;
         SceneDescriptionContentValidator.ValidateStructure(this);
     }
 
     public IReadOnlyDictionary<string, SceneFragmentDefinition> Fragments { get; }
     public IReadOnlyDictionary<string, ScenePolicyDefinition> Policies { get; }
+    public IReadOnlyDictionary<string, ContactPresentationProfileDefinition> ContactProfiles { get; }
     public SceneTextCatalog Texts { get; }
 
     private static IReadOnlyDictionary<string, T> Unique<T>(IEnumerable<T> values, Func<T, string> id, string kind)
@@ -364,6 +367,27 @@ public sealed class SceneDescriptionCatalog
     }
 }
 
+public sealed class ContactPresentationProfileDefinition
+{
+    public ContactPresentationProfileDefinition(string id, string? contactStyle, FactionRepresentativeRole role,
+        string representativeNameTextId, string descriptionTextId, string dialogueTextId)
+    {
+        Id = SceneFragmentSourceDefinition.RequireText(id, nameof(id));
+        ContactStyle = string.IsNullOrWhiteSpace(contactStyle) ? null : contactStyle.Trim();
+        Role = role;
+        RepresentativeNameTextId = SceneFragmentSourceDefinition.RequireText(representativeNameTextId, nameof(representativeNameTextId));
+        DescriptionTextId = SceneFragmentSourceDefinition.RequireText(descriptionTextId, nameof(descriptionTextId));
+        DialogueTextId = SceneFragmentSourceDefinition.RequireText(dialogueTextId, nameof(dialogueTextId));
+    }
+
+    public string Id { get; }
+    public string? ContactStyle { get; }
+    public FactionRepresentativeRole Role { get; }
+    public string RepresentativeNameTextId { get; }
+    public string DescriptionTextId { get; }
+    public string DialogueTextId { get; }
+}
+
 public static class SceneDescriptionDataLoader
 {
     public static SceneDescriptionCatalog LoadFromJson(IEnumerable<string> documents)
@@ -371,6 +395,7 @@ public static class SceneDescriptionDataLoader
         var fragments = new List<SceneFragmentDefinition>();
         var policies = new List<ScenePolicyDefinition>();
         var locales = new List<SceneLocaleDefinition>();
+        var contactProfiles = new List<ContactPresentationProfileDefinition>();
         foreach (var json in documents ?? throw new ArgumentNullException(nameof(documents)))
         {
             JObject document;
@@ -382,10 +407,11 @@ public static class SceneDescriptionDataLoader
                 case "scene-fragments": ParseFragments(document, fragments); break;
                 case "scene-policies": ParsePolicies(document, policies); break;
                 case "scene-localization": locales.Add(ParseLocale(document)); break;
+                case "contact-presentation-profiles": ParseContactProfiles(document, contactProfiles); break;
                 default: throw new LocationDataException($"Unsupported scene documentType '{(string?)document["documentType"]}'.");
             }
         }
-        return new SceneDescriptionCatalog(fragments, policies, new SceneTextCatalog(locales));
+        return new SceneDescriptionCatalog(fragments, policies, contactProfiles, new SceneTextCatalog(locales));
     }
 
     private static void ParseFragments(JObject document, ICollection<SceneFragmentDefinition> target)
@@ -437,6 +463,17 @@ public static class SceneDescriptionDataLoader
         return new SceneLocaleDefinition(Text(document, "locale"), (string?)document["fallbackLocale"], (bool?)document["isDefault"] ?? false, texts);
     }
 
+    private static void ParseContactProfiles(JObject document, ICollection<ContactPresentationProfileDefinition> target)
+    {
+        foreach (var item in (document["items"] as JArray ?? new JArray()).OfType<JObject>())
+        {
+            if (!Enum.TryParse<FactionRepresentativeRole>(Text(item, "representativeRole"), out var role))
+                throw new LocationDataException($"Contact profile '{Text(item, "id")}' has an unknown representativeRole.");
+            target.Add(new ContactPresentationProfileDefinition(Text(item, "id"), (string?)item["contactStyle"], role,
+                Text(item, "representativeNameTextId"), Text(item, "descriptionTextId"), Text(item, "dialogueTextId")));
+        }
+    }
+
     private static string Text(JObject item, string field) => SceneFragmentSourceDefinition.RequireText((string?)item[field], field);
     private static int Int(JObject item, string field) => (int?)item[field] ?? throw new LocationDataException($"{field} must be an integer.");
     private static IReadOnlyList<string> Strings(JObject item, string field) => SceneFragmentScopeDefinition.Normalize((item[field] as JArray)?.Values<string>());
@@ -448,6 +485,20 @@ public static class SceneDescriptionContentValidator
 
     public static void ValidateStructure(SceneDescriptionCatalog catalog)
     {
+        if (catalog.ContactProfiles.Count > 0)
+        {
+            if (catalog.ContactProfiles.Values.Count(profile => profile.ContactStyle == null) != 1)
+                throw new LocationDataException("Contact presentation profiles need exactly one fallback with null contactStyle.");
+            var styles = catalog.ContactProfiles.Values.Where(profile => profile.ContactStyle != null).Select(profile => profile.ContactStyle!).ToList();
+            if (styles.Count != styles.Distinct(StringComparer.Ordinal).Count())
+                throw new LocationDataException("Contact presentation contactStyle values must be unique.");
+        }
+        foreach (var profile in catalog.ContactProfiles.Values)
+        {
+            foreach (var textId in new[] { profile.RepresentativeNameTextId, profile.DescriptionTextId, profile.DialogueTextId })
+                if (!catalog.Texts.ContainsInDefaultLocale(textId))
+                    throw new LocationDataException($"Contact presentation profile '{profile.Id}' references missing text '{textId}'.");
+        }
         foreach (var fragment in catalog.Fragments.Values)
         {
             if (!catalog.Texts.ContainsInDefaultLocale(fragment.TextId))

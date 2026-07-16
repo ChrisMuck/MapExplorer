@@ -22,6 +22,10 @@ internal sealed class FactionContactSceneTests
         AssertEqual("anonymous", result.Presentation!.IdentityStage, "Unknown faction has anonymous identity stage");
         AssertFalse(result.Presentation.Scene.Message.Contains(faction.Name, StringComparison.Ordinal), "Anonymous scene does not expose the internal faction name");
         AssertTrue(FragmentIds(result).Contains("frag-contact-anonymous"), "Anonymous contact fragment is selected");
+        AssertEqual(FactionRepresentativeRole.Guard, result.Interaction!.Representative.Role,
+            "Neutral-cautious contact style selects the guarded JSON representative profile without using faction id");
+        AssertTrue(result.Interaction.DialogueText.Contains("weshalb ihr hier seid", StringComparison.Ordinal),
+            "Representative dialogue is resolved from localized contact-profile text");
     }
 
     private static void RumoredSignatureCanBeRecognisedWithoutNamingFaction()
@@ -58,7 +62,8 @@ internal sealed class FactionContactSceneTests
         var game = new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition,
             new BaseState(HexCoord.Zero), factions: new[] { faction });
         var resolver = new FactionContactSceneResolver(catalog.Scenes, catalog.CrossSystem.FactionSignatures);
-        return (catalog, new OpenFactionInteractionCommand(sceneResolver: resolver), game, faction);
+        var profiles = new FactionContactProfileService(catalog.Scenes, catalog.CrossSystem.FactionProfiles);
+        return (catalog, new OpenFactionInteractionCommand(sceneResolver: resolver, contactProfileService: profiles), game, faction);
     }
 
     private static string[] FragmentIds(FactionInteractionResult result) => result.Presentation!.Scene.Paragraphs

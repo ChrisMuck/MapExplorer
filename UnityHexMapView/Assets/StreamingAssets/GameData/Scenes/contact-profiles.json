@@ -1,0 +1,11 @@
+{
+  "documentType": "contact-presentation-profiles",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    { "id": "contact-open", "contactStyle": "open", "representativeRole": "Messenger", "representativeNameTextId": "contact.profile.open.name", "descriptionTextId": "contact.profile.open.description", "dialogueTextId": "contact.profile.open.dialogue" },
+    { "id": "contact-guarded", "contactStyle": "guarded", "representativeRole": "Guard", "representativeNameTextId": "contact.profile.guarded.name", "descriptionTextId": "contact.profile.guarded.description", "dialogueTextId": "contact.profile.guarded.dialogue" },
+    { "id": "contact-indirect", "contactStyle": "indirect", "representativeRole": "MaskedSpeaker", "representativeNameTextId": "contact.profile.indirect.name", "descriptionTextId": "contact.profile.indirect.description", "dialogueTextId": "contact.profile.indirect.dialogue" },
+    { "id": "contact-fallback", "contactStyle": null, "representativeRole": "Watcher", "representativeNameTextId": "contact.profile.fallback.name", "descriptionTextId": "contact.profile.fallback.description", "dialogueTextId": "contact.profile.fallback.dialogue" }
+  ]
+}

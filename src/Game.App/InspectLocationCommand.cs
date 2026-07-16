@@ -48,11 +48,6 @@ public sealed class InspectLocationCommand
         {
             archiveEntry = $"Day {game.World.WorldDay}: {location.Name} inspected. {message}";
             game.Base.AddArchiveEntry(archiveEntry);
-            if (presentation == null)
-            {
-                AddLegacyLocationLeverage(game, location);
-            }
-
             game.Events.Enqueue(CreateLocationEvent(game, location, message, presentation));
             fieldFinding = findingAcquisitionService?.TryAcquire(game, location);
             if (fieldFinding == null && findingAcquisitionService == null && location.Kind != LocationKind.BaseCamp)
@@ -62,17 +57,6 @@ public sealed class InspectLocationCommand
         }
 
         return InspectLocationResult.Inspected(location, message, archiveEntry, fieldFinding, presentation?.Scene);
-    }
-
-    private static void AddLegacyLocationLeverage(GameState game, SpecialLocationState location)
-    {
-        foreach (var leverage in FactionInteractionDefinitions.LeverageForLocation(location))
-        {
-            if (game.LeverageItems.Add(leverage.ItemId))
-            {
-                game.Base.AddArchiveEntry($"Day {game.World.WorldDay}: recovered {leverage.DisplayName} as negotiation leverage.");
-            }
-        }
     }
 
     private static SpecialLocationState? FindLocation(GameState game, HexCoord coord)

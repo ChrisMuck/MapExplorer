@@ -39,6 +39,10 @@ public sealed class FactionTerritoryEntryResolver
         {
             faction.SetContactStatus(FactionContactStatus.Rumored);
         }
+        if (rule.RevealsFaction && faction.ContactStatus == FactionContactStatus.Rumored)
+        {
+            faction.SetContactStatus(FactionContactStatus.Contacted);
+        }
         if (rule.PromotesContact && faction.ContactStatus == FactionContactStatus.Contacted)
         {
             faction.SetContactStatus(FactionContactStatus.Open);
