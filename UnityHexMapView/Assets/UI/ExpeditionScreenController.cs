@@ -36,6 +36,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private Vector2 lastResponsiveSize;
     private int selectedReportIndex = -1;
     private int selectedHintIndex = -1;
+    private GameState reportPresentationGameState;
+    private readonly HashSet<string> openedScoutReturnReportIds = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> selectedScoutIds = new HashSet<string>();
     private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
@@ -404,6 +406,19 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
     private void OpenSelectedReport()
     {
+        var state = mapView?.CurrentGameState;
+        if (state != null && selectedReportIndex >= 0 && selectedReportIndex < state.Knowledge.ScoutReports.Count)
+        {
+            var report = state.Knowledge.ScoutReports[selectedReportIndex];
+            if (!openedScoutReturnReportIds.Contains(report.Id) &&
+                mapView.GetScoutReturnPresentationForReportUi(report.Id) != null)
+            {
+                openedScoutReturnReportIds.Add(report.Id);
+                Refresh();
+                return;
+            }
+        }
+
         Open(Reports);
         mapView?.RequestOpenScoutReportFromUi(selectedReportIndex);
         Refresh();
@@ -737,6 +752,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
     private void RefreshReport(GameState state)
     {
+        if (!ReferenceEquals(reportPresentationGameState, state))
+        {
+            reportPresentationGameState = state;
+            openedScoutReturnReportIds.Clear();
+        }
+
         var reportCount = state.Knowledge.ScoutReports.Count;
         SetText("report-count-label", reportCount.ToString());
         SetText("report-count-rail", reportCount.ToString());
@@ -774,6 +795,26 @@ public sealed class ExpeditionScreenController : MonoBehaviour
                 : string.Join(" und ", mission.ScoutMemberIds.Select(id => state.Expedition.FindMember(id)?.Name ?? id));
             reportAvatar.tooltip = $"Platzhalterporträt: {names}";
         }
+
+        var returnScene = openedScoutReturnReportIds.Contains(report.Id)
+            ? null
+            : mapView?.GetScoutReturnPresentationForReportUi(report.Id);
+        if (returnScene != null)
+        {
+            SetText("report-title-main", returnScene.Title);
+            SetText("report-sub-main", returnScene.Subtitle ?? $"Späherrückkehr · Tag {state.World.WorldDay}");
+            SetText("report-excerpt-main", returnScene.Message);
+            SetText("action-open-report", "Weiter");
+            SetDisplay("action-open-report", true);
+            SetDisplay("report-tag-row", false);
+            SetDisplay("action-marker-from-report", false);
+            BuildHintList(null);
+            return;
+        }
+
+        SetDisplay("report-tag-row", true);
+        SetDisplay("action-marker-from-report", true);
+        SetDisplay("action-open-report", false);
         SetText("report-title-main", report.Title);
         SetText("report-sub-main", $"Expedition · Späher · Tag {state.World.WorldDay}");
         SetText("report-reliability-main", $"Verlässlichkeit: {ReliabilityText(report.Reliability)}");

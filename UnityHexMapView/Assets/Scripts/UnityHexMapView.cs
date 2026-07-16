@@ -426,6 +426,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHud();
     }
 
+    public SceneDescriptionResult GetScoutReturnPresentationForReportUi(string reportId)
+    {
+        return simulationSession?.GetScoutReturnPresentationForReport(reportId);
+    }
+
     public void RequestSendScoutMissionFromUi()
     {
         SendScoutMissionFromHud();

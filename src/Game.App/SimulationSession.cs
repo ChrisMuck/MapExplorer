@@ -248,6 +248,9 @@ public sealed class SimulationSession
     public FactionContactPresentation? GetCurrentEventContactPresentation() =>
         Application.GetCurrentEventContactPresentation(Game);
 
+    public SceneDescriptionResult? GetScoutReturnPresentationForReport(string reportId, string? locale = null) =>
+        Application.GetScoutReturnPresentationForReport(Game, reportId, locale);
+
     /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
     public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);
 

@@ -14,6 +14,7 @@ internal sealed class ScoutReturnSceneTests
         SingleInjuredScoutDoesNotInventASupportingCompanion();
         OverdueAndMissingScenesDoNotInventAReport();
         PartialReturnNamesTheAbsentCompanionWithoutInventingACause();
+        DeliveredReportResolvesItsReturnScene();
     }
 
     private static void OnTimeReturnUsesDeliveredReportAndCondition()
@@ -106,6 +107,24 @@ internal sealed class ScoutReturnSceneTests
             "Scene names returned and absent participants");
         AssertTrue(scene.Message.Contains("Niemand behauptet zu wissen", StringComparison.Ordinal),
             "Scene explicitly avoids inventing the absent scout's fate");
+    }
+
+    private static void DeliveredReportResolvesItsReturnScene()
+    {
+        var (app, game) = Create();
+        game.Knowledge.AddScoutReport(new ScoutReportState("report-linked", "mission-linked", "Bericht",
+            "Inhalt", 70, Array.Empty<HexCoord>(), Array.Empty<string>()));
+        game.Knowledge.RecordDeliveredMissionOutcome(new DeliveredMissionOutcomeState("delivery-linked", "mission-linked",
+            ScoutMissionStatus.Returned, 3, 3, 3, false,
+            new[] { new DeliveredMissionParticipantOutcome("scout-a", true, DeliveredScoutStatus.Unhurt) },
+            deliveredReportIds: new[] { "report-linked" }));
+
+        var scene = app.GetScoutReturnPresentationForReport(game, "report-linked");
+
+        AssertTrue(scene != null && scene.Message.Contains("Mira", StringComparison.Ordinal),
+            "A delivered report resolves the matching return scene");
+        AssertTrue(app.GetScoutReturnPresentationForReport(game, "unknown-report") == null,
+            "A report without a recorded delivery does not invent a return scene");
     }
 
     private static (GameApplication App, GameState Game) Create()

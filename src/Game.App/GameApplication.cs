@@ -362,6 +362,18 @@ public sealed class GameApplication
         return outcome == null || scoutReturnSceneResolver == null ? null : scoutReturnSceneResolver.Resolve(game, outcome, locale);
     }
 
+    public SceneDescriptionResult? GetScoutReturnPresentationForReport(GameState game, string reportId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(reportId)) throw new ArgumentException("Report id is required.", nameof(reportId));
+        var outcome = game.Knowledge.DeliveredMissionOutcomes
+            .Where(item => item.DeliveredReportIds.Contains(reportId, StringComparer.Ordinal))
+            .OrderByDescending(item => item.DeliveredWorldDay)
+            .ThenByDescending(item => item.DeliveryId, StringComparer.Ordinal)
+            .FirstOrDefault();
+        return outcome == null || scoutReturnSceneResolver == null ? null : scoutReturnSceneResolver.Resolve(game, outcome, locale);
+    }
+
     public FactionOfferResult PurchaseFactionOffer(GameState game, string offerId)
     {
         return purchaseFactionOfferCommand.Execute(game, offerId);

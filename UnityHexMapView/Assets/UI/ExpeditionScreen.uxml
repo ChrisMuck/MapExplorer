@@ -155,7 +155,7 @@
                                     </ui:VisualElement>
                                     <ui:VisualElement class="unread-dot" />
                                 </ui:VisualElement>
-                                <ui:VisualElement class="tag-row">
+                                <ui:VisualElement name="report-tag-row" class="tag-row">
                                     <ui:Label name="report-reliability-main" text="Verlässlichkeit: Mittel" class="tag tag--gold" />
                                     <ui:Label name="report-direction-main" text="Nordost" class="tag" />
                                 </ui:VisualElement>
