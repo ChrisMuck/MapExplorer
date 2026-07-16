@@ -2290,7 +2290,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         selectedPreviewHex = CoreCoordToViewCoord(coreGameState.Expedition.Position);
         hasInspectedHex = false;
         inspectedLocation = null;
-        interactionMessage = $"Moved to {destination}. Cost {result.Cost}.";
+        interactionMessage = result.ArrivalScenes.Count > 0
+            ? result.ArrivalScenes[0].Message
+            : $"Moved to {destination}. Cost {result.Cost}.";
         UpdateExpeditionMarkerPosition();
         RefreshKnowledgeOverlays();
         UpdateFeatureVisibility();

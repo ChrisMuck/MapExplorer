@@ -108,23 +108,26 @@ public sealed class GameApplication
         var findingAnalysisHandoffService = dataCatalog?.Authoring.Findings.Count > 0
             ? new FindingAnalysisHandoffService(dataCatalog.Authoring)
             : null;
+        var locationPresentationResolver = new LocationInspectionPresentationResolver(
+            locationInteractionDefinitions, dataCatalog?.Authoring, dataCatalog?.Scenes);
         inspectLocationCommand = new InspectLocationCommand(
             findingAcquisitionService,
-            new LocationInspectionPresentationResolver(locationInteractionDefinitions, dataCatalog?.Authoring));
+            locationPresentationResolver);
         completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
         scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(
             crossSystemData?.ScoutContent,
             crossSystemData?.Evidence,
             crossSystemData?.FactionSignatures);
-        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver);
+        getLocationInteractionCommand = new GetLocationInteractionCommand(locationInteractionService, scenarioActionResolver, dataCatalog?.Scenes);
         resolveLocationActionCommand = new ResolveLocationActionCommand(locationInteractionService, scenarioActionResolver, findingAcquisitionService);
         advanceLocationProjectCommand = new AdvanceLocationProjectCommand(locationInteractionDefinitions, findingAcquisitionService);
         var worldPhaseService = new WorldPhaseService(crossSystemData, dataCatalog?.Authoring);
         moveExpeditionCommand = new MoveExpeditionCommand(
             movementCostService,
             new KnowledgeService(),
-            new FactionTerritoryEntryResolver(crossSystemData));
+            new FactionTerritoryEntryResolver(crossSystemData),
+            locationPresentationResolver);
         endDayCommand = new EndDayCommand(
             scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures, crossSystemData?.ScoutContent),
             worldPhaseService: worldPhaseService);

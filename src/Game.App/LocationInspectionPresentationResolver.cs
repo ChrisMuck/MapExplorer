@@ -18,14 +18,26 @@ public sealed class LocationInspectionPresentationResolver
     private const string IdentifiedFactionPrefix = "inspection-faction:";
     private readonly LocationInteractionDefinitionSet definitions;
     private readonly CrossSystemAuthoringBundle? authoring;
+    private readonly SceneDescriptionResolver? sceneResolver;
 
-    public LocationInspectionPresentationResolver(LocationInteractionDefinitionSet definitions, CrossSystemAuthoringBundle? authoring = null)
+    public LocationInspectionPresentationResolver(LocationInteractionDefinitionSet definitions, CrossSystemAuthoringBundle? authoring = null,
+        SceneDescriptionCatalog? scenes = null)
     {
         this.definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
         this.authoring = authoring;
+        sceneResolver = scenes == null ? null : new SceneDescriptionResolver(scenes);
     }
 
-    public LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location)
+    public LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location,
+        LocationConditionKnowledgeState? previousKnownCondition = null, string? locale = null)
+        => ObserveAndResolve(game, location, SceneTrigger.InspectionResult, previousKnownCondition, locale);
+
+    public LocationInspectionPresentation? ObserveArrivalAndResolve(GameState game, SpecialLocationState location,
+        LocationConditionKnowledgeState? previousKnownCondition = null, string? locale = null)
+        => ObserveAndResolve(game, location, SceneTrigger.Arrival, previousKnownCondition, locale);
+
+    private LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location,
+        SceneTrigger trigger, LocationConditionKnowledgeState? previousKnownCondition, string? locale)
     {
         if (game == null) throw new ArgumentNullException(nameof(game));
         if (location == null) throw new ArgumentNullException(nameof(location));
@@ -33,8 +45,9 @@ public sealed class LocationInspectionPresentationResolver
         if (profile == null) return null;
 
         var impressions = new List<string>();
+        var observableModifiers = new List<ObservableModifierScenePart>();
         var observableRelationKinds = new HashSet<LocationFactionRelationKind>();
-        AddDistinct(impressions, profile.FlavorForState(location.OperationalStateId) ?? profile.Description ?? profile.ShortDescription);
+        AddDistinct(impressions, profile.Description ?? profile.ShortDescription);
 
         foreach (var modifierId in location.ModifierIds.OrderBy(id => id, StringComparer.Ordinal))
         {
@@ -42,6 +55,7 @@ public sealed class LocationInspectionPresentationResolver
                 !modifier.AppliesTo(location) || string.IsNullOrWhiteSpace(modifier.InspectionText)) continue;
             game.Knowledge.LearnLocationContextTag(location.Id, ObservedModifierPrefix + modifier.Id);
             AddDistinct(impressions, modifier.InspectionText);
+            observableModifiers.Add(new ObservableModifierScenePart(modifier.Id, modifier.InspectionText));
             foreach (var relationKind in modifier.RevealedFactionRelationKinds) observableRelationKinds.Add(relationKind);
         }
 
@@ -54,7 +68,7 @@ public sealed class LocationInspectionPresentationResolver
         {
             game.Knowledge.LearnLocationContextTag(location.Id, ObservedRelationPrefix + relation.Kind.ToString().ToLowerInvariant());
             var faction = game.FindFaction(relation.FactionId);
-            var identified = faction != null && faction.ContactStatus != FactionContactStatus.Unknown;
+            var identified = faction != null && faction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile;
             if (identified)
             {
                 game.Knowledge.LearnLocationContextTag(location.Id, IdentifiedFactionPrefix + relation.FactionId);
@@ -62,10 +76,26 @@ public sealed class LocationInspectionPresentationResolver
             AddDistinct(impressions, RelationImpression(relation.Kind, identified ? faction!.Name : null));
         }
 
-        var message = impressions.Count == 0
+        SceneDescriptionResult? scene = null;
+        if (sceneResolver != null && !string.IsNullOrWhiteSpace(location.ArchetypeId) && !string.IsNullOrWhiteSpace(location.VariantId))
+        {
+            var identifiedFaction = relation == null ? null : game.FindFaction(relation.FactionId);
+            var identityStage = identifiedFaction != null && identifiedFaction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile
+                ? "identified" : "anonymous";
+            scene = sceneResolver.ResolveLocation(new LocationSceneView(
+                location.Id, trigger, location.ArchetypeId!, location.VariantId!, profile.Title,
+                profile.Subtitle, profile.ImageId, location.InteractionStateId, location.OperationalStateId,
+                location.PresenceStateId, game.World.WorldDay, previousKnownCondition,
+                game.Knowledge.GetTileKnowledge(location.Coord), game.Knowledge.KnownLocationContextTags(location.Id),
+                observableModifiers, observableRelationKinds.Select(kind => kind.ToString().ToLowerInvariant()), identityStage,
+                identifiedFaction?.ContactStatus.ToString() ?? FactionContactStatus.Unknown.ToString(),
+                identityStage == "identified" ? identifiedFaction!.Name : null, null, locale));
+        }
+
+        var message = scene?.Message ?? (impressions.Count == 0
             ? profile.ShortDescription ?? $"{profile.Title} wurde dokumentiert."
-            : string.Join(" ", impressions);
-        return new LocationInspectionPresentation(profile.Title, message, profile.JournalDiscovered ?? message);
+            : string.Join(" ", impressions));
+        return new LocationInspectionPresentation(profile.Title, message, profile.JournalDiscovered ?? message, scene);
     }
 
     private LocationContentProfileDefinition? ResolveContentProfile(SpecialLocationState location)
@@ -113,16 +143,18 @@ public sealed class LocationInspectionPresentationResolver
 
 public sealed class LocationInspectionPresentation
 {
-    public LocationInspectionPresentation(string title, string message, string journalText)
+    public LocationInspectionPresentation(string title, string message, string journalText, SceneDescriptionResult? scene = null)
     {
         Title = RequireText(title, nameof(title));
         Message = RequireText(message, nameof(message));
         JournalText = RequireText(journalText, nameof(journalText));
+        Scene = scene;
     }
 
     public string Title { get; }
     public string Message { get; }
     public string JournalText { get; }
+    public SceneDescriptionResult? Scene { get; }
 
     private static string RequireText(string value, string name)
     {

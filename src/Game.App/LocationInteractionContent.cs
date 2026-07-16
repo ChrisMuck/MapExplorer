@@ -333,12 +333,6 @@ public static class LocationInteractionContent
                 subtitle: "Streckenhindernis",
                 shortDescription: "Die alte Handelsbruecke ist eingestuerzt.",
                 description: "Balken haengen schraeg ueber der Schlucht; zu instabil, um sie einfach zu betreten.",
-                flavorByState: new Dictionary<string, string>
-                {
-                    [LocationStateIds.Operational.Blocked] = "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.",
-                    [LocationStateIds.Operational.RiskyPassage] = "Ein provisorischer Uebergang haengt ueber der Schlucht.",
-                    [LocationStateIds.Operational.Repaired] = "Die Bruecke ist wieder passierbar."
-                },
                 imageId: "placeholder-bridge",
                 journalDiscovered: "Eine zerstoerte Bruecke blockiert die Route.",
                 journalResolved: "Die Bruecke wurde als Routenproblem dokumentiert."),
@@ -349,11 +343,6 @@ public static class LocationInteractionContent
                 subtitle: "Untersuchungsstelle",
                 shortDescription: "Ein sorgfaeltig markiertes Grab am Wegesrand.",
                 description: "Zeichen und Steine deuten auf eine Grenzwaechter-Bestattung hin.",
-                flavorByState: new Dictionary<string, string>
-                {
-                    [LocationStateIds.Operational.Sealed] = "Das Grab ist verschlossen und mit Warnzeichen versehen.",
-                    [LocationStateIds.Operational.Open] = "Das Grab wurde geoeffnet."
-                },
                 imageId: "placeholder-grave",
                 journalDiscovered: "Ein markiertes Grab wurde entdeckt.",
                 journalResolved: "Das markierte Grab wurde untersucht.")

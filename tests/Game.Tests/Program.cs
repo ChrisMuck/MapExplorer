@@ -79,6 +79,10 @@ var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
 crossSystemContentValidationTests.RunAll();
 var gameDataCatalogTests = new GameDataCatalogTests();
 gameDataCatalogTests.RunAll();
+var sceneDescriptionDataTests = new SceneDescriptionDataTests();
+sceneDescriptionDataTests.RunAll();
+var sceneDescriptionResolverTests = new SceneDescriptionResolverTests();
+sceneDescriptionResolverTests.RunAll();
 var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
 crossSystemAuthoringDataTests.RunAll();
 var archetypeFlowResolverTests = new ArchetypeFlowResolverTests();
@@ -2050,7 +2054,7 @@ internal sealed class LocationDataJsonTests
         var profile = defs.FindContentProfile("content-old-trade-road-bridge");
         AssertTrue(profile != null, "Bridge content profile is present");
         AssertEqual("Zerstoerte Bruecke", profile!.Title, "Content profile carries the authored title");
-        AssertEqual("Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen.", profile.FlavorForState("blocked"), "Content profile flavor is keyed by state");
+        AssertEqual("Zerstoerte Bruecke", profile.Title, "Content profile retains stable non-state presentation metadata");
     }
 
     private static void WeightedOutcomeStaysWithinAuthoredBandRow()

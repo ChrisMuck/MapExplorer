@@ -204,7 +204,9 @@ public partial class MainWindow : Window
 
         var result = current.MoveExpedition(direction);
         MovementResultText.Text = result.Success
-            ? $"Bewegt: {direction}. Normale Bewegungskosten: {result.Cost}."
+            ? result.ArrivalScenes.Count > 0
+                ? result.ArrivalScenes[0].Message
+                : $"Bewegt: {direction}. Normale Bewegungskosten: {result.Cost}."
             : $"Bewegung {direction} abgelehnt: {result.Error}";
         SessionStatus.Text = result.Success
             ? $"Expedition über den gemeinsamen Bewegungsbefehl nach {direction} bewegt. Kosten: {result.Cost}."

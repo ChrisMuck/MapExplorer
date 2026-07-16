@@ -89,9 +89,10 @@ internal sealed class ScenarioProfileInteractionTests
         var result = app.GetLocationInteraction(game, location.Id);
 
         AssertTrue(result.Success && result.Presentation != null, "Shared interaction query includes a player-facing presentation projection");
-        AssertTrue(result.Presentation!.OperationalStateText.Contains("unterbrochen", StringComparison.Ordinal),
-            "Presentation uses the authored wording for the last observed blocked state");
-        AssertTrue(!result.Presentation.OperationalStateText.Contains("wieder passierbar", StringComparison.Ordinal),
+        AssertTrue(result.Presentation!.Scene?.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds)
+                .Contains("frag-loc-route-op-blocked") == true,
+            "Presentation selects the localized scene fragment for the last observed blocked state");
+        AssertTrue(!result.Presentation.Description.Contains("wieder passierbar", StringComparison.Ordinal),
             "Unobserved repaired WorldState does not leak into player-facing wording");
         AssertEqual("structural-failure", result.Presentation.KnownContextTags.Single(),
             "Presentation exposes earned context rather than objective modifiers");

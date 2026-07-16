@@ -40,7 +40,7 @@ public sealed class LocationInteractionPresentation
 {
     public LocationInteractionPresentation(string title, string subtitle, string description, string? imageId,
         string knowledgeLabel, string interactionStateText, string operationalStateText, string presenceStateText,
-        IReadOnlyList<string> knownContextTags)
+        IReadOnlyList<string> knownContextTags, SceneDescriptionResult? scene = null)
     {
         Title = title;
         Subtitle = subtitle;
@@ -51,6 +51,7 @@ public sealed class LocationInteractionPresentation
         OperationalStateText = operationalStateText;
         PresenceStateText = presenceStateText;
         KnownContextTags = knownContextTags;
+        Scene = scene;
     }
 
     public string Title { get; }
@@ -62,6 +63,7 @@ public sealed class LocationInteractionPresentation
     public string OperationalStateText { get; }
     public string PresenceStateText { get; }
     public IReadOnlyList<string> KnownContextTags { get; }
+    public SceneDescriptionResult? Scene { get; }
 }
 
 public sealed class LocationActionResult

@@ -23,7 +23,7 @@ internal sealed class GameDataCatalogTests
             ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         AssertTrue(catalog.UsesManifest, "Authored game data uses an explicit manifest");
-        AssertEqual(27, catalog.Documents.Count, "Manifest declares legacy and target authoring documents");
+        AssertEqual(33, catalog.Documents.Count, "Manifest declares simulation, scene and localization documents");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-report-templates"), "Scouting reports are in the shared catalog");
         AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Seven initial archetype scenario profiles load from the catalog");
@@ -33,6 +33,13 @@ internal sealed class GameDataCatalogTests
         AssertEqual(3, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");
         AssertEqual(12, catalog.WorldGeneration.Options.Count, "World option presets load through the same catalog");
+        AssertEqual(64, catalog.Scenes.Fragments.Count, "Complete location state, uncertainty and faction-relation scene fragments load from JSON");
+        AssertEqual(7, catalog.Scenes.Policies.Count, "Every current location archetype has a scene policy");
+        AssertEqual("de", catalog.Scenes.Texts.DefaultLocale, "German is the current default scene locale");
+        AssertEqual(
+            catalog.Scenes.Texts.Resolve("scene.question.route-obstacle", "de"),
+            catalog.Scenes.Texts.Resolve("scene.question.route-obstacle", "fr-FR"),
+            "An unavailable locale falls back to the default text without changing scene rules");
     }
 
     private static void ManifestRejectsAnOmittedScoutingGroup()
@@ -55,12 +62,13 @@ internal sealed class GameDataCatalogTests
         var root = CopyGameData(includeManifest: true, includeScouting: true);
         try
         {
-            var path = Path.Combine(root, "Locations", "ContentProfiles", "content-profiles.json");
+            var path = Path.Combine(root, "Scenes", "location-fragments.json");
             var document = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
-            var bridge = document["items"]!.AsArray()[0]!.AsObject();
-            bridge["flavorByState"]!.AsObject().Remove("destroyed");
+            var items = document["items"]!.AsArray();
+            var destroyed = items.Single(item => item!["id"]!.GetValue<string>() == "frag-loc-route-op-destroyed");
+            items.Remove(destroyed);
             File.WriteAllText(path, document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-            AssertThrows(() => GameDataCatalog.LoadFromDirectory(root), "Every authored state needs neutral player-facing wording");
+            AssertThrows(() => GameDataCatalog.LoadFromDirectory(root), "Every authored state needs a localized scene fragment");
         }
         finally
         {
@@ -76,7 +84,7 @@ internal sealed class GameDataCatalogTests
             var catalog = GameDataCatalog.LoadFromDirectory(root)
                 ?? throw new InvalidOperationException("Legacy game-data catalog was not loaded.");
             AssertFalse(catalog.UsesManifest, "Catalog reports legacy directory discovery");
-        AssertEqual(27, catalog.Documents.Count, "Legacy discovery still finds legacy and target authoring documents");
+        AssertEqual(33, catalog.Documents.Count, "Legacy discovery still finds simulation and scene documents");
         }
         finally
         {

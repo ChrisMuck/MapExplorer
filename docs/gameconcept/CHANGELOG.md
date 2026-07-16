@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Scene authoring and localization foundation
+
+- added manifest-backed `scene-fragments`, `scene-policies` and `scene-localization` documents
+- added typed `Game.App` scene definitions, `defaultsByGroup` normalization and cross-reference validation
+- separated stable scene rules from localized prose through `textId` / `questionTextId`
+- made German the current default locale with deterministic locale and language fallback
+- added German location starter content for all seven archetypes and eight current variants
+- registered empty contact, scout-return and report-event fragment files as later extension points
+- added tests for catalog loading, defaults, missing text, unknown conditions and placeholder parity
+
 ## Phase 2 closure
 
 Cross-System Phase 2 was accepted for the current Vertical Slice on 2026-07-16 after the project

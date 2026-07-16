@@ -85,7 +85,6 @@ public static class CrossSystemContentValidator
             if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown state profile '{scenario.StateProfileId}'.");
             else if (stateProfile.ArchetypeId != scenario.ArchetypeId) errors.Add($"Scenario profile '{scenario.Id}' combines state profile '{scenario.StateProfileId}' with a different archetype.");
             if (!locations.Definitions.ContentProfiles.TryGetValue(scenario.ContentProfileId, out var contentProfile)) errors.Add($"Scenario profile '{scenario.Id}' references unknown content profile '{scenario.ContentProfileId}'.");
-            else if (stateProfile != null) ValidateStateWording(scenario, stateProfile, contentProfile, errors);
             ValidateStateActionRules(scenario, stateProfile, errors);
             foreach (var actionId in scenario.ActionSet.SharedActionIds
                 .Concat(scenario.ActionSet.InitialAdditionalActionIds)
@@ -204,22 +203,6 @@ public static class CrossSystemContentValidator
             ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Interaction, rule.InteractionStateIds, errors);
             ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Operational, rule.OperationalStateIds, errors);
             ValidateRuleStates(scenario, stateProfile, LocationStateChannels.Presence, rule.PresenceStateIds, errors);
-        }
-    }
-
-    private static void ValidateStateWording(
-        LocationScenarioProfileDefinition scenario,
-        LocationStateProfileDefinition stateProfile,
-        LocationContentProfileDefinition contentProfile,
-        ICollection<string> errors)
-    {
-        foreach (var channel in stateProfile.Channels)
-        {
-            foreach (var stateId in channel.Value.Values)
-            {
-                if (!contentProfile.FlavorByState.TryGetValue(stateId, out var text) || string.IsNullOrWhiteSpace(text))
-                    errors.Add($"Scenario profile '{scenario.Id}' content profile '{contentProfile.Id}' lacks neutral wording for {channel.Key} state '{stateId}'.");
-            }
         }
     }
 

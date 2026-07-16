@@ -37,9 +37,10 @@ public sealed class InspectLocationCommand
         }
 
         var wasInspected = location.IsInspected;
+        var previousKnownCondition = game.Knowledge.FindLocationCondition(location.Id);
         location.Inspect(game.World.WorldDay);
+        var presentation = presentationResolver?.ObserveAndResolve(game, location, previousKnownCondition);
         game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
-        var presentation = presentationResolver?.ObserveAndResolve(game, location);
         var message = presentation?.Message ?? BuildLegacyMessage(game, location);
         string? archiveEntry = null;
         FieldFindingState? fieldFinding = null;
@@ -60,7 +61,7 @@ public sealed class InspectLocationCommand
             }
         }
 
-        return InspectLocationResult.Inspected(location, message, archiveEntry, fieldFinding);
+        return InspectLocationResult.Inspected(location, message, archiveEntry, fieldFinding, presentation?.Scene);
     }
 
     private static void AddLegacyLocationLeverage(GameState game, SpecialLocationState location)
