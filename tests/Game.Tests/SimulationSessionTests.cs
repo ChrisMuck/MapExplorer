@@ -19,6 +19,7 @@ internal sealed class SimulationSessionTests
         InteractiveLocationCommandsRemainOptionalToTheScript();
         TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession();
         InteractiveDirectionalScoutUsesSharedMissionLifecycle();
+        InteractiveDirectionalMovementUsesSharedAdjacentMoveCommand();
     }
 
     private static void CommandHistoryAndRunRecordAreDeterministic()
@@ -197,6 +198,23 @@ internal sealed class SimulationSessionTests
             "Directional report appears only through the normal mission lifecycle");
         AssertTrue(playback.Session.Game.Knowledge.ScoutReports.All(report => !report.HasExactCoordinates),
             "Interactive directional reports preserve the no-exact-coordinate contract");
+    }
+
+    private static void InteractiveDirectionalMovementUsesSharedAdjacentMoveCommand()
+    {
+        var scenario = DevelopmentScenarioLoader.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "tests", "DevelopmentScenarios", "scenario-directional-lead.json"));
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+        var beforeMovement = playback.Session.Game.Expedition.MovementPoints;
+
+        var moved = playback.MoveExpedition(HexDirection.East);
+
+        AssertTrue(moved.Success, "WPF-facing direction pad delegates to the shared adjacent movement command");
+        AssertEqual(new HexCoord(2, 1), playback.Session.Game.Expedition.Position, "Direction pad moves exactly one logical neighboring hex");
+        AssertEqual(beforeMovement - moved.Cost, playback.Session.Game.Expedition.MovementPoints, "Direction pad uses normal terrain movement cost");
+        AssertEqual(KnowledgeLevel.Confirmed, playback.Session.Game.Knowledge.GetTileKnowledge(new HexCoord(2, 1)),
+            "Direction pad uses normal movement knowledge revelation");
+        AssertEqual(0, playback.NextCommandIndex, "Interactive movement does not consume or replace the authored script path");
+        AssertTrue(playback.HasInteractiveCommands, "Interactive movement prevents a script-only run record from misrepresenting the path");
     }
 
     private static GameDataCatalog LoadCatalog()

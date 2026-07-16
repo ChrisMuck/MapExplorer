@@ -133,6 +133,14 @@ public sealed class DevelopmentScenarioPlayback
         return Session.SendDirectionalScout(scoutMemberIds, direction, durationDays, focus, behavior);
     }
 
+    /// <summary>Moves to one adjacent logical hex through the ordinary shared movement command.</summary>
+    public MoveExpeditionResult MoveExpedition(HexDirection direction)
+    {
+        if (!CanExecuteInteractive(out var error)) return MoveExpeditionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.MoveExpedition(Session.Game.Expedition.Position.Neighbor(direction));
+    }
+
     /// <summary>Runs one player-selected location intervention through the shared session.</summary>
     public LocationActionResult ResolveLocationAction(string locationId, string actionId)
     {

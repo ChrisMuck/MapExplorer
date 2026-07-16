@@ -183,12 +183,33 @@ public partial class MainWindow : Window
         AvailableScoutSelector.ItemsSource = scouts;
         AvailableScoutSelector.SelectedItem = scouts.FirstOrDefault(entry => entry.Id == selectedScoutId) ?? scouts.FirstOrDefault();
         RefreshDirectionalScouts(game, scouts);
+        MovementStateText.Text = $"Position: {game.Expedition.Position} · Bewegungspunkte: {game.Expedition.MovementPoints}/{game.Expedition.MaxMovementPoints} · Status: {game.Expedition.Status}";
         WorldLocationsList.ItemsSource = BuildWorldLocations(game);
         WorldFactionsList.ItemsSource = BuildWorldFactions(game);
         WorldProcessesList.ItemsSource = BuildWorldProcesses(game);
         CausalityList.ItemsSource = BuildCausality(game);
         RefreshTestTeam(game);
         UpdateLocationCommandSelection();
+    }
+
+    private void MoveExpeditionDirection(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPlayback(out var current)) return;
+        if (sender is not Button { Tag: string directionText } ||
+            !Enum.TryParse<HexDirection>(directionText, out var direction))
+        {
+            MovementResultText.Text = "Die gewählte Hex-Richtung ist ungültig.";
+            return;
+        }
+
+        var result = current.MoveExpedition(direction);
+        MovementResultText.Text = result.Success
+            ? $"Bewegt: {direction}. Normale Bewegungskosten: {result.Cost}."
+            : $"Bewegung {direction} abgelehnt: {result.Error}";
+        SessionStatus.Text = result.Success
+            ? $"Expedition über den gemeinsamen Bewegungsbefehl nach {direction} bewegt. Kosten: {result.Cost}."
+            : result.Error ?? "Bewegung abgelehnt.";
+        RefreshInspector();
     }
 
     private void RefreshDirectionalScouts(GameState game, IReadOnlyList<AvailableScoutEntry> availableScouts)

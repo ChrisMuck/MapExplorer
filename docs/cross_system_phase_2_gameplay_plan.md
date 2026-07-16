@@ -1,6 +1,6 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.7 complete; Block 2.8 next**
+Status: **In progress — Blocks 2.0–2.8 complete; Block 2.9 automated gates complete, human review pending**
 Branch: `codex/phase-2-archetype-flows`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
@@ -374,6 +374,14 @@ text for every Phase-2 scenario state.
 
 ### Block 2.8 — WPF Directional Movement Controls (Last)
 
+**Status:** Complete. WPF now provides a six-direction logical hex pad. Every press derives exactly
+one adjacent `HexCoord` through `HexCoord.Neighbor` and delegates to the ordinary
+`SimulationSession.MoveExpedition` path. The runner displays the returned cost or rejection and
+then refreshes location options, player knowledge, movement points and scout controls from the same
+session. It contains no map, teleport, alternative passability check or WPF movement-cost rule. A
+deterministic test proves adjacency, normal terrain cost, ordinary knowledge revelation and that
+interactive movement does not consume the authored JSON command path.
+
 Only after the fixed paths and directional scout controls are trustworthy, add a convenience
 movement pad to WPF. It sends the ordinary `MoveExpeditionCommand` to the adjacent logical hex in
 the selected approximate direction and displays the normal movement result/cost. It does not add a
@@ -384,6 +392,15 @@ mission with buttons alone, while movement points, terrain restrictions and know
 the shared simulation behavior.
 
 ### Block 2.9 — Regression, Batch and Human Review
+
+**Status:** In progress. Deterministic regression and batch gates now cover every authored proof
+scenario and all seven initial archetype profiles. The batch runner steps scenario commands through
+the shared application path and flags unreachable scripts, state changes without follow-up, missing
+leave/mark/defer choices, specialist-gated dead ends, unanswerable situations and severe branches
+without an earlier answerable warning. The checks operate on scenario profiles, action tags,
+requirements and runtime interaction queries; they contain no concrete location, variant or
+`LocationKind` branches. The remaining gate is the project-owner WPF/Unity play-through recorded in
+`docs/phase_2_human_review_checklist.md`.
 
 1. Add deterministic tests for every new state transition, follow-up option, missing specialist,
    local/directional scout distinction, warning path and persistence rule.

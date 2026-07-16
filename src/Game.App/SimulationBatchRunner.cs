@@ -14,6 +14,10 @@ namespace Game.App
 public sealed class SimulationBatchRunner
 {
     public const int RequiredSoftConnectionCount = 2;
+    private static readonly HashSet<string> SafeDecisionTags = new(StringComparer.Ordinal)
+    {
+        "leave", "withdraw", "avoid", "mark", "ignore", "defer", "return-later"
+    };
 
     public SimulationBatchReport Run(GameDataCatalog catalog, SimulationBatchRequest request)
     {
@@ -69,7 +73,20 @@ public sealed class SimulationBatchRunner
         {
             try
             {
-                var result = new DevelopmentScenarioExecutor().Execute(catalog, scenario);
+                var playback = DevelopmentScenarioPlayback.Create(catalog, scenario);
+                while (playback.HasNextCommand)
+                {
+                    var command = scenario.Commands[playback.NextCommandIndex];
+                    var location = FindCommandLocation(playback.Session, command);
+                    var before = location == null ? null : LocationStateSignature(location);
+                    var step = playback.ExecuteNext();
+                    if (step.Success && location != null && before != LocationStateSignature(location))
+                    {
+                        AuditStateChangingFollowUp(catalog, playback.Session, scenario, command, location, issues);
+                    }
+                }
+
+                var result = playback.CompleteForInspection();
                 var options = CountKnownOptions(result.Session);
                 scenarios.Add(new SimulationBatchScenarioResult(
                     scenario.Id,
@@ -84,14 +101,11 @@ public sealed class SimulationBatchRunner
                     result.Session.Game.World.Traces.Count(item => item.Kind == SimulationTraceKind.FactionReaction)));
                 if (!result.Success)
                 {
-                    issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.ScenarioFailure, scenario.Seed, scenario.Id, result.FailureSummary));
+                    issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.UnreachableScenarioPath, scenario.Seed, scenario.Id, result.FailureSummary));
                 }
 
                 AuditRuntime(catalog, result.Session, scenario.Seed, scenario.Id, issues);
-                if (options.Total > 0 && options.Available == 0)
-                {
-                    issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.DeadEndKnownLocationOptions, scenario.Seed, scenario.Id, "All player-visible location options are locked."));
-                }
+                AuditKnownLocationChoices(catalog, result.Session, scenario.Seed, scenario.Id, issues);
             }
             catch (Exception error)
             {
@@ -137,7 +151,111 @@ public sealed class SimulationBatchRunner
                 }
             }
         }
+
+        foreach (var profile in catalog.Authoring.ScenarioProfiles.Values)
+        {
+            var sharedActions = profile.ActionSet.SharedActionIds
+                .Where(catalog.Locations.Definitions.Actions.ContainsKey)
+                .Select(id => catalog.Locations.Definitions.Actions[id])
+                .ToList();
+            if (!sharedActions.Any(IsSafeDecision))
+            {
+                issues.Add(new SimulationBatchIssue(
+                    SimulationBatchIssueKind.MissingLeaveOrDeferChoice,
+                    null,
+                    profile.Id,
+                    $"Archetype profile '{profile.ArchetypeId}' has no shared leave, mark, defer or return-later action."));
+            }
+
+            var gatedActionIds = profile.ActionSet.InitialAdditionalActionIds
+                .Concat(profile.ActionSet.ContextActionRules.SelectMany(rule => rule.ActionIds))
+                .Concat(profile.ActionSet.StateActionRules.SelectMany(rule => rule.ActionIds))
+                .Distinct(StringComparer.Ordinal);
+            var hasSpecialistGate = gatedActionIds
+                .Where(catalog.Locations.Definitions.Actions.ContainsKey)
+                .Select(id => catalog.Locations.Definitions.Actions[id])
+                .Any(action => action.HardRequirements.Any(requirement => requirement.Kind == LocationRequirementKind.RolePresent));
+            if (hasSpecialistGate && !sharedActions.Any(IsSafeDecision))
+            {
+                issues.Add(new SimulationBatchIssue(
+                    SimulationBatchIssueKind.SpecialistGateDeadEnd,
+                    null,
+                    profile.Id,
+                    $"Archetype profile '{profile.ArchetypeId}' can expose a specialist gate without a shared safe decision."));
+            }
+        }
     }
+
+    private static void AuditStateChangingFollowUp(
+        GameDataCatalog catalog,
+        SimulationSession session,
+        DevelopmentScenario scenario,
+        DevelopmentScenarioCommand command,
+        SpecialLocationState location,
+        ICollection<SimulationBatchIssue> issues)
+    {
+        var interaction = session.GetLocationInteraction(location.Id).Interaction;
+        if (interaction == null) return;
+        var available = interaction.Options.Where(option => option.IsAvailable).ToList();
+        if (available.Count == 0)
+        {
+            issues.Add(new SimulationBatchIssue(
+                SimulationBatchIssueKind.MissingStateChangeFollowUp,
+                scenario.Seed,
+                scenario.Id,
+                $"Action '{command.ActionId}' changed location '{location.Id}' but left no available follow-up option."));
+        }
+        else if (!available.Any(option => catalog.Locations.Definitions.Actions.TryGetValue(option.Action.Id, out var action) && IsSafeDecision(action)))
+        {
+            issues.Add(new SimulationBatchIssue(
+                SimulationBatchIssueKind.MissingLeaveOrDeferChoice,
+                scenario.Seed,
+                scenario.Id,
+                $"Action '{command.ActionId}' changed location '{location.Id}' but the resulting choice has no available leave, mark, defer or return-later path."));
+        }
+    }
+
+    private static void AuditKnownLocationChoices(
+        GameDataCatalog catalog,
+        SimulationSession session,
+        uint seed,
+        string scenarioId,
+        ICollection<SimulationBatchIssue> issues)
+    {
+        foreach (var location in session.Game.World.Locations)
+        {
+            var interaction = session.GetLocationInteraction(location.Id).Interaction;
+            if (interaction == null || interaction.Options.Count == 0) continue;
+            var available = interaction.Options.Where(option => option.IsAvailable).ToList();
+            if (available.Count == 0)
+            {
+                issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.DeadEndKnownLocationOptions, seed, scenarioId, $"All player-visible options at '{location.Id}' are locked."));
+            }
+
+            var hasLockedSpecialistChoice = interaction.Options.Any(option =>
+                !option.IsAvailable &&
+                catalog.Locations.Definitions.Actions.TryGetValue(option.Action.Id, out var action) &&
+                action.HardRequirements.Any(requirement => requirement.Kind == LocationRequirementKind.RolePresent));
+            var hasSafeChoice = available.Any(option =>
+                catalog.Locations.Definitions.Actions.TryGetValue(option.Action.Id, out var action) && IsSafeDecision(action));
+            if (hasLockedSpecialistChoice && !hasSafeChoice)
+            {
+                issues.Add(new SimulationBatchIssue(SimulationBatchIssueKind.SpecialistGateDeadEnd, seed, scenarioId, $"Specialist-gated choices at '{location.Id}' have no available safe alternative."));
+            }
+        }
+    }
+
+    private static SpecialLocationState? FindCommandLocation(SimulationSession session, DevelopmentScenarioCommand command) =>
+        string.Equals(command.Kind, "resolve-location-action", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(command.Kind, "advance-location-project", StringComparison.OrdinalIgnoreCase)
+            ? session.Game.World.Locations.FirstOrDefault(location => location.Id == command.LocationId)
+            : null;
+
+    private static string LocationStateSignature(SpecialLocationState location) =>
+        $"{location.InteractionStateId}|{location.OperationalStateId}|{location.PresenceStateId}";
+
+    private static bool IsSafeDecision(LocationActionDefinition action) =>
+        action.ActionTags.Any(SafeDecisionTags.Contains);
 
     private static void AuditRuntime(
         GameDataCatalog catalog,
@@ -237,6 +355,10 @@ public enum SimulationBatchIssueKind
     MissingWarningPath,
     NoOpFactionObservation,
     DeadEndKnownLocationOptions,
+    MissingStateChangeFollowUp,
+    MissingLeaveOrDeferChoice,
+    SpecialistGateDeadEnd,
+    UnreachableScenarioPath,
     ScenarioFailure
 }
 

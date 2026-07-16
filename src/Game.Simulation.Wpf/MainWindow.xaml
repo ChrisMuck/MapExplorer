@@ -114,6 +114,48 @@
                     </Grid>
                 </Grid>
             </TabItem>
+            <TabItem Header="Bewegung">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*" />
+                        <ColumnDefinition Width="1.4*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                        <TextBlock Text="Angrenzendes Hex betreten" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Jede Taste sendet genau einen gewöhnlichen MoveExpeditionCommand. Kosten, Hindernisse und Kartenwissen stammen aus der gemeinsamen Simulation."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,0,0,14" />
+                        <Grid Width="330" HorizontalAlignment="Left">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Row="0" Grid.Column="0" Content="Nordwest" Tag="NorthWest" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="0" Grid.Column="2" Content="Nordost" Tag="NorthEast" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="1" Grid.Column="0" Content="West" Tag="West" Click="MoveExpeditionDirection" />
+                            <Border Grid.Row="1" Grid.Column="1" BorderBrush="#4A5970" BorderThickness="1" Padding="8" Margin="0,0,8,0">
+                                <TextBlock Text="Expedition" HorizontalAlignment="Center" />
+                            </Border>
+                            <Button Grid.Row="1" Grid.Column="2" Content="Ost" Tag="East" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="2" Grid.Column="0" Content="Südwest" Tag="SouthWest" Click="MoveExpeditionDirection" />
+                            <Button Grid.Row="2" Grid.Column="2" Content="Südost" Tag="SouthEast" Click="MoveExpeditionDirection" />
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Gemeinsamer Bewegungszustand" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock x:Name="MovementStateText" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <TextBlock Text="Letztes Ergebnis" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBox x:Name="MovementResultText" IsReadOnly="True" TextWrapping="Wrap" MinHeight="72" Padding="8" />
+                        <TextBlock Text="Nach einer Bewegung werden Ortsoptionen, Wissen, Weltansicht und Scout-Steuerung aus derselben Session neu abgefragt."
+                                   TextWrapping="Wrap" Foreground="#AFC0D7" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
             <TabItem Header="Richtungsscouts">
                 <Grid Margin="12">
                     <Grid.ColumnDefinitions>
