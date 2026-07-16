@@ -13,6 +13,24 @@ internal sealed class SceneDescriptionResolverTests
         ResolutionIsDeterministicAndDoesNotInferHiddenModifiers();
         RemoteViewUsesStoredKnowledgeAndHandlesDoubt();
         SupersessionAndExclusiveTagsSelectOneCoherentSet();
+        ArrivalSceneIsProducedAndCommittedByMovement();
+    }
+
+    private static void ArrivalSceneIsProducedAndCommittedByMovement()
+    {
+        var app = new GameApplication(LoadCatalog());
+        var game = app.CreateTutorialGame();
+        var location = game.World.Locations.Single(item => item.Id == "broken-ravine");
+
+        var movement = app.MoveExpedition(game, new HexCoord(2, 15));
+
+        AssertTrue(movement.Success, "Movement to a location anchor succeeds");
+        AssertEqual(1, movement.ArrivalScenes.Count, "Movement returns one scene for the reached location anchor");
+        AssertTrue(movement.ArrivalScenes[0].Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Contains("frag-open-broken-bridge"),
+            "Arrival uses the variant opening through the generic scene pipeline");
+        AssertTrue(game.Knowledge.FindLocationCondition(location.Id) != null,
+            "The directly observed condition is committed to KnowledgeState after scene resolution");
+        AssertFalse(location.IsInspected, "Arrival observation does not silently execute the inspection action");
     }
 
     private static void SupersessionAndExclusiveTagsSelectOneCoherentSet()

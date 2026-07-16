@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -12,6 +13,7 @@ public sealed class MoveExpeditionCommand
     private readonly MovementCostService movementCostService;
     private readonly KnowledgeService knowledgeService;
     private readonly FactionTerritoryEntryResolver factionTerritoryEntryResolver;
+    private readonly LocationInspectionPresentationResolver? locationPresentationResolver;
 
     public MoveExpeditionCommand(MovementCostService movementCostService)
         : this(movementCostService, new KnowledgeService())
@@ -26,11 +28,13 @@ public sealed class MoveExpeditionCommand
     public MoveExpeditionCommand(
         MovementCostService movementCostService,
         KnowledgeService knowledgeService,
-        FactionTerritoryEntryResolver? factionTerritoryEntryResolver)
+        FactionTerritoryEntryResolver? factionTerritoryEntryResolver,
+        LocationInspectionPresentationResolver? locationPresentationResolver = null)
     {
         this.movementCostService = movementCostService ?? throw new ArgumentNullException(nameof(movementCostService));
         this.knowledgeService = knowledgeService ?? throw new ArgumentNullException(nameof(knowledgeService));
         this.factionTerritoryEntryResolver = factionTerritoryEntryResolver ?? new FactionTerritoryEntryResolver(null);
+        this.locationPresentationResolver = locationPresentationResolver;
     }
 
     public MoveExpeditionResult Execute(GameState game, HexCoord destination)
@@ -89,7 +93,24 @@ public sealed class MoveExpeditionCommand
 
         ApplyFactionEntry(game, destinationTile, destination);
 
-        return MoveExpeditionResult.Moved(from, destination, cost.Cost);
+        var arrivalScenes = ObserveArrivedLocations(game, destination);
+
+        return MoveExpeditionResult.Moved(from, destination, cost.Cost, arrivalScenes);
+    }
+
+    private IReadOnlyList<SceneDescriptionResult> ObserveArrivedLocations(GameState game, HexCoord destination)
+    {
+        if (locationPresentationResolver == null) return Array.Empty<SceneDescriptionResult>();
+        var scenes = new List<SceneDescriptionResult>();
+        foreach (var location in game.World.Locations.Where(item => item.Anchor.Coords.Contains(destination)).OrderBy(item => item.Id, StringComparer.Ordinal))
+        {
+            var previous = game.Knowledge.FindLocationCondition(location.Id);
+            location.Discover(game.World.WorldDay);
+            var presentation = locationPresentationResolver.ObserveArrivalAndResolve(game, location, previous);
+            game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
+            if (presentation?.Scene != null) scenes.Add(presentation.Scene);
+        }
+        return scenes;
     }
 
     private static bool IsBlockedByEdgeLocation(GameState game, HexCoord from, HexCoord to)

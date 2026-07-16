@@ -108,9 +108,11 @@ public sealed class GameApplication
         var findingAnalysisHandoffService = dataCatalog?.Authoring.Findings.Count > 0
             ? new FindingAnalysisHandoffService(dataCatalog.Authoring)
             : null;
+        var locationPresentationResolver = new LocationInspectionPresentationResolver(
+            locationInteractionDefinitions, dataCatalog?.Authoring, dataCatalog?.Scenes);
         inspectLocationCommand = new InspectLocationCommand(
             findingAcquisitionService,
-            new LocationInspectionPresentationResolver(locationInteractionDefinitions, dataCatalog?.Authoring, dataCatalog?.Scenes));
+            locationPresentationResolver);
         completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
         scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(
@@ -124,7 +126,8 @@ public sealed class GameApplication
         moveExpeditionCommand = new MoveExpeditionCommand(
             movementCostService,
             new KnowledgeService(),
-            new FactionTerritoryEntryResolver(crossSystemData));
+            new FactionTerritoryEntryResolver(crossSystemData),
+            locationPresentationResolver);
         endDayCommand = new EndDayCommand(
             scoutMissionResolutionService: new ScoutMissionResolutionService(crossSystemData?.Evidence, crossSystemData?.FactionSignatures, crossSystemData?.ScoutContent),
             worldPhaseService: worldPhaseService);

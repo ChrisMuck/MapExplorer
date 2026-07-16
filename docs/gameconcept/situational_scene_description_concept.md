@@ -1252,8 +1252,10 @@ human review.
    anonymous/identified relation fragments are implemented. Inspection coverage exists for all
    seven archetypes, and a faction is named only for `Contacted`, `Open` or `Hostile`. Stored sources
    enforce their authored age/doubt contract; doubtful observations receive explicit uncertainty
-   wording. Supersession and exclusive-tag selection are active. Arrival wiring, broader age
-   content/tests and the final content-profile parity gate remain in this package.
+   wording. Supersession and exclusive-tag selection are active. Arrival scenes are emitted by
+   movement for every reached location anchor and commit the directly observed condition only after
+   resolution; they do not execute the inspection action. Broader age content/tests and the final
+   content-profile parity gate remain in this package.
 3. **Contact scenes.** Identity-stage derivation from `FactionContactStatus`, earned signature
    context tags and delivered contact events; wire faction interaction and situation delivery.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no

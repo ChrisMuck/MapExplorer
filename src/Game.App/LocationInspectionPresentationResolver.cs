@@ -30,6 +30,14 @@ public sealed class LocationInspectionPresentationResolver
 
     public LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location,
         LocationConditionKnowledgeState? previousKnownCondition = null, string? locale = null)
+        => ObserveAndResolve(game, location, SceneTrigger.InspectionResult, previousKnownCondition, locale);
+
+    public LocationInspectionPresentation? ObserveArrivalAndResolve(GameState game, SpecialLocationState location,
+        LocationConditionKnowledgeState? previousKnownCondition = null, string? locale = null)
+        => ObserveAndResolve(game, location, SceneTrigger.Arrival, previousKnownCondition, locale);
+
+    private LocationInspectionPresentation? ObserveAndResolve(GameState game, SpecialLocationState location,
+        SceneTrigger trigger, LocationConditionKnowledgeState? previousKnownCondition, string? locale)
     {
         if (game == null) throw new ArgumentNullException(nameof(game));
         if (location == null) throw new ArgumentNullException(nameof(location));
@@ -75,7 +83,7 @@ public sealed class LocationInspectionPresentationResolver
             var identityStage = identifiedFaction != null && identifiedFaction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile
                 ? "identified" : "anonymous";
             scene = sceneResolver.ResolveLocation(new LocationSceneView(
-                location.Id, SceneTrigger.InspectionResult, location.ArchetypeId!, location.VariantId!, profile.Title,
+                location.Id, trigger, location.ArchetypeId!, location.VariantId!, profile.Title,
                 profile.Subtitle, profile.ImageId, location.InteractionStateId, location.OperationalStateId,
                 location.PresenceStateId, game.World.WorldDay, previousKnownCondition,
                 game.Knowledge.GetTileKnowledge(location.Coord), game.Knowledge.KnownLocationContextTags(location.Id),
