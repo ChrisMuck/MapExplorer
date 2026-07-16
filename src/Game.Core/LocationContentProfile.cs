@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 
 namespace Game.Core
 {
@@ -12,15 +11,12 @@ namespace Game.Core
 /// </summary>
 public sealed class LocationContentProfileDefinition
 {
-    private readonly Dictionary<string, string> flavorByState;
-
     public LocationContentProfileDefinition(
         string id,
         string title,
         string? subtitle = null,
         string? shortDescription = null,
         string? description = null,
-        IReadOnlyDictionary<string, string>? flavorByState = null,
         string? imageId = null,
         string? journalDiscovered = null,
         string? journalResolved = null)
@@ -34,14 +30,6 @@ public sealed class LocationContentProfileDefinition
         JournalDiscovered = Normalize(journalDiscovered);
         JournalResolved = Normalize(journalResolved);
 
-        this.flavorByState = new Dictionary<string, string>();
-        if (flavorByState != null)
-        {
-            foreach (var pair in flavorByState)
-            {
-                this.flavorByState[pair.Key] = pair.Value;
-            }
-        }
     }
 
     public string Id { get; }
@@ -59,19 +47,6 @@ public sealed class LocationContentProfileDefinition
     public string? JournalDiscovered { get; }
 
     public string? JournalResolved { get; }
-
-    public IReadOnlyDictionary<string, string> FlavorByState => flavorByState;
-
-    /// <summary>Flavor text for an operational (or other) state id, falling back to the description.</summary>
-    public string? FlavorForState(string? stateId)
-    {
-        if (!string.IsNullOrWhiteSpace(stateId) && flavorByState.TryGetValue(stateId!, out var flavor))
-        {
-            return flavor;
-        }
-
-        return Description ?? ShortDescription;
-    }
 
     private static string RequireText(string value, string name)
     {

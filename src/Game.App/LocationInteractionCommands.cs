@@ -75,11 +75,9 @@ public sealed class GetLocationInteractionCommand
         var knowledgeLabel = known == null
             ? "Bestaetigt, Zustand noch nicht aufgenommen"
             : known.IsDoubtful ? $"Zweifelhaft, zuletzt beobachtet an Tag {known.ObservedWorldDay}" : $"Bestaetigt an Tag {known.ObservedWorldDay}";
-        string Wording(string? stateId, string fallback) =>
-            stateId != null && profile?.FlavorByState.TryGetValue(stateId, out var text) == true ? text : fallback;
-        var interactionText = Wording(known?.InteractionStateId, "Der Interaktionszustand ist noch nicht bekannt.");
-        var operationalText = Wording(known?.OperationalStateId, "Der aktuelle Zustand ist noch nicht bekannt.");
-        var presenceText = Wording(known?.PresenceStateId, "Die aktuelle Anwesenheit ist nicht bekannt.");
+        var interactionText = "Der Interaktionszustand wird in der Szenenbeschreibung zusammengefasst.";
+        var operationalText = "Der bekannte Zustand wird in der Szenenbeschreibung zusammengefasst.";
+        var presenceText = "Die bekannte Anwesenheit wird in der Szenenbeschreibung zusammengefasst.";
         var description = known == null
             ? profile?.ShortDescription ?? "Der Ort ist bestaetigt, wurde aber noch nicht aus der Naehe aufgenommen."
             : string.Join(" ", new[] { interactionText, operationalText, presenceText });

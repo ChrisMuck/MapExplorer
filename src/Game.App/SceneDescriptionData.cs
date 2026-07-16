@@ -488,7 +488,36 @@ public static class SceneDescriptionContentValidator
         foreach (var policy in catalog.Policies.Values)
             if (policy.ArchetypeId != null && !locations.Definitions.Archetypes.ContainsKey(policy.ArchetypeId))
                 throw new LocationDataException($"Scene policy '{policy.Id}' references unknown archetype '{policy.ArchetypeId}'.");
+        ValidateLocationStateCoverage(catalog, authoring);
     }
+
+    private static void ValidateLocationStateCoverage(SceneDescriptionCatalog catalog, CrossSystemAuthoringBundle authoring)
+    {
+        foreach (var scenario in authoring.ScenarioProfiles.Values)
+        {
+            if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) continue;
+            foreach (var channel in stateProfile.Channels)
+            {
+                foreach (var stateId in channel.Value.Values)
+                {
+                    var covered = catalog.Fragments.Values.Any(fragment => fragment.SubjectKind == "location"
+                        && (fragment.AppliesTo.ArchetypeIds.Count == 0 || fragment.AppliesTo.ArchetypeIds.Contains(scenario.ArchetypeId, StringComparer.Ordinal))
+                        && (fragment.AppliesTo.VariantIds.Count == 0 || fragment.AppliesTo.VariantIds.Contains(scenario.VariantId, StringComparer.Ordinal))
+                        && ConditionsForChannel(fragment.When, channel.Key).Contains(stateId, StringComparer.Ordinal));
+                    if (!covered)
+                        throw new LocationDataException($"Scenario profile '{scenario.Id}' lacks a localized scene fragment for {channel.Key} state '{stateId}'.");
+                }
+            }
+        }
+    }
+
+    private static IReadOnlyList<string> ConditionsForChannel(SceneFragmentConditionDefinition condition, string channelId) => channelId switch
+    {
+        LocationStateChannels.Interaction => condition.KnownInteractionStatesAny,
+        LocationStateChannels.Operational => condition.KnownOperationalStatesAny,
+        LocationStateChannels.Presence => condition.KnownPresenceStatesAny,
+        _ => Array.Empty<string>()
+    };
 
     private static void ValidateStateValues(SceneFragmentDefinition fragment, CrossSystemAuthoringBundle authoring)
     {

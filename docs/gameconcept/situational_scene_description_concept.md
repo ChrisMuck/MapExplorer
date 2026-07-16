@@ -1255,7 +1255,9 @@ human review.
    wording. Supersession and exclusive-tag selection are active. Arrival scenes are emitted by
    movement for every reached location anchor and commit the directly observed condition only after
    resolution; they do not execute the inspection action. Broader age content/tests and the final
-   content-profile parity gate remain in this package.
+   broader age-content coverage remains in this package. The content-profile parity gate is active:
+   every authored state needs a matching localized scene fragment, and `flavorByState` has been
+   removed from the runtime model and location content JSON.
 3. **Contact scenes.** Identity-stage derivation from `FactionContactStatus`, earned signature
    context tags and delivered contact events; wire faction interaction and situation delivery.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no

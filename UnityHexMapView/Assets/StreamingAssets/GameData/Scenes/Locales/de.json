@@ -66,6 +66,7 @@
     { "id": "scene.fragment.interaction.observed", "text": "Form und Anordnung wurden bereits aus sicherer Entfernung beobachtet." },
     { "id": "scene.fragment.interaction.interpreted", "text": "Die Bedeutung der Zeichen ist inzwischen verstanden." },
     { "id": "scene.fragment.interaction.assessed", "text": "Die sichtbaren Risiken und möglichen Wege wurden bereits eingeschätzt." },
+    { "id": "scene.fragment.interaction.contained", "text": "Die Expedition hat Maßnahmen abgeschlossen, welche die unmittelbare Gefahr begrenzen." },
     { "id": "scene.fragment.interaction.approached", "text": "Die Expedition hat sich diesem Ort schon einmal sichtbar genähert." },
     { "id": "scene.fragment.interaction.contacted", "text": "Hier hat bereits eine erste Begegnung stattgefunden; sie hat Spuren und Fragen hinterlassen." },
     { "id": "scene.fragment.interaction.withdrawn", "text": "Beim letzten Mal hat die Expedition Abstand gehalten und sich zurückgezogen." },

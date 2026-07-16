@@ -330,7 +330,6 @@ public static class LocationDataLoader
             dto.Subtitle,
             dto.ShortDescription,
             dto.Description,
-            dto.FlavorByState,
             dto.ImageId,
             dto.JournalText?.Discovered,
             dto.JournalText?.Resolved);
@@ -652,7 +651,6 @@ public static class LocationDataLoader
         public string? Subtitle { get; set; }
         public string? ShortDescription { get; set; }
         public string? Description { get; set; }
-        public Dictionary<string, string>? FlavorByState { get; set; }
         public string? ImageId { get; set; }
         public JournalDto? JournalText { get; set; }
     }

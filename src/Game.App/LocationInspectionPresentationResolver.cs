@@ -47,7 +47,7 @@ public sealed class LocationInspectionPresentationResolver
         var impressions = new List<string>();
         var observableModifiers = new List<ObservableModifierScenePart>();
         var observableRelationKinds = new HashSet<LocationFactionRelationKind>();
-        AddDistinct(impressions, profile.FlavorForState(location.OperationalStateId) ?? profile.Description ?? profile.ShortDescription);
+        AddDistinct(impressions, profile.Description ?? profile.ShortDescription);
 
         foreach (var modifierId in location.ModifierIds.OrderBy(id => id, StringComparer.Ordinal))
         {
