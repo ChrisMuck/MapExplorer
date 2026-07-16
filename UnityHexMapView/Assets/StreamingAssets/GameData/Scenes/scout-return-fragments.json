@@ -6,5 +6,21 @@
     "scout-return": { "subjectKind": "scout-return", "source": { "kind": "delivered-outcome" }, "priority": 70 },
     "member-condition": { "subjectKind": "scout-return", "source": { "kind": "delivered-outcome" }, "priority": 60 }
   },
-  "items": []
+  "items": [
+    { "id": "frag-scout-return-on-time", "group": "scout-return", "when": { "missionStatusAny": ["Returned"], "teamOutcome": "all-returned", "wasOverdue": false }, "textId": "scene.fragment.scout.return.on-time" },
+    { "id": "frag-scout-return-late", "group": "scout-return", "priority": 75, "when": { "missionStatusAny": ["Returned"], "wasOverdue": true }, "textId": "scene.fragment.scout.return.late" },
+    { "id": "frag-scout-return-injured", "group": "scout-return", "priority": 80, "when": { "missionStatusAny": ["ReturnedInjured"] }, "textId": "scene.fragment.scout.return.injured" },
+    { "id": "frag-scout-return-team-split", "group": "scout-return", "priority": 85, "when": { "teamOutcome": "partial-return" }, "textId": "scene.fragment.scout.return.team-split" },
+    { "id": "frag-scout-overdue-notice", "group": "scout-return", "priority": 85, "when": { "missionStatusAny": ["Overdue"] }, "textId": "scene.fragment.scout.overdue" },
+    { "id": "frag-scout-missing-notice", "group": "scout-return", "priority": 90, "when": { "missionStatusAny": ["Missing"] }, "textId": "scene.fragment.scout.missing" },
+    { "id": "frag-scout-return-with-evidence", "group": "scout-return", "priority": 55, "when": { "missionStatusAny": ["Returned", "ReturnedInjured"], "hasFindings": true }, "textId": "scene.fragment.scout.return.findings" },
+    { "id": "frag-scout-return-lost-equipment", "group": "scout-return", "priority": 55, "when": { "missionStatusAny": ["Returned", "ReturnedInjured"], "hasLostEquipment": true }, "textId": "scene.fragment.scout.return.lost-equipment" },
+    { "id": "frag-scout-report-confident", "group": "scout-return", "priority": 50, "when": { "missionStatusAny": ["Returned"], "reportReliabilityAtLeast": 70 }, "textId": "scene.fragment.scout.report.confident" },
+    { "id": "frag-scout-report-shaken", "group": "scout-return", "source": { "kind": "direct-observation" }, "priority": 50, "when": { "reportReliabilityBelow": 40 }, "textId": "scene.fragment.scout.report.shaken" },
+    { "id": "frag-scout-return-looks-back", "group": "scout-return", "source": { "kind": "direct-observation" }, "priority": 45, "when": { "missionStatusAny": ["Returned", "ReturnedInjured"], "reportReliabilityBelow": 60 }, "textId": "scene.fragment.scout.return.looks-back" },
+    { "id": "frag-member-unhurt", "group": "member-condition", "when": { "memberStatusAny": ["unhurt"] }, "textId": "scene.fragment.member.unhurt" },
+    { "id": "frag-member-injured", "group": "member-condition", "priority": 70, "when": { "memberStatusAny": ["Injured"] }, "textId": "scene.fragment.member.injured" },
+    { "id": "frag-member-exhausted", "group": "member-condition", "priority": 65, "when": { "memberStatusAny": ["Exhausted"] }, "textId": "scene.fragment.member.exhausted" },
+    { "id": "frag-member-supported", "group": "member-condition", "priority": 75, "when": { "memberStatusAny": ["Injured", "Exhausted"], "teamOutcome": "all-returned", "hasCompanion": true }, "textId": "scene.fragment.member.supported" }
+  ]
 }

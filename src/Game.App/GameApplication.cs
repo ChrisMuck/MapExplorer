@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -34,6 +35,7 @@ public sealed class GameApplication
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand;
     private readonly FactionContactSceneResolver? factionSceneResolver;
+    private readonly ScoutReturnSceneResolver? scoutReturnSceneResolver;
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
@@ -87,6 +89,7 @@ public sealed class GameApplication
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
         factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(
             dataCatalog.Scenes, crossSystemData?.FactionSignatures, dataCatalog.Authoring);
+        scoutReturnSceneResolver = dataCatalog == null ? null : new ScoutReturnSceneResolver(dataCatalog.Scenes);
         var contactProfileService = dataCatalog == null || crossSystemData == null ? null
             : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
@@ -349,6 +352,14 @@ public sealed class GameApplication
         return game.Events.Current == null || factionSceneResolver == null
             ? null
             : factionSceneResolver.ResolveDeliveredEvent(game, game.Events.Current);
+    }
+
+    public SceneDescriptionResult? GetScoutReturnPresentation(GameState game, string deliveryId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(deliveryId)) throw new ArgumentException("Delivery id is required.", nameof(deliveryId));
+        var outcome = game.Knowledge.DeliveredMissionOutcomes.FirstOrDefault(item => item.DeliveryId == deliveryId);
+        return outcome == null || scoutReturnSceneResolver == null ? null : scoutReturnSceneResolver.Resolve(game, outcome, locale);
     }
 
     public FactionOfferResult PurchaseFactionOffer(GameState game, string offerId)

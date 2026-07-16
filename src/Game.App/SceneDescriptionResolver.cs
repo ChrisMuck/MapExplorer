@@ -111,6 +111,56 @@ public sealed class ContactSceneView
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
+/// <summary>Read-only projection of one immutable delivered scout-mission outcome.</summary>
+public sealed class ScoutReturnSceneView
+{
+    public ScoutReturnSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string missionStatus, IEnumerable<string> memberStatuses, string teamOutcome,
+        int? reportReliability, bool hasFindings, bool hasLeads, bool wasOverdue,
+        bool hasLostEquipment, string memberName, string? companionName, string daysOverdue,
+        string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        MissionStatus = Require(missionStatus, nameof(missionStatus));
+        MemberStatuses = (memberStatuses ?? throw new ArgumentNullException(nameof(memberStatuses)))
+            .Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        TeamOutcome = Require(teamOutcome, nameof(teamOutcome));
+        ReportReliability = reportReliability;
+        HasFindings = hasFindings;
+        HasLeads = hasLeads;
+        WasOverdue = wasOverdue;
+        HasLostEquipment = hasLostEquipment;
+        MemberName = Require(memberName, nameof(memberName));
+        CompanionName = Normalize(companionName);
+        DaysOverdue = Require(daysOverdue, nameof(daysOverdue));
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string MissionStatus { get; }
+    public IReadOnlyList<string> MemberStatuses { get; }
+    public string TeamOutcome { get; }
+    public int? ReportReliability { get; }
+    public bool HasFindings { get; }
+    public bool HasLeads { get; }
+    public bool WasOverdue { get; }
+    public bool HasLostEquipment { get; }
+    public string MemberName { get; }
+    public string? CompanionName { get; }
+    public string DaysOverdue { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
 /// <summary>
 /// Read-only, already-authorized location observation. It contains no hidden context, modifier or
 /// faction claim that the inspection did not make visible.
@@ -242,6 +292,24 @@ public sealed class SceneDescriptionResolver
         return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
     }
 
+    public SceneDescriptionResult ResolveScoutReturn(ScoutReturnSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "scout-return" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic scout-return scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "scout-return")
+            .Where(fragment => fragment.Source.Kind is "delivered-outcome" or "direct-observation")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Scout-return scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
     private static bool Applies(SceneFragmentDefinition fragment, LocationSceneView view) =>
         (fragment.AppliesTo.ArchetypeIds.Count == 0 || fragment.AppliesTo.ArchetypeIds.Contains(view.ArchetypeId, StringComparer.Ordinal)) &&
         (fragment.AppliesTo.VariantIds.Count == 0 || fragment.AppliesTo.VariantIds.Contains(view.VariantId, StringComparer.Ordinal));
@@ -283,7 +351,7 @@ public sealed class SceneDescriptionResolver
         if (when.MaxKnownStateAgeDays != null && !view.HasCurrentObservation &&
             (view.PreviousKnownCondition == null || view.CurrentWorldDay - view.PreviousKnownCondition.ObservedWorldDay > when.MaxKnownStateAgeDays)) return false;
         if (when.CurrentObservationDiffersFromStored != null && when.CurrentObservationDiffersFromStored != view.CurrentObservationDiffersFromStored) return false;
-        if (when.HasFindings != null || when.HasLeads != null || when.WasOverdue != null || when.HasLostEquipment != null ||
+        if (when.HasFindings != null || when.HasLeads != null || when.WasOverdue != null || when.HasLostEquipment != null || when.HasCompanion != null ||
             when.IsSecondHandAccount != null || when.IsUrgent != null || when.HasOwnArchiveEntryForLocation != null ||
             when.HasLostExpeditionRecordForLocation != null || when.MissionStatusAny.Count > 0 || when.MemberStatusAny.Count > 0 || when.TeamOutcome != null ||
             when.ReportReliabilityAtLeast != null || when.ReportReliabilityBelow != null) return false;
@@ -297,6 +365,11 @@ public sealed class SceneDescriptionResolver
 
     private static string Interpolate(string text, ContactSceneView view) =>
         text.Replace("{subjectLabel}", view.SubjectLabel ?? string.Empty, StringComparison.Ordinal);
+
+    private static string Interpolate(string text, ScoutReturnSceneView view) => text
+        .Replace("{memberName}", view.MemberName, StringComparison.Ordinal)
+        .Replace("{companionName}", view.CompanionName ?? string.Empty, StringComparison.Ordinal)
+        .Replace("{daysOverdue}", view.DaysOverdue, StringComparison.Ordinal);
 
     private static bool ContactSourceAllowed(SceneFragmentSourceDefinition source, ContactSceneView view) => source.Kind switch
     {
@@ -317,8 +390,29 @@ public sealed class SceneDescriptionResolver
             when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
             when.MissionStatusAny.Count == 0 && when.MemberStatusAny.Count == 0 && when.TeamOutcome == null &&
             when.ReportReliabilityAtLeast == null && when.ReportReliabilityBelow == null && when.HasFindings == null &&
-            when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null &&
+            when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
             when.IsSecondHandAccount == null && when.IsUrgent == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ScoutReturnSceneView view)
+    {
+        if (!MatchesAny(when.MissionStatusAny, view.MissionStatus)) return false;
+        if (!MatchesAnyOverlap(when.MemberStatusAny, view.MemberStatuses)) return false;
+        if (when.TeamOutcome != null && when.TeamOutcome != view.TeamOutcome) return false;
+        if (when.ReportReliabilityAtLeast != null && (view.ReportReliability == null || view.ReportReliability < when.ReportReliabilityAtLeast)) return false;
+        if (when.ReportReliabilityBelow != null && (view.ReportReliability == null || view.ReportReliability >= when.ReportReliabilityBelow)) return false;
+        if (when.HasFindings != null && when.HasFindings != view.HasFindings) return false;
+        if (when.HasLeads != null && when.HasLeads != view.HasLeads) return false;
+        if (when.WasOverdue != null && when.WasOverdue != view.WasOverdue) return false;
+        if (when.HasLostEquipment != null && when.HasLostEquipment != view.HasLostEquipment) return false;
+        if (when.HasCompanion != null && when.HasCompanion != (view.CompanionName != null)) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.KnownContextTagsAny.Count == 0 &&
+            when.ObservableModifierIdsAny.Count == 0 && when.ObservableRelationKindsAny.Count == 0 &&
+            when.KnowledgeLevelAtLeast == null && when.ContactStatusAny.Count == 0 && when.IdentityStage == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null &&
+            when.HasOwnArchiveEntryForLocation == null && when.CurrentObservationDiffersFromStored == null &&
+            when.HasLostExpeditionRecordForLocation == null;
     }
     private static bool MatchesAnyOverlap(IEnumerable<string> expected, IEnumerable<string> actual)
     {

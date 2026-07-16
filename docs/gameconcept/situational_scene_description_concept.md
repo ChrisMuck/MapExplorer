@@ -320,11 +320,12 @@ All fields are optional; each maps to player-known state only:
 | `contactStatusAny` | `FactionContactStatus` values: `Unknown`, `Rumored`, `Contacted`, `Open`, `Hostile`. |
 | `identityStage` | `anonymous`, `signature-recognised` or `identified` — derived, see below. |
 | `missionStatusAny` | `ScoutMissionStatus` values: `Returned`, `Overdue`, `ReturnedInjured`, `Missing`. |
-| `memberStatusAny` | `ExpeditionMemberStatus` values: `Injured`, `Exhausted`, `Missing`, `Dead`, plus derived `unhurt`. |
+| `memberStatusAny` | Condition captured in the delivered participant outcome: `Injured`, `Exhausted`, `Missing`, `Dead`, plus `unhurt`; never the member's later mutable status. |
 | `teamOutcome` | `all-returned`, `partial-return`, `none-returned` — derived from the mission's member list vs. actual returns. |
+| `hasCompanion` | Whether the delivered outcome contains another named participant; prevents companion wording for solo missions. |
 | `reportReliabilityAtLeast` / `reportReliabilityBelow` | The delivered report's `Reliability` (0–100). |
 | `hasFindings` / `hasLeads` | Whether the delivered report or return carries findings/leads. |
-| `wasOverdue` | Immutable fact captured when a scout outcome is delivered: `ActualReturnWorldDay > ExpectedReturnWorldDay`. It is never recalculated from the current world day. |
+| `wasOverdue` | Immutable fact captured when an overdue notice is delivered, or for a later return when `ActualReturnWorldDay > ExpectedReturnWorldDay`. It is never recalculated from the current world day. |
 | `hasLostEquipment` | Whether the delivered scout/expedition outcome snapshot contains at least one lost equipment ID. |
 | `isSecondHandAccount` | Whether the delivered report explicitly marks its information as testimony rather than the scout's own observation. |
 | `isUrgent` | Whether the delivered report/event carries the authored or resolved urgency flag. Presentation never infers urgency from prose. |
@@ -1292,9 +1293,13 @@ human review.
    findings/leads. The scene precedes the existing report presentation.
    *Tests:* one snapshot per `ScoutMissionStatus`, on-time/overdue viewed immediately and later,
    partial return, lost equipment and low reliability.
-   **Implementation status:** due and immediate scout mission resolution now records immutable
-   delivered outcomes for returned, injured, overdue and missing results. Scene request/resolution,
-   the fragment inventory and client rendering remain next.
+   **Implementation status:** due and immediate scout mission resolution records immutable delivered
+   outcomes for returned, injured, overdue and missing results. The shared resolver, German JSON
+   starter inventory and generic policy now cover on-time, late, injured, overdue, missing and
+   partial-team deliveries, report reliability, lost equipment and delivered member condition.
+   Later member mutation cannot rewrite a historical scene. Client rendering before the report
+   remains next; findings and partial return are supported by the scene contract but are not yet
+   produced by every mission-resolution branch.
 5. **Reports, events and base return.** Report transitions, urgent events, base-return summaries
    and lost-expedition memorial fragments, using structured subject references only.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated

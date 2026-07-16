@@ -90,6 +90,17 @@
       "paragraphing": [["opening"], ["relation-anonymous", "relation-identified", "member-condition"], ["history"]],
       "maxFragments": 5,
       "maxPerGroup": { "member-condition": 1, "history": 1 }
+    },
+    {
+      "id": "policy-scout-return",
+      "subjectKind": "scout-return",
+      "archetypeId": null,
+      "questionTextId": "scene.question.scout-return",
+      "questionResolvedWhen": { "missionStatusAny": ["Returned", "ReturnedInjured"] },
+      "ordering": ["scout-return", "member-condition"],
+      "paragraphing": [["scout-return"], ["member-condition"]],
+      "maxFragments": 5,
+      "maxPerGroup": { "scout-return": 3, "member-condition": 2 }
     }
   ]
 }

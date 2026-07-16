@@ -88,7 +88,7 @@ public sealed class SceneFragmentConditionDefinition
         "requiresDoubtfulLastObservation", "forbidDoubtfulLastObservation", "maxKnownStateAgeDays",
         "contactStatusAny", "identityStage", "missionStatusAny", "memberStatusAny", "teamOutcome",
         "reportReliabilityAtLeast", "reportReliabilityBelow", "hasFindings", "hasLeads",
-        "wasOverdue", "hasLostEquipment", "isSecondHandAccount", "isUrgent",
+        "wasOverdue", "hasLostEquipment", "hasCompanion", "isSecondHandAccount", "isUrgent",
         "hasOwnArchiveEntryForLocation", "currentObservationDiffersFromStored",
         "hasLostExpeditionRecordForLocation"
     }, StringComparer.Ordinal);
@@ -120,6 +120,7 @@ public sealed class SceneFragmentConditionDefinition
         HasLeads = OptionalBool(source, "hasLeads");
         WasOverdue = OptionalBool(source, "wasOverdue");
         HasLostEquipment = OptionalBool(source, "hasLostEquipment");
+        HasCompanion = OptionalBool(source, "hasCompanion");
         IsSecondHandAccount = OptionalBool(source, "isSecondHandAccount");
         IsUrgent = OptionalBool(source, "isUrgent");
         HasOwnArchiveEntryForLocation = OptionalBool(source, "hasOwnArchiveEntryForLocation");
@@ -159,6 +160,7 @@ public sealed class SceneFragmentConditionDefinition
     public bool? HasLeads { get; }
     public bool? WasOverdue { get; }
     public bool? HasLostEquipment { get; }
+    public bool? HasCompanion { get; }
     public bool? IsSecondHandAccount { get; }
     public bool? IsUrgent { get; }
     public bool? HasOwnArchiveEntryForLocation { get; }
