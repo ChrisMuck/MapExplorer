@@ -236,7 +236,9 @@ public sealed class LocationModifierDefinition
         IReadOnlyDictionary<string, int>? riskAdjustmentsByActionId = null,
         IEnumerable<string>? appliesWhenOperationalStateIds = null,
         IEnumerable<string>? compatibleArchetypeIds = null,
-        IEnumerable<string>? incompatibleModifierIds = null)
+        IEnumerable<string>? incompatibleModifierIds = null,
+        string? inspectionText = null,
+        IEnumerable<LocationFactionRelationKind>? revealedFactionRelationKinds = null)
     {
         Id = RequireText(id, nameof(id));
         AddedActionIds = new List<string>(addedActionIds ?? Enumerable.Empty<string>());
@@ -245,6 +247,8 @@ public sealed class LocationModifierDefinition
         AppliesWhenOperationalStateIds = new List<string>(appliesWhenOperationalStateIds ?? Enumerable.Empty<string>());
         CompatibleArchetypeIds = new List<string>(compatibleArchetypeIds ?? Enumerable.Empty<string>());
         IncompatibleModifierIds = new List<string>(incompatibleModifierIds ?? Enumerable.Empty<string>());
+        InspectionText = string.IsNullOrWhiteSpace(inspectionText) ? null : inspectionText.Trim();
+        RevealedFactionRelationKinds = new List<LocationFactionRelationKind>(revealedFactionRelationKinds ?? Enumerable.Empty<LocationFactionRelationKind>());
     }
 
     public string Id { get; }
@@ -262,6 +266,12 @@ public sealed class LocationModifierDefinition
 
     /// <summary>Modifiers that must not be active alongside this one (§12.2).</summary>
     public IReadOnlyList<string> IncompatibleModifierIds { get; }
+
+    /// <summary>Player-facing first impression. Null means the modifier is not directly observable by inspection.</summary>
+    public string? InspectionText { get; }
+
+    /// <summary>Faction-relation impressions this visible modifier makes observable during inspection.</summary>
+    public IReadOnlyList<LocationFactionRelationKind> RevealedFactionRelationKinds { get; }
 
     public bool IsCompatibleWithArchetype(string? archetypeId)
     {

@@ -73,7 +73,7 @@ internal sealed class FindingLifecycleTests
             var result = app.InspectLocation(game, location.Coord);
 
             AssertTrue(result.Success, $"Profile-backed inspection succeeds for '{locationId}'");
-            AssertEqual(expectedMessage, result.Message, $"Inspection text comes from the content profile for '{locationId}'");
+            AssertTrue(result.Message.StartsWith(expectedMessage, StringComparison.Ordinal), $"Inspection text begins with the content profile for '{locationId}'");
         }
     }
 

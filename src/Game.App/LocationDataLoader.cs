@@ -194,7 +194,9 @@ public static class LocationDataLoader
             riskAdjustments,
             dto.AppliesWhen?.OperationalStateAny,
             dto.CompatibleArchetypeIds,
-            dto.IncompatibleModifierIds);
+            dto.IncompatibleModifierIds,
+            dto.InspectionText,
+            (dto.RevealsFactionRelationKinds ?? new List<string>()).Select(value => ParseEnum(value, LocationFactionRelationKind.Claimed)));
     }
 
     private static LocationActionDefinition BuildAction(ActionDto dto)
@@ -539,6 +541,8 @@ public static class LocationDataLoader
         public List<RiskAdjustmentDto>? RiskAdjustments { get; set; }
         public List<string>? CompatibleArchetypeIds { get; set; }
         public List<string>? IncompatibleModifierIds { get; set; }
+        public string? InspectionText { get; set; }
+        public List<string>? RevealsFactionRelationKinds { get; set; }
     }
 
     private sealed class AppliesWhenDto

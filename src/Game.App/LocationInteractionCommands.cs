@@ -258,6 +258,11 @@ public sealed class ResolveLocationActionCommand
 
     private static string? FirstUnpayableCost(LocationActionDefinition action, ExpeditionState expedition)
     {
+        if (action.Commitment == LocationActionCommitment.DayOperation && expedition.MovementPoints == 0)
+        {
+            return "No daily capacity remains. End the day before starting this operation.";
+        }
+
         foreach (var cost in action.Costs)
         {
             if (cost.Amount <= 0)
@@ -330,6 +335,13 @@ public sealed class ResolveLocationActionCommand
                     texts.Add(CostText(cost.Amount, "Moral", "Moral"));
                     break;
             }
+        }
+
+        if (action.Commitment == LocationActionCommitment.DayOperation && expedition.MovementPoints > 0)
+        {
+            var committedMovement = expedition.MovementPoints;
+            expedition.SpendMovementPoints(committedMovement);
+            texts.Add("Die Expedition ist fuer den restlichen Tag gebunden.");
         }
 
         return texts;

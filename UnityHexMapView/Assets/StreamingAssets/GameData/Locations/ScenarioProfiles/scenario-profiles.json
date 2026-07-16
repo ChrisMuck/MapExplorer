@@ -148,7 +148,8 @@
         "contextActionRules": [],
         "stateActionRules": [
           { "whenInteractionStatesAny": ["observed"], "addActionIds": ["action-approach"] },
-          { "whenInteractionStatesAny": ["approached"], "addActionIds": ["action-survey", "action-map-surroundings"] }
+          { "whenInteractionStatesAny": ["approached"], "addActionIds": ["action-survey", "action-map-surroundings"] },
+          { "whenInteractionStatesAny": ["surveyed"], "addActionIds": ["action-map-surroundings"] }
         ]
       },
       "evidencePoolIds": [],

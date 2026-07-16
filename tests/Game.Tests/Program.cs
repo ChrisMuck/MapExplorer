@@ -2125,6 +2125,8 @@ internal sealed class LocationDataJsonTests
 
         game.Knowledge.LearnLocationContextTag(bridge.Id, "structural-failure");
         app.ResolveLocationAction(game, bridge.Id, "action-construct-temporary-passage", LocationOutcomeTier.SuccessWithCost);
+        AssertEqual(0, game.Expedition.MovementPoints, "Day operation commits the remaining daily capacity");
+        app.EndDay(game);
         var reopened = app.GetLocationInteraction(game, bridge.Id).Interaction!.FindOption("action-find-bypass")!;
         AssertTrue(reopened.IsAvailable, "OncePerState action reopens after the operational state changes");
     }

@@ -39,7 +39,7 @@ public sealed class InspectLocationCommand
         var wasInspected = location.IsInspected;
         location.Inspect(game.World.WorldDay);
         game.Knowledge.ObserveLocationCondition(location, game.World.WorldDay);
-        var presentation = presentationResolver?.Resolve(location);
+        var presentation = presentationResolver?.ObserveAndResolve(game, location);
         var message = presentation?.Message ?? BuildLegacyMessage(game, location);
         string? archiveEntry = null;
         FieldFindingState? fieldFinding = null;

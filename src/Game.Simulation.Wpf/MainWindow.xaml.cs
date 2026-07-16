@@ -558,7 +558,7 @@ public partial class MainWindow : Window
                 LocationCommandKind.LocationAction,
                 option.Action.Id,
                 option.Action.Label,
-                $"{option.Action.Description} Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
+                $"{option.Action.Description} Kosten: {LocationActionCostText(option.Action)}. Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
                 option.IsAvailable,
                 option.LockedReason)));
 
@@ -580,6 +580,21 @@ public partial class MainWindow : Window
         }
 
         return commands;
+    }
+
+    private static string LocationActionCostText(LocationActionDefinition action)
+    {
+        var parts = action.Costs.Select(cost => $"{cost.Amount} {cost.Kind}").ToList();
+        if (action.Commitment == LocationActionCommitment.DayOperation)
+        {
+            parts.Add("restliche Tageskapazitaet");
+        }
+        else if (action.StartsProject)
+        {
+            parts.Add($"{action.ProjectDurationDays} Projekttage");
+        }
+
+        return parts.Count == 0 ? "keine Tageskapazitaet" : string.Join(", ", parts);
     }
 
     private static IReadOnlyList<AvailableScoutEntry> BuildAvailableScouts(GameState game) => game.Expedition.Members

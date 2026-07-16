@@ -124,6 +124,17 @@ Confidence should ideally be tracked per hint, not only once for the whole repor
 
 ## 4. Phase 3: Report Types
 
+### 4.0 Return-State Scene
+
+Before presenting any returned scout report, the UI shows a short situational return description as
+defined in `situational_scene_description_concept.md`. It is assembled from the actual return time,
+member condition, team completeness, visible equipment/evidence and the identity already known to
+the expedition. It must feel like a person has arrived before their testimony becomes a report.
+
+This applies to normal, late, injured, shaken, partial-team and indirect returns. It does not reveal
+hidden mission causes. If only one scout returns, the scene may state the companion is absent but
+must not state capture, death or betrayal without delivered evidence.
+
 The current implementation has exactly one report card shape. The situations it needs to represent are different enough that they need distinct card types.
 
 ### 4.1 Type A — Success Report

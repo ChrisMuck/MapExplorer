@@ -6,12 +6,14 @@
     {
       "id": "modifier-repairable",
       "label": "Reparierbar",
+      "inspectionText": "Sichtbare Verbindungen und erhaltene Bauteile lassen eine Reparatur grundsaetzlich moeglich erscheinen.",
       "addedActionIds": ["action-rebuild-bridge"],
       "compatibleArchetypeIds": ["route-obstacle", "natural-phenomenon", "investigation-site"]
     },
     {
       "id": "modifier-unstable",
       "label": "Instabil",
+      "inspectionText": "Risse, lose Teile und frische Abbrueche lassen den Ort instabil wirken.",
       "appliesWhen": { "operationalStateAny": ["blocked", "risky-passage"] },
       "riskAdjustments": [
         { "actionId": "action-construct-temporary-passage", "scoreDelta": 15 },
@@ -23,11 +25,15 @@
     {
       "id": "modifier-watched",
       "label": "Beobachtet",
+      "inspectionText": "Frische Spuren und bewusst freigehaltene Sichtlinien deuten auf Beobachtung hin.",
+      "revealsFactionRelationKinds": ["Watched"],
       "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "natural-phenomenon", "route-obstacle"]
     },
     {
       "id": "modifier-sacred",
       "label": "Heilig",
+      "inspectionText": "Sorgfaeltig angeordnete Zeichen und unberuehrte Gaben sprechen fuer eine besondere kulturelle Bedeutung.",
+      "revealsFactionRelationKinds": ["Sacred"],
       "riskAdjustments": [
         { "actionId": "action-disturb", "scoreDelta": 35 },
         { "actionId": "action-investigate", "scoreDelta": 10 },
@@ -38,11 +44,14 @@
     {
       "id": "modifier-faction-owned",
       "label": "Fraktionsbesitz",
+      "inspectionText": "Wiederkehrende Markierungen deuten darauf hin, dass jemand den Ort als eigenen Anspruch kennzeichnet.",
+      "revealsFactionRelationKinds": ["Claimed"],
       "compatibleArchetypeIds": ["investigation-site", "territorial-marker", "contact-site", "route-obstacle"]
     },
     {
       "id": "modifier-sealed",
       "label": "Versiegelt",
+      "inspectionText": "Der Verschluss wurde absichtlich angebracht und mehrfach gesichert.",
       "addedActionIds": ["action-open-seal"],
       "compatibleArchetypeIds": ["investigation-site", "containment-site"],
       "incompatibleModifierIds": ["modifier-collapsed"]
@@ -50,56 +59,67 @@
     {
       "id": "modifier-collapsed",
       "label": "Eingestuerzt",
+      "inspectionText": "Eingestuerzte Bauteile versperren den urspruenglichen Zugang.",
       "compatibleArchetypeIds": ["route-obstacle", "investigation-site", "containment-site"],
       "incompatibleModifierIds": ["modifier-sealed"]
     },
     {
       "id": "modifier-flooded",
       "label": "Ueberflutet",
+      "inspectionText": "Stehendes Wasser bedeckt den Zugang und verbirgt den Untergrund.",
       "compatibleArchetypeIds": ["route-obstacle", "hazard-site"],
       "incompatibleModifierIds": ["modifier-burning"]
     },
     {
       "id": "modifier-burning",
       "label": "Brennend",
+      "inspectionText": "Hitze, Rauch und offene Flammen praegen die unmittelbare Umgebung.",
       "compatibleArchetypeIds": ["hazard-site"],
       "incompatibleModifierIds": ["modifier-flooded"]
     },
     {
       "id": "modifier-underground",
       "label": "Unterirdisch",
+      "inspectionText": "Luftzug und abfallendes Mauerwerk weisen auf tiefer liegende Bereiche hin.",
       "compatibleArchetypeIds": ["investigation-site", "containment-site"]
     },
     {
       "id": "modifier-damaged",
       "label": "Beschaedigt",
+      "inspectionText": "Deutliche Schaeden beeintraechtigen die erkennbare Funktion des Ortes.",
       "compatibleArchetypeIds": ["route-obstacle", "natural-phenomenon"]
     },
     {
       "id": "modifier-taboo",
       "label": "Tabu",
+      "inspectionText": "Wiederholte Warnzeichen sprechen dafuer, dass bestimmte Handlungen hier bewusst untersagt sind.",
       "compatibleArchetypeIds": ["investigation-site", "territorial-marker"]
     },
     {
       "id": "modifier-guarded",
       "label": "Bewacht",
+      "inspectionText": "Frische Trittspuren und gepflegte Beobachtungspositionen zeigen, dass der Ort weiterhin bewacht wird.",
+      "revealsFactionRelationKinds": ["Guarded"],
       "compatibleArchetypeIds": ["route-obstacle", "contact-site", "containment-site"],
       "incompatibleModifierIds": ["modifier-invitation"]
     },
     {
       "id": "modifier-occupied",
       "label": "Besetzt",
+      "inspectionText": "Frische Feuerstellen und benutzte Gegenstaende zeigen eine gegenwaertige Anwesenheit.",
       "compatibleArchetypeIds": ["contact-site"]
     },
     {
       "id": "modifier-invitation",
       "label": "Einladung",
+      "inspectionText": "Die sichtbare Anordnung wirkt wie eine bewusste Einladung zur Annaeherung.",
       "compatibleArchetypeIds": ["territorial-marker", "contact-site"],
       "incompatibleModifierIds": ["modifier-guarded"]
     },
     {
       "id": "modifier-contaminated",
       "label": "Verseucht",
+      "inspectionText": "Verfaerbungen, Geruch und geschaedigte Vegetation deuten auf eine Verunreinigung hin.",
       "compatibleArchetypeIds": ["investigation-site", "hazard-site", "containment-site"]
     },
     {
@@ -110,51 +130,61 @@
     {
       "id": "modifier-hostile-presence",
       "label": "Feindliche Praesenz",
+      "inspectionText": "Drohende Zeichen und vorbereitete Stellungen lassen eine feindselige Anwesenheit vermuten.",
       "compatibleArchetypeIds": ["contact-site", "hazard-site"]
     },
     {
       "id": "modifier-creature-presence",
       "label": "Kreaturen",
+      "inspectionText": "Spuren, Losung und beschaedigte Vegetation weisen auf groessere Tiere oder andere Kreaturen hin.",
       "compatibleArchetypeIds": ["hazard-site"]
     },
     {
       "id": "modifier-spreading",
       "label": "Ausbreitend",
+      "inspectionText": "Junge Spuren ausserhalb des aelteren Kernbereichs deuten auf eine fortschreitende Ausbreitung hin.",
       "compatibleArchetypeIds": ["hazard-site"]
     },
     {
       "id": "modifier-searchable",
       "label": "Durchsuchbar",
+      "inspectionText": "Nischen, Ablagerungen und erhaltene Behaeltnisse koennten eine gezielte Suche lohnen.",
       "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-campable",
       "label": "Lagertauglich",
+      "inspectionText": "Trockener Boden und ausreichender Schutz machen einen zeitweiligen Lagerplatz denkbar.",
       "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-climbable",
       "label": "Besteigbar",
+      "inspectionText": "Natuerliche Griffe und gestufte Felsbaender lassen einen Aufstieg moeglich erscheinen.",
       "compatibleArchetypeIds": ["natural-phenomenon"]
     },
     {
       "id": "modifier-signal-capable",
       "label": "Signalfaehig",
+      "inspectionText": "Die freie Sicht und exponierte Lage eignen sich fuer weithin sichtbare Signale.",
       "compatibleArchetypeIds": ["natural-phenomenon"]
     },
     {
       "id": "modifier-contains-heavy-object",
       "label": "Schwere Bergung",
+      "inspectionText": "Ein sichtbarer Fund ist zu schwer, um ihn ohne Vorbereitung zu bergen.",
       "compatibleArchetypeIds": ["investigation-site"]
     },
     {
       "id": "modifier-recently-used",
       "label": "Kuerzlich genutzt",
+      "inspectionText": "Frische Abnutzung und kaum verwitterte Spuren zeigen eine kuerzliche Nutzung.",
       "compatibleArchetypeIds": ["investigation-site", "contact-site"]
     },
     {
       "id": "modifier-weather-damaged",
       "label": "Wetterschaden",
+      "inspectionText": "Ausgebleichte Oberflaechen und ausgewaschene Kanten zeigen lang anhaltenden Wettereinfluss.",
       "compatibleArchetypeIds": ["investigation-site", "route-obstacle"]
     },
     {
@@ -164,11 +194,13 @@
     },
     {
       "id": "modifier-previously-visited",
-      "label": "Zuvor besucht"
+      "label": "Zuvor besucht",
+      "inspectionText": "Alte Lager- und Arbeitsspuren zeigen, dass bereits eine Expedition hier gewesen ist."
     },
     {
       "id": "modifier-changed-by-expedition",
-      "label": "Von Expedition veraendert"
+      "label": "Von Expedition veraendert",
+      "inspectionText": "Werkzeugspuren und zurueckgelassene Markierungen zeigen eine fruehere Veraenderung durch eine Expedition."
     }
   ]
 }

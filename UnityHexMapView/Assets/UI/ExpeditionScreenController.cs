@@ -1895,21 +1895,25 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return "Kosten unbekannt";
         }
 
-        if (action.StartsProject)
+        var parts = new List<string>();
+        if (action.Commitment == LocationActionCommitment.DayOperation)
         {
-            return $"{action.ProjectDurationDays} Projekttage";
+            parts.Add("restliche Tageskapazitaet");
+        }
+        else if (action.StartsProject)
+        {
+            parts.Add($"{action.ProjectDurationDays} Projekttage");
         }
 
         if (action.Costs.Count > 0)
         {
-            var parts = new List<string>();
             foreach (var cost in action.Costs)
             {
                 parts.Add($"{cost.Amount} {CostKindText(cost.Kind)}");
             }
-
-            return string.Join(", ", parts);
         }
+
+        if (parts.Count > 0) return string.Join(", ", parts);
 
         if (action.RepeatPolicy == LocationActionRepeatPolicy.RepeatableWithCost)
         {

@@ -19,6 +19,7 @@ Detailed systems are maintained in the linked specialist documents. AI coding ag
 - [`cross_system_integration_concept.md`](cross_system_integration_concept.md): shared contract connecting locations, scouts, factions, evidence, triggers and delayed consequences
 - [`world_locations_and_events_concept.md`](world_locations_and_events_concept.md): world generation, persistence, special locations, mysteries, events, consequences and tone
 - [`ui_and_visual_communication_concept.md`](ui_and_visual_communication_concept.md): information UI, reports, portraits, discovery images and archive presentation
+- [`situational_scene_description_concept.md`](situational_scene_description_concept.md): text-adventure-inspired scene descriptions shared by locations, contacts, scouts and important events
 - [`mvp_vertical_slice_concept.md`](mvp_vertical_slice_concept.md): goal system, MVP scope, required slice content and explicit non-goals
 - [`technical_design_notes_for_agents.md`](technical_design_notes_for_agents.md): design-level data structures and agent guidance
 - [`open_questions.md`](open_questions.md): only unresolved questions

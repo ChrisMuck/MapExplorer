@@ -402,6 +402,30 @@ requirements and runtime interaction queries; they contain no concrete location,
 `LocationKind` branches. The remaining gate is the project-owner WPF/Unity play-through recorded in
 `docs/phase_2_human_review_checklist.md`.
 
+**Capacity and exit-text tuning:** The seven archetype chains now use the existing reusable action
+cost contract consistently: brief field interaction generally costs one Movement Point,
+substantial investigation generally costs two, and `DayOperation` commits the remaining daily
+capacity through the shared command path. Insufficient capacity is a known option lock; End Day
+restores capacity while persistent location state keeps the follow-up available. Shared leave text
+no longer claims that an already investigated or changed place is untouched. The natural-phenomenon
+profile explicitly retains mapping as a data-authored follow-up after surveying, proving next-day
+continuation without a landmark-specific code path.
+
+**Inspection-context tuning:** Normal inspection now resolves a content profile through the authored
+scenario profile when a runtime instance does not redundantly carry a Content Profile ID. Its
+player-facing result combines the known state wording with explicitly observable modifier
+impressions. Modifier authoring controls whether visible signs reveal an anonymous claimed,
+watched, sacred or guarded relation. A concrete faction name is recorded and shown only when that
+faction was already known; otherwise both the message and persisted `KnowledgeState` remain
+anonymous. Hidden modifiers and faction relations never reach WPF or Unity through this path.
+
+**Confirmed presentation direction beyond the current inspection slice:**
+`docs/gameconcept/situational_scene_description_concept.md` defines a shared text-adventure-inspired
+scene projection for locations, faction contacts, returning scouts, reports and important events.
+The current inspection composition is its first implemented slice. Scout return-state scenes,
+contact descriptions, visible action history and broader fragment variation remain follow-up work;
+they must use the same Knowledge boundary and must not become presentation-specific rule paths.
+
 1. Add deterministic tests for every new state transition, follow-up option, missing specialist,
    local/directional scout distinction, warning path and persistence rule.
 2. Expand batch metrics to flag locations with no follow-up after a state-changing action, dead-end
