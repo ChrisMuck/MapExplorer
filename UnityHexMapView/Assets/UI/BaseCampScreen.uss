@@ -90,6 +90,28 @@
 .bc-section { display: none; flex-grow: 1; }
 .bc-section.visible { display: flex; }
 
+.base-return-overlay {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+    flex-direction: row; align-items: stretch;
+    background-color: rgb(23, 27, 24);
+    padding: 52px;
+}
+.base-return-image {
+    width: 38%; flex-shrink: 0; align-items: center; justify-content: center;
+    background-color: rgb(38, 45, 36); border-radius: 10px;
+    border-width: 1px; border-color: rgba(240, 207, 122, 0.25);
+}
+.base-return-card { flex-grow: 1; justify-content: center; padding-left: 52px; padding-right: 28px; }
+.base-return-subtitle { color: rgb(240, 207, 122); font-size: 11px; letter-spacing: 1.4px; margin-bottom: 10px; }
+.base-return-title { color: rgb(244, 237, 224); font-size: 29px; margin-bottom: 20px; white-space: normal; }
+.base-return-body { color: rgb(220, 214, 199); font-size: 17px; white-space: normal; margin-bottom: 18px; }
+.base-return-summary { color: rgb(164, 157, 142); font-size: 12px; white-space: normal; margin-bottom: 24px; }
+.base-return-continue {
+    align-self: flex-start; padding: 10px 22px; border-radius: 7px;
+    color: rgb(29, 34, 30); background-color: rgb(240, 207, 122);
+    -unity-font-style: bold; -unity-text-align: middle-center;
+}
+
 .col-left {
     width: 326px; flex-shrink: 0; flex-direction: column;
     background-color: rgb(32, 38, 31);

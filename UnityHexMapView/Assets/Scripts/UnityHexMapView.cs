@@ -282,8 +282,32 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public void RequestCompleteExpeditionFromUi()
     {
-        CompleteCurrentExpedition();
+        var result = CompleteCurrentExpedition();
+        if (result != null && result.Success)
+        {
+            var scene = simulationSession.GetBaseReturnPresentation(result);
+            if (scene != null)
+            {
+                OpenBaseCampReturnScene(scene, result);
+            }
+        }
         RefreshToolkitHud();
+    }
+
+    private void OpenBaseCampReturnScene(SceneDescriptionResult scene, CompleteExpeditionResult result)
+    {
+        if (baseCampScreenController == null)
+        {
+            baseCampScreenController = FindObjectOfType<BaseCampScreenController>(true);
+        }
+
+        if (baseCampScreenController == null)
+        {
+            Debug.LogWarning("Base camp screen is not in the scene; the expedition return scene could not be displayed.");
+            return;
+        }
+
+        baseCampScreenController.OpenReturnScene(scene, result);
     }
 
     public void RequestStartBaseActionFromUi(BaseActionKind kind, string memberId = null)
@@ -776,6 +800,11 @@ public sealed class UnityHexMapView : MonoBehaviour
     public FactionContactPresentation GetCurrentEventContactPresentationForUi()
     {
         return simulationSession?.GetCurrentEventContactPresentation();
+    }
+
+    public SceneDescriptionResult GetCurrentEventScenePresentationForUi()
+    {
+        return simulationSession?.GetCurrentEventScenePresentation();
     }
 
     public void RefreshToolkitHud()
@@ -2405,18 +2434,18 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHud();
     }
 
-    private void CompleteCurrentExpedition()
+    private CompleteExpeditionResult CompleteCurrentExpedition()
     {
         if (coreGameState == null)
         {
-            return;
+            return null;
         }
 
         if (coreGameState.Expedition.Status == ExpeditionStatus.Returned ||
             coreGameState.Expedition.Status == ExpeditionStatus.Lost)
         {
             StartNextExpedition();
-            return;
+            return null;
         }
 
         var result = simulationSession.CompleteExpedition();
@@ -2424,7 +2453,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             interactionMessage = result.Error ?? "Expedition completion rejected.";
             RefreshHud();
-            return;
+            return result;
         }
 
         interactionMessage = $"Expedition {result.ExpeditionNumber} abgeschlossen. Wissen gesichert: +{result.SecuredKnowledge}. Basiswissen: {result.BaseKnowledgePoints}. Naechste Expedition ab Welttag {result.NextExpeditionAvailableWorldDay}.";
@@ -2433,6 +2462,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHexOverlays();
         RefreshPlayerAnnotations();
         RefreshHud();
+        return result;
     }
 
     private void AdvanceCurrentBaseTime()

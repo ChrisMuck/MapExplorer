@@ -93,6 +93,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         RegisterTab("tab-archiv", "archiv");
 
         Click("btn-close", Close);
+        Click("base-return-continue", ContinueFromReturnScene);
         Click("detail-toggle", () => ToggleTeam(selectedPersonId));
         Click("detail-heal", HealSelected);
         Click("btn-recruit", () => SendBaseAction(BaseActionKind.RecruitMember));
@@ -146,9 +147,36 @@ public sealed class BaseCampScreenController : MonoBehaviour
         }
 
         isOpen = true;
+        SetDisplay("base-return-overlay", false);
         root.style.display = DisplayStyle.Flex;
         mapView?.SetExpeditionScreenVisible(false);
         SeedTeamSelection();
+        ShowTab(openTab);
+        Refresh();
+    }
+
+    public void OpenReturnScene(SceneDescriptionResult scene, CompleteExpeditionResult result)
+    {
+        if (scene == null || result == null || !result.Success)
+        {
+            Open();
+            return;
+        }
+
+        Open();
+        SetText("base-return-title", scene.Title);
+        SetText("base-return-subtitle", scene.Subtitle ?? "Basislager");
+        SetText("base-return-body", scene.Message);
+        SetText("base-return-summary",
+            $"Gesichertes Wissen: {result.SecuredKnowledge} · Funde zur Auswertung: {result.ReturnedFindingsCount} · Expeditionstag {result.ExpeditionDay}");
+        var image = root?.Q<VisualElement>("base-return-image");
+        if (image != null) image.tooltip = $"Bildreferenz: {scene.VisualId ?? "placeholder-base-return"}";
+        SetDisplay("base-return-overlay", true);
+    }
+
+    private void ContinueFromReturnScene()
+    {
+        SetDisplay("base-return-overlay", false);
         ShowTab(openTab);
         Refresh();
     }
@@ -1133,6 +1161,12 @@ public sealed class BaseCampScreenController : MonoBehaviour
     {
         var label = root?.Q<Label>(name);
         if (label != null) label.text = text;
+    }
+
+    private void SetDisplay(string name, bool visible)
+    {
+        var element = root?.Q<VisualElement>(name);
+        if (element != null) element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     private void SetRichText(string name, string richText)

@@ -1312,6 +1312,15 @@ human review.
    but are not yet produced by every mission-resolution branch.
 5. **Reports, events and base return.** Report transitions, urgent events, base-return summaries
    and lost-expedition memorial fragments, using structured subject references only.
+   **Implementation status:** the generic `report-event` runtime path and Unity event-panel rendering
+   are implemented. The already delivered event body remains the authoritative opening. JSON
+   fragments may add localized context through generic tags such as `event-kind:WarningSign`;
+   application code contains no urgency switch. Faction-reaction events continue through the stricter
+   contact identity resolver before the generic event fallback. Base-return summaries are also
+   implemented: the completion result preserves its world day, team outcome and handed-off finding
+   count, and the JSON resolver composes the arrival scene from those immutable facts. Unity opens
+   this scene over the existing base screen and `Weiter zur Basis` reveals the normal planning view.
+   Lost-expedition memorial scenes and WPF event/base-return parity remain open.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated
    state fragments. Before removal, capture snapshot coverage for every current content profile,
    all seven archetypes and both clients. Remove `flavorByState`,

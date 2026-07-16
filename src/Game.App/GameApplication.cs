@@ -36,6 +36,8 @@ public sealed class GameApplication
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand;
     private readonly FactionContactSceneResolver? factionSceneResolver;
     private readonly ScoutReturnSceneResolver? scoutReturnSceneResolver;
+    private readonly ReportEventSceneResolver? reportEventSceneResolver;
+    private readonly BaseReturnSceneResolver? baseReturnSceneResolver;
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
@@ -90,6 +92,8 @@ public sealed class GameApplication
         factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(
             dataCatalog.Scenes, crossSystemData?.FactionSignatures, dataCatalog.Authoring);
         scoutReturnSceneResolver = dataCatalog == null ? null : new ScoutReturnSceneResolver(dataCatalog.Scenes);
+        reportEventSceneResolver = dataCatalog == null ? null : new ReportEventSceneResolver(dataCatalog.Scenes);
+        baseReturnSceneResolver = dataCatalog == null ? null : new BaseReturnSceneResolver(dataCatalog.Scenes);
         var contactProfileService = dataCatalog == null || crossSystemData == null ? null
             : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
@@ -255,6 +259,12 @@ public sealed class GameApplication
         return completeExpeditionCommand.Execute(game);
     }
 
+    public SceneDescriptionResult? GetBaseReturnPresentation(CompleteExpeditionResult result, string? locale = null)
+    {
+        if (result == null) throw new ArgumentNullException(nameof(result));
+        return !result.Success || baseReturnSceneResolver == null ? null : baseReturnSceneResolver.Resolve(result, locale);
+    }
+
     public FailExpeditionResult FailExpedition(GameState game, string reason)
     {
         return failExpeditionCommand.Execute(game, reason);
@@ -352,6 +362,15 @@ public sealed class GameApplication
         return game.Events.Current == null || factionSceneResolver == null
             ? null
             : factionSceneResolver.ResolveDeliveredEvent(game, game.Events.Current);
+    }
+
+    public SceneDescriptionResult? GetCurrentEventScenePresentation(GameState game, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        var eventState = game.Events.Current;
+        if (eventState == null) return null;
+        var contact = factionSceneResolver?.ResolveDeliveredEvent(game, eventState);
+        return contact?.Scene ?? reportEventSceneResolver?.Resolve(eventState, locale);
     }
 
     public SceneDescriptionResult? GetScoutReturnPresentation(GameState game, string deliveryId, string? locale = null)

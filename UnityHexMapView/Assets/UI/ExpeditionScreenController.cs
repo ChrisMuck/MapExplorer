@@ -1264,8 +1264,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         popup.style.display = DisplayStyle.Flex;
-        var contactPresentation = mapView?.GetCurrentEventContactPresentationForUi();
-        var scene = contactPresentation?.Scene;
+        var scene = mapView?.GetCurrentEventScenePresentationForUi();
         SetText("event-source", scene?.Subtitle ?? eventState.Source);
         SetText("event-title", scene?.Title ?? eventState.Title);
         SetText("event-body", scene?.Message ?? eventState.Body);

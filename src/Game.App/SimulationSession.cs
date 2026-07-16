@@ -153,6 +153,9 @@ public sealed class SimulationSession
         return result;
     }
 
+    public SceneDescriptionResult? GetBaseReturnPresentation(CompleteExpeditionResult result, string? locale = null) =>
+        Application.GetBaseReturnPresentation(result, locale);
+
     public AdvanceBaseTimeResult AdvanceBaseTime(int days = 1)
     {
         var result = Application.AdvanceBaseTime(Game, days);
@@ -247,6 +250,9 @@ public sealed class SimulationSession
 
     public FactionContactPresentation? GetCurrentEventContactPresentation() =>
         Application.GetCurrentEventContactPresentation(Game);
+
+    public SceneDescriptionResult? GetCurrentEventScenePresentation(string? locale = null) =>
+        Application.GetCurrentEventScenePresentation(Game, locale);
 
     public SceneDescriptionResult? GetScoutReturnPresentationForReport(string reportId, string? locale = null) =>
         Application.GetScoutReturnPresentationForReport(Game, reportId, locale);

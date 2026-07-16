@@ -467,6 +467,19 @@
                 </ui:VisualElement>
 
             </ui:VisualElement>
+
+            <ui:VisualElement name="base-return-overlay" class="base-return-overlay" style="display: none;">
+                <ui:VisualElement name="base-return-image" class="base-return-image">
+                    <ui:Label text="RÜCKKEHR" class="section-label" />
+                </ui:VisualElement>
+                <ui:VisualElement class="base-return-card">
+                    <ui:Label name="base-return-subtitle" text="Basislager" class="mono base-return-subtitle" />
+                    <ui:Label name="base-return-title" text="Die Expedition kehrt zurück" class="serif base-return-title" />
+                    <ui:Label name="base-return-body" text="Die Rückkehr wird aufgenommen." class="serif base-return-body" />
+                    <ui:Label name="base-return-summary" text="Wissen und Funde werden gesichert." class="base-return-summary" />
+                    <ui:Label name="base-return-continue" text="Weiter zur Basis" class="base-return-continue" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -15,6 +15,10 @@
     { "id": "scene.question.natural-phenomenon", "text": "Was macht diesen Ort bedeutsam, und was lässt sich von hier erkennen?" },
     { "id": "scene.question.contact", "text": "Wie treten wir dieser Gruppe gegenüber, und worauf lassen wir uns ein?" },
     { "id": "scene.question.scout-return", "text": "Was ist mit dem Auftrag geschehen, und worauf müssen wir jetzt reagieren?" },
+    { "id": "scene.question.report-event", "text": "Wie soll die Expedition auf diese Nachricht reagieren?" },
+    { "id": "scene.question.base-return", "text": "Was wird aus dieser Rückkehr für die nächste Expedition bewahrt?" },
+    { "id": "scene.title.base-return", "text": "Expedition {expeditionNumber} kehrt zurück" },
+    { "id": "scene.subtitle.base-return", "text": "Basislager · Welttag {worldDay}" },
 
     { "id": "scene.fragment.scout.return.on-time", "text": "{memberName} kehrt zur erwarteten Zeit zurück, den Staub des Weges noch an der Kleidung." },
     { "id": "scene.fragment.scout.return.late", "text": "{memberName} kehrt {daysOverdue} später zurück als vereinbart. Die Zeit dazwischen hat sichtbare Spuren hinterlassen." },
@@ -122,6 +126,11 @@
     { "id": "scene.fragment.relation.watched.identified", "text": "Die Spuren der Beobachtung lassen sich {subjectLabel} zuordnen." },
     { "id": "scene.fragment.relation.sacred.identified", "text": "Die besondere Bedeutung dieses Ortes ist mit {subjectLabel} verbunden." },
     { "id": "scene.fragment.relation.guarded.identified", "text": "Die sichtbaren Spuren der Bewachung lassen sich {subjectLabel} zuordnen." },
-    { "id": "scene.fragment.history.doubtful", "text": "Die letzte überlieferte Beobachtung gilt als zweifelhaft; der heutige Zustand ist daraus nicht sicher abzuleiten." }
+    { "id": "scene.fragment.history.doubtful", "text": "Die letzte überlieferte Beobachtung gilt als zweifelhaft; der heutige Zustand ist daraus nicht sicher abzuleiten." },
+    { "id": "scene.fragment.report-event.urgent", "text": "Noch bevor jemand nach Einzelheiten fragt, wird deutlich, dass diese Nachricht nicht warten kann." },
+    { "id": "scene.fragment.base-return.complete", "text": "Die Expedition erreicht die Basis vollzählig. Was gesammelt wurde, geht in die Auswertung; was geschehen ist, in das Archiv." },
+    { "id": "scene.fragment.base-return.losses", "text": "Die Expedition kehrt zurück, aber nicht vollzählig. Die Lücke ist beim Abzählen der Ausrüstung genauso deutlich wie am Feuer." },
+    { "id": "scene.fragment.base-return.none", "text": "Von der Expedition erreicht niemand gemeinsam die Basis. Was bleibt, sind ihre letzten Spuren und die Pflicht, ihr Schicksal zu klären." },
+    { "id": "scene.fragment.base-return.empty-handed", "text": "Die Expedition kehrt ohne verwertbare Funde zurück. Geblieben sind Wegwissen, Eindrücke und offene Fragen." }
   ]
 }

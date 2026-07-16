@@ -6,5 +6,42 @@
     "report-transition": { "subjectKind": "report-event", "source": { "kind": "delivered-outcome" }, "priority": 40 },
     "base-return": { "subjectKind": "base-return", "source": { "kind": "delivered-outcome" }, "priority": 60 }
   },
-  "items": []
+  "items": [
+    {
+      "id": "frag-report-event-urgent",
+      "group": "report-transition",
+      "when": {
+        "knownContextTagsAny": [
+          "event-kind:ScoutOverdue",
+          "event-kind:WarningSign",
+          "event-kind:WorldConsequence"
+        ]
+      },
+      "textId": "scene.fragment.report-event.urgent"
+    },
+    {
+      "id": "frag-base-return-complete",
+      "group": "base-return",
+      "when": { "teamOutcome": "all-returned" },
+      "textId": "scene.fragment.base-return.complete"
+    },
+    {
+      "id": "frag-base-return-losses",
+      "group": "base-return",
+      "when": { "teamOutcome": "partial-return" },
+      "textId": "scene.fragment.base-return.losses"
+    },
+    {
+      "id": "frag-base-return-none",
+      "group": "base-return",
+      "when": { "teamOutcome": "none-returned" },
+      "textId": "scene.fragment.base-return.none"
+    },
+    {
+      "id": "frag-base-return-empty-handed",
+      "group": "base-return",
+      "when": { "teamOutcome": "all-returned", "hasFindings": false },
+      "textId": "scene.fragment.base-return.empty-handed"
+    }
+  ]
 }

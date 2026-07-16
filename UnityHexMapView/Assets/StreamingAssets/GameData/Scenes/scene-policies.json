@@ -101,6 +101,28 @@
       "paragraphing": [["scout-return"], ["member-condition"]],
       "maxFragments": 5,
       "maxPerGroup": { "scout-return": 3, "member-condition": 2 }
+    },
+    {
+      "id": "policy-report-event",
+      "subjectKind": "report-event",
+      "archetypeId": null,
+      "questionTextId": "scene.question.report-event",
+      "questionResolvedWhen": { "knownContextTagsAny": ["event-has-options"] },
+      "ordering": ["report-transition", "opening"],
+      "paragraphing": [["report-transition"], ["opening"]],
+      "maxFragments": 3,
+      "maxPerGroup": { "report-transition": 1, "opening": 1 }
+    },
+    {
+      "id": "policy-base-return",
+      "subjectKind": "base-return",
+      "archetypeId": null,
+      "questionTextId": "scene.question.base-return",
+      "questionResolvedWhen": { "knownContextTagsAny": ["base-return-delivered"] },
+      "ordering": ["base-return"],
+      "paragraphing": [["base-return"]],
+      "maxFragments": 2,
+      "maxPerGroup": { "base-return": 2 }
     }
   ]
 }
