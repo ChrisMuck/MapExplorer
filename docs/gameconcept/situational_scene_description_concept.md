@@ -1340,8 +1340,10 @@ human review.
    visual-asset catalog. Location scenes, event popups, faction contacts, scout returns, base returns
    and lost-expedition memorials use one reusable presenter with an identity-safe fallback. Missing
    IDs or unavailable sprites remain visible as labelled generated placeholders and do not affect
-   simulation state. WPF deliberately keeps the explicit visual-reference text until it gains an
-   asset renderer; scene wording and selected `visualId` still come from the same application result.
+   simulation state. The WPF development client now resolves the same catalog definitions into
+   deterministic placeholder cards for locations, scout returns, active contacts, events, base
+   returns and memorials. Both clients therefore use the same scene result and fallback identity;
+   client-specific rendering remains presentation-only.
 8. **Playtest pass.** Only after playtesting: variation pools, repetition cooldowns and additional
    fragments (Section 12).
 

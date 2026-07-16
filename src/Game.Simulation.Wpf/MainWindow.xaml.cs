@@ -431,10 +431,17 @@ public partial class MainWindow : Window
         if (PlayerOptionsList.SelectedItem is not LocationCommandEntry entry)
         {
             SelectedLocationCommandDetails.Text = "Einen Ortsbefehl auswählen. Die optionalen Skriptbefehle werden dadurch nicht ausgelöst.";
+            SceneVisualPresenter.Clear(SelectedLocationVisual, SelectedLocationVisualTitle, SelectedLocationVisualReference);
             ExecuteLocationCommandButton.IsEnabled = false;
             return;
         }
 
+        SceneVisualPresenter.Apply(
+            SelectedLocationVisual,
+            SelectedLocationVisualTitle,
+            SelectedLocationVisualReference,
+            catalog?.VisualAssets,
+            entry.VisualId);
         SelectedLocationCommandDetails.Text = entry.Details;
         ExecuteLocationCommandButton.IsEnabled = entry.IsAvailable;
         ExecuteLocationCommandButton.Content = entry.ExecuteLabel;
@@ -541,6 +548,12 @@ public partial class MainWindow : Window
         var scene = openedScoutReturnReportIds.Contains(entry.Id)
             ? null
             : playback.Session.GetScoutReturnPresentationForReport(entry.Id);
+        SceneVisualPresenter.Apply(
+            PlayerReportVisual,
+            PlayerReportVisualTitle,
+            PlayerReportVisualReference,
+            catalog?.VisualAssets,
+            scene?.VisualId ?? "placeholder-scout");
         if (scene != null)
         {
             PlayerReportTitle.Text = scene.Title;
@@ -585,10 +598,14 @@ public partial class MainWindow : Window
     private void RefreshSceneInspector()
     {
         if (playback == null) return;
-        var scene = playback.Session.GetCurrentEventScenePresentation() ?? transientScene;
+        var eventScene = playback.Session.GetCurrentEventScenePresentation();
+        var contactScene = eventScene == null
+            ? playback.Session.GetActiveFactionContactPresentation()?.Scene
+            : null;
+        var scene = eventScene ?? contactScene ?? transientScene;
         if (scene == null)
         {
-            CurrentSceneImage.Text = "Bildreferenz: --";
+            SceneVisualPresenter.Clear(CurrentSceneVisual, CurrentSceneVisualTitle, CurrentSceneVisualReference);
             CurrentSceneTitle.Text = "Keine aktuelle Szene";
             CurrentSceneSubtitle.Text = string.Empty;
             CurrentSceneBody.Text = "Der Szenariolauf hat noch keine Szene geliefert.";
@@ -596,11 +613,20 @@ public partial class MainWindow : Window
         }
         else
         {
-            CurrentSceneImage.Text = $"Bildreferenz: {scene.VisualId ?? "generischer Platzhalter"}";
+            SceneVisualPresenter.Apply(
+                CurrentSceneVisual,
+                CurrentSceneVisualTitle,
+                CurrentSceneVisualReference,
+                catalog?.VisualAssets,
+                scene.VisualId);
             CurrentSceneTitle.Text = scene.Title;
             CurrentSceneSubtitle.Text = scene.Subtitle ?? string.Empty;
             CurrentSceneBody.Text = scene.Message;
-            CurrentSceneFacts.Text = ReferenceEquals(scene, transientScene) ? transientSceneFacts ?? string.Empty : "Aktuelles Ereignis aus der Ereigniswarteschlange";
+            CurrentSceneFacts.Text = ReferenceEquals(scene, transientScene)
+                ? transientSceneFacts ?? string.Empty
+                : ReferenceEquals(scene, contactScene)
+                    ? "Aktiver Fraktionskontakt aus dem gemeinsamen Wissens- und Identitätsmodell"
+                    : "Aktuelles Ereignis aus der Ereigniswarteschlange";
         }
 
         var game = playback.Session.Game;
@@ -633,7 +659,12 @@ public partial class MainWindow : Window
         }
 
         MemorialDetails.Visibility = Visibility.Visible;
-        MemorialImage.Text = $"Bildreferenz: {scene.VisualId ?? "placeholder-expedition-memorial"}";
+        SceneVisualPresenter.Apply(
+            MemorialVisual,
+            MemorialVisualTitle,
+            MemorialVisualReference,
+            catalog?.VisualAssets,
+            scene.VisualId ?? "placeholder-expedition-memorial");
         MemorialTitle.Text = scene.Title;
         MemorialSubtitle.Text = scene.Subtitle ?? string.Empty;
         MemorialBody.Text = scene.Message;
@@ -649,6 +680,8 @@ public partial class MainWindow : Window
             .FindMissionType("location-surroundings")?.MovementPointCost ?? 2;
         foreach (var location in game.World.Locations.Where(location => location.Anchor.Coords.Any(coord => game.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Confirmed)))
         {
+            var query = session.GetLocationInteraction(location.Id);
+            var visualId = query.Presentation?.Scene?.VisualId ?? query.Presentation?.ImageId;
             commands.Add(new LocationCommandEntry(
                 $"{location.Id}:inspect",
                 location.Id,
@@ -659,7 +692,8 @@ public partial class MainWindow : Window
                 label: "Betrachten",
                 details: "Untersucht den Ort direkt. Dies kann lokale Fakten, Funde und neue Optionen sichtbar machen.",
                 isAvailable: !location.IsInspected,
-                lockedReason: location.IsInspected ? "Dieser Ort wurde bereits betrachtet." : null));
+                lockedReason: location.IsInspected ? "Dieser Ort wurde bereits betrachtet." : null,
+                visualId: visualId));
 
             var nearLocation = location.Anchor.Coords.Any(coord => coord == game.Expedition.Position || coord.DistanceTo(game.Expedition.Position) == 1);
             var scoutReason = !nearLocation
@@ -678,9 +712,9 @@ public partial class MainWindow : Window
                 label: "Umgebung absuchen",
                 details: $"Lässt einen gewählten freien Scout die unmittelbare Umgebung absuchen. Der Bericht liegt sofort vor und kostet {localScoutMovementCost} Bewegungspunkte; der Tag endet dadurch nicht.",
                 isAvailable: scoutReason == null,
-                lockedReason: scoutReason));
+                lockedReason: scoutReason,
+                visualId: visualId));
 
-            var query = session.GetLocationInteraction(location.Id);
             if (!query.Success || query.Interaction == null) continue;
             commands.AddRange(query.Interaction.Options.Select(option => new LocationCommandEntry(
                 $"{location.Id}:action:{option.Action.Id}",
@@ -692,7 +726,8 @@ public partial class MainWindow : Window
                 option.Action.Label,
                 $"{option.Action.Description} Kosten: {LocationActionCostText(option.Action)}. Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
                 option.IsAvailable,
-                option.LockedReason)));
+                option.LockedReason,
+                visualId)));
 
             if (location.ActiveProject != null)
             {
@@ -707,7 +742,8 @@ public partial class MainWindow : Window
                     "Projekt fortsetzen",
                     $"Projekt '{project.ActionId}': Fortschritt {project.Progress}/{project.RequiredProgress}.",
                     !project.IsComplete,
-                    project.IsComplete ? "Das Projekt ist bereits abgeschlossen." : null));
+                    project.IsComplete ? "Das Projekt ist bereits abgeschlossen." : null,
+                    visualId));
             }
         }
 
@@ -903,7 +939,8 @@ public partial class MainWindow : Window
             string label,
             string details,
             bool isAvailable,
-            string? lockedReason)
+            string? lockedReason,
+            string? visualId)
         {
             Id = id;
             LocationId = locationId;
@@ -915,6 +952,7 @@ public partial class MainWindow : Window
             Details = details;
             IsAvailable = isAvailable;
             LockedReason = lockedReason;
+            VisualId = visualId;
         }
 
         public string Id { get; }
@@ -927,6 +965,7 @@ public partial class MainWindow : Window
         public string Details { get; }
         public bool IsAvailable { get; }
         public string? LockedReason { get; }
+        public string? VisualId { get; }
         public string AvailabilityText => IsAvailable ? "Verfügbar" : $"Gesperrt: {LockedReason}";
         public string ExecuteLabel => Kind switch
         {

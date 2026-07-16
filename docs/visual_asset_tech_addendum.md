@@ -358,5 +358,6 @@ The MVP foundation is implemented as presentation-only data:
   memorial scenes. Controllers do not select paths or branch on concrete faction/location IDs.
 - Current entries intentionally have no `assetPath`. Final or interim sprites can be introduced by
   adding a Resources-relative path to the JSON entry, without changing simulation or scene code.
-- WPF currently displays the selected reference as text; this is an explicit development-client
-  fallback, not an alternative source of visual truth.
+- WPF resolves the same definitions into deterministic placeholder cards for location commands,
+  scout returns, active contacts, events, base returns and memorials. It remains a development
+  client and does not depend on Unity assemblies or Unity resource paths.
