@@ -1225,6 +1225,12 @@ human review.
    *Tests:* old-save migration, new-save roundtrip, delayed report viewing, later member-state
    mutation preserving the historical outcome, unknown fragment IDs ignored. **Human review is
    required before merge because this changes persistent data and save compatibility.**
+   **Implementation status:** `DeliveredMissionOutcome` is implemented as immutable per-delivery
+   history in `KnowledgeState`, including participant condition, expected/actual return timing,
+   overdue state, lost equipment and delivered report IDs. `KnowledgeRuntimeSnapshot` version 2
+   roundtrips these facts; pre-versioned snapshots migrate to an empty outcome history and never
+   reconstruct missing facts. Archive subject references, location-linked lost-expedition records
+   and persisted scene repetition remain for the packages that consume them.
 1. **Authoring foundation.** New `documentType` values `scene-fragments`, `scene-policies` and
    `scene-localization`;
    loader support in `CrossSystemDataLoader`/`GameDataCatalog`; `defaultsByGroup` normalization;
@@ -1286,6 +1292,9 @@ human review.
    findings/leads. The scene precedes the existing report presentation.
    *Tests:* one snapshot per `ScoutMissionStatus`, on-time/overdue viewed immediately and later,
    partial return, lost equipment and low reliability.
+   **Implementation status:** due and immediate scout mission resolution now records immutable
+   delivered outcomes for returned, injured, overdue and missing results. Scene request/resolution,
+   the fragment inventory and client rendering remain next.
 5. **Reports, events and base return.** Report transitions, urgent events, base-return summaries
    and lost-expedition memorial fragments, using structured subject references only.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated

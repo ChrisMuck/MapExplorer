@@ -7,7 +7,12 @@ using Game.Core;
 
 internal sealed class KnowledgeRuntimeSnapshotTests
 {
-    public void RunAll() => RoundTripPreservesFallibleKnowledgeWithoutReadingWorldTruth();
+    public void RunAll()
+    {
+        RoundTripPreservesFallibleKnowledgeWithoutReadingWorldTruth();
+        DeliveredMissionOutcomeRoundTripPreservesHistoricalCondition();
+        OlderSnapshotWithoutDeliveredOutcomesMigratesToEmptyHistory();
+    }
 
     private static void RoundTripPreservesFallibleKnowledgeWithoutReadingWorldTruth()
     {
@@ -43,6 +48,37 @@ internal sealed class KnowledgeRuntimeSnapshotTests
         AssertEqual(EvidenceKnowledgeState.Doubtful, restored.FindEvidence("evidence-1")!.KnowledgeState, "Evidence reliability survives save/load");
         AssertEqual(ScoutDirection.East, restored.ScoutReports.Single().Leads.Single().Direction, "Approximate scout lead survives save/load");
         AssertTrue(!restored.ScoutReports.Single().HasExactCoordinates, "Save/load does not introduce exact scout coordinates");
+    }
+
+    private static void DeliveredMissionOutcomeRoundTripPreservesHistoricalCondition()
+    {
+        var knowledge = new KnowledgeState();
+        knowledge.RecordDeliveredMissionOutcome(new DeliveredMissionOutcomeState(
+            "mission-7:delivery:12:ReturnedInjured", "mission-7", ScoutMissionStatus.ReturnedInjured,
+            expectedReturnWorldDay: 10, deliveredWorldDay: 12, actualReturnWorldDay: 12, wasOverdue: true,
+            new[] { new DeliveredMissionParticipantOutcome("scout-7", returned: true, DeliveredScoutStatus.Injured) },
+            new[] { "field-kit" }, new[] { "report-7" }));
+
+        var restored = KnowledgeRuntimeSnapshotSerializer.Deserialize(KnowledgeRuntimeSnapshotSerializer.Serialize(knowledge));
+        var outcome = restored.DeliveredMissionOutcomes.Single();
+
+        AssertEqual(KnowledgeRuntimeSnapshot.CurrentSchemaVersion, KnowledgeRuntimeSnapshot.Capture(restored).SchemaVersion,
+            "New knowledge saves use the incremented schema version");
+        AssertTrue(outcome.WasOverdue, "Overdue fact survives save/load");
+        AssertEqual(12, outcome.ActualReturnWorldDay, "Actual return day survives save/load");
+        AssertEqual(DeliveredScoutStatus.Injured, outcome.ParticipantOutcomes.Single().DeliveredStatus,
+            "Historical delivered condition survives save/load");
+        AssertEqual("field-kit", outcome.LostEquipmentIds.Single(), "Lost equipment survives save/load");
+    }
+
+    private static void OlderSnapshotWithoutDeliveredOutcomesMigratesToEmptyHistory()
+    {
+        const string oldJson = "{\"Tiles\":[],\"ScoutReports\":[],\"Evidence\":[],\"ClaimedKnowledgeSources\":[],\"LocationContexts\":[],\"LocationConditions\":[]}";
+
+        var restored = KnowledgeRuntimeSnapshotSerializer.Deserialize(oldJson);
+
+        AssertEqual(0, restored.DeliveredMissionOutcomes.Count,
+            "Missing outcome section in a pre-versioned save means not recorded and is not reconstructed");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

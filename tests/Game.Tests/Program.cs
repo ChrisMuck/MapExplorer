@@ -1269,6 +1269,11 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.Returned, secondDay.ScoutResolutions[0].Status, "Overdue scout returns later");
         AssertEqual(ExpeditionMemberStatus.Available, game.Expedition.FindMember("scout")!.Status, "Late scout available after return");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Late scout report stored");
+        AssertEqual(2, game.Knowledge.DeliveredMissionOutcomes.Count, "Overdue notice and later return remain separate immutable deliveries");
+        var deliveredReturn = game.Knowledge.DeliveredMissionOutcomes.Last();
+        AssertTrue(deliveredReturn.WasOverdue, "Late return permanently records that it was overdue");
+        AssertEqual(3, deliveredReturn.ActualReturnWorldDay, "Actual return day is captured at delivery time");
+        AssertEqual(DeliveredScoutStatus.Unhurt, deliveredReturn.ParticipantOutcomes.Single().DeliveredStatus, "Delivered participant condition is captured");
     }
 
     private static void BoldScoutCanReturnInjured()
@@ -1281,6 +1286,8 @@ internal sealed class EndDayCommandTests
         AssertEqual(ScoutMissionStatus.ReturnedInjured, result.ScoutResolutions[0].Status, "Bold scout injured");
         AssertEqual(ExpeditionMemberStatus.Injured, game.Expedition.FindMember("scout")!.Status, "Scout marked injured");
         AssertEqual(1, game.Knowledge.ScoutReports.Count, "Injured scout report stored");
+        AssertEqual(DeliveredScoutStatus.Injured, game.Knowledge.DeliveredMissionOutcomes.Single().ParticipantOutcomes.Single().DeliveredStatus,
+            "Injury is retained in the delivered outcome");
     }
 
     private static void BoldRuinScoutCanGoMissing()
@@ -1294,6 +1301,8 @@ internal sealed class EndDayCommandTests
         AssertEqual(ExpeditionMemberStatus.Missing, game.Expedition.FindMember("scout")!.Status, "Scout marked missing");
         AssertEqual(0, game.Knowledge.ScoutReports.Count, "Missing scout creates no report");
         AssertEqual(0, game.Expedition.UnsecuredKnowledge, "Missing scout adds no unsecured knowledge");
+        AssertEqual(DeliveredScoutStatus.Missing, game.Knowledge.DeliveredMissionOutcomes.Single().ParticipantOutcomes.Single().DeliveredStatus,
+            "Missing notice has a persistent delivered outcome without inventing a report");
     }
 
     private static GameState CreateEndDayTestGame(int supplies, int movementPoints, int maxMovementPoints, bool expeditionAtBase = false)

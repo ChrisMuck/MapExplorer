@@ -39,6 +39,7 @@ public sealed class ScoutMissionResolutionService
                 continue;
             }
 
+            var wasAlreadyOverdue = mission.Status == ScoutMissionStatus.Overdue;
             var outcome = DetermineOutcome(mission, game.World.WorldDay);
             mission.SetStatus(outcome);
             ApplyMemberOutcome(game, mission, outcome);
@@ -55,6 +56,8 @@ public sealed class ScoutMissionResolutionService
                     game.Expedition.AddUnsecuredKnowledge(outcome == ScoutMissionStatus.ReturnedInjured ? 2 : 3);
                 }
             }
+
+            RecordDeliveredOutcome(game, mission, outcome, report, wasAlreadyOverdue);
 
             results.Add(new ScoutMissionResolutionResult(mission.Id, outcome, report));
         }
@@ -86,6 +89,7 @@ public sealed class ScoutMissionResolutionService
             missionTypeId: "location-surroundings");
         var report = CreateReport(game, mission, ScoutMissionStatus.Returned);
         game.Knowledge.AddScoutReport(report);
+        RecordDeliveredOutcome(game, mission, ScoutMissionStatus.Returned, report, wasAlreadyOverdue: false);
         AddLocationSurroundingsEvidence(game, mission, report);
         if (report.Leads.Count > 0 && game.Knowledge.ClaimKnowledgeSource(ScoutKnowledgeSourceId(mission)))
         {
@@ -93,6 +97,29 @@ public sealed class ScoutMissionResolutionService
         }
 
         return report;
+    }
+
+    private static void RecordDeliveredOutcome(GameState game, ScoutMissionState mission, ScoutMissionStatus outcome,
+        ScoutReportState? report, bool wasAlreadyOverdue)
+    {
+        var returned = outcome is ScoutMissionStatus.Returned or ScoutMissionStatus.ReturnedInjured;
+        var deliveredStatus = outcome switch
+        {
+            ScoutMissionStatus.Returned => DeliveredScoutStatus.Unhurt,
+            ScoutMissionStatus.ReturnedInjured => DeliveredScoutStatus.Injured,
+            ScoutMissionStatus.Overdue => DeliveredScoutStatus.Overdue,
+            ScoutMissionStatus.Missing => DeliveredScoutStatus.Missing,
+            _ => DeliveredScoutStatus.Missing
+        };
+        var actualReturnWorldDay = returned ? game.World.WorldDay : (int?)null;
+        var wasOverdue = outcome == ScoutMissionStatus.Overdue || wasAlreadyOverdue ||
+            actualReturnWorldDay > mission.ExpectedReturnWorldDay;
+        var participants = mission.ScoutMemberIds.Select(memberId =>
+            new DeliveredMissionParticipantOutcome(memberId, returned, deliveredStatus));
+        game.Knowledge.RecordDeliveredMissionOutcome(new DeliveredMissionOutcomeState(
+            $"{mission.Id}:delivery:{game.World.WorldDay}:{outcome}", mission.Id, outcome,
+            mission.ExpectedReturnWorldDay, game.World.WorldDay, actualReturnWorldDay, wasOverdue,
+            participants, deliveredReportIds: report == null ? null : new[] { report.Id }));
     }
 
     private ScoutMissionStatus DetermineOutcome(ScoutMissionState mission, int worldDay)
