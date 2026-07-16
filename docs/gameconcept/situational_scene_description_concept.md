@@ -122,9 +122,10 @@ simulation knows it. An absent scout remains absent until testimony or evidence 
 
 In the Unity report panel, a delivered scout report uses a two-step presentation in the same card:
 the return-state scene appears first, and a `Weiter` action replaces it with the existing structured
-report view. This transition is presentation state only; report content and delivered mission facts
-remain authoritative in `KnowledgeState`. Saves without a matching delivered outcome open the report
-directly instead of reconstructing a historical return scene.
+report view. The WPF development inspector follows the same sequence in its report detail area. This
+transition is presentation state only; report content and delivered mission facts remain authoritative
+in `KnowledgeState`. Saves without a matching delivered outcome open the report directly instead of
+reconstructing a historical return scene.
 
 ### 3.4 Reports and Events
 
@@ -1305,10 +1306,10 @@ human review.
    partial-team deliveries, report reliability, lost equipment and delivered member condition.
    Later member mutation cannot rewrite a historical scene. Unity resolves the delivered outcome
    linked to a report and presents the return scene in the existing report card; `Weiter` switches
-   that card to the structured report without mutating simulation state. Reports from older saves
-   without a delivered outcome open directly. WPF client parity remains open; findings and partial
-   return are supported by the scene contract but are not yet produced by every mission-resolution
-   branch.
+   that card to the structured report without mutating simulation state. The WPF development
+   inspector renders the same resolved scene and transition. Reports from older saves without a
+   delivered outcome open directly. Findings and partial return are supported by the scene contract
+   but are not yet produced by every mission-resolution branch.
 5. **Reports, events and base return.** Report transitions, urgent events, base-return summaries
    and lost-expedition memorial fragments, using structured subject references only.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated

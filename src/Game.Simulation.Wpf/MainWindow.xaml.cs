@@ -17,6 +17,8 @@ public partial class MainWindow : Window
     private readonly HashSet<string> selectedTestTeamMemberIds = new(StringComparer.Ordinal);
     private bool testTeamSelectionInitialized;
     private bool isRefreshingTestTeamSelection;
+    private SimulationSession? reportPresentationSession;
+    private readonly HashSet<string> openedScoutReturnReportIds = new(StringComparer.Ordinal);
 
     public MainWindow()
     {
@@ -172,8 +174,18 @@ public partial class MainWindow : Window
     {
         if (playback == null) return;
         var game = playback.Session.Game;
+        if (!ReferenceEquals(reportPresentationSession, playback.Session))
+        {
+            reportPresentationSession = playback.Session;
+            openedScoutReturnReportIds.Clear();
+        }
+
         PlayerStateList.ItemsSource = BuildPlayerState(game);
-        PlayerReportsList.ItemsSource = BuildPlayerReports(game);
+        var selectedReportId = (PlayerReportsList.SelectedItem as PlayerReportEntry)?.Id;
+        var playerReports = BuildPlayerReports(game);
+        PlayerReportsList.ItemsSource = playerReports;
+        PlayerReportsList.SelectedItem = playerReports.FirstOrDefault(item => item.Id == selectedReportId) ?? playerReports.LastOrDefault();
+        RefreshPlayerReportDetails();
         var selectedCommandId = (PlayerOptionsList.SelectedItem as LocationCommandEntry)?.Id;
         var locationCommands = BuildLocationCommands(playback.Session, game);
         PlayerOptionsList.ItemsSource = locationCommands;
@@ -498,17 +510,54 @@ public partial class MainWindow : Window
         return lines;
     }
 
-    private static IReadOnlyList<string> BuildPlayerReports(GameState game)
+    private static IReadOnlyList<PlayerReportEntry> BuildPlayerReports(GameState game)
     {
-        var lines = new List<string>();
-        foreach (var report in game.Knowledge.ScoutReports)
+        return game.Knowledge.ScoutReports.Select(report => new PlayerReportEntry(report)).ToList();
+    }
+
+    private void PlayerReportSelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshPlayerReportDetails();
+
+    private void ContinueToPlayerReport(object sender, RoutedEventArgs e)
+    {
+        if (PlayerReportsList.SelectedItem is not PlayerReportEntry entry) return;
+        openedScoutReturnReportIds.Add(entry.Id);
+        RefreshPlayerReportDetails();
+    }
+
+    private void RefreshPlayerReportDetails()
+    {
+        if (playback == null || PlayerReportsList.SelectedItem is not PlayerReportEntry entry)
         {
-            lines.Add($"Bericht [{report.Reliability}%] {report.Title}: {report.Body}");
-            lines.AddRange(report.Leads.Select(lead => $"  Hinweis [{lead.Scope}, {lead.Direction}, {lead.Confidence}%]: {lead.Summary}"));
-            lines.AddRange(report.Hints.Select(hint => $"  Notiz: {hint}"));
+            PlayerReportDetails.Visibility = Visibility.Collapsed;
+            return;
         }
 
-        return lines.Count == 0 ? new[] { "Noch keine Scout-Berichte." } : lines;
+        PlayerReportDetails.Visibility = Visibility.Visible;
+        var scene = openedScoutReturnReportIds.Contains(entry.Id)
+            ? null
+            : playback.Session.GetScoutReturnPresentationForReport(entry.Id);
+        if (scene != null)
+        {
+            PlayerReportTitle.Text = scene.Title;
+            PlayerReportMeta.Text = scene.Subtitle ?? "Rückkehr der Späher";
+            PlayerReportBody.Text = scene.Message;
+            PlayerReportStructuredDetails.Text = string.Empty;
+            PlayerReportStructuredDetails.Visibility = Visibility.Collapsed;
+            ContinueToPlayerReportButton.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var report = entry.Report;
+        PlayerReportTitle.Text = report.Title;
+        PlayerReportMeta.Text = $"Verlässlichkeit: {report.Reliability}%";
+        PlayerReportBody.Text = report.Body;
+        var details = report.Leads
+            .Select(lead => $"Hinweis [{lead.Scope}, {lead.Direction}, {lead.Confidence}%]: {lead.Summary}")
+            .Concat(report.Hints.Select(hint => $"Notiz: {hint}"))
+            .ToList();
+        PlayerReportStructuredDetails.Text = string.Join(Environment.NewLine, details);
+        PlayerReportStructuredDetails.Visibility = details.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        ContinueToPlayerReportButton.Visibility = Visibility.Collapsed;
     }
 
     private static IReadOnlyList<LocationCommandEntry> BuildLocationCommands(SimulationSession session, GameState game)
@@ -817,6 +866,18 @@ public partial class MainWindow : Window
 
         public string Id { get; }
         public string DisplayName { get; }
+    }
+
+    private sealed class PlayerReportEntry
+    {
+        public PlayerReportEntry(ScoutReportState report)
+        {
+            Report = report ?? throw new ArgumentNullException(nameof(report));
+        }
+
+        public ScoutReportState Report { get; }
+        public string Id => Report.Id;
+        public string DisplayName => $"{Report.Title} · Verlässlichkeit {Report.Reliability}%";
     }
 
     private sealed class TestTeamMemberEntry

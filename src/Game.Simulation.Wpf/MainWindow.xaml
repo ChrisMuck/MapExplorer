@@ -80,7 +80,20 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="0,0,10,0">
                         <TextBlock Text="Berichte, Hinweise und Belege" FontWeight="SemiBold" Margin="0,0,0,6" />
-                        <ListBox x:Name="PlayerReportsList" />
+                        <ListBox x:Name="PlayerReportsList" Height="150" DisplayMemberPath="DisplayName"
+                                 SelectionChanged="PlayerReportSelectionChanged" />
+                        <Border x:Name="PlayerReportDetails" BorderBrush="#4A5970" BorderThickness="1"
+                                Background="#222833" Padding="10" Margin="0,8,0,0" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="PlayerReportTitle" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" />
+                                <TextBlock x:Name="PlayerReportMeta" Foreground="#AFC0D7" Margin="0,3,0,8" TextWrapping="Wrap" />
+                                <TextBlock x:Name="PlayerReportBody" TextWrapping="Wrap" />
+                                <TextBlock x:Name="PlayerReportStructuredDetails" Foreground="#AFC0D7"
+                                           Margin="0,8,0,0" TextWrapping="Wrap" />
+                                <Button x:Name="ContinueToPlayerReportButton" Content="Weiter" HorizontalAlignment="Left"
+                                        Margin="0,10,0,0" Click="ContinueToPlayerReport" Visibility="Collapsed" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                     <Grid Grid.Column="2">
                         <Grid.RowDefinitions>
