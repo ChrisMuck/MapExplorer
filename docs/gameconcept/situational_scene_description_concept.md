@@ -1336,6 +1336,12 @@ human review.
 7. **Client rendering.** One shared scene view model; Unity panel and WPF control render title,
    paragraphs, question, labels, visual and untouched action projections. Verify both clients show
    the identical scene for the same save.
+   **Implementation status:** Unity resolves scene `visualId` values through the shared, JSON-loaded
+   visual-asset catalog. Location scenes, event popups, faction contacts, scout returns, base returns
+   and lost-expedition memorials use one reusable presenter with an identity-safe fallback. Missing
+   IDs or unavailable sprites remain visible as labelled generated placeholders and do not affect
+   simulation state. WPF deliberately keeps the explicit visual-reference text until it gains an
+   asset renderer; scene wording and selected `visualId` still come from the same application result.
 8. **Playtest pass.** Only after playtesting: variation pools, repetition cooldowns and additional
    fragments (Section 12).
 
@@ -1373,4 +1379,5 @@ Deliberately out of MVP scope, schema kept open for them:
 - **Faction-cultural tone** — per-faction wording flavors for identified contact fragments.
 - **Member personality in scenes** — persistent character history influencing return descriptions
   beyond the delivered mission facts.
-- **Scene images beyond placeholders** — final art direction owns `visualId` content.
+- **Scene images beyond placeholders** — final art direction owns `visualId` content; authored art
+  can replace a catalog entry's optional `assetPath` without changing scene or controller code.

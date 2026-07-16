@@ -470,7 +470,7 @@
 
             <ui:VisualElement name="base-return-overlay" class="base-return-overlay" style="display: none;">
                 <ui:VisualElement name="base-return-image" class="base-return-image">
-                    <ui:Label text="RÜCKKEHR" class="section-label" />
+                    <ui:Label name="scene-visual-label" text="RÜCKKEHR" class="section-label" />
                 </ui:VisualElement>
                 <ui:VisualElement class="base-return-card">
                     <ui:Label name="base-return-subtitle" text="Basislager" class="mono base-return-subtitle" />

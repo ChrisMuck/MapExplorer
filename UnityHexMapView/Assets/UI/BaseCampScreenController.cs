@@ -170,7 +170,9 @@ public sealed class BaseCampScreenController : MonoBehaviour
         SetText("base-return-summary",
             $"Gesichertes Wissen: {result.SecuredKnowledge} · Funde zur Auswertung: {result.ReturnedFindingsCount} · Expeditionstag {result.ExpeditionDay}");
         var image = root?.Q<VisualElement>("base-return-image");
-        if (image != null) image.tooltip = $"Bildreferenz: {scene.VisualId ?? "placeholder-base-return"}";
+        var visualId = scene.VisualId ?? "placeholder-base-return";
+        var visual = mapView?.GetVisualAssetDefinitionForUi(visualId);
+        if (image != null && visual != null) SceneVisualPresenter.Apply(image, visualId, visual);
         SetDisplay("base-return-overlay", true);
     }
 

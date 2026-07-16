@@ -786,9 +786,13 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         BuildReportList(state);
 
         var report = state.Knowledge.ScoutReports[selectedReportIndex];
+        var returnScene = openedScoutReturnReportIds.Contains(report.Id)
+            ? null
+            : mapView?.GetScoutReturnPresentationForReportUi(report.Id);
         var reportAvatar = root?.Q<VisualElement>("report-avatar-main");
         if (reportAvatar != null)
         {
+            ApplySceneVisual(reportAvatar, returnScene?.VisualId ?? "placeholder-scout", false);
             var mission = state.Expedition.ScoutMissions.FirstOrDefault(item => item.Id == report.MissionId);
             var names = mission == null
                 ? "berichtender Scout"
@@ -796,9 +800,6 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             reportAvatar.tooltip = $"Platzhalterporträt: {names}";
         }
 
-        var returnScene = openedScoutReturnReportIds.Contains(report.Id)
-            ? null
-            : mapView?.GetScoutReturnPresentationForReportUi(report.Id);
         if (returnScene != null)
         {
             SetText("report-title-main", returnScene.Title);
@@ -1176,7 +1177,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
             var image = new VisualElement();
             image.AddToClassList("archive-entry__image");
-            image.tooltip = $"Bildreferenz: {scene?.VisualId ?? "placeholder-expedition-memorial"}";
+            ApplySceneVisual(image, scene?.VisualId ?? "placeholder-expedition-memorial");
             card.Add(image);
 
             var title = new Label(scene?.Title ?? $"Expedition {lost.ExpeditionNumber:00}");
@@ -1266,9 +1267,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         var eventImage = root?.Q<VisualElement>("event-image");
         if (eventImage != null)
         {
-            eventImage.tooltip = string.IsNullOrWhiteSpace(scene?.VisualId)
-                ? $"Platzhalterbild: {eventState.Kind}"
-                : $"Bildreferenz: {scene.VisualId}";
+            ApplySceneVisual(eventImage, scene?.VisualId ?? $"placeholder-event-{eventState.Kind}");
         }
 
         options.Clear();
@@ -1358,16 +1357,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("state-presence", presentation?.PresenceStateText ?? "Die aktuelle Anwesenheit ist unbekannt.");
         SetText("location-flavor", presentation?.Description ?? "Der Ort wurde noch nicht aus der Naehe aufgenommen.");
 
+        var locationImage = root?.Q<VisualElement>("location-scene-image");
+        if (locationImage != null)
+        {
+            ApplySceneVisual(locationImage, presentation?.Scene?.VisualId ?? presentation?.ImageId);
+        }
+
         var operational = root?.Q<Label>("state-operational");
         operational?.EnableInClassList("bi-state-pill--alert", false);
-
-        var icon = root?.Q<Label>("location-icon-glyph");
-        if (icon != null)
-        {
-            icon.tooltip = string.IsNullOrWhiteSpace(presentation?.ImageId)
-                ? "Platzhalterbild: unbekannter Ort"
-                : $"Bildreferenz: {presentation.ImageId}";
-        }
 
         var modifierRow = root?.Q<VisualElement>("modifier-row");
         modifierRow?.Clear();
@@ -1734,6 +1731,20 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
     }
 
+    private void ApplySceneVisual(VisualElement element, string visualId, bool showLabel = true)
+    {
+        if (element == null)
+        {
+            return;
+        }
+
+        var definition = mapView?.GetVisualAssetDefinitionForUi(visualId);
+        if (definition != null)
+        {
+            SceneVisualPresenter.Apply(element, visualId, definition, showLabel);
+        }
+    }
+
     private void RefreshFactionInteractionPopup(GameState state)
     {
         var popup = root?.Q<VisualElement>("faction-contact-popup");
@@ -1766,6 +1777,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("faction-dialogue-label", $"DIESE BEGEGNUNG · TAG {state.World.WorldDay}");
         SetText("faction-dialogue", $"\"{interaction.DialogueText}\"");
         SetText("faction-knowledge-value", $"Wissen: {state.Base.KnowledgePoints}");
+        ApplySceneVisual(root?.Q<VisualElement>("faction-contact-portrait"), scene?.VisualId ?? "placeholder-contact", false);
 
         offerList.Clear();
         for (var i = 0; i < interaction.Offers.Count; i++)

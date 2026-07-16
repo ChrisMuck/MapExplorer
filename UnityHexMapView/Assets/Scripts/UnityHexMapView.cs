@@ -812,6 +812,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         return simulationSession?.GetExpeditionMemorialPresentation(expeditionId);
     }
 
+    public VisualAssetDefinition GetVisualAssetDefinitionForUi(string visualAssetId)
+    {
+        return simulationSession?.Application.DataCatalog?.VisualAssets.Resolve(visualAssetId);
+    }
+
     public void RefreshToolkitHud()
     {
         expeditionScreenController?.Refresh();

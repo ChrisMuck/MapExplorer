@@ -1,0 +1,29 @@
+{
+  "documentType": "visual-assets",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    { "visualAssetId": "unknown_visual_placeholder", "type": "UnknownPlaceholder", "displayName": "Unbekannte Szene", "assetPath": null, "isPlaceholder": true, "description": "Neutraler Platzhalter ohne verborgene Information.", "tags": ["fallback"] },
+
+    { "visualAssetId": "placeholder-bridge", "type": "LocationImage", "displayName": "Brücke über unwegsamem Gelände", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "route-obstacle"] },
+    { "visualAssetId": "placeholder-grave", "type": "LocationImage", "displayName": "Markierte Grabstelle", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "investigation-site"] },
+    { "visualAssetId": "placeholder-camp", "type": "LocationImage", "displayName": "Verlassenes Lager", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "investigation-site"] },
+    { "visualAssetId": "placeholder-warning", "type": "SymbolImage", "displayName": "Warnzeichen", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "warning"] },
+    { "visualAssetId": "placeholder-gate", "type": "LocationImage", "displayName": "Versiegelter Zugang", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "containment-site"] },
+    { "visualAssetId": "placeholder-contact", "type": "Portrait", "displayName": "Unbekannte Kontaktperson", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["contact", "identity-safe"] },
+    { "visualAssetId": "placeholder-hazard", "type": "LocationImage", "displayName": "Gefahrenzone", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "hazard-site"] },
+    { "visualAssetId": "placeholder-landmark", "type": "LocationImage", "displayName": "Natürlicher Orientierungspunkt", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["location", "natural-phenomenon"] },
+
+    { "visualAssetId": "placeholder-scout", "type": "ReportImage", "displayName": "Zurückkehrende Späher", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["scout", "report"] },
+    { "visualAssetId": "placeholder-base-return", "type": "EventImage", "displayName": "Rückkehr zum Basislager", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["base-return"] },
+    { "visualAssetId": "placeholder-expedition-memorial", "type": "ReportImage", "displayName": "Archivbild der vermissten Expedition", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["memorial", "archive"] },
+
+    { "visualAssetId": "placeholder-event-LocationDiscovery", "type": "EventImage", "displayName": "Entdeckung im Feld", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event"] },
+    { "visualAssetId": "placeholder-event-ScoutReport", "type": "ReportImage", "displayName": "Meldung der Späher", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "scout"] },
+    { "visualAssetId": "placeholder-event-ScoutOverdue", "type": "ReportImage", "displayName": "Ausbleibende Späher", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "scout", "urgent"] },
+    { "visualAssetId": "placeholder-event-WarningSign", "type": "SymbolImage", "displayName": "Dringendes Warnzeichen", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "warning", "urgent"] },
+    { "visualAssetId": "placeholder-event-FactionReaction", "type": "Portrait", "displayName": "Reaktion einer unbekannten Gruppe", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "contact", "identity-safe"] },
+    { "visualAssetId": "placeholder-event-FoundObject", "type": "ObjectImage", "displayName": "Gefundener Gegenstand", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "object"] },
+    { "visualAssetId": "placeholder-event-WorldConsequence", "type": "EventImage", "displayName": "Veränderung in der Welt", "assetPath": null, "isPlaceholder": true, "fallbackVisualAssetId": "unknown_visual_placeholder", "tags": ["event", "world"] }
+  ]
+}

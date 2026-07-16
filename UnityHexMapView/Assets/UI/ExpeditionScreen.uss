@@ -549,12 +549,27 @@
 }
 .bi-close:hover { background-color: rgba(255, 255, 255, 0.08); }
 .bi-flavor-band {
+    flex-direction: row;
+    align-items: stretch;
     padding: 25px 32px;
     border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.08);
     border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.08);
     background-color: rgba(255, 255, 255, 0.02);
 }
+.bi-scene-image {
+    width: 190px;
+    min-height: 112px;
+    flex-shrink: 0;
+    justify-content: center;
+    margin-right: 25px;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.10);
+    background-color: rgb(58, 66, 52);
+}
 .bi-flavor {
+    flex-grow: 1;
+    align-self: center;
     color: rgb(239, 222, 190);
     font-size: 20px;
     white-space: normal;
@@ -1039,6 +1054,11 @@
 }
 .ui-compact .bi-flavor-band {
     padding: 18px 24px;
+}
+.ui-compact .bi-scene-image {
+    width: 145px;
+    min-height: 86px;
+    margin-right: 18px;
 }
 .ui-compact .bi-flavor {
     font-size: 17px;

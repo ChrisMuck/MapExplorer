@@ -355,6 +355,7 @@
                 </ui:VisualElement>
 
                 <ui:VisualElement class="bi-flavor-band">
+                    <ui:VisualElement name="location-scene-image" class="bi-scene-image" />
                     <ui:Label name="location-flavor" text="Die Expedition steht vor einer Entscheidung." class="bi-flavor serif" />
                 </ui:VisualElement>
 
@@ -454,7 +455,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="faction-modal__body">
                     <ui:VisualElement class="faction-modal__person">
-                        <ui:VisualElement class="faction-portrait" />
+                        <ui:VisualElement name="faction-contact-portrait" class="faction-portrait" />
                         <ui:Label name="faction-representative-name" text="Wächter" class="faction-name serif" />
                         <ui:Label name="faction-representative-role" text="Grenzwächter" class="faction-role" />
                         <ui:VisualElement class="hr" />
