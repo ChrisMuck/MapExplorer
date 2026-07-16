@@ -6,5 +6,13 @@
     "relation-anonymous": { "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 70, "when": { "identityStage": "anonymous" } },
     "relation-identified": { "subjectKind": "contact", "priority": 75 }
   },
-  "items": []
+  "items": [
+    { "id": "frag-contact-opening", "group": "opening", "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 80, "textId": "scene.fragment.contact.opening" },
+    { "id": "frag-contact-anonymous", "group": "relation-anonymous", "textId": "scene.fragment.contact.anonymous" },
+    { "id": "frag-contact-signature", "group": "relation-anonymous", "subjectKind": "contact", "source": { "kind": "signature-identification" }, "priority": 75, "when": { "identityStage": "signature-recognised", "contactStatusAny": ["Rumored"] }, "textId": "scene.fragment.contact.signature" },
+    { "id": "frag-contact-identified", "group": "relation-identified", "subjectKind": "contact", "source": { "kind": "signature-identification" }, "priority": 80, "when": { "identityStage": "identified", "contactStatusAny": ["Contacted", "Open", "Hostile"] }, "textId": "scene.fragment.contact.identified" },
+    { "id": "frag-contact-attitude-watchful", "group": "member-condition", "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 60, "when": { "knownContextTagsAny": ["attitude:watchful"] }, "textId": "scene.fragment.contact.attitude.watchful" },
+    { "id": "frag-contact-attitude-open", "group": "member-condition", "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 60, "when": { "knownContextTagsAny": ["attitude:open"] }, "textId": "scene.fragment.contact.attitude.open" },
+    { "id": "frag-contact-attitude-tense", "group": "member-condition", "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 70, "when": { "knownContextTagsAny": ["attitude:tense"] }, "textId": "scene.fragment.contact.attitude.tense" }
+  ]
 }

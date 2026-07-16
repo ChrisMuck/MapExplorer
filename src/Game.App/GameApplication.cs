@@ -22,7 +22,7 @@ public sealed class GameApplication
     private readonly SendScoutMissionCommand sendScoutMissionCommand;
     private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand;
     private readonly InspectLocationCommand inspectLocationCommand;
-    private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
+    private readonly ResolveEventCommand resolveEventCommand;
     private readonly CompleteExpeditionCommand completeExpeditionCommand;
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
     private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand;
@@ -84,9 +84,11 @@ public sealed class GameApplication
         }
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
+        var factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(dataCatalog.Scenes, crossSystemData?.FactionSignatures);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
-            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring))
-            : new OpenFactionInteractionCommand();
+            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring), factionSceneResolver)
+            : new OpenFactionInteractionCommand(sceneResolver: factionSceneResolver);
+        resolveEventCommand = new ResolveEventCommand(new AddMapMarkerCommand(), openFactionInteractionCommand);
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -328,6 +330,14 @@ public sealed class GameApplication
     public FactionInteractionResult OpenFactionInteraction(GameState game, string factionId, HexCoord coord)
     {
         return openFactionInteractionCommand.Execute(game, factionId, coord);
+    }
+
+    public FactionContactPresentation? GetActiveFactionContactPresentation(GameState game)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (game.ActiveFactionInteraction == null || DataCatalog == null) return null;
+        return new FactionContactSceneResolver(DataCatalog.Scenes, DataCatalog.CrossSystem.FactionSignatures)
+            .Resolve(game, game.ActiveFactionInteraction);
     }
 
     public FactionOfferResult PurchaseFactionOffer(GameState game, string offerId)

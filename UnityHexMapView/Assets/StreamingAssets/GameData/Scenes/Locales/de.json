@@ -13,6 +13,15 @@
     { "id": "scene.question.contact-site", "text": "Wer wartet hier, und unter welchen Bedingungen ist eine Begegnung möglich?" },
     { "id": "scene.question.hazard-site", "text": "Wo liegt die Gefahr, und lässt sie sich umgehen oder begrenzen?" },
     { "id": "scene.question.natural-phenomenon", "text": "Was macht diesen Ort bedeutsam, und was lässt sich von hier erkennen?" },
+    { "id": "scene.question.contact", "text": "Wie treten wir dieser Gruppe gegenüber, und worauf lassen wir uns ein?" },
+
+    { "id": "scene.fragment.contact.opening", "text": "Eine kleine Abordnung erwartet die Expedition mit erkennbarem Abstand. Haltung und Blickrichtung zeigen, dass beide Seiten aufmerksam beobachtet werden." },
+    { "id": "scene.fragment.contact.anonymous", "text": "Wer diese Menschen sind und für wen sie sprechen, ist der Expedition noch nicht bekannt." },
+    { "id": "scene.fragment.contact.signature", "text": "Zeichen und Ausrüstung ähneln einer bereits berichteten Signatur, doch die Zuordnung gilt noch nicht als bestätigt." },
+    { "id": "scene.fragment.contact.identified", "text": "Die Abordnung lässt sich {subjectLabel} zuordnen." },
+    { "id": "scene.fragment.contact.attitude.watchful", "text": "Die Gruppe bleibt wachsam und überlässt der Expedition den ersten Schritt." },
+    { "id": "scene.fragment.contact.attitude.open", "text": "Die Haltung wirkt offen; mehrere Personen machen sichtbar Platz für ein Gespräch." },
+    { "id": "scene.fragment.contact.attitude.tense", "text": "Die Anspannung ist deutlich: Niemand senkt die Hände, und jede Bewegung der Expedition wird verfolgt." },
 
     { "id": "scene.fragment.open.broken-bridge", "text": "Geborstene Balken hängen schräg über der Schlucht, während unten das Wasser an den gestürzten Trägern reißt. Der Wind drängt in Böen über den offenen Spalt." },
     { "id": "scene.fragment.open.marked-grave", "text": "Aufgeschichtete Steine und geschnitzte Zeichen fassen die Grabstelle sauber ein. Es riecht nach feuchter Erde, und jemand hat hier lange Sorgfalt aufgewendet." },

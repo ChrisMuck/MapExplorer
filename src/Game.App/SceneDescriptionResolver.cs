@@ -75,6 +75,39 @@ public sealed class ObservableModifierScenePart
     public string Text { get; }
 }
 
+/// <summary>Read-only contact projection containing only visible or already-earned information.</summary>
+public sealed class ContactSceneView
+{
+    public ContactSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string identityStage, string contactStatus, IEnumerable<string>? knownContextTags,
+        string? subjectLabel = null, string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        IdentityStage = Require(identityStage, nameof(identityStage));
+        ContactStatus = Require(contactStatus, nameof(contactStatus));
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        SubjectLabel = Normalize(subjectLabel);
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string IdentityStage { get; }
+    public string ContactStatus { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? SubjectLabel { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
 /// <summary>
 /// Read-only, already-authorized location observation. It contains no hidden context, modifier or
 /// faction claim that the inspection did not make visible.
@@ -183,6 +216,24 @@ public sealed class SceneDescriptionResolver
         return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question, view.KnowledgeAgeLabel);
     }
 
+    public SceneDescriptionResult ResolveContact(ContactSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "contact" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic contact scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "contact")
+            .Where(fragment => ContactSourceAllowed(fragment.Source, view))
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Contact scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
     private static bool Applies(SceneFragmentDefinition fragment, LocationSceneView view) =>
         (fragment.AppliesTo.ArchetypeIds.Count == 0 || fragment.AppliesTo.ArchetypeIds.Contains(view.ArchetypeId, StringComparer.Ordinal)) &&
         (fragment.AppliesTo.VariantIds.Count == 0 || fragment.AppliesTo.VariantIds.Contains(view.VariantId, StringComparer.Ordinal));
@@ -235,6 +286,32 @@ public sealed class SceneDescriptionResolver
 
     private static string Interpolate(string text, LocationSceneView view) =>
         text.Replace("{subjectLabel}", view.SubjectLabel ?? string.Empty, StringComparison.Ordinal);
+
+    private static string Interpolate(string text, ContactSceneView view) =>
+        text.Replace("{subjectLabel}", view.SubjectLabel ?? string.Empty, StringComparison.Ordinal);
+
+    private static bool ContactSourceAllowed(SceneFragmentSourceDefinition source, ContactSceneView view) => source.Kind switch
+    {
+        "direct-observation" => true,
+        "signature-identification" => view.IdentityStage is "signature-recognised" or "identified",
+        "testimony" => true,
+        "delivered-outcome" => true,
+        _ => false
+    };
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ContactSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        if (!MatchesAny(when.ContactStatusAny, view.ContactStatus)) return false;
+        if (when.IdentityStage != null && when.IdentityStage != view.IdentityStage) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.MissionStatusAny.Count == 0 && when.MemberStatusAny.Count == 0 && when.TeamOutcome == null &&
+            when.ReportReliabilityAtLeast == null && when.ReportReliabilityBelow == null && when.HasFindings == null &&
+            when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null;
+    }
     private static bool MatchesAnyOverlap(IEnumerable<string> expected, IEnumerable<string> actual)
     {
         var required = expected.ToList();

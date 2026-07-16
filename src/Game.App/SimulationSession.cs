@@ -242,6 +242,9 @@ public sealed class SimulationSession
         return result;
     }
 
+    public FactionContactPresentation? GetActiveFactionContactPresentation() =>
+        Application.GetActiveFactionContactPresentation(Game);
+
     /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
     public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);
 

@@ -8,10 +8,13 @@ namespace Game.App
 public sealed class OpenFactionInteractionCommand
 {
     private readonly AuthoredFactionOfferService? authoredOfferService;
+    private readonly FactionContactSceneResolver? sceneResolver;
 
-    public OpenFactionInteractionCommand(AuthoredFactionOfferService? authoredOfferService = null)
+    public OpenFactionInteractionCommand(AuthoredFactionOfferService? authoredOfferService = null,
+        FactionContactSceneResolver? sceneResolver = null)
     {
         this.authoredOfferService = authoredOfferService;
+        this.sceneResolver = sceneResolver;
     }
 
     public FactionInteractionResult Execute(GameState game, string factionId, HexCoord coord)
@@ -41,7 +44,9 @@ public sealed class OpenFactionInteractionCommand
         game.SetActiveFactionInteraction(interaction);
         faction.AddMemory($"interaction-opened:{game.Expedition.ExpeditionNumber}:{game.World.WorldDay}:{coord.Q}:{coord.R}");
 
-        return FactionInteractionResult.Opened(interaction, $"Contact opened with {interaction.Representative.DisplayName}.");
+        var presentation = sceneResolver?.Resolve(game, interaction);
+        return FactionInteractionResult.Opened(interaction,
+            presentation?.Scene.Message ?? $"Contact opened with {interaction.Representative.DisplayName}.", presentation);
     }
 
     private FactionInteractionState CreateInteraction(GameState game, FactionState faction, HexCoord coord)

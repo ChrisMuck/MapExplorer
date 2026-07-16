@@ -1263,6 +1263,12 @@ human review.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no
    identified fragment while status is `Unknown` or `Rumored`; rumored testimony remains explicitly
    unconfirmed.
+   **Implementation status:** the generic `ContactSceneView`, localized contact policy and initial
+   anonymous/signature-recognised/identified plus visible-attitude fragments are implemented. The
+   active faction-interaction UI resolves this read-only presentation and suppresses internal names
+   and roles until identity is established. Signature recognition requires matching earned evidence;
+   `Rumored` alone is insufficient. Generic representative authoring, faction-memory/history
+   fragments and delivered situation scenes remain in this package.
 4. **Scout returns.** Wire mission completion to the immutable delivered outcome: mission status,
    actual return timing, participant outcomes, lost equipment, team outcome, report reliability and
    findings/leads. The scene precedes the existing report presentation.

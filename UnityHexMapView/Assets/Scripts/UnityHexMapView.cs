@@ -763,6 +763,11 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshToolkitHud();
     }
 
+    public FactionContactPresentation GetActiveFactionContactPresentationForUi()
+    {
+        return simulationSession?.GetActiveFactionContactPresentation();
+    }
+
     public void RefreshToolkitHud()
     {
         expeditionScreenController?.Refresh();

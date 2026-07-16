@@ -83,6 +83,8 @@ var sceneDescriptionDataTests = new SceneDescriptionDataTests();
 sceneDescriptionDataTests.RunAll();
 var sceneDescriptionResolverTests = new SceneDescriptionResolverTests();
 sceneDescriptionResolverTests.RunAll();
+var factionContactSceneTests = new FactionContactSceneTests();
+factionContactSceneTests.RunAll();
 var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
 crossSystemAuthoringDataTests.RunAll();
 var archetypeFlowResolverTests = new ArchetypeFlowResolverTests();

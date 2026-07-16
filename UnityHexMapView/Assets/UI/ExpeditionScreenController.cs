@@ -1713,12 +1713,17 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         popup.style.display = DisplayStyle.Flex;
-        SetText("faction-modal-title", $"KONTAKT · {interaction.FactionName}");
+        var contactPresentation = mapView?.GetActiveFactionContactPresentationForUi();
+        var scene = contactPresentation?.Scene;
+        var identified = contactPresentation?.IdentityStage == "identified";
+        SetText("faction-modal-title", $"KONTAKT · {scene?.Title ?? (identified ? interaction.FactionName : "Unbekannte Abordnung")}");
         SetText("faction-modal-coord", $"Feld {interaction.Coord.Q:00} / {interaction.Coord.R:00}");
-        SetText("faction-representative-name", interaction.Representative.DisplayName);
-        SetText("faction-representative-role", $"{RepresentativeRoleText(interaction.Representative.Role)} · {interaction.FactionName}");
+        SetText("faction-representative-name", identified ? interaction.Representative.DisplayName : "Unbekannte Person");
+        SetText("faction-representative-role", identified
+            ? $"{RepresentativeRoleText(interaction.Representative.Role)} · {interaction.FactionName}"
+            : "Rolle und Zugehörigkeit unbekannt");
         SetText("faction-attitude", interaction.AttitudeText);
-        SetText("faction-representative-description", interaction.Representative.Description);
+        SetText("faction-representative-description", scene?.Message ?? interaction.Representative.Description);
         SetText("faction-dialogue-label", $"DIESE BEGEGNUNG · TAG {state.World.WorldDay}");
         SetText("faction-dialogue", $"\"{interaction.DialogueText}\"");
         SetText("faction-knowledge-value", $"Wissen: {state.Base.KnowledgePoints}");
