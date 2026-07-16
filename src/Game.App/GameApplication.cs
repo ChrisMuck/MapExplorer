@@ -84,7 +84,8 @@ public sealed class GameApplication
         }
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
-        var factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(dataCatalog.Scenes, crossSystemData?.FactionSignatures);
+        var factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(
+            dataCatalog.Scenes, crossSystemData?.FactionSignatures, dataCatalog.Authoring);
         var contactProfileService = dataCatalog == null || crossSystemData == null ? null
             : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
@@ -338,7 +339,7 @@ public sealed class GameApplication
     {
         if (game == null) throw new ArgumentNullException(nameof(game));
         if (game.ActiveFactionInteraction == null || DataCatalog == null) return null;
-        return new FactionContactSceneResolver(DataCatalog.Scenes, DataCatalog.CrossSystem.FactionSignatures)
+        return new FactionContactSceneResolver(DataCatalog.Scenes, DataCatalog.CrossSystem.FactionSignatures, DataCatalog.Authoring)
             .Resolve(game, game.ActiveFactionInteraction);
     }
 

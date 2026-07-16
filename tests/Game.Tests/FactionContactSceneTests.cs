@@ -12,6 +12,7 @@ internal sealed class FactionContactSceneTests
         UnknownContactRemainsAnonymous();
         RumoredSignatureCanBeRecognisedWithoutNamingFaction();
         EstablishedContactMayNameFaction();
+        AuthoredMemoryChangesVisibleContactHistory();
     }
 
     private static void UnknownContactRemainsAnonymous()
@@ -50,6 +51,19 @@ internal sealed class FactionContactSceneTests
         AssertTrue(FragmentIds(result).Contains("frag-contact-identified"), "Identified contact fragment is selected");
     }
 
+    private static void AuthoredMemoryChangesVisibleContactHistory()
+    {
+        var (_, command, game, faction) = Create(FactionContactStatus.Contacted);
+        faction.AddMemory("memory-route-restored-welcome");
+
+        var result = command.Execute(game, faction.Id, game.Expedition.Position);
+
+        AssertTrue(FragmentIds(result).Contains("frag-contact-history-recognition"),
+            "An authored memory exposes its generic visible-conduct fragment");
+        AssertTrue(result.Presentation!.Scene.Message.Contains("frühere Hilfe", StringComparison.Ordinal),
+            "Contact history is localized scene content rather than faction-specific command text");
+    }
+
     private static (GameDataCatalog Catalog, OpenFactionInteractionCommand Command, GameState Game, FactionState Faction) Create(FactionContactStatus status)
     {
         var catalog = LoadCatalog();
@@ -61,7 +75,7 @@ internal sealed class FactionContactSceneTests
             new[] { new ExpeditionMemberState("scout", "Mira", ExpeditionMemberRole.Scout) });
         var game = new GameState(new WorldState(map), new KnowledgeState(), new PlayerNotesState(), expedition,
             new BaseState(HexCoord.Zero), factions: new[] { faction });
-        var resolver = new FactionContactSceneResolver(catalog.Scenes, catalog.CrossSystem.FactionSignatures);
+        var resolver = new FactionContactSceneResolver(catalog.Scenes, catalog.CrossSystem.FactionSignatures, catalog.Authoring);
         var profiles = new FactionContactProfileService(catalog.Scenes, catalog.CrossSystem.FactionProfiles);
         return (catalog, new OpenFactionInteractionCommand(sceneResolver: resolver, contactProfileService: profiles), game, faction);
     }

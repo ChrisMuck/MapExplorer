@@ -390,16 +390,20 @@ public sealed class FactionOfferContentDefinition
 /// <summary>Stable semantic memory key and its neutral provenance. Runtime supplies the faction and day.</summary>
 public sealed class FactionMemoryDefinition
 {
-    public FactionMemoryDefinition(string id, string description, IEnumerable<string>? provenanceTags = null)
+    public FactionMemoryDefinition(string id, string description, IEnumerable<string>? provenanceTags = null,
+        IEnumerable<string>? contactSceneTags = null)
     {
         Id = LocationStateChannelDefinition.RequireText(id, nameof(id));
         Description = LocationStateChannelDefinition.RequireText(description, nameof(description));
         ProvenanceTags = LocationContextActionRuleDefinition.NormalizeOptional(provenanceTags);
+        ContactSceneTags = LocationContextActionRuleDefinition.NormalizeOptional(contactSceneTags);
     }
 
     public string Id { get; }
     public string Description { get; }
     public IReadOnlyList<string> ProvenanceTags { get; }
+    /// <summary>Visible-conduct tags a contact scene may derive when this memory is present.</summary>
+    public IReadOnlyList<string> ContactSceneTags { get; }
 }
 
 /// <summary>Typed target-schema content that is static and never identifies generated world instances.</summary>
@@ -560,7 +564,8 @@ public static class CrossSystemAuthoringDataLoader
         return new FactionOfferContentDefinition(Text(item, "id"), Text(item, "title"), Text(item, "description"), Strings(item, "eligibleProfileTags"), Strings(item, "requiresContactStatusAny"), Int(item, "knowledgePointCost"), effects, Text(item, "repeatPolicy"));
     }
 
-    private static FactionMemoryDefinition ParseFactionMemory(JObject item) => new(Text(item, "id"), Text(item, "description"), Strings(item, "provenanceTags"));
+    private static FactionMemoryDefinition ParseFactionMemory(JObject item) => new(Text(item, "id"), Text(item, "description"),
+        Strings(item, "provenanceTags"), Strings(item, "contactSceneTags"));
 
     private static string Text(JObject item, string field) => LocationStateChannelDefinition.RequireText((string?)item[field], field);
     private static int Int(JObject item, string field) => (int?)item[field] ?? throw new LocationDataException($"{field} must be an integer.");

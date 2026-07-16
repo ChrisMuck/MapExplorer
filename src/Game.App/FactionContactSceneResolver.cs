@@ -12,11 +12,14 @@ public sealed class FactionContactSceneResolver
 {
     private readonly SceneDescriptionResolver resolver;
     private readonly FactionSignatureDefinitionSet? signatures;
+    private readonly CrossSystemAuthoringBundle? authoring;
 
-    public FactionContactSceneResolver(SceneDescriptionCatalog scenes, FactionSignatureDefinitionSet? signatures = null)
+    public FactionContactSceneResolver(SceneDescriptionCatalog scenes, FactionSignatureDefinitionSet? signatures = null,
+        CrossSystemAuthoringBundle? authoring = null)
     {
         resolver = new SceneDescriptionResolver(scenes ?? throw new ArgumentNullException(nameof(scenes)));
         this.signatures = signatures;
+        this.authoring = authoring;
     }
 
     public FactionContactPresentation Resolve(GameState game, FactionInteractionState interaction)
@@ -27,11 +30,22 @@ public sealed class FactionContactSceneResolver
         var identityStage = IdentityStage(game.Knowledge, faction);
         var identified = identityStage == "identified";
         var tags = new List<string> { AttitudeTag(faction) };
+        tags.AddRange(VisibleMemoryTags(faction));
         var scene = resolver.ResolveContact(new ContactSceneView(
             interaction.Id, identified ? faction.Name : "Unbekannte Abordnung", "Direkte Begegnung",
             "placeholder-contact", identityStage, faction.ContactStatus.ToString(), tags,
             identified ? faction.Name : null));
         return new FactionContactPresentation(identityStage, scene);
+    }
+
+    private IEnumerable<string> VisibleMemoryTags(FactionState faction)
+    {
+        if (authoring == null) return Enumerable.Empty<string>();
+        return faction.Memories
+            .Select(memoryId => authoring.FactionMemories.TryGetValue(memoryId, out var definition) ? definition : null)
+            .Where(definition => definition != null)
+            .SelectMany(definition => definition!.ContactSceneTags)
+            .Distinct(StringComparer.Ordinal);
     }
 
     private string IdentityStage(KnowledgeState knowledge, FactionState faction)

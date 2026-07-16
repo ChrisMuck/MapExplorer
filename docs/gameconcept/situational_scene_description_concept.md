@@ -1270,7 +1270,10 @@ human review.
    `Rumored` alone is insufficient. Representative role, description and dialogue are selected from
    localized JSON contact profiles through reusable faction `contactStyle`; concrete faction IDs no
    longer choose representatives or dialogue. Faction-memory/history fragments and delivered
-   situation scenes remain in this package.
+   situation scenes remain in this package. Authored faction-memory definitions may now expose
+   generic visible-conduct tags to contact fragments; remembered help, resentment and broken
+   promises therefore alter the scene without branching on a concrete faction ID or narrating the
+   hidden memory directly.
    Contact availability, territory reactions, representative selection and production offers are
    resolved through authored profiles/rules. Runtime commands contain no concrete faction-ID
    branches; an application instance without a content catalog receives only neutral fallback

@@ -1,7 +1,7 @@
 {
   "documentType": "faction-memory-definitions",
   "schemaVersion": 2,
-  "contentVersion": 2,
+  "contentVersion": 3,
   "items": [
     {
       "id": "memory-changed-access",
@@ -11,12 +11,44 @@
     {
       "id": "memory-promise-kept",
       "description": "Die Expedition hat eine zugesagte Hilfe geleistet.",
-      "provenanceTags": ["situation", "promise-kept", "assist"]
+      "provenanceTags": ["situation", "promise-kept", "assist"],
+      "contactSceneTags": ["history:recognition"]
     },
     {
       "id": "memory-promise-broken",
       "description": "Eine zugesagte Hilfe blieb aus oder kam zu spät.",
-      "provenanceTags": ["situation", "promise-broken", "expired"]
+      "provenanceTags": ["situation", "promise-broken", "expired"],
+      "contactSceneTags": ["history:broken-promise"]
+    },
+    {
+      "id": "memory-sacred-site-disturbed",
+      "description": "Die Expedition hat einen bewachten oder heiligen Ort gestört.",
+      "provenanceTags": ["location", "disturb", "sacred"],
+      "contactSceneTags": ["history:resentment"]
+    },
+    {
+      "id": "memory-claimed-site-disturbed",
+      "description": "Die Expedition hat einen beanspruchten Ort trotz erkennbarer Bedeutung gestört.",
+      "provenanceTags": ["location", "disturb", "claimed"],
+      "contactSceneTags": ["history:resentment"]
+    },
+    {
+      "id": "memory-route-restored-welcome",
+      "description": "Die Fraktion erkennt die Wiederherstellung einer Route als hilfreiche Handlung an.",
+      "provenanceTags": ["location", "repair", "help"],
+      "contactSceneTags": ["history:recognition"]
+    },
+    {
+      "id": "memory-route-restored-hostile",
+      "description": "Die Fraktion betrachtet die Wiederherstellung einer Route als Eingriff in ihr Gebiet.",
+      "provenanceTags": ["location", "repair", "territory"],
+      "contactSceneTags": ["history:resentment"]
+    },
+    {
+      "id": "memory-boundary-crossing-observed",
+      "description": "Die Fraktion hat beobachtet, dass die Expedition eine markierte Grenze überschritten hat.",
+      "provenanceTags": ["location", "cross", "boundary"],
+      "contactSceneTags": ["history:resentment"]
     }
   ]
 }
