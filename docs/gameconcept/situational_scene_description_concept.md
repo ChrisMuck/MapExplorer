@@ -313,6 +313,7 @@ All fields are optional; each maps to player-known state only:
 | `knownPresenceStatesAny` | Same for the presence channel. |
 | `knownContextTagsAny` | Earned context conclusions (`KnowledgeState.KnownLocationContextTags`). |
 | `observableModifierIdsAny` | Modifiers revealed to the player at this location. |
+| `observableRelationKindsAny` | Relation categories made observable by the current evidence (`claimed`, `watched`, `sacred`, `guarded`, `connected`); never raw relations from `WorldState`. |
 | `knowledgeLevelAtLeast` | Tile/location `KnowledgeLevel` (`Reported` or `Confirmed`). |
 | `requiresDoubtfulLastObservation` / `forbidDoubtfulLastObservation` | The stored observation's doubtful flag. |
 | `maxKnownStateAgeDays` | Days since `LastObservedWorldDay`. Alias for the value on a `stored-observation` source; declaring both with different values is an error. New content should prefer the source field. |
@@ -1246,6 +1247,12 @@ human review.
    *Tests:* deterministic snapshot scenes for the worked example, remote-view honesty and one scene
    per archetype; hidden context/unrevealed modifier/undelivered outcome never surfaces; previous-
    versus-current comparison occurs before knowledge commit; doubt/age handling.
+   **Implementation status:** the read-only location view, deterministic localized resolver,
+   structured result, inspection-command migration and generic anonymous/identified relation
+   fragments are implemented. Inspection coverage exists for all seven archetypes, and a faction is
+   named only for `Contacted`, `Open` or `Hostile`. Arrival and remote-view wiring, stored-observation
+   age/doubt coverage, supersession/exclusive selection and the final content-profile parity gate
+   remain in this package.
 3. **Contact scenes.** Identity-stage derivation from `FactionContactStatus`, earned signature
    context tags and delivered contact events; wire faction interaction and situation delivery.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no

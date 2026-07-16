@@ -84,7 +84,7 @@ public sealed class SceneFragmentConditionDefinition
     internal static readonly IReadOnlySet<string> SupportedFields = new HashSet<string>(new[]
     {
         "knownInteractionStatesAny", "knownOperationalStatesAny", "knownPresenceStatesAny",
-        "knownContextTagsAny", "observableModifierIdsAny", "knowledgeLevelAtLeast",
+        "knownContextTagsAny", "observableModifierIdsAny", "observableRelationKindsAny", "knowledgeLevelAtLeast",
         "requiresDoubtfulLastObservation", "forbidDoubtfulLastObservation", "maxKnownStateAgeDays",
         "contactStatusAny", "identityStage", "missionStatusAny", "memberStatusAny", "teamOutcome",
         "reportReliabilityAtLeast", "reportReliabilityBelow", "hasFindings", "hasLeads",
@@ -104,6 +104,7 @@ public sealed class SceneFragmentConditionDefinition
         KnownPresenceStatesAny = Strings(source, "knownPresenceStatesAny");
         KnownContextTagsAny = Strings(source, "knownContextTagsAny");
         ObservableModifierIdsAny = Strings(source, "observableModifierIdsAny");
+        ObservableRelationKindsAny = Strings(source, "observableRelationKindsAny");
         ContactStatusAny = Strings(source, "contactStatusAny");
         MissionStatusAny = Strings(source, "missionStatusAny");
         MemberStatusAny = Strings(source, "memberStatusAny");
@@ -134,6 +135,7 @@ public sealed class SceneFragmentConditionDefinition
         ValidateAll(ContactStatusAny, "contactStatusAny", "Unknown", "Rumored", "Contacted", "Open", "Hostile");
         ValidateAll(MissionStatusAny, "missionStatusAny", "Returned", "Overdue", "ReturnedInjured", "Missing");
         ValidateAll(MemberStatusAny, "memberStatusAny", "Injured", "Exhausted", "Missing", "Dead", "unhurt");
+        ValidateAll(ObservableRelationKindsAny, "observableRelationKindsAny", "claimed", "watched", "sacred", "guarded", "connected");
     }
 
     public IReadOnlyList<string> KnownInteractionStatesAny { get; }
@@ -141,6 +143,7 @@ public sealed class SceneFragmentConditionDefinition
     public IReadOnlyList<string> KnownPresenceStatesAny { get; }
     public IReadOnlyList<string> KnownContextTagsAny { get; }
     public IReadOnlyList<string> ObservableModifierIdsAny { get; }
+    public IReadOnlyList<string> ObservableRelationKindsAny { get; }
     public IReadOnlyList<string> ContactStatusAny { get; }
     public IReadOnlyList<string> MissionStatusAny { get; }
     public IReadOnlyList<string> MemberStatusAny { get; }
@@ -523,6 +526,8 @@ public static class SceneDescriptionContentValidator
     {
         var allowed = subjectKind switch
         {
+            "location" => new HashSet<string>(new[] { "{subjectLabel}" }, StringComparer.Ordinal),
+            "contact" => new HashSet<string>(new[] { "{subjectLabel}" }, StringComparer.Ordinal),
             "scout-return" => new HashSet<string>(new[] { "{memberName}", "{companionName}", "{daysOverdue}" }, StringComparer.Ordinal),
             "report-event" => new HashSet<string>(new[] { "{memberName}", "{companionName}" }, StringComparer.Ordinal),
             _ => new HashSet<string>(StringComparer.Ordinal)

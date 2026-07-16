@@ -110,7 +110,7 @@ public sealed class GameApplication
             : null;
         inspectLocationCommand = new InspectLocationCommand(
             findingAcquisitionService,
-            new LocationInspectionPresentationResolver(locationInteractionDefinitions, dataCatalog?.Authoring));
+            new LocationInspectionPresentationResolver(locationInteractionDefinitions, dataCatalog?.Authoring, dataCatalog?.Scenes));
         completeExpeditionCommand = new CompleteExpeditionCommand(findingAnalysisHandoffService);
         sendScoutMissionCommand = new SendScoutMissionCommand(crossSystemData?.ScoutContent);
         scoutLocationSurroundingsCommand = new ScoutLocationSurroundingsCommand(

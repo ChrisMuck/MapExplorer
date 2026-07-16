@@ -70,6 +70,15 @@
     { "id": "scene.fragment.interaction.contacted", "text": "Hier hat bereits eine erste Begegnung stattgefunden; sie hat Spuren und Fragen hinterlassen." },
     { "id": "scene.fragment.interaction.withdrawn", "text": "Beim letzten Mal hat die Expedition Abstand gehalten und sich zurückgezogen." },
     { "id": "scene.fragment.interaction.surveyed", "text": "Der Ort wurde bereits vermessen und mit der Umgebung in Beziehung gesetzt." },
-    { "id": "scene.fragment.interaction.secured", "text": "Nach der letzten Untersuchung wurde der Zugang von der Expedition gesichert." }
+    { "id": "scene.fragment.interaction.secured", "text": "Nach der letzten Untersuchung wurde der Zugang von der Expedition gesichert." },
+
+    { "id": "scene.fragment.relation.claimed.anonymous", "text": "Sichtbare Zeichen deuten darauf hin, dass eine noch unbekannte Gruppe Anspruch auf diesen Ort erhebt." },
+    { "id": "scene.fragment.relation.watched.anonymous", "text": "Die Spuren lassen auf gezielte Beobachtung schließen, verraten aber noch nicht, wer dahintersteht." },
+    { "id": "scene.fragment.relation.sacred.anonymous", "text": "Die sorgsame Anordnung lässt erkennen, dass dieser Ort für eine noch unbekannte Gruppe besondere Bedeutung besitzt." },
+    { "id": "scene.fragment.relation.guarded.anonymous", "text": "Die Spuren einer Bewachung sind erkennbar, doch ihre Urheber lassen sich noch nicht bestimmen." },
+    { "id": "scene.fragment.relation.claimed.identified", "text": "Die sichtbaren Zeichen lassen sich {subjectLabel} zuordnen; die Fraktion erhebt offenbar Anspruch auf diesen Ort." },
+    { "id": "scene.fragment.relation.watched.identified", "text": "Die Spuren der Beobachtung lassen sich {subjectLabel} zuordnen." },
+    { "id": "scene.fragment.relation.sacred.identified", "text": "Die besondere Bedeutung dieses Ortes ist mit {subjectLabel} verbunden." },
+    { "id": "scene.fragment.relation.guarded.identified", "text": "Die sichtbaren Spuren der Bewachung lassen sich {subjectLabel} zuordnen." }
   ]
 }

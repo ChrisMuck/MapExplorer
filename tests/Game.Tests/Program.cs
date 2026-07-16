@@ -81,6 +81,8 @@ var gameDataCatalogTests = new GameDataCatalogTests();
 gameDataCatalogTests.RunAll();
 var sceneDescriptionDataTests = new SceneDescriptionDataTests();
 sceneDescriptionDataTests.RunAll();
+var sceneDescriptionResolverTests = new SceneDescriptionResolverTests();
+sceneDescriptionResolverTests.RunAll();
 var crossSystemAuthoringDataTests = new CrossSystemAuthoringDataTests();
 crossSystemAuthoringDataTests.RunAll();
 var archetypeFlowResolverTests = new ArchetypeFlowResolverTests();

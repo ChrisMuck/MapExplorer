@@ -61,19 +61,22 @@ internal sealed class FindingLifecycleTests
         var game = app.CreateTutorialGame();
         var expected = new[]
         {
-            ("broken-ravine", "Die eingestuerzte Handelsbruecke liegt in geborstenen Balken ueber der Schlucht; die alte Handelsroute ist damit unterbrochen."),
-            ("marked-grave", "Das Grab ist verschlossen und mit Warnzeichen versehen."),
-            ("sealed-gate", "Das Tor ist fest versiegelt und traegt alte Warnzeichen.")
+            ("broken-ravine", "frag-open-broken-bridge"),
+            ("marked-grave", "frag-open-marked-grave"),
+            ("sealed-gate", "frag-open-sealed-gate")
         };
 
-        foreach (var (locationId, expectedMessage) in expected)
+        foreach (var (locationId, expectedOpeningFragment) in expected)
         {
             var location = game.World.Locations.Single(candidate => candidate.Id == locationId);
             new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, location.Coord);
             var result = app.InspectLocation(game, location.Coord);
 
             AssertTrue(result.Success, $"Profile-backed inspection succeeds for '{locationId}'");
-            AssertTrue(result.Message.StartsWith(expectedMessage, StringComparison.Ordinal), $"Inspection text begins with the content profile for '{locationId}'");
+            AssertTrue(result.Scene != null, $"Inspection returns a structured scene for '{locationId}'");
+            AssertTrue(result.Scene!.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Contains(expectedOpeningFragment),
+                $"Inspection selects the variant opening through scene data for '{locationId}'");
+            AssertEqual(result.Scene.Message, result.Message, $"Legacy message projection matches the structured scene for '{locationId}'");
         }
     }
 

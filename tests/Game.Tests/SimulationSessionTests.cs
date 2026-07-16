@@ -148,7 +148,8 @@ internal sealed class SimulationSessionTests
         var rebuild = playback.ResolveLocationAction("location-route-proof", "action-rebuild-bridge");
 
         AssertTrue(inspect.Success, "Interactive playback can inspect a known location without consuming a scripted command");
-        AssertTrue(inspect.Message.Contains("eingestuerzte Handelsbruecke"), "Inspection uses the shared content-profile description instead of the generic archive fallback");
+        AssertTrue(inspect.Scene?.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds).Contains("frag-open-broken-bridge") == true,
+            "Inspection uses the shared localized scene opening instead of the generic archive fallback");
         AssertTrue(scout.Success && scout.Report != null, "Interactive playback can resolve a selected local scout search immediately without consuming a scripted command");
         AssertEqual(2, scout.MovementPointCost, "Interactive local scout search spends its JSON-defined movement cost");
         AssertEqual(1, playback.Session.Game.World.WorldDay, "Interactive local scout search does not advance the day");
@@ -273,9 +274,10 @@ internal sealed class SimulationSessionTests
         var result = playback.InspectLocation(new HexCoord(2, 1));
 
         AssertTrue(result.Success, "Profile-backed containment inspection succeeds");
-        AssertTrue(result.Message.Contains("fest versiegelt", StringComparison.Ordinal), "Scenario profile supplies contextual location description without a redundant instance profile id");
+        AssertTrue(result.Scene != null, "Inspection exposes the shared structured scene result");
+        AssertTrue(result.Message.Contains("Schwere Riegel", StringComparison.Ordinal), "Variant opening comes from localized scene fragments");
         AssertTrue(result.Message.Contains("weiterhin bewacht", StringComparison.Ordinal), "Observable guarded modifier contributes an authored first impression");
-        AssertTrue(result.Message.Contains("Wer den Ort bewacht", StringComparison.Ordinal), "Unknown claimant remains a general observed relation");
+        AssertTrue(result.Message.Contains("Urheber lassen sich noch nicht bestimmen", StringComparison.Ordinal), "Unknown claimant remains a general observed relation");
         AssertFalse(result.Message.Contains("Unknown Keepers", StringComparison.Ordinal), "Objective faction identity is not exposed before contact knowledge exists");
         AssertFalse(result.Message.Contains("modifier-", StringComparison.Ordinal), "Player-facing inspection never exposes technical modifier ids");
 
@@ -309,7 +311,7 @@ internal sealed class SimulationSessionTests
         var result = playback.InspectLocation(new HexCoord(2, 1));
 
         AssertTrue(result.Success, "Location inspection remains possible without a visible faction modifier");
-        AssertFalse(result.Message.Contains("Wer den Ort bewacht", StringComparison.Ordinal), "Objective guarded relation is not even anonymously revealed without observable signs");
+        AssertFalse(result.Message.Contains("Urheber lassen sich noch nicht bestimmen", StringComparison.Ordinal), "Objective guarded relation is not even anonymously revealed without observable signs");
         AssertFalse(playback.Session.Game.Knowledge.KnownLocationContextTags("location-containment-proof").Any(tag => tag.StartsWith("inspection-relation:", StringComparison.Ordinal)),
             "Unobservable objective relation is absent from KnowledgeState");
     }
