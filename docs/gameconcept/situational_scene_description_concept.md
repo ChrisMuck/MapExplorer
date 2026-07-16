@@ -2,7 +2,8 @@
 
 Status: **Confirmed cross-system presentation direction / elaborated to an implementable
 specification; inspection presentation exists as a precursor, shared scene system not yet
-implemented**
+implemented. The JSON authoring, validation and localization foundation is implemented; runtime
+scene resolution is not.**
 
 This document defines the text-adventure-inspired presentation layer shared by locations,
 contacts, scouts, reports and important expedition events. It does not create a second simulation
@@ -204,6 +205,8 @@ Assets/StreamingAssets/GameData/
     contact-fragments.json         # documentType: scene-fragments
     scout-return-fragments.json    # documentType: scene-fragments
     report-event-fragments.json    # documentType: scene-fragments
+    Locales/
+      de.json                      # documentType: scene-localization; current default
 ```
 
 Any number of `scene-fragments` documents may exist; the loader merges them into one catalogue.
@@ -263,7 +266,7 @@ is the modifier fragment. The resolver renders it in the `modifier` ordering gro
   "supersedesFragmentIds": [],
   "exclusiveTag": null,
   "visualId": null,
-  "text": "Der Weg ist an dieser Stelle vollstaendig unterbrochen; ohne Eingriff kommt hier niemand hinueber."
+  "textId": "scene.fragment.route.operational.blocked"
 }
 ```
 
@@ -292,11 +295,12 @@ Field reference:
 - **`exclusiveTag`** — at most one eligible fragment per tag appears in a scene; the resolver keeps
   the highest priority. Used for mutually exclusive interpretations.
 - **`visualId`** — optional portrait/scene image reference for the scene header.
-- **`text`** — one or two German sentences. Placeholders in curly braces are substituted from
-  delivered runtime data; the allowed set per subject kind is: `{memberName}`, `{companionName}`
-  (scout-return, report-event), `{daysOverdue}` (scout-return). No other placeholders exist; the
-  validator rejects unknown ones. Text never contains numbers from hidden state, exact coordinates
-  or generated instance names.
+- **`textId`** — stable localization key. The prose lives only in `Scenes/Locales/*.json`, never in
+  C#, a client prefab/control or the rule document. Placeholders in localized text are substituted
+  from delivered runtime data; the allowed set per subject kind is: `{memberName}`,
+  `{companionName}` (scout-return, report-event), `{daysOverdue}` (scout-return). Every locale must
+  preserve the default text's placeholder set. Text never contains numbers from hidden state, exact
+  coordinates or generated instance names.
 
 ### 5.3 Condition Model (`when`)
 
@@ -354,7 +358,7 @@ order; fragments never reference each other positionally.
   "id": "policy-location-route-obstacle",
   "subjectKind": "location",
   "archetypeId": "route-obstacle",
-  "question": "Wie kommen wir hindurch, darum herum oder sicher zurueck?",
+  "questionTextId": "scene.question.route-obstacle",
   "questionResolvedWhen": { "knownInteractionStatesAny": ["inspected"], "knownOperationalStatesAny": ["open", "repaired"] },
   "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
   "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
@@ -363,7 +367,7 @@ order; fragments never reference each other positionally.
 }
 ```
 
-- **`question`** — rendered as a closing line (visually set apart, e.g. italic) while the archetype's
+- **`questionTextId`** — localization key rendered as a closing line (visually set apart, e.g. italic) while the archetype's
   characteristic uncertainty is unresolved. `questionResolvedWhen` uses the same condition model as
   fragments; when it matches, the question is dropped.
 - **`ordering`** — the group order for this subject kind. Groups not listed never render.
@@ -421,6 +425,35 @@ These records do not add new gameplay rules, but they do change persistent data.
 requires an explicit save-version increment, backward-compatible defaults for older saves, save/load
 roundtrip tests and human review before merge. Missing fields in an older save mean "not recorded";
 they must not be guessed from the load-day state.
+
+### 5.7 Localization Contract
+
+Scene logic and localized prose are separate authored documents. Fragments and policies contain
+stable text IDs; locale documents contain the actual strings:
+
+```json
+{
+  "documentType": "scene-localization",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "locale": "de",
+  "fallbackLocale": null,
+  "isDefault": true,
+  "items": [
+    {
+      "id": "scene.fragment.route.operational.blocked",
+      "text": "Der Weg ist an dieser Stelle vollständig unterbrochen; ohne Eingriff kommt hier niemand hinüber."
+    }
+  ]
+}
+```
+
+Exactly one loaded locale is the default; for the MVP it is `de`. Locale lookup uses the requested
+locale, then its language/fallback chain, then the default locale. Missing default-locale text is a
+load error. Adding a language requires only a new locale JSON plus its manifest entry; rule files,
+fragment IDs, resolver code and client code remain unchanged. Translations must preserve placeholder
+names exactly. German content may use proper UTF-8 umlauts now that it lives in a dedicated locale
+document.
 
 ## 6. Resolver and Architecture
 
@@ -554,9 +587,8 @@ the command system. Unity and WPF render it unchanged; neither may append inform
 Additions for fragment authoring:
 
 - One fragment carries one observation. A sentence that mixes state and interpretation is split.
-- Fragment text is German and follows the existing content convention (ASCII transliteration:
-  ue/ae/oe/ss). A later pass may convert to real umlauts globally; mixed style is not allowed
-  within one document.
+- Fragment prose is authored in locale documents. German scene text uses normal UTF-8 spelling and
+  umlauts; rule documents contain only stable `textId` references.
 - Maximum two sentences, target under 220 characters. Openings may use the full budget; state
   fragments should stay to one sentence where possible.
 - No mechanics in prose: no percentages, no risk numbers, no action names, no state IDs.
@@ -572,9 +604,11 @@ Gipfel) and the existing status enums. This library is the authoring draft; it b
 `Scenes/*.json` files in work package 1 and is not runtime data yet.
 
 All state values referenced below exist in `state-profiles.json`; all modifier IDs in
-`modifiers.json`; all enum values in Core. The item blocks below omit only fields supplied by the
-following normative `defaultsByGroup` declarations. Consequently every loaded starter item expands
-to the complete schema from 5.2; there are no prose-only or implicit defaults.
+`modifiers.json`; all enum values in Core. For editorial readability the library blocks below keep
+`text` beside their rules. Runtime materialization replaces each such field with a stable `textId`
+and places the prose in the locale document from 5.7. The item blocks otherwise omit only fields
+supplied by the following normative `defaultsByGroup` declarations. Consequently every loaded
+starter item expands to the complete schema from 5.2; there are no prose-only runtime defaults.
 
 ```json
 {
@@ -600,9 +634,10 @@ to the complete schema from 5.2; there are no prose-only or implicit defaults.
 }
 ```
 
-Each actual file repeats its own relevant declaration inside its valid document envelope; the
+Each actual rule file repeats its own relevant declaration inside its valid document envelope; the
 combined block above is a compact specification of those four envelopes. Work package 1 must not
-copy a bare item array without its defaults.
+copy a bare item array without its defaults, and it must move every editorial `text` to a locale
+entry referenced by `textId`.
 
 ### 8.1 Scene Policies
 
@@ -1136,7 +1171,8 @@ the four-day-old stored state with its age/doubt label. It must not reuse the ar
 
 ## 9. Validation Rules
 
-The content validator gains these checks for `scene-fragments` and `scene-policies` documents.
+The content validator applies these checks to `scene-fragments`, `scene-policies` and
+`scene-localization` documents.
 Errors reject the content; warnings are reported:
 
 1. **Error** — unknown `group`, `subjectKind`, source kind, archetype ID, variant ID, modifier ID,
@@ -1166,6 +1202,10 @@ Errors reject the content; warnings are reported:
     expansion, or a document default conflicts with an item value in a way forbidden by the schema.
 14. **Error** — a condition field used by a fragment has no registered type, backing-state mapping
     and derivation rule from 5.3.
+15. **Error** — a fragment/policy references a `textId` missing from the default locale, more or
+    fewer than one default locale is loaded, or a locale fallback is missing/cyclic.
+16. **Error** — a translation changes the default text's placeholder set or violates the same
+    length/literal-digit constraints.
 
 Additionally, the existing rule 10 of the cross-system schema applies unchanged: nothing in a
 resolved scene may expose hidden claims, contexts, exact hexes or unresolved branches without a
@@ -1184,12 +1224,18 @@ human review.
    *Tests:* old-save migration, new-save roundtrip, delayed report viewing, later member-state
    mutation preserving the historical outcome, unknown fragment IDs ignored. **Human review is
    required before merge because this changes persistent data and save compatibility.**
-1. **Authoring foundation.** New `documentType` values `scene-fragments` and `scene-policies`;
+1. **Authoring foundation.** New `documentType` values `scene-fragments`, `scene-policies` and
+   `scene-localization`;
    loader support in `CrossSystemDataLoader`/`GameDataCatalog`; `defaultsByGroup` normalization;
    manifest entries; validator rules from Section 9. Land the Section 8 library as complete valid
-   `Scenes/*.json` documents, including each file's envelope and defaults.
+   `Scenes/*.json` documents, including each file's envelope, defaults and default-locale texts.
    *Tests:* loader/normalization roundtrip, fully expanded effective-fragment snapshots, every
    validator rule with a rejecting fixture.
+   **Implementation status:** loader, catalog, manifest, structural/reference validation, locale
+   fallback and the German location starter set (all seven archetypes/eight current variants) are
+   implemented. Contact, scout-return and report-event rule files are registered extension points;
+   their fragment inventories land with packages 3–5 when the required delivered runtime facts are
+   available.
 2. **Resolver core for locations and inspection migration.** Build `SceneDescriptionResolver` in
    `Game.App` with the read-only view, source predicates, observation sequencing, selection
    algorithm (6.2) and result contract (6.4). Adapt and replace the existing
@@ -1253,8 +1299,8 @@ Deliberately out of MVP scope, schema kept open for them:
 
 - **Text variation** — `variants` array per fragment with deterministic seeded choice; repetition
   cooldowns beyond `once-per-state`.
-- **Real umlauts / localization** — a global conversion pass or a proper localization table;
-  until then the ue/ae/oe convention stays.
+- **Additional locale content** — the localization contract and German default are implemented;
+  translated locale files and language-selection UI remain deferred until translations exist.
 - **Faction-cultural tone** — per-faction wording flavors for identified contact fragments.
 - **Member personality in scenes** — persistent character history influencing return descriptions
   beyond the delivered mission facts.

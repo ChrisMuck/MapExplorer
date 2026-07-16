@@ -1,0 +1,84 @@
+{
+  "documentType": "scene-policies",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "policy-location-route-obstacle",
+      "subjectKind": "location",
+      "archetypeId": "route-obstacle",
+      "questionTextId": "scene.question.route-obstacle",
+      "questionResolvedWhen": { "knownOperationalStatesAny": ["open", "repaired"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-investigation-site",
+      "subjectKind": "location",
+      "archetypeId": "investigation-site",
+      "questionTextId": "scene.question.investigation-site",
+      "questionResolvedWhen": { "knownInteractionStatesAny": ["investigated", "documented"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-territorial-marker",
+      "subjectKind": "location",
+      "archetypeId": "territorial-marker",
+      "questionTextId": "scene.question.territorial-marker",
+      "questionResolvedWhen": { "knownInteractionStatesAny": ["interpreted", "documented"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-containment-site",
+      "subjectKind": "location",
+      "archetypeId": "containment-site",
+      "questionTextId": "scene.question.containment-site",
+      "questionResolvedWhen": { "knownContextTagsAny": ["containment-purpose-known"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-contact-site",
+      "subjectKind": "location",
+      "archetypeId": "contact-site",
+      "questionTextId": "scene.question.contact-site",
+      "questionResolvedWhen": { "contactStatusAny": ["Contacted", "Open", "Hostile"] },
+      "ordering": ["opening", "presence-state", "operational-state", "relation-anonymous", "relation-identified", "modifier", "history", "interaction-state"],
+      "paragraphing": [["opening"], ["presence-state", "operational-state", "relation-anonymous", "relation-identified"], ["modifier", "history", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-hazard-site",
+      "subjectKind": "location",
+      "archetypeId": "hazard-site",
+      "questionTextId": "scene.question.hazard-site",
+      "questionResolvedWhen": { "knownInteractionStatesAny": ["assessed", "contained", "documented"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-location-natural-phenomenon",
+      "subjectKind": "location",
+      "archetypeId": "natural-phenomenon",
+      "questionTextId": "scene.question.natural-phenomenon",
+      "questionResolvedWhen": { "knownOperationalStatesAny": ["mapped"] },
+      "ordering": ["opening", "operational-state", "presence-state", "modifier", "history", "relation-anonymous", "relation-identified", "interaction-state"],
+      "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
+      "maxFragments": 6,
+      "maxPerGroup": { "modifier": 2, "history": 2 }
+    }
+  ]
+}

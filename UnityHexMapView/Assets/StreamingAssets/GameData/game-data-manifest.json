@@ -1,7 +1,7 @@
 {
   "documentType": "game-data-manifest",
   "schemaVersion": 1,
-  "contentVersion": 2,
+  "contentVersion": 3,
   "documents": [
     "Locations/Actions/actions.json",
     "Locations/Archetypes/archetypes.json",
@@ -19,6 +19,12 @@
     "Factions/territory-entry-rules.json",
     "Findings/findings.json",
     "Findings/finding-tables.json",
+    "Scenes/contact-fragments.json",
+    "Scenes/location-fragments.json",
+    "Scenes/Locales/de.json",
+    "Scenes/report-event-fragments.json",
+    "Scenes/scene-policies.json",
+    "Scenes/scout-return-fragments.json",
     "Scouting/focuses.json",
     "Scouting/mission-types.json",
     "Scouting/outcome-tables.json",

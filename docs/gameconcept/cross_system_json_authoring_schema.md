@@ -109,6 +109,13 @@ Assets/StreamingAssets/GameData/
     focuses.json                                  # existing
     outcome-tables.json                           # existing
     report-templates.json                         # existing, expanded
+  Scenes/
+    scene-policies.json                           # shared composition policies
+    location-fragments.json                       # data-driven location rules
+    contact-fragments.json                        # extension point for contact scenes
+    scout-return-fragments.json                   # extension point for return scenes
+    report-event-fragments.json                   # extension point for report/base scenes
+    Locales/de.json                               # current default scene prose
   Factions/
     factions.json                                 # existing, expanded profile shape
     signatures.json                               # existing

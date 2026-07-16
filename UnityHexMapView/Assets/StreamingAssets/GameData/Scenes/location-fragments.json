@@ -1,0 +1,77 @@
+{
+  "documentType": "scene-fragments",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "defaultsByGroup": {
+    "opening": { "subjectKind": "location", "source": { "kind": "direct-observation" }, "priority": 80 },
+    "operational-state": { "subjectKind": "location", "source": { "kind": "stored-observation" }, "priority": 50 },
+    "presence-state": { "subjectKind": "location", "source": { "kind": "stored-observation" }, "priority": 55 },
+    "interaction-state": { "subjectKind": "location", "source": { "kind": "stored-observation" }, "priority": 40 },
+    "history": { "subjectKind": "location", "priority": 45 }
+  },
+  "items": [
+    { "id": "frag-open-broken-bridge", "group": "opening", "appliesTo": { "variantIds": ["broken-bridge"] }, "textId": "scene.fragment.open.broken-bridge" },
+    { "id": "frag-open-marked-grave", "group": "opening", "appliesTo": { "variantIds": ["marked-grave"] }, "textId": "scene.fragment.open.marked-grave" },
+    { "id": "frag-open-abandoned-camp", "group": "opening", "appliesTo": { "variantIds": ["abandoned-camp"] }, "textId": "scene.fragment.open.abandoned-camp" },
+    { "id": "frag-open-border-warning", "group": "opening", "appliesTo": { "variantIds": ["border-warning-sign"] }, "textId": "scene.fragment.open.border-warning" },
+    { "id": "frag-open-sealed-gate", "group": "opening", "appliesTo": { "variantIds": ["sealed-gate"] }, "textId": "scene.fragment.open.sealed-gate" },
+    { "id": "frag-open-first-contact", "group": "opening", "appliesTo": { "variantIds": ["first-contact"] }, "textId": "scene.fragment.open.first-contact" },
+    { "id": "frag-open-restless-marsh", "group": "opening", "appliesTo": { "variantIds": ["restless-marsh"] }, "textId": "scene.fragment.open.restless-marsh" },
+    { "id": "frag-open-wind-carved-peak", "group": "opening", "appliesTo": { "variantIds": ["wind-carved-peak"] }, "textId": "scene.fragment.open.wind-carved-peak" },
+
+    { "id": "frag-loc-route-op-blocked", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["blocked"] }, "textId": "scene.fragment.route.operational.blocked" },
+    { "id": "frag-loc-route-op-provisional", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["provisional"] }, "textId": "scene.fragment.route.operational.provisional" },
+    { "id": "frag-loc-route-op-risky", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["risky-passage"] }, "textId": "scene.fragment.route.operational.risky" },
+    { "id": "frag-loc-route-op-open", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["open"] }, "textId": "scene.fragment.route.operational.open" },
+    { "id": "frag-loc-route-op-repaired", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["repaired"] }, "textId": "scene.fragment.route.operational.repaired" },
+    { "id": "frag-loc-route-op-destroyed", "group": "operational-state", "appliesTo": { "archetypeIds": ["route-obstacle"] }, "when": { "knownOperationalStatesAny": ["destroyed"] }, "textId": "scene.fragment.route.operational.destroyed" },
+
+    { "id": "frag-loc-investigation-op-sealed", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["sealed"] }, "textId": "scene.fragment.investigation.operational.sealed" },
+    { "id": "frag-loc-investigation-op-open", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["open"] }, "textId": "scene.fragment.investigation.operational.open" },
+    { "id": "frag-loc-investigation-op-disturbed", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["disturbed"] }, "textId": "scene.fragment.investigation.operational.disturbed" },
+
+    { "id": "frag-loc-marker-op-standing", "group": "operational-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownOperationalStatesAny": ["standing"] }, "textId": "scene.fragment.marker.operational.standing" },
+    { "id": "frag-loc-marker-op-respected", "group": "operational-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownOperationalStatesAny": ["respected"] }, "textId": "scene.fragment.marker.operational.respected" },
+    { "id": "frag-loc-marker-op-violated", "group": "operational-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownOperationalStatesAny": ["violated"] }, "textId": "scene.fragment.marker.operational.violated" },
+
+    { "id": "frag-loc-containment-op-sealed", "group": "operational-state", "appliesTo": { "archetypeIds": ["containment-site"] }, "when": { "knownOperationalStatesAny": ["sealed"] }, "textId": "scene.fragment.containment.operational.sealed" },
+    { "id": "frag-loc-containment-op-opened", "group": "operational-state", "appliesTo": { "archetypeIds": ["containment-site"] }, "when": { "knownOperationalStatesAny": ["opened"] }, "textId": "scene.fragment.containment.operational.opened" },
+    { "id": "frag-loc-containment-op-breached", "group": "operational-state", "appliesTo": { "archetypeIds": ["containment-site"] }, "when": { "knownOperationalStatesAny": ["breached"] }, "textId": "scene.fragment.containment.operational.breached" },
+
+    { "id": "frag-loc-contact-op-available", "group": "operational-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownOperationalStatesAny": ["available"] }, "textId": "scene.fragment.contact.operational.available" },
+    { "id": "frag-loc-contact-op-closed", "group": "operational-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownOperationalStatesAny": ["closed"] }, "textId": "scene.fragment.contact.operational.closed" },
+    { "id": "frag-loc-contact-op-invited", "group": "operational-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownOperationalStatesAny": ["invited"] }, "textId": "scene.fragment.contact.operational.invited" },
+
+    { "id": "frag-loc-hazard-op-active", "group": "operational-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownOperationalStatesAny": ["active"] }, "textId": "scene.fragment.hazard.operational.active" },
+    { "id": "frag-loc-hazard-op-avoided", "group": "operational-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownOperationalStatesAny": ["avoided"] }, "textId": "scene.fragment.hazard.operational.avoided" },
+    { "id": "frag-loc-hazard-op-traversed", "group": "operational-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownOperationalStatesAny": ["traversed"] }, "textId": "scene.fragment.hazard.operational.traversed" },
+    { "id": "frag-loc-hazard-op-restricted", "group": "operational-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownOperationalStatesAny": ["restricted"] }, "textId": "scene.fragment.hazard.operational.restricted" },
+    { "id": "frag-loc-hazard-op-contained", "group": "operational-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownOperationalStatesAny": ["contained"] }, "textId": "scene.fragment.hazard.operational.contained" },
+
+    { "id": "frag-loc-natural-op-stable", "group": "operational-state", "appliesTo": { "archetypeIds": ["natural-phenomenon"] }, "when": { "knownOperationalStatesAny": ["stable"] }, "textId": "scene.fragment.natural.operational.stable" },
+    { "id": "frag-loc-natural-op-accessible", "group": "operational-state", "appliesTo": { "archetypeIds": ["natural-phenomenon"] }, "when": { "knownOperationalStatesAny": ["accessible"] }, "textId": "scene.fragment.natural.operational.accessible" },
+    { "id": "frag-loc-natural-op-mapped", "group": "operational-state", "appliesTo": { "archetypeIds": ["natural-phenomenon"] }, "when": { "knownOperationalStatesAny": ["mapped"] }, "textId": "scene.fragment.natural.operational.mapped" },
+
+    { "id": "frag-loc-presence-unknown", "group": "presence-state", "when": { "knownPresenceStatesAny": ["unknown"] }, "textId": "scene.fragment.presence.unknown" },
+    { "id": "frag-loc-presence-watched", "group": "presence-state", "when": { "knownPresenceStatesAny": ["watched"] }, "textId": "scene.fragment.presence.watched" },
+    { "id": "frag-loc-presence-guarded", "group": "presence-state", "when": { "knownPresenceStatesAny": ["guarded"] }, "textId": "scene.fragment.presence.guarded" },
+    { "id": "frag-loc-presence-abandoned", "group": "presence-state", "when": { "knownPresenceStatesAny": ["abandoned"] }, "textId": "scene.fragment.presence.abandoned" },
+    { "id": "frag-loc-presence-present", "group": "presence-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownPresenceStatesAny": ["present"] }, "textId": "scene.fragment.presence.present" },
+    { "id": "frag-loc-presence-empty", "group": "presence-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownPresenceStatesAny": ["empty"] }, "textId": "scene.fragment.presence.empty" },
+    { "id": "frag-loc-presence-spreading", "group": "presence-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownPresenceStatesAny": ["spreading"] }, "textId": "scene.fragment.presence.spreading" },
+
+    { "id": "frag-loc-interaction-untouched", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["untouched", "unapproached"] }, "textId": "scene.fragment.interaction.untouched" },
+    { "id": "frag-loc-interaction-inspected", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["inspected"] }, "textId": "scene.fragment.interaction.inspected" },
+    { "id": "frag-loc-interaction-searched", "group": "interaction-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownInteractionStatesAny": ["searched"] }, "textId": "scene.fragment.interaction.searched" },
+    { "id": "frag-loc-interaction-investigated", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["investigated"] }, "textId": "scene.fragment.interaction.investigated" },
+    { "id": "frag-loc-interaction-documented", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["documented"] }, "textId": "scene.fragment.interaction.documented" },
+    { "id": "frag-loc-interaction-observed", "group": "interaction-state", "appliesTo": { "archetypeIds": ["territorial-marker", "natural-phenomenon"] }, "when": { "knownInteractionStatesAny": ["observed"] }, "textId": "scene.fragment.interaction.observed" },
+    { "id": "frag-loc-interaction-interpreted", "group": "interaction-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownInteractionStatesAny": ["interpreted"] }, "textId": "scene.fragment.interaction.interpreted" },
+    { "id": "frag-loc-interaction-assessed", "group": "interaction-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownInteractionStatesAny": ["assessed"] }, "textId": "scene.fragment.interaction.assessed" },
+    { "id": "frag-loc-interaction-approached", "group": "interaction-state", "appliesTo": { "archetypeIds": ["contact-site", "natural-phenomenon"] }, "when": { "knownInteractionStatesAny": ["approached"] }, "textId": "scene.fragment.interaction.approached" },
+    { "id": "frag-loc-interaction-contacted", "group": "interaction-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownInteractionStatesAny": ["contacted"] }, "textId": "scene.fragment.interaction.contacted" },
+    { "id": "frag-loc-interaction-withdrawn", "group": "interaction-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownInteractionStatesAny": ["withdrawn"] }, "textId": "scene.fragment.interaction.withdrawn" },
+    { "id": "frag-loc-interaction-surveyed", "group": "interaction-state", "appliesTo": { "archetypeIds": ["natural-phenomenon"] }, "when": { "knownInteractionStatesAny": ["surveyed"] }, "textId": "scene.fragment.interaction.surveyed" },
+    { "id": "frag-loc-interaction-secured", "group": "interaction-state", "appliesTo": { "archetypeIds": ["containment-site"] }, "when": { "knownInteractionStatesAny": ["secured"] }, "textId": "scene.fragment.interaction.secured" }
+  ]
+}

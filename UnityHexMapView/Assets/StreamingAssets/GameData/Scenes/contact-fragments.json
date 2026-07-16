@@ -1,0 +1,10 @@
+{
+  "documentType": "scene-fragments",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "defaultsByGroup": {
+    "relation-anonymous": { "subjectKind": "contact", "source": { "kind": "direct-observation" }, "priority": 70, "when": { "identityStage": "anonymous" } },
+    "relation-identified": { "subjectKind": "contact", "priority": 75 }
+  },
+  "items": []
+}

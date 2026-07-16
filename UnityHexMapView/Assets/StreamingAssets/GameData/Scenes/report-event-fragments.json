@@ -1,0 +1,10 @@
+{
+  "documentType": "scene-fragments",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "defaultsByGroup": {
+    "report-transition": { "subjectKind": "report-event", "source": { "kind": "delivered-outcome" }, "priority": 40 },
+    "base-return": { "subjectKind": "base-return", "source": { "kind": "delivered-outcome" }, "priority": 60 }
+  },
+  "items": []
+}

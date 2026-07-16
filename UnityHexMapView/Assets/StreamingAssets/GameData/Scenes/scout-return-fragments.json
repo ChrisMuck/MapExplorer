@@ -1,0 +1,10 @@
+{
+  "documentType": "scene-fragments",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "defaultsByGroup": {
+    "scout-return": { "subjectKind": "scout-return", "source": { "kind": "delivered-outcome" }, "priority": 70 },
+    "member-condition": { "subjectKind": "scout-return", "source": { "kind": "delivered-outcome" }, "priority": 60 }
+  },
+  "items": []
+}
