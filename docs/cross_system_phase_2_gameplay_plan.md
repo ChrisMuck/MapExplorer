@@ -1,7 +1,7 @@
 # Cross-System Phase 2: Playable Location Chains and Runner Paths
 
-Status: **In progress — Blocks 2.0–2.8 complete; Block 2.9 automated gates complete, human review pending**
-Branch: `codex/phase-2-archetype-flows`
+Status: **Complete — Blocks 2.0–2.9 accepted for the Phase-2 scope on 2026-07-16**
+Integration: merged into `master`; closure recorded on `codex/close-phase-2`
 
 Prerequisite: `docs/cross_system_foundation_implementation_plan.md` establishes the shared
 catalog, deterministic simulation, world processes, scouting, Unity adapter and WPF runner.
@@ -393,14 +393,16 @@ the shared simulation behavior.
 
 ### Block 2.9 — Regression, Batch and Human Review
 
-**Status:** In progress. Deterministic regression and batch gates now cover every authored proof
-scenario and all seven initial archetype profiles. The batch runner steps scenario commands through
+**Status:** Complete. Deterministic regression and batch gates cover every authored proof scenario
+and all seven initial archetype profiles. The batch runner steps scenario commands through
 the shared application path and flags unreachable scripts, state changes without follow-up, missing
 leave/mark/defer choices, specialist-gated dead ends, unanswerable situations and severe branches
 without an earlier answerable warning. The checks operate on scenario profiles, action tags,
 requirements and runtime interaction queries; they contain no concrete location, variant or
-`LocationKind` branches. The remaining gate is the project-owner WPF/Unity play-through recorded in
-`docs/phase_2_human_review_checklist.md`.
+`LocationKind` branches. The project owner tested representative scenarios and accepted the Phase-2
+scope on 2026-07-16. Remaining wording, balance and interaction-flow refinement is explicitly
+deferred to later playtests rather than blocking the functional phase closure. The decision is
+recorded in `docs/phase_2_human_review_checklist.md`.
 
 **Capacity and exit-text tuning:** The seven archetype chains now use the existing reusable action
 cost contract consistently: brief field interaction generally costs one Movement Point,
@@ -437,6 +439,13 @@ they must use the same Knowledge boundary and must not become presentation-speci
 
 **Exit criteria:** all initial location chains are reproducible, explainable in causality view,
 usable in Unity and judged by human playtest rather than only automated success.
+
+**Closure decision:** accepted for the current Vertical Slice. This does not freeze game feel or
+player-facing prose. Situational scene descriptions are the next implementation priority because
+players need atmospheric, knowledge-honest context to understand the state of a place, contact or
+returning scout before choosing an action. That work follows
+`docs/gameconcept/situational_scene_description_concept.md` and must reuse the Phase-2 archetype
+flows rather than introduce object- or variant-specific decision code.
 
 ## 5. Explicitly Deferred
 
