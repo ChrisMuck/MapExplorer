@@ -11,25 +11,25 @@ namespace Game.App
 
 public static class SceneDescriptionValues
 {
-    public static readonly IReadOnlySet<string> Groups = new HashSet<string>(new[]
+    public static readonly IReadOnlyCollection<string> Groups = new HashSet<string>(new[]
     {
         "opening", "interaction-state", "operational-state", "presence-state", "modifier",
         "relation-anonymous", "relation-identified", "history", "member-condition",
         "scout-return", "report-transition", "base-return"
     }, StringComparer.Ordinal);
 
-    public static readonly IReadOnlySet<string> SubjectKinds = new HashSet<string>(new[]
+    public static readonly IReadOnlyCollection<string> SubjectKinds = new HashSet<string>(new[]
     {
         "location", "contact", "scout-return", "report-event", "base-return"
     }, StringComparer.Ordinal);
 
-    public static readonly IReadOnlySet<string> SourceKinds = new HashSet<string>(new[]
+    public static readonly IReadOnlyCollection<string> SourceKinds = new HashSet<string>(new[]
     {
         "direct-observation", "stored-observation", "observable-modifier", "visible-trace",
         "testimony", "signature-identification", "delivered-outcome"
     }, StringComparer.Ordinal);
 
-    public static readonly IReadOnlySet<string> RepetitionPolicies = new HashSet<string>(new[]
+    public static readonly IReadOnlyCollection<string> RepetitionPolicies = new HashSet<string>(new[]
     {
         "always", "once-per-state"
     }, StringComparer.Ordinal);
@@ -81,7 +81,7 @@ public sealed class SceneFragmentSourceDefinition
 /// <summary>Only player-known predicates may be represented here. Unknown JSON fields are rejected.</summary>
 public sealed class SceneFragmentConditionDefinition
 {
-    internal static readonly IReadOnlySet<string> SupportedFields = new HashSet<string>(new[]
+    internal static readonly IReadOnlyCollection<string> SupportedFields = new HashSet<string>(new[]
     {
         "knownInteractionStatesAny", "knownOperationalStatesAny", "knownPresenceStatesAny",
         "knownContextTagsAny", "observableModifierIdsAny", "observableRelationKindsAny", "knowledgeLevelAtLeast",
