@@ -23,19 +23,25 @@ internal sealed class GameDataCatalogTests
             ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         AssertTrue(catalog.UsesManifest, "Authored game data uses an explicit manifest");
-        AssertEqual(33, catalog.Documents.Count, "Manifest declares simulation, scene and localization documents");
+        AssertEqual(35, catalog.Documents.Count, "Manifest declares simulation, scene, visual and localization documents");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-report-templates"), "Scouting reports are in the shared catalog");
         AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Seven initial archetype scenario profiles load from the catalog");
         AssertEqual(10, catalog.Authoring.Findings.Count, "Findings are separate from material-resource content");
         AssertEqual(4, catalog.Authoring.FindingTables.Count, "Generic weighted finding tables load from the catalog");
         AssertEqual(4, catalog.Authoring.FactionOffers.Count, "Faction offers load without static faction assignments");
-        AssertEqual(3, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs");
+        AssertEqual(8, catalog.Authoring.FactionMemories.Count, "Faction memories use stable semantic IDs and visible contact tags");
         AssertEqual(5, catalog.WorldGeneration.Sizes.Count, "World-size presets load through the same catalog");
         AssertEqual(12, catalog.WorldGeneration.Options.Count, "World option presets load through the same catalog");
-        AssertEqual(64, catalog.Scenes.Fragments.Count, "Complete location state, uncertainty and faction-relation scene fragments load from JSON");
-        AssertEqual(7, catalog.Scenes.Policies.Count, "Every current location archetype has a scene policy");
+        AssertEqual(100, catalog.Scenes.Fragments.Count, "Location, contact, scout-return, event, base-return and memorial fragments load from JSON");
+        AssertEqual(11, catalog.Scenes.Policies.Count, "Locations, contacts, scout returns, events and base returns have scene policies");
+        AssertEqual(4, catalog.Scenes.ContactProfiles.Count, "Generic contact styles have authored presentation profiles and a fallback");
         AssertEqual("de", catalog.Scenes.Texts.DefaultLocale, "German is the current default scene locale");
+        AssertEqual(19, catalog.VisualAssets.Definitions.Count, "Placeholder visual definitions load through the shared catalog");
+        AssertEqual("placeholder-bridge", catalog.VisualAssets.Resolve("placeholder-bridge").VisualAssetId,
+            "Known visual id resolves its authored definition");
+        AssertEqual(VisualAssetCatalog.UnknownVisualAssetId, catalog.VisualAssets.Resolve("missing-visual").VisualAssetId,
+            "Missing visual id resolves the neutral authored fallback");
         AssertEqual(
             catalog.Scenes.Texts.Resolve("scene.question.route-obstacle", "de"),
             catalog.Scenes.Texts.Resolve("scene.question.route-obstacle", "fr-FR"),
@@ -84,7 +90,7 @@ internal sealed class GameDataCatalogTests
             var catalog = GameDataCatalog.LoadFromDirectory(root)
                 ?? throw new InvalidOperationException("Legacy game-data catalog was not loaded.");
             AssertFalse(catalog.UsesManifest, "Catalog reports legacy directory discovery");
-        AssertEqual(33, catalog.Documents.Count, "Legacy discovery still finds simulation and scene documents");
+            AssertEqual(35, catalog.Documents.Count, "Legacy discovery still finds simulation, scene and visual documents");
         }
         finally
         {

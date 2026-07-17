@@ -153,6 +153,12 @@ public sealed class SimulationSession
         return result;
     }
 
+    public SceneDescriptionResult? GetBaseReturnPresentation(CompleteExpeditionResult result, string? locale = null) =>
+        Application.GetBaseReturnPresentation(result, locale);
+
+    public SceneDescriptionResult? GetExpeditionMemorialPresentation(string expeditionId, string? locale = null) =>
+        Application.GetExpeditionMemorialPresentation(Game, expeditionId, locale);
+
     public AdvanceBaseTimeResult AdvanceBaseTime(int days = 1)
     {
         var result = Application.AdvanceBaseTime(Game, days);
@@ -241,6 +247,18 @@ public sealed class SimulationSession
         Record("close-faction-interaction", result.Success, result.Error ?? "Faction interaction closed.");
         return result;
     }
+
+    public FactionContactPresentation? GetActiveFactionContactPresentation() =>
+        Application.GetActiveFactionContactPresentation(Game);
+
+    public FactionContactPresentation? GetCurrentEventContactPresentation() =>
+        Application.GetCurrentEventContactPresentation(Game);
+
+    public SceneDescriptionResult? GetCurrentEventScenePresentation(string? locale = null) =>
+        Application.GetCurrentEventScenePresentation(Game, locale);
+
+    public SceneDescriptionResult? GetScoutReturnPresentationForReport(string reportId, string? locale = null) =>
+        Application.GetScoutReturnPresentationForReport(Game, reportId, locale);
 
     /// <summary>Read-only shared option contract for Unity and the simulation runner.</summary>
     public LocationInteractionQueryResult GetLocationInteraction(string locationId) => Application.GetLocationInteraction(Game, locationId);

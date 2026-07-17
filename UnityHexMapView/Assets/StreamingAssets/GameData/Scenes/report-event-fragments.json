@@ -6,5 +6,84 @@
     "report-transition": { "subjectKind": "report-event", "source": { "kind": "delivered-outcome" }, "priority": 40 },
     "base-return": { "subjectKind": "base-return", "source": { "kind": "delivered-outcome" }, "priority": 60 }
   },
-  "items": []
+  "items": [
+    {
+      "id": "frag-report-event-urgent",
+      "group": "report-transition",
+      "when": {
+        "knownContextTagsAny": [
+          "event-kind:ScoutOverdue",
+          "event-kind:WarningSign",
+          "event-kind:WorldConsequence"
+        ]
+      },
+      "textId": "scene.fragment.report-event.urgent"
+    },
+    {
+      "id": "frag-base-return-complete",
+      "group": "base-return",
+      "when": { "teamOutcome": "all-returned" },
+      "textId": "scene.fragment.base-return.complete"
+    },
+    {
+      "id": "frag-base-return-losses",
+      "group": "base-return",
+      "when": { "teamOutcome": "partial-return" },
+      "textId": "scene.fragment.base-return.losses"
+    },
+    {
+      "id": "frag-base-return-none",
+      "group": "base-return",
+      "when": { "teamOutcome": "none-returned" },
+      "textId": "scene.fragment.base-return.none"
+    },
+    {
+      "id": "frag-base-return-empty-handed",
+      "group": "base-return",
+      "when": { "teamOutcome": "all-returned", "hasFindings": false },
+      "textId": "scene.fragment.base-return.empty-handed"
+    },
+    {
+      "id": "frag-memorial-missing",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:Missing"] },
+      "textId": "scene.fragment.memorial.missing"
+    },
+    {
+      "id": "frag-memorial-presumed-lost",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:PresumedLost"] },
+      "textId": "scene.fragment.memorial.presumed-lost"
+    },
+    {
+      "id": "frag-memorial-partially-recovered",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:PartiallyRecovered"] },
+      "textId": "scene.fragment.memorial.partially-recovered"
+    },
+    {
+      "id": "frag-memorial-survivor-found",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:SurvivorFound"] },
+      "textId": "scene.fragment.memorial.survivor-found"
+    },
+    {
+      "id": "frag-memorial-records-recovered",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:RecordsRecovered"] },
+      "textId": "scene.fragment.memorial.records-recovered"
+    },
+    {
+      "id": "frag-memorial-fully-resolved",
+      "group": "base-return",
+      "source": { "kind": "stored-observation" },
+      "when": { "knownContextTagsAny": ["lost-status:FullyResolved"] },
+      "textId": "scene.fragment.memorial.fully-resolved"
+    }
+  ]
 }

@@ -36,6 +36,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private Vector2 lastResponsiveSize;
     private int selectedReportIndex = -1;
     private int selectedHintIndex = -1;
+    private GameState reportPresentationGameState;
+    private readonly HashSet<string> openedScoutReturnReportIds = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> selectedScoutIds = new HashSet<string>();
     private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
@@ -404,6 +406,19 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
     private void OpenSelectedReport()
     {
+        var state = mapView?.CurrentGameState;
+        if (state != null && selectedReportIndex >= 0 && selectedReportIndex < state.Knowledge.ScoutReports.Count)
+        {
+            var report = state.Knowledge.ScoutReports[selectedReportIndex];
+            if (!openedScoutReturnReportIds.Contains(report.Id) &&
+                mapView.GetScoutReturnPresentationForReportUi(report.Id) != null)
+            {
+                openedScoutReturnReportIds.Add(report.Id);
+                Refresh();
+                return;
+            }
+        }
+
         Open(Reports);
         mapView?.RequestOpenScoutReportFromUi(selectedReportIndex);
         Refresh();
@@ -737,6 +752,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
     private void RefreshReport(GameState state)
     {
+        if (!ReferenceEquals(reportPresentationGameState, state))
+        {
+            reportPresentationGameState = state;
+            openedScoutReturnReportIds.Clear();
+        }
+
         var reportCount = state.Knowledge.ScoutReports.Count;
         SetText("report-count-label", reportCount.ToString());
         SetText("report-count-rail", reportCount.ToString());
@@ -765,15 +786,36 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         BuildReportList(state);
 
         var report = state.Knowledge.ScoutReports[selectedReportIndex];
+        var returnScene = openedScoutReturnReportIds.Contains(report.Id)
+            ? null
+            : mapView?.GetScoutReturnPresentationForReportUi(report.Id);
         var reportAvatar = root?.Q<VisualElement>("report-avatar-main");
         if (reportAvatar != null)
         {
+            ApplySceneVisual(reportAvatar, returnScene?.VisualId ?? "placeholder-scout", false);
             var mission = state.Expedition.ScoutMissions.FirstOrDefault(item => item.Id == report.MissionId);
             var names = mission == null
                 ? "berichtender Scout"
                 : string.Join(" und ", mission.ScoutMemberIds.Select(id => state.Expedition.FindMember(id)?.Name ?? id));
             reportAvatar.tooltip = $"Platzhalterporträt: {names}";
         }
+
+        if (returnScene != null)
+        {
+            SetText("report-title-main", returnScene.Title);
+            SetText("report-sub-main", returnScene.Subtitle ?? $"Späherrückkehr · Tag {state.World.WorldDay}");
+            SetText("report-excerpt-main", returnScene.Message);
+            SetText("action-open-report", "Weiter");
+            SetDisplay("action-open-report", true);
+            SetDisplay("report-tag-row", false);
+            SetDisplay("action-marker-from-report", false);
+            BuildHintList(null);
+            return;
+        }
+
+        SetDisplay("report-tag-row", true);
+        SetDisplay("action-marker-from-report", true);
+        SetDisplay("action-open-report", false);
         SetText("report-title-main", report.Title);
         SetText("report-sub-main", $"Expedition · Späher · Tag {state.World.WorldDay}");
         SetText("report-reliability-main", $"Verlässlichkeit: {ReliabilityText(report.Reliability)}");
@@ -1127,22 +1169,38 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         for (var i = state.Base.LostExpeditions.Count - 1; i >= 0; i--)
         {
             var lost = state.Base.LostExpeditions[i];
+            var scene = mapView?.GetExpeditionMemorialPresentationForUi(lost.ExpeditionId);
             var card = new VisualElement();
             card.AddToClassList("card");
             card.AddToClassList("card--plain");
             card.AddToClassList("archive-entry");
 
-            var title = new Label($"Expedition {lost.ExpeditionNumber:00} vermisst");
+            var image = new VisualElement();
+            image.AddToClassList("archive-entry__image");
+            ApplySceneVisual(image, scene?.VisualId ?? "placeholder-expedition-memorial");
+            card.Add(image);
+
+            var title = new Label(scene?.Title ?? $"Expedition {lost.ExpeditionNumber:00}");
             title.AddToClassList("card__title");
             title.AddToClassList("serif");
             card.Add(title);
 
-            var body = new Label(
-                $"Letzte bekannte Position: Feld {lost.LastKnownPosition.Q:00} / {lost.LastKnownPosition.R:00}\n" +
-                $"Status: {LostExpeditionStatusText(lost.Status)}\n" +
-                $"Geschaetztes verlorenes Wissen: {lost.EstimatedLostKnowledge}");
+            if (!string.IsNullOrWhiteSpace(scene?.Subtitle))
+            {
+                var subtitle = new Label(scene.Subtitle);
+                subtitle.AddToClassList("archive-entry__subtitle");
+                card.Add(subtitle);
+            }
+
+            var body = new Label(scene?.Message ?? "Für diese Expedition liegt ein Verlustdatensatz vor.");
             body.AddToClassList("archive-entry__body");
             card.Add(body);
+
+            var facts = new Label(
+                $"Letzte bekannte Position: Feld {lost.LastKnownPosition.Q:00} / {lost.LastKnownPosition.R:00}\n" +
+                $"Geschätztes verlorenes Wissen: {lost.EstimatedLostKnowledge} · Geborgen: {lost.RecoveredKnowledge}");
+            facts.AddToClassList("archive-entry__facts");
+            card.Add(facts);
 
             list.Add(card);
         }
@@ -1164,27 +1222,6 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             card.Add(body);
 
             list.Add(card);
-        }
-    }
-
-    private static string LostExpeditionStatusText(LostExpeditionStatus status)
-    {
-        switch (status)
-        {
-            case LostExpeditionStatus.Missing:
-                return "Vermisst";
-            case LostExpeditionStatus.PresumedLost:
-                return "Vermutlich verloren";
-            case LostExpeditionStatus.PartiallyRecovered:
-                return "Teilweise geborgen";
-            case LostExpeditionStatus.SurvivorFound:
-                return "Ueberlebende gefunden";
-            case LostExpeditionStatus.RecordsRecovered:
-                return "Aufzeichnungen geborgen";
-            case LostExpeditionStatus.FullyResolved:
-                return "Abgeschlossen";
-            default:
-                return status.ToString();
         }
     }
 
@@ -1223,13 +1260,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         popup.style.display = DisplayStyle.Flex;
-        SetText("event-source", eventState.Source);
-        SetText("event-title", eventState.Title);
-        SetText("event-body", eventState.Body);
+        var scene = mapView?.GetCurrentEventScenePresentationForUi();
+        SetText("event-source", scene?.Subtitle ?? eventState.Source);
+        SetText("event-title", scene?.Title ?? eventState.Title);
+        SetText("event-body", scene?.Message ?? eventState.Body);
         var eventImage = root?.Q<VisualElement>("event-image");
         if (eventImage != null)
         {
-            eventImage.tooltip = $"Platzhalterbild: {eventState.Kind}";
+            ApplySceneVisual(eventImage, scene?.VisualId ?? $"placeholder-event-{eventState.Kind}");
         }
 
         options.Clear();
@@ -1319,16 +1357,14 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("state-presence", presentation?.PresenceStateText ?? "Die aktuelle Anwesenheit ist unbekannt.");
         SetText("location-flavor", presentation?.Description ?? "Der Ort wurde noch nicht aus der Naehe aufgenommen.");
 
+        var locationImage = root?.Q<VisualElement>("location-scene-image");
+        if (locationImage != null)
+        {
+            ApplySceneVisual(locationImage, presentation?.Scene?.VisualId ?? presentation?.ImageId);
+        }
+
         var operational = root?.Q<Label>("state-operational");
         operational?.EnableInClassList("bi-state-pill--alert", false);
-
-        var icon = root?.Q<Label>("location-icon-glyph");
-        if (icon != null)
-        {
-            icon.tooltip = string.IsNullOrWhiteSpace(presentation?.ImageId)
-                ? "Platzhalterbild: unbekannter Ort"
-                : $"Bildreferenz: {presentation.ImageId}";
-        }
 
         var modifierRow = root?.Q<VisualElement>("modifier-row");
         modifierRow?.Clear();
@@ -1695,6 +1731,20 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
     }
 
+    private void ApplySceneVisual(VisualElement element, string visualId, bool showLabel = true)
+    {
+        if (element == null)
+        {
+            return;
+        }
+
+        var definition = mapView?.GetVisualAssetDefinitionForUi(visualId);
+        if (definition != null)
+        {
+            SceneVisualPresenter.Apply(element, visualId, definition, showLabel);
+        }
+    }
+
     private void RefreshFactionInteractionPopup(GameState state)
     {
         var popup = root?.Q<VisualElement>("faction-contact-popup");
@@ -1713,15 +1763,21 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         popup.style.display = DisplayStyle.Flex;
-        SetText("faction-modal-title", $"KONTAKT · {interaction.FactionName}");
+        var contactPresentation = mapView?.GetActiveFactionContactPresentationForUi();
+        var scene = contactPresentation?.Scene;
+        var identified = contactPresentation?.IdentityStage == "identified";
+        SetText("faction-modal-title", $"KONTAKT · {scene?.Title ?? (identified ? interaction.FactionName : "Unbekannte Abordnung")}");
         SetText("faction-modal-coord", $"Feld {interaction.Coord.Q:00} / {interaction.Coord.R:00}");
-        SetText("faction-representative-name", interaction.Representative.DisplayName);
-        SetText("faction-representative-role", $"{RepresentativeRoleText(interaction.Representative.Role)} · {interaction.FactionName}");
+        SetText("faction-representative-name", identified ? interaction.Representative.DisplayName : "Unbekannte Person");
+        SetText("faction-representative-role", identified
+            ? $"{RepresentativeRoleText(interaction.Representative.Role)} · {interaction.FactionName}"
+            : "Rolle und Zugehörigkeit unbekannt");
         SetText("faction-attitude", interaction.AttitudeText);
-        SetText("faction-representative-description", interaction.Representative.Description);
+        SetText("faction-representative-description", scene?.Message ?? interaction.Representative.Description);
         SetText("faction-dialogue-label", $"DIESE BEGEGNUNG · TAG {state.World.WorldDay}");
         SetText("faction-dialogue", $"\"{interaction.DialogueText}\"");
         SetText("faction-knowledge-value", $"Wissen: {state.Base.KnowledgePoints}");
+        ApplySceneVisual(root?.Q<VisualElement>("faction-contact-portrait"), scene?.VisualId ?? "placeholder-contact", false);
 
         offerList.Clear();
         for (var i = 0; i < interaction.Offers.Count; i++)

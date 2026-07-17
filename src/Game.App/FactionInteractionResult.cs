@@ -7,11 +7,13 @@ namespace Game.App
 
 public sealed class FactionInteractionResult
 {
-    private FactionInteractionResult(bool success, FactionInteractionState? interaction, string? message, string? error)
+    private FactionInteractionResult(bool success, FactionInteractionState? interaction, string? message,
+        FactionContactPresentation? presentation, string? error)
     {
         Success = success;
         Interaction = interaction;
         Message = message;
+        Presentation = presentation;
         Error = error;
     }
 
@@ -21,9 +23,12 @@ public sealed class FactionInteractionResult
 
     public string? Message { get; }
 
+    public FactionContactPresentation? Presentation { get; }
+
     public string? Error { get; }
 
-    public static FactionInteractionResult Opened(FactionInteractionState interaction, string message)
+    public static FactionInteractionResult Opened(FactionInteractionState interaction, string message,
+        FactionContactPresentation? presentation = null)
     {
         if (interaction == null)
         {
@@ -35,7 +40,7 @@ public sealed class FactionInteractionResult
             throw new ArgumentException("Interaction result needs a message.", nameof(message));
         }
 
-        return new FactionInteractionResult(true, interaction, message, null);
+        return new FactionInteractionResult(true, interaction, message, presentation, null);
     }
 
     public static FactionInteractionResult Closed(string message)
@@ -45,7 +50,7 @@ public sealed class FactionInteractionResult
             throw new ArgumentException("Interaction result needs a message.", nameof(message));
         }
 
-        return new FactionInteractionResult(true, null, message, null);
+        return new FactionInteractionResult(true, null, message, null, null);
     }
 
     public static FactionInteractionResult Rejected(string error)
@@ -55,7 +60,7 @@ public sealed class FactionInteractionResult
             throw new ArgumentException("Rejected interaction result needs an error.", nameof(error));
         }
 
-        return new FactionInteractionResult(false, null, null, error);
+        return new FactionInteractionResult(false, null, null, null, error);
     }
 }
 }

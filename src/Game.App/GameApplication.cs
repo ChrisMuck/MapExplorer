@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -22,7 +23,7 @@ public sealed class GameApplication
     private readonly SendScoutMissionCommand sendScoutMissionCommand;
     private readonly ScoutLocationSurroundingsCommand scoutLocationSurroundingsCommand;
     private readonly InspectLocationCommand inspectLocationCommand;
-    private readonly ResolveEventCommand resolveEventCommand = new ResolveEventCommand();
+    private readonly ResolveEventCommand resolveEventCommand;
     private readonly CompleteExpeditionCommand completeExpeditionCommand;
     private readonly FailExpeditionCommand failExpeditionCommand = new FailExpeditionCommand();
     private readonly AdvanceBaseTimeCommand advanceBaseTimeCommand;
@@ -33,6 +34,11 @@ public sealed class GameApplication
     private readonly PrepareSuppliesWithKnowledgeCommand prepareSuppliesWithKnowledgeCommand = new PrepareSuppliesWithKnowledgeCommand();
     private readonly RecoverLostExpeditionCommand recoverLostExpeditionCommand = new RecoverLostExpeditionCommand();
     private readonly OpenFactionInteractionCommand openFactionInteractionCommand;
+    private readonly FactionContactSceneResolver? factionSceneResolver;
+    private readonly ScoutReturnSceneResolver? scoutReturnSceneResolver;
+    private readonly ReportEventSceneResolver? reportEventSceneResolver;
+    private readonly BaseReturnSceneResolver? baseReturnSceneResolver;
+    private readonly ExpeditionMemorialSceneResolver? expeditionMemorialSceneResolver;
     private readonly PurchaseFactionOfferCommand purchaseFactionOfferCommand = new PurchaseFactionOfferCommand();
     private readonly CloseFactionInteractionCommand closeFactionInteractionCommand = new CloseFactionInteractionCommand();
     private readonly GetLocationInteractionCommand getLocationInteractionCommand;
@@ -84,9 +90,18 @@ public sealed class GameApplication
         }
 
         worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles);
+        factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(
+            dataCatalog.Scenes, crossSystemData?.FactionSignatures, dataCatalog.Authoring);
+        scoutReturnSceneResolver = dataCatalog == null ? null : new ScoutReturnSceneResolver(dataCatalog.Scenes);
+        reportEventSceneResolver = dataCatalog == null ? null : new ReportEventSceneResolver(dataCatalog.Scenes);
+        baseReturnSceneResolver = dataCatalog == null ? null : new BaseReturnSceneResolver(dataCatalog.Scenes);
+        expeditionMemorialSceneResolver = dataCatalog == null ? null : new ExpeditionMemorialSceneResolver(dataCatalog.Scenes);
+        var contactProfileService = dataCatalog == null || crossSystemData == null ? null
+            : new FactionContactProfileService(dataCatalog.Scenes, crossSystemData.FactionProfiles);
         openFactionInteractionCommand = crossSystemData != null && dataCatalog?.Authoring.FactionOffers.Count > 0
-            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring))
-            : new OpenFactionInteractionCommand();
+            ? new OpenFactionInteractionCommand(new AuthoredFactionOfferService(crossSystemData, dataCatalog.Authoring), factionSceneResolver, contactProfileService)
+            : new OpenFactionInteractionCommand(sceneResolver: factionSceneResolver, contactProfileService: contactProfileService);
+        resolveEventCommand = new ResolveEventCommand(new AddMapMarkerCommand(), openFactionInteractionCommand);
         if (locationData != null)
         {
             locationInteractionDefinitions = locationData.Definitions;
@@ -246,6 +261,21 @@ public sealed class GameApplication
         return completeExpeditionCommand.Execute(game);
     }
 
+    public SceneDescriptionResult? GetBaseReturnPresentation(CompleteExpeditionResult result, string? locale = null)
+    {
+        if (result == null) throw new ArgumentNullException(nameof(result));
+        return !result.Success || baseReturnSceneResolver == null ? null : baseReturnSceneResolver.Resolve(result, locale);
+    }
+
+    public SceneDescriptionResult? GetExpeditionMemorialPresentation(GameState game, string expeditionId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(expeditionId)) throw new ArgumentException("Expedition id is required.", nameof(expeditionId));
+        var record = game.Base.LostExpeditions.FirstOrDefault(item => item.ExpeditionId == expeditionId);
+        return record == null || expeditionMemorialSceneResolver == null
+            ? null : expeditionMemorialSceneResolver.Resolve(record, locale);
+    }
+
     public FailExpeditionResult FailExpedition(GameState game, string reason)
     {
         return failExpeditionCommand.Execute(game, reason);
@@ -328,6 +358,50 @@ public sealed class GameApplication
     public FactionInteractionResult OpenFactionInteraction(GameState game, string factionId, HexCoord coord)
     {
         return openFactionInteractionCommand.Execute(game, factionId, coord);
+    }
+
+    public FactionContactPresentation? GetActiveFactionContactPresentation(GameState game)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (game.ActiveFactionInteraction == null || factionSceneResolver == null) return null;
+        return factionSceneResolver.Resolve(game, game.ActiveFactionInteraction);
+    }
+
+    public FactionContactPresentation? GetCurrentEventContactPresentation(GameState game)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        return game.Events.Current == null || factionSceneResolver == null
+            ? null
+            : factionSceneResolver.ResolveDeliveredEvent(game, game.Events.Current);
+    }
+
+    public SceneDescriptionResult? GetCurrentEventScenePresentation(GameState game, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        var eventState = game.Events.Current;
+        if (eventState == null) return null;
+        var contact = factionSceneResolver?.ResolveDeliveredEvent(game, eventState);
+        return contact?.Scene ?? reportEventSceneResolver?.Resolve(eventState, locale);
+    }
+
+    public SceneDescriptionResult? GetScoutReturnPresentation(GameState game, string deliveryId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(deliveryId)) throw new ArgumentException("Delivery id is required.", nameof(deliveryId));
+        var outcome = game.Knowledge.DeliveredMissionOutcomes.FirstOrDefault(item => item.DeliveryId == deliveryId);
+        return outcome == null || scoutReturnSceneResolver == null ? null : scoutReturnSceneResolver.Resolve(game, outcome, locale);
+    }
+
+    public SceneDescriptionResult? GetScoutReturnPresentationForReport(GameState game, string reportId, string? locale = null)
+    {
+        if (game == null) throw new ArgumentNullException(nameof(game));
+        if (string.IsNullOrWhiteSpace(reportId)) throw new ArgumentException("Report id is required.", nameof(reportId));
+        var outcome = game.Knowledge.DeliveredMissionOutcomes
+            .Where(item => item.DeliveredReportIds.Contains(reportId, StringComparer.Ordinal))
+            .OrderByDescending(item => item.DeliveredWorldDay)
+            .ThenByDescending(item => item.DeliveryId, StringComparer.Ordinal)
+            .FirstOrDefault();
+        return outcome == null || scoutReturnSceneResolver == null ? null : scoutReturnSceneResolver.Resolve(game, outcome, locale);
     }
 
     public FactionOfferResult PurchaseFactionOffer(GameState game, string offerId)

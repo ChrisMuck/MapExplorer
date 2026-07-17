@@ -79,6 +79,50 @@
       "paragraphing": [["opening"], ["operational-state", "presence-state", "modifier"], ["history", "relation-anonymous", "relation-identified", "interaction-state"]],
       "maxFragments": 6,
       "maxPerGroup": { "modifier": 2, "history": 2 }
+    },
+    {
+      "id": "policy-contact-generic",
+      "subjectKind": "contact",
+      "archetypeId": null,
+      "questionTextId": "scene.question.contact",
+      "questionResolvedWhen": { "knownContextTagsAny": ["contact-concluded"] },
+      "ordering": ["opening", "relation-anonymous", "relation-identified", "member-condition", "history"],
+      "paragraphing": [["opening"], ["relation-anonymous", "relation-identified", "member-condition"], ["history"]],
+      "maxFragments": 5,
+      "maxPerGroup": { "member-condition": 1, "history": 1 }
+    },
+    {
+      "id": "policy-scout-return",
+      "subjectKind": "scout-return",
+      "archetypeId": null,
+      "questionTextId": "scene.question.scout-return",
+      "questionResolvedWhen": { "missionStatusAny": ["Returned", "ReturnedInjured"] },
+      "ordering": ["scout-return", "member-condition"],
+      "paragraphing": [["scout-return"], ["member-condition"]],
+      "maxFragments": 5,
+      "maxPerGroup": { "scout-return": 3, "member-condition": 2 }
+    },
+    {
+      "id": "policy-report-event",
+      "subjectKind": "report-event",
+      "archetypeId": null,
+      "questionTextId": "scene.question.report-event",
+      "questionResolvedWhen": { "knownContextTagsAny": ["event-has-options"] },
+      "ordering": ["report-transition", "opening"],
+      "paragraphing": [["report-transition"], ["opening"]],
+      "maxFragments": 3,
+      "maxPerGroup": { "report-transition": 1, "opening": 1 }
+    },
+    {
+      "id": "policy-base-return",
+      "subjectKind": "base-return",
+      "archetypeId": null,
+      "questionTextId": "scene.question.base-return",
+      "questionResolvedWhen": { "knownContextTagsAny": ["base-return-delivered", "memorial-recorded"] },
+      "ordering": ["base-return"],
+      "paragraphing": [["base-return"]],
+      "maxFragments": 2,
+      "maxPerGroup": { "base-return": 2 }
     }
   ]
 }

@@ -345,3 +345,19 @@ The MVP should show:
 - thumbnail image in archive cards
 
 This makes the game more personal and more memorable.
+
+### Implementation status
+
+The MVP foundation is implemented as presentation-only data:
+
+- `VisualAssetDefinition` and its catalog are loaded from the manifested
+  `Visuals/visual-assets.json` game-data document.
+- Stable IDs resolve centrally. Unknown IDs resolve to `unknown_visual_placeholder`; a missing
+  Unity `Resources` sprite keeps the generated placeholder and emits one warning.
+- The reusable Unity presenter is used by location, event, contact, scout-return, base-return and
+  memorial scenes. Controllers do not select paths or branch on concrete faction/location IDs.
+- Current entries intentionally have no `assetPath`. Final or interim sprites can be introduced by
+  adding a Resources-relative path to the JSON entry, without changing simulation or scene code.
+- WPF resolves the same definitions into deterministic placeholder cards for location commands,
+  scout returns, active contacts, events, base returns and memorials. It remains a development
+  client and does not depend on Unity assemblies or Unity resource paths.

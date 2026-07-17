@@ -231,26 +231,7 @@ public sealed class MoveExpeditionCommand
 
     private static void ApplyFactionReactionMetrics(FactionState faction)
     {
-        switch (faction.Id)
-        {
-            case "coastal-people":
-                faction.Adjust(trustDelta: 2);
-                if (faction.ContactStatus == FactionContactStatus.Contacted)
-                {
-                    faction.SetContactStatus(FactionContactStatus.Open);
-                }
-
-                break;
-            case "hidden-ones":
-                faction.Adjust(angerDelta: 4, fearDelta: 6);
-                break;
-            case "border-wardens":
-                faction.Adjust(angerDelta: 2, fearDelta: 1);
-                break;
-            default:
-                faction.Adjust(fearDelta: 1);
-                break;
-        }
+        faction.Adjust(fearDelta: 1);
     }
 
     private static void ApplyFactionKnowledge(GameState game, FactionState faction)
@@ -272,13 +253,13 @@ public sealed class MoveExpeditionCommand
         return new EventState(
             $"event-{game.Events.Events.Count + 1}",
             EventKind.WarningSign,
-            $"{faction.Name} Warning",
-            faction.Name,
+            "Ein fremdes Warnzeichen",
+            "Unbekannte Gruppe",
             "The expedition crossed a line marked by old stones and carved posts. This is not a clean border on a map, but someone likely expects it to be respected.",
             new[]
             {
                 new EventOptionState("mark", "Mark warning", "A faction warning marker was added to the map.", EventOptionEffectKind.AddWarningMarker),
-                new EventOptionState("archive", "Archive observation", $"The expedition recorded a suspected {faction.Name} warning zone.", EventOptionEffectKind.Archive),
+                new EventOptionState("archive", "Archive observation", "The expedition recorded a suspected warning zone.", EventOptionEffectKind.Archive),
                 new EventOptionState("continue", "Continue carefully", "The expedition continues, aware that the crossing may be remembered.", EventOptionEffectKind.None)
             },
             coord);
@@ -292,19 +273,19 @@ public sealed class MoveExpeditionCommand
             options.Add(new EventOptionState(
                 "contact",
                 "Open contact",
-                $"The expedition approaches the {faction.Name} representative.",
+                "The expedition approaches the visible representative.",
                 EventOptionEffectKind.OpenFactionInteraction));
         }
 
-        options.Add(new EventOptionState("archive", "Archive observation", $"The expedition recorded how {faction.Name} reacted to its presence.", EventOptionEffectKind.Archive));
+        options.Add(new EventOptionState("archive", "Archive observation", "The expedition recorded how the unknown group reacted to its presence.", EventOptionEffectKind.Archive));
         options.Add(new EventOptionState("continue", "Continue carefully", "The expedition continues while watching for further signs.", EventOptionEffectKind.None));
 
         return new EventState(
             $"event-{game.Events.Events.Count + 1}",
             EventKind.FactionReaction,
-            TerritoryReactionTitle(faction),
-            faction.Name,
-            TerritoryReactionBody(faction),
+            "Fremdes Gebiet",
+            faction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile ? faction.Name : "Unbekannte Gruppe",
+            "The expedition has entered another group's territory. The reaction is subtle, but the crossing will likely be remembered.",
             options,
             coord,
             faction.Id);
@@ -312,37 +293,7 @@ public sealed class MoveExpeditionCommand
 
     private static bool CanOpenFactionInteraction(FactionState faction)
     {
-        return faction.Id == "coastal-people" || faction.Id == "border-wardens" || faction.ContactStatus == FactionContactStatus.Open;
-    }
-
-    private static string TerritoryReactionTitle(FactionState faction)
-    {
-        switch (faction.Id)
-        {
-            case "coastal-people":
-                return "Coastal watchers";
-            case "hidden-ones":
-                return "Hidden eyes";
-            case "border-wardens":
-                return "Watched border";
-            default:
-                return $"{faction.Name} reaction";
-        }
-    }
-
-    private static string TerritoryReactionBody(FactionState faction)
-    {
-        switch (faction.Id)
-        {
-            case "coastal-people":
-                return "People on the riverbank notice the expedition but do not flee. A cautious contact may be possible if the group behaves peacefully.";
-            case "hidden-ones":
-                return "The forest becomes too quiet. The expedition cannot see anyone clearly, but it is certain that someone has seen them first.";
-            case "border-wardens":
-                return "The expedition finds fresh bootprints and a newly turned marker stone. This land is being watched, even away from the strongest warning posts.";
-            default:
-                return "The expedition has entered another group's territory. The reaction is subtle, but the crossing will likely be remembered.";
-        }
+        return faction.ContactStatus is FactionContactStatus.Contacted or FactionContactStatus.Open or FactionContactStatus.Hostile;
     }
 }
 }

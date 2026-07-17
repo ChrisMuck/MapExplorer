@@ -9,6 +9,7 @@ public sealed class KnowledgeState
 {
     private readonly Dictionary<HexCoord, KnowledgeLevel> tileKnowledge = new();
     private readonly List<ScoutReportState> scoutReports = new();
+    private readonly List<DeliveredMissionOutcomeState> deliveredMissionOutcomes = new();
     private readonly List<EvidenceState> evidence = new();
     private readonly HashSet<string> claimedKnowledgeSources = new();
     private readonly Dictionary<string, HashSet<string>> knownLocationContextTags = new(StringComparer.Ordinal);
@@ -53,6 +54,8 @@ public sealed class KnowledgeState
     {
         get { return scoutReports; }
     }
+
+    public IReadOnlyList<DeliveredMissionOutcomeState> DeliveredMissionOutcomes => deliveredMissionOutcomes;
 
     public IReadOnlyList<EvidenceState> Evidence
     {
@@ -119,6 +122,19 @@ public sealed class KnowledgeState
     {
         scoutReports.Add(report ?? throw new ArgumentNullException(nameof(report)));
     }
+
+    public void RecordDeliveredMissionOutcome(DeliveredMissionOutcomeState outcome)
+    {
+        if (outcome == null) throw new ArgumentNullException(nameof(outcome));
+        if (deliveredMissionOutcomes.Any(item => item.DeliveryId == outcome.DeliveryId))
+            throw new InvalidOperationException($"Mission delivery '{outcome.DeliveryId}' is already recorded.");
+        deliveredMissionOutcomes.Add(outcome);
+    }
+
+    public DeliveredMissionOutcomeState? LatestDeliveredMissionOutcome(string missionId) =>
+        deliveredMissionOutcomes.Where(item => item.MissionId == missionId)
+            .OrderByDescending(item => item.DeliveredWorldDay).ThenByDescending(item => item.DeliveryId, StringComparer.Ordinal)
+            .FirstOrDefault();
 
     public bool AddEvidence(EvidenceState item)
     {

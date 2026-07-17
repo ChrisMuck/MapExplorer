@@ -1,9 +1,9 @@
 # Situational Scene Description Concept
 
-Status: **Confirmed cross-system presentation direction / elaborated to an implementable
-specification; inspection presentation exists as a precursor, shared scene system not yet
-implemented. The JSON authoring, validation and localization foundation is implemented; runtime
-scene resolution is not.**
+Status: **Confirmed cross-system presentation direction / implementation in progress. The shared
+JSON authoring, validation, localization and runtime resolution foundation is implemented for
+locations, faction contacts and scout returns. Further report/event/base scenes and client parity
+remain.**
 
 This document defines the text-adventure-inspired presentation layer shared by locations,
 contacts, scouts, reports and important expedition events. It does not create a second simulation
@@ -119,6 +119,13 @@ Examples:
 
 The description must not reveal an unseen ambush, hidden captor or true cause merely because the
 simulation knows it. An absent scout remains absent until testimony or evidence supports more.
+
+In the Unity report panel, a delivered scout report uses a two-step presentation in the same card:
+the return-state scene appears first, and a `Weiter` action replaces it with the existing structured
+report view. The WPF development inspector follows the same sequence in its report detail area. This
+transition is presentation state only; report content and delivered mission facts remain authoritative
+in `KnowledgeState`. Saves without a matching delivered outcome open the report directly instead of
+reconstructing a historical return scene.
 
 ### 3.4 Reports and Events
 
@@ -320,11 +327,12 @@ All fields are optional; each maps to player-known state only:
 | `contactStatusAny` | `FactionContactStatus` values: `Unknown`, `Rumored`, `Contacted`, `Open`, `Hostile`. |
 | `identityStage` | `anonymous`, `signature-recognised` or `identified` — derived, see below. |
 | `missionStatusAny` | `ScoutMissionStatus` values: `Returned`, `Overdue`, `ReturnedInjured`, `Missing`. |
-| `memberStatusAny` | `ExpeditionMemberStatus` values: `Injured`, `Exhausted`, `Missing`, `Dead`, plus derived `unhurt`. |
+| `memberStatusAny` | Condition captured in the delivered participant outcome: `Injured`, `Exhausted`, `Missing`, `Dead`, plus `unhurt`; never the member's later mutable status. |
 | `teamOutcome` | `all-returned`, `partial-return`, `none-returned` — derived from the mission's member list vs. actual returns. |
+| `hasCompanion` | Whether the delivered outcome contains another named participant; prevents companion wording for solo missions. |
 | `reportReliabilityAtLeast` / `reportReliabilityBelow` | The delivered report's `Reliability` (0–100). |
 | `hasFindings` / `hasLeads` | Whether the delivered report or return carries findings/leads. |
-| `wasOverdue` | Immutable fact captured when a scout outcome is delivered: `ActualReturnWorldDay > ExpectedReturnWorldDay`. It is never recalculated from the current world day. |
+| `wasOverdue` | Immutable fact captured when an overdue notice is delivered, or for a later return when `ActualReturnWorldDay > ExpectedReturnWorldDay`. It is never recalculated from the current world day. |
 | `hasLostEquipment` | Whether the delivered scout/expedition outcome snapshot contains at least one lost equipment ID. |
 | `isSecondHandAccount` | Whether the delivered report explicitly marks its information as testimony rather than the scout's own observation. |
 | `isUrgent` | Whether the delivered report/event carries the authored or resolved urgency flag. Presentation never infers urgency from prose. |
@@ -1225,6 +1233,12 @@ human review.
    *Tests:* old-save migration, new-save roundtrip, delayed report viewing, later member-state
    mutation preserving the historical outcome, unknown fragment IDs ignored. **Human review is
    required before merge because this changes persistent data and save compatibility.**
+   **Implementation status:** `DeliveredMissionOutcome` is implemented as immutable per-delivery
+   history in `KnowledgeState`, including participant condition, expected/actual return timing,
+   overdue state, lost equipment and delivered report IDs. `KnowledgeRuntimeSnapshot` version 2
+   roundtrips these facts; pre-versioned snapshots migrate to an empty outcome history and never
+   reconstruct missing facts. Archive subject references, location-linked lost-expedition records
+   and persisted scene repetition remain for the packages that consume them.
 1. **Authoring foundation.** New `documentType` values `scene-fragments`, `scene-policies` and
    `scene-localization`;
    loader support in `CrossSystemDataLoader`/`GameDataCatalog`; `defaultsByGroup` normalization;
@@ -1263,13 +1277,56 @@ human review.
    *Tests:* anonymous → signature-recognised → identified progression as knowledge grows, plus no
    identified fragment while status is `Unknown` or `Rumored`; rumored testimony remains explicitly
    unconfirmed.
+   **Implementation status:** the generic `ContactSceneView`, localized contact policy and initial
+   anonymous/signature-recognised/identified plus visible-attitude fragments are implemented. The
+   active faction-interaction UI resolves this read-only presentation and suppresses internal names
+   and roles until identity is established. Signature recognition requires matching earned evidence;
+   `Rumored` alone is insufficient. Representative role, description and dialogue are selected from
+   localized JSON contact profiles through reusable faction `contactStyle`; concrete faction IDs no
+   longer choose representatives or dialogue. Authored faction-memory definitions expose generic
+   visible-conduct tags to contact fragments; remembered help, resentment and broken promises
+   therefore alter the scene without branching on a concrete faction ID or narrating the hidden
+   memory directly. Faction-reaction events are also rendered through this shared contact projection:
+   their already-delivered authored body replaces the generic opening, while identity, visible
+   attitude and history obey the same knowledge gates as a direct interaction. This completes the
+   initial MVP contact-scene package; broader report, urgent-event and base-return scenes belong to
+   package 5.
+   Contact availability, territory reactions, representative selection and production offers are
+   resolved through authored profiles/rules. Runtime commands contain no concrete faction-ID
+   branches; an application instance without a content catalog receives only neutral fallback
+   presentation and no fabricated faction-specific offers.
 4. **Scout returns.** Wire mission completion to the immutable delivered outcome: mission status,
    actual return timing, participant outcomes, lost equipment, team outcome, report reliability and
    findings/leads. The scene precedes the existing report presentation.
    *Tests:* one snapshot per `ScoutMissionStatus`, on-time/overdue viewed immediately and later,
    partial return, lost equipment and low reliability.
+   **Implementation status:** due and immediate scout mission resolution records immutable delivered
+   outcomes for returned, injured, overdue and missing results. The shared resolver, German JSON
+   starter inventory and generic policy now cover on-time, late, injured, overdue, missing and
+   partial-team deliveries, report reliability, lost equipment and delivered member condition.
+   Later member mutation cannot rewrite a historical scene. Unity resolves the delivered outcome
+   linked to a report and presents the return scene in the existing report card; `Weiter` switches
+   that card to the structured report without mutating simulation state. The WPF development
+   inspector renders the same resolved scene and transition. Reports from older saves without a
+   delivered outcome open directly. Findings and partial return are supported by the scene contract
+   but are not yet produced by every mission-resolution branch.
 5. **Reports, events and base return.** Report transitions, urgent events, base-return summaries
    and lost-expedition memorial fragments, using structured subject references only.
+   **Implementation status:** the generic `report-event` runtime path and Unity event-panel rendering
+   are implemented. The already delivered event body remains the authoritative opening. JSON
+   fragments may add localized context through generic tags such as `event-kind:WarningSign`;
+   application code contains no urgency switch. Faction-reaction events continue through the stricter
+   contact identity resolver before the generic event fallback. Base-return summaries are also
+   implemented: the completion result preserves its world day, team outcome and handed-off finding
+   count, and the JSON resolver composes the arrival scene from those immutable facts. Unity opens
+   this scene over the existing base screen and `Weiter zur Basis` reveals the normal planning view.
+   Lost-expedition memorial scenes are implemented for every current `LostExpeditionStatus`. They
+   resolve only the secured `LostExpeditionRecord`, preserve uncertainty for missing expeditions and
+   supplement rather than replace last-position and recovery facts in the Unity archive. The WPF
+   development inspector now renders current event scenes, provides an explicitly interactive shared
+   completion command for immediate base-return inspection, and lists the same memorial scenes with
+   their structured recovery facts. Initial client parity for package 5 is complete; final visual
+   layout remains subject to human Unity/WPF review.
 6. **Content-profile migration with parity gate.** Move every `flavorByState` text into validated
    state fragments. Before removal, capture snapshot coverage for every current content profile,
    all seven archetypes and both clients. Remove `flavorByState`,
@@ -1279,6 +1336,14 @@ human review.
 7. **Client rendering.** One shared scene view model; Unity panel and WPF control render title,
    paragraphs, question, labels, visual and untouched action projections. Verify both clients show
    the identical scene for the same save.
+   **Implementation status:** Unity resolves scene `visualId` values through the shared, JSON-loaded
+   visual-asset catalog. Location scenes, event popups, faction contacts, scout returns, base returns
+   and lost-expedition memorials use one reusable presenter with an identity-safe fallback. Missing
+   IDs or unavailable sprites remain visible as labelled generated placeholders and do not affect
+   simulation state. The WPF development client now resolves the same catalog definitions into
+   deterministic placeholder cards for locations, scout returns, active contacts, events, base
+   returns and memorials. Both clients therefore use the same scene result and fallback identity;
+   client-specific rendering remains presentation-only.
 8. **Playtest pass.** Only after playtesting: variation pools, repetition cooldowns and additional
    fragments (Section 12).
 
@@ -1316,4 +1381,5 @@ Deliberately out of MVP scope, schema kept open for them:
 - **Faction-cultural tone** — per-faction wording flavors for identified contact fragments.
 - **Member personality in scenes** — persistent character history influencing return descriptions
   beyond the delivered mission facts.
-- **Scene images beyond placeholders** — final art direction owns `visualId` content.
+- **Scene images beyond placeholders** — final art direction owns `visualId` content; authored art
+  can replace a catalog entry's optional `assetPath` without changing scene or controller code.

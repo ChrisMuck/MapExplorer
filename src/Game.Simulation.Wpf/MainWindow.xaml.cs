@@ -17,6 +17,10 @@ public partial class MainWindow : Window
     private readonly HashSet<string> selectedTestTeamMemberIds = new(StringComparer.Ordinal);
     private bool testTeamSelectionInitialized;
     private bool isRefreshingTestTeamSelection;
+    private SimulationSession? reportPresentationSession;
+    private readonly HashSet<string> openedScoutReturnReportIds = new(StringComparer.Ordinal);
+    private SceneDescriptionResult? transientScene;
+    private string? transientSceneFacts;
 
     public MainWindow()
     {
@@ -172,8 +176,21 @@ public partial class MainWindow : Window
     {
         if (playback == null) return;
         var game = playback.Session.Game;
+        if (!ReferenceEquals(reportPresentationSession, playback.Session))
+        {
+            reportPresentationSession = playback.Session;
+            openedScoutReturnReportIds.Clear();
+            transientScene = null;
+            transientSceneFacts = null;
+        }
+
         PlayerStateList.ItemsSource = BuildPlayerState(game);
-        PlayerReportsList.ItemsSource = BuildPlayerReports(game);
+        var selectedReportId = (PlayerReportsList.SelectedItem as PlayerReportEntry)?.Id;
+        var playerReports = BuildPlayerReports(game);
+        PlayerReportsList.ItemsSource = playerReports;
+        PlayerReportsList.SelectedItem = playerReports.FirstOrDefault(item => item.Id == selectedReportId) ?? playerReports.LastOrDefault();
+        RefreshPlayerReportDetails();
+        RefreshSceneInspector();
         var selectedCommandId = (PlayerOptionsList.SelectedItem as LocationCommandEntry)?.Id;
         var locationCommands = BuildLocationCommands(playback.Session, game);
         PlayerOptionsList.ItemsSource = locationCommands;
@@ -414,10 +431,17 @@ public partial class MainWindow : Window
         if (PlayerOptionsList.SelectedItem is not LocationCommandEntry entry)
         {
             SelectedLocationCommandDetails.Text = "Einen Ortsbefehl auswählen. Die optionalen Skriptbefehle werden dadurch nicht ausgelöst.";
+            SceneVisualPresenter.Clear(SelectedLocationVisual, SelectedLocationVisualTitle, SelectedLocationVisualReference);
             ExecuteLocationCommandButton.IsEnabled = false;
             return;
         }
 
+        SceneVisualPresenter.Apply(
+            SelectedLocationVisual,
+            SelectedLocationVisualTitle,
+            SelectedLocationVisualReference,
+            catalog?.VisualAssets,
+            entry.VisualId);
         SelectedLocationCommandDetails.Text = entry.Details;
         ExecuteLocationCommandButton.IsEnabled = entry.IsAvailable;
         ExecuteLocationCommandButton.Content = entry.ExecuteLabel;
@@ -498,17 +522,154 @@ public partial class MainWindow : Window
         return lines;
     }
 
-    private static IReadOnlyList<string> BuildPlayerReports(GameState game)
+    private static IReadOnlyList<PlayerReportEntry> BuildPlayerReports(GameState game)
     {
-        var lines = new List<string>();
-        foreach (var report in game.Knowledge.ScoutReports)
+        return game.Knowledge.ScoutReports.Select(report => new PlayerReportEntry(report)).ToList();
+    }
+
+    private void PlayerReportSelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshPlayerReportDetails();
+
+    private void ContinueToPlayerReport(object sender, RoutedEventArgs e)
+    {
+        if (PlayerReportsList.SelectedItem is not PlayerReportEntry entry) return;
+        openedScoutReturnReportIds.Add(entry.Id);
+        RefreshPlayerReportDetails();
+    }
+
+    private void RefreshPlayerReportDetails()
+    {
+        if (playback == null || PlayerReportsList.SelectedItem is not PlayerReportEntry entry)
         {
-            lines.Add($"Bericht [{report.Reliability}%] {report.Title}: {report.Body}");
-            lines.AddRange(report.Leads.Select(lead => $"  Hinweis [{lead.Scope}, {lead.Direction}, {lead.Confidence}%]: {lead.Summary}"));
-            lines.AddRange(report.Hints.Select(hint => $"  Notiz: {hint}"));
+            PlayerReportDetails.Visibility = Visibility.Collapsed;
+            return;
         }
 
-        return lines.Count == 0 ? new[] { "Noch keine Scout-Berichte." } : lines;
+        PlayerReportDetails.Visibility = Visibility.Visible;
+        var scene = openedScoutReturnReportIds.Contains(entry.Id)
+            ? null
+            : playback.Session.GetScoutReturnPresentationForReport(entry.Id);
+        SceneVisualPresenter.Apply(
+            PlayerReportVisual,
+            PlayerReportVisualTitle,
+            PlayerReportVisualReference,
+            catalog?.VisualAssets,
+            scene?.VisualId ?? "placeholder-scout");
+        if (scene != null)
+        {
+            PlayerReportTitle.Text = scene.Title;
+            PlayerReportMeta.Text = scene.Subtitle ?? "Rückkehr der Späher";
+            PlayerReportBody.Text = scene.Message;
+            PlayerReportStructuredDetails.Text = string.Empty;
+            PlayerReportStructuredDetails.Visibility = Visibility.Collapsed;
+            ContinueToPlayerReportButton.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var report = entry.Report;
+        PlayerReportTitle.Text = report.Title;
+        PlayerReportMeta.Text = $"Verlässlichkeit: {report.Reliability}%";
+        PlayerReportBody.Text = report.Body;
+        var details = report.Leads
+            .Select(lead => $"Hinweis [{lead.Scope}, {lead.Direction}, {lead.Confidence}%]: {lead.Summary}")
+            .Concat(report.Hints.Select(hint => $"Notiz: {hint}"))
+            .ToList();
+        PlayerReportStructuredDetails.Text = string.Join(Environment.NewLine, details);
+        PlayerReportStructuredDetails.Visibility = details.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        ContinueToPlayerReportButton.Visibility = Visibility.Collapsed;
+    }
+
+    private void CompleteExpeditionForInspection(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetPlayback(out var current)) return;
+        var result = current.CompleteExpedition();
+        if (!result.Success)
+        {
+            SessionStatus.Text = result.Error ?? "Expedition konnte nicht abgeschlossen werden.";
+            RefreshInspector();
+            return;
+        }
+
+        transientScene = current.Session.GetBaseReturnPresentation(result);
+        transientSceneFacts = $"Gesichertes Wissen: {result.SecuredKnowledge} · Funde: {result.ReturnedFindingsCount} · Expeditionstag: {result.ExpeditionDay}";
+        SessionStatus.Text = $"Expedition {result.ExpeditionNumber} über den gemeinsamen Abschlussbefehl beendet.";
+        RefreshInspector();
+    }
+
+    private void RefreshSceneInspector()
+    {
+        if (playback == null) return;
+        var eventScene = playback.Session.GetCurrentEventScenePresentation();
+        var contactScene = eventScene == null
+            ? playback.Session.GetActiveFactionContactPresentation()?.Scene
+            : null;
+        var scene = eventScene ?? contactScene ?? transientScene;
+        if (scene == null)
+        {
+            SceneVisualPresenter.Clear(CurrentSceneVisual, CurrentSceneVisualTitle, CurrentSceneVisualReference);
+            CurrentSceneTitle.Text = "Keine aktuelle Szene";
+            CurrentSceneSubtitle.Text = string.Empty;
+            CurrentSceneBody.Text = "Der Szenariolauf hat noch keine Szene geliefert.";
+            CurrentSceneFacts.Text = string.Empty;
+        }
+        else
+        {
+            SceneVisualPresenter.Apply(
+                CurrentSceneVisual,
+                CurrentSceneVisualTitle,
+                CurrentSceneVisualReference,
+                catalog?.VisualAssets,
+                scene.VisualId);
+            CurrentSceneTitle.Text = scene.Title;
+            CurrentSceneSubtitle.Text = scene.Subtitle ?? string.Empty;
+            CurrentSceneBody.Text = scene.Message;
+            CurrentSceneFacts.Text = ReferenceEquals(scene, transientScene)
+                ? transientSceneFacts ?? string.Empty
+                : ReferenceEquals(scene, contactScene)
+                    ? "Aktiver Fraktionskontakt aus dem gemeinsamen Wissens- und Identitätsmodell"
+                    : "Aktuelles Ereignis aus der Ereigniswarteschlange";
+        }
+
+        var game = playback.Session.Game;
+        CompleteExpeditionButton.IsEnabled = game.Expedition.Status == ExpeditionStatus.Active &&
+            game.Expedition.Position == game.Base.Location &&
+            game.Expedition.ScoutMissions.All(mission => mission.Status is not (ScoutMissionStatus.Active or ScoutMissionStatus.Overdue));
+
+        var selectedId = (MemorialList.SelectedItem as MemorialEntry)?.Id;
+        var entries = game.Base.LostExpeditions.Select(record => new MemorialEntry(record)).ToList();
+        MemorialList.ItemsSource = entries;
+        MemorialList.SelectedItem = entries.FirstOrDefault(entry => entry.Id == selectedId) ?? entries.LastOrDefault();
+        RefreshMemorialDetails();
+    }
+
+    private void MemorialSelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMemorialDetails();
+
+    private void RefreshMemorialDetails()
+    {
+        if (playback == null || MemorialList.SelectedItem is not MemorialEntry entry)
+        {
+            MemorialDetails.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var scene = playback.Session.GetExpeditionMemorialPresentation(entry.Id);
+        if (scene == null)
+        {
+            MemorialDetails.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        MemorialDetails.Visibility = Visibility.Visible;
+        SceneVisualPresenter.Apply(
+            MemorialVisual,
+            MemorialVisualTitle,
+            MemorialVisualReference,
+            catalog?.VisualAssets,
+            scene.VisualId ?? "placeholder-expedition-memorial");
+        MemorialTitle.Text = scene.Title;
+        MemorialSubtitle.Text = scene.Subtitle ?? string.Empty;
+        MemorialBody.Text = scene.Message;
+        var record = entry.Record;
+        MemorialFacts.Text = $"Letzte Position: {record.LastKnownPosition} · Verlorenes Wissen: {record.EstimatedLostKnowledge} · Geborgen: {record.RecoveredKnowledge}";
     }
 
     private static IReadOnlyList<LocationCommandEntry> BuildLocationCommands(SimulationSession session, GameState game)
@@ -519,6 +680,8 @@ public partial class MainWindow : Window
             .FindMissionType("location-surroundings")?.MovementPointCost ?? 2;
         foreach (var location in game.World.Locations.Where(location => location.Anchor.Coords.Any(coord => game.Knowledge.GetTileKnowledge(coord) == KnowledgeLevel.Confirmed)))
         {
+            var query = session.GetLocationInteraction(location.Id);
+            var visualId = query.Presentation?.Scene?.VisualId ?? query.Presentation?.ImageId;
             commands.Add(new LocationCommandEntry(
                 $"{location.Id}:inspect",
                 location.Id,
@@ -529,7 +692,8 @@ public partial class MainWindow : Window
                 label: "Betrachten",
                 details: "Untersucht den Ort direkt. Dies kann lokale Fakten, Funde und neue Optionen sichtbar machen.",
                 isAvailable: !location.IsInspected,
-                lockedReason: location.IsInspected ? "Dieser Ort wurde bereits betrachtet." : null));
+                lockedReason: location.IsInspected ? "Dieser Ort wurde bereits betrachtet." : null,
+                visualId: visualId));
 
             var nearLocation = location.Anchor.Coords.Any(coord => coord == game.Expedition.Position || coord.DistanceTo(game.Expedition.Position) == 1);
             var scoutReason = !nearLocation
@@ -548,9 +712,9 @@ public partial class MainWindow : Window
                 label: "Umgebung absuchen",
                 details: $"Lässt einen gewählten freien Scout die unmittelbare Umgebung absuchen. Der Bericht liegt sofort vor und kostet {localScoutMovementCost} Bewegungspunkte; der Tag endet dadurch nicht.",
                 isAvailable: scoutReason == null,
-                lockedReason: scoutReason));
+                lockedReason: scoutReason,
+                visualId: visualId));
 
-            var query = session.GetLocationInteraction(location.Id);
             if (!query.Success || query.Interaction == null) continue;
             commands.AddRange(query.Interaction.Options.Select(option => new LocationCommandEntry(
                 $"{location.Id}:action:{option.Action.Id}",
@@ -562,7 +726,8 @@ public partial class MainWindow : Window
                 option.Action.Label,
                 $"{option.Action.Description} Kosten: {LocationActionCostText(option.Action)}. Risiko: {option.RiskBand} ({option.Confidence}). Bindung: {option.Commitment}.",
                 option.IsAvailable,
-                option.LockedReason)));
+                option.LockedReason,
+                visualId)));
 
             if (location.ActiveProject != null)
             {
@@ -577,7 +742,8 @@ public partial class MainWindow : Window
                     "Projekt fortsetzen",
                     $"Projekt '{project.ActionId}': Fortschritt {project.Progress}/{project.RequiredProgress}.",
                     !project.IsComplete,
-                    project.IsComplete ? "Das Projekt ist bereits abgeschlossen." : null));
+                    project.IsComplete ? "Das Projekt ist bereits abgeschlossen." : null,
+                    visualId));
             }
         }
 
@@ -773,7 +939,8 @@ public partial class MainWindow : Window
             string label,
             string details,
             bool isAvailable,
-            string? lockedReason)
+            string? lockedReason,
+            string? visualId)
         {
             Id = id;
             LocationId = locationId;
@@ -785,6 +952,7 @@ public partial class MainWindow : Window
             Details = details;
             IsAvailable = isAvailable;
             LockedReason = lockedReason;
+            VisualId = visualId;
         }
 
         public string Id { get; }
@@ -797,6 +965,7 @@ public partial class MainWindow : Window
         public string Details { get; }
         public bool IsAvailable { get; }
         public string? LockedReason { get; }
+        public string? VisualId { get; }
         public string AvailabilityText => IsAvailable ? "Verfügbar" : $"Gesperrt: {LockedReason}";
         public string ExecuteLabel => Kind switch
         {
@@ -817,6 +986,30 @@ public partial class MainWindow : Window
 
         public string Id { get; }
         public string DisplayName { get; }
+    }
+
+    private sealed class PlayerReportEntry
+    {
+        public PlayerReportEntry(ScoutReportState report)
+        {
+            Report = report ?? throw new ArgumentNullException(nameof(report));
+        }
+
+        public ScoutReportState Report { get; }
+        public string Id => Report.Id;
+        public string DisplayName => $"{Report.Title} · Verlässlichkeit {Report.Reliability}%";
+    }
+
+    private sealed class MemorialEntry
+    {
+        public MemorialEntry(LostExpeditionRecord record)
+        {
+            Record = record ?? throw new ArgumentNullException(nameof(record));
+        }
+
+        public LostExpeditionRecord Record { get; }
+        public string Id => Record.ExpeditionId;
+        public string DisplayName => $"Expedition {Record.ExpeditionNumber} · {Record.Status}";
     }
 
     private sealed class TestTeamMemberEntry

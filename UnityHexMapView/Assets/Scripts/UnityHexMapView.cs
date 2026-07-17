@@ -81,7 +81,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private SpecialLocationState inspectedLocation;
     private PlayerMapMarkerKind selectedMarkerKind = PlayerMapMarkerKind.Question;
     private string markerLabelDraft = "";
-    private string markerFactionIdDraft = "border-wardens";
+    private string markerFactionIdDraft = string.Empty;
     private string noteDraftText = "";
     private ScoutDirection scoutDirection = ScoutDirection.East;
     private int scoutDurationDays = 2;
@@ -282,8 +282,32 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public void RequestCompleteExpeditionFromUi()
     {
-        CompleteCurrentExpedition();
+        var result = CompleteCurrentExpedition();
+        if (result != null && result.Success)
+        {
+            var scene = simulationSession.GetBaseReturnPresentation(result);
+            if (scene != null)
+            {
+                OpenBaseCampReturnScene(scene, result);
+            }
+        }
         RefreshToolkitHud();
+    }
+
+    private void OpenBaseCampReturnScene(SceneDescriptionResult scene, CompleteExpeditionResult result)
+    {
+        if (baseCampScreenController == null)
+        {
+            baseCampScreenController = FindObjectOfType<BaseCampScreenController>(true);
+        }
+
+        if (baseCampScreenController == null)
+        {
+            Debug.LogWarning("Base camp screen is not in the scene; the expedition return scene could not be displayed.");
+            return;
+        }
+
+        baseCampScreenController.OpenReturnScene(scene, result);
     }
 
     public void RequestStartBaseActionFromUi(BaseActionKind kind, string memberId = null)
@@ -424,6 +448,11 @@ public sealed class UnityHexMapView : MonoBehaviour
             ? $"Scout report selected: {report.Title}. Der Bericht enthält keine verortbare Spur."
             : $"Scout report selected: {report.Title}. {string.Join(" ", report.Leads.Select(lead => lead.Summary))}";
         RefreshHud();
+    }
+
+    public SceneDescriptionResult GetScoutReturnPresentationForReportUi(string reportId)
+    {
+        return simulationSession?.GetScoutReturnPresentationForReport(reportId);
     }
 
     public void RequestSendScoutMissionFromUi()
@@ -761,6 +790,31 @@ public sealed class UnityHexMapView : MonoBehaviour
             ? result.Message ?? "Faction contact closed."
             : result.Error ?? "No faction contact open.";
         RefreshToolkitHud();
+    }
+
+    public FactionContactPresentation GetActiveFactionContactPresentationForUi()
+    {
+        return simulationSession?.GetActiveFactionContactPresentation();
+    }
+
+    public FactionContactPresentation GetCurrentEventContactPresentationForUi()
+    {
+        return simulationSession?.GetCurrentEventContactPresentation();
+    }
+
+    public SceneDescriptionResult GetCurrentEventScenePresentationForUi()
+    {
+        return simulationSession?.GetCurrentEventScenePresentation();
+    }
+
+    public SceneDescriptionResult GetExpeditionMemorialPresentationForUi(string expeditionId)
+    {
+        return simulationSession?.GetExpeditionMemorialPresentation(expeditionId);
+    }
+
+    public VisualAssetDefinition GetVisualAssetDefinitionForUi(string visualAssetId)
+    {
+        return simulationSession?.Application.DataCatalog?.VisualAssets.Resolve(visualAssetId);
     }
 
     public void RefreshToolkitHud()
@@ -1206,10 +1260,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         CreateHexNatureMaterialTemplate();
     }
 
-    // Distinct, well-separated hues for the faction-ownership debug overlay. The three tutorial-map
-    // factions keep their own tuned colors (FactionOwnerCoastal/Wardens/Hidden); anything else
-    // (e.g. a generated campaign's dynamic "faction-0", "faction-1", ... ids) is deterministically
-    // hashed into this broader palette instead of collapsing into one shared fallback color.
+    // Distinct, well-separated hues for the faction-ownership debug overlay. Every faction ID is
+    // deterministically hashed into this palette instead of requiring faction-specific materials.
     private static readonly string[] FactionOwnerPaletteHex =
     {
         "4f94a8", "b76857", "6f5a9d", "6f9d5a", "c2984a", "9d5a7a", "5a7a9d", "9d9d5a"
@@ -2077,24 +2129,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     private Material DebugFactionOwnershipMaterial(string ownerId)
     {
-        if (ownerId == "coastal-people")
-        {
-            return featureMaterials["FactionOwnerCoastal"];
-        }
-
-        if (ownerId == "border-wardens")
-        {
-            return featureMaterials["FactionOwnerWardens"];
-        }
-
-        if (ownerId == "hidden-ones")
-        {
-            return featureMaterials["FactionOwnerHidden"];
-        }
-
-        // Generated campaigns mint their own faction ids (e.g. "faction-0", "faction-1", ...) that
-        // don't match the tutorial map's fixed three above; give each a stable, distinct color from
-        // the broader palette instead of collapsing every non-tutorial faction into one fallback hue.
+        // Every generated or tutorial faction receives a stable color from the same palette.
         // (Modulo, not Mathf.Abs, so int.MinValue can never produce a negative index.)
         var length = FactionOwnerPaletteHex.Length;
         var index = ((StableStringHash(ownerId) % length) + length) % length;
@@ -2409,18 +2444,18 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHud();
     }
 
-    private void CompleteCurrentExpedition()
+    private CompleteExpeditionResult CompleteCurrentExpedition()
     {
         if (coreGameState == null)
         {
-            return;
+            return null;
         }
 
         if (coreGameState.Expedition.Status == ExpeditionStatus.Returned ||
             coreGameState.Expedition.Status == ExpeditionStatus.Lost)
         {
             StartNextExpedition();
-            return;
+            return null;
         }
 
         var result = simulationSession.CompleteExpedition();
@@ -2428,7 +2463,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             interactionMessage = result.Error ?? "Expedition completion rejected.";
             RefreshHud();
-            return;
+            return result;
         }
 
         interactionMessage = $"Expedition {result.ExpeditionNumber} abgeschlossen. Wissen gesichert: +{result.SecuredKnowledge}. Basiswissen: {result.BaseKnowledgePoints}. Naechste Expedition ab Welttag {result.NextExpeditionAvailableWorldDay}.";
@@ -2437,6 +2472,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         RefreshHexOverlays();
         RefreshPlayerAnnotations();
         RefreshHud();
+        return result;
     }
 
     private void AdvanceCurrentBaseTime()

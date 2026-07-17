@@ -20,6 +20,7 @@ internal sealed class SimulationSessionTests
         TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession();
         InteractiveDirectionalScoutUsesSharedMissionLifecycle();
         InteractiveDirectionalMovementUsesSharedAdjacentMoveCommand();
+        InteractiveCompletionExposesTheSharedBaseReturnScene();
         DeeperLocationWorkConsumesDailyMovementCapacity();
         DayOperationsConsumeTheRemainingDayCapacity();
         InspectionUsesObservableContextWithoutRevealingUnknownFaction();
@@ -156,6 +157,20 @@ internal sealed class SimulationSessionTests
         AssertTrue(rebuild.Success, "Interactive playback can resolve a selected shared location option without consuming a scripted command");
         AssertEqual(0, playback.NextCommandIndex, "Direct inspector commands do not force the next scenario script command");
         AssertTrue(playback.HasInteractiveCommands, "Direct inspector commands are marked so a script-only run record cannot misrepresent the path");
+    }
+
+    private static void InteractiveCompletionExposesTheSharedBaseReturnScene()
+    {
+        var scenario = new DevelopmentScenario { Id = "interactive-base-return", Seed = 41027 };
+        var playback = DevelopmentScenarioPlayback.Create(LoadCatalog(), scenario);
+
+        var result = playback.CompleteExpedition();
+        var scene = playback.Session.GetBaseReturnPresentation(result);
+
+        AssertTrue(result.Success, "WPF playback completion delegates to the shared application command");
+        AssertTrue(scene != null && scene.Paragraphs.SelectMany(paragraph => paragraph.FragmentIds)
+            .Contains("frag-base-return-complete"), "Interactive completion exposes the shared JSON base-return scene");
+        AssertTrue(playback.HasInteractiveCommands, "Interactive completion prevents script-only export from misrepresenting the path");
     }
 
     private static void TeamPreviewUsesTheSharedOptionAvailabilityRulesWithoutChangingTheSession()

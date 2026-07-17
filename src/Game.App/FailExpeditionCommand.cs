@@ -116,13 +116,6 @@ public sealed class FailExpeditionCommand
     {
         foreach (var faction in game.Factions)
         {
-            if (faction.Id == "coastal-people")
-            {
-                faction.Adjust(fearDelta: 3);
-                faction.AddMemory($"expedition-lost-near-base:{game.World.WorldDay}");
-                continue;
-            }
-
             faction.Adjust(angerDelta: 2, fearDelta: 4);
             faction.AddMemory($"expedition-lost-world-shift:{game.World.WorldDay}");
             ExpandTerritory(game.World.Map, faction.Id, game.Base.Location, maxClaims: 3);

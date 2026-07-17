@@ -291,7 +291,7 @@ public static class LocationInteractionContent
             Table("outcome-leave-offering", ArchetypeInvestigationSite, ActionLeaveOffering,
                 Bands(Row(LocationRiskBand.Low, W(LocationOutcomeTier.Success, 100))),
                 Bundle(LocationOutcomeTier.Success,
-                    FactionMemory("border-wardens", "outsiders respected a marked grave", "Der respektvolle Umgang koennte erinnert werden."))),
+                    Archive("Die respektvolle Geste wurde dokumentiert."))),
 
             Table("outcome-disturb", ArchetypeInvestigationSite, ActionDisturb,
                 Bands(
@@ -302,14 +302,11 @@ public static class LocationInteractionContent
                     Knowledge(5, "Ein Fund wird geborgen.")),
                 Bundle(LocationOutcomeTier.SuccessWithCost,
                     Knowledge(5, "Ein Fund wird geborgen."),
-                    ChangeMorale(-1, "Die Gruppe ist sich uneins, ob dies richtig war."),
-                    FactionMemory("border-wardens", "outsiders disturbed a marked grave", "Die Grenzwaechter koennten diese Stoerung erinnern.")),
+                    ChangeMorale(-1, "Die Gruppe ist sich uneins, ob dies richtig war.")),
                 Bundle(LocationOutcomeTier.Failure,
-                    ChangeMorale(-1, "Der Eingriff misslingt und belastet die Gruppe."),
-                    FactionMemory("border-wardens", "outsiders disturbed a marked grave", "Die Grenzwaechter koennten diese Stoerung erinnern.")),
+                    ChangeMorale(-1, "Der Eingriff misslingt und belastet die Gruppe.")),
                 Bundle(LocationOutcomeTier.SevereFailure,
-                    Injure("Beim gewaltsamen Oeffnen wird jemand verletzt."),
-                    FactionMemory("border-wardens", "outsiders disturbed a marked grave", "Die Grenzwaechter koennten diese Stoerung erinnern."))),
+                    Injure("Beim gewaltsamen Oeffnen wird jemand verletzt."))),
 
             Table("outcome-mark", ArchetypeInvestigationSite, ActionMark,
                 Bands(Row(LocationRiskBand.Low, W(LocationOutcomeTier.Success, 100))),
@@ -448,11 +445,6 @@ public static class LocationInteractionContent
     private static LocationEffectDefinition ChangeMorale(int amount, string text)
     {
         return new LocationEffectDefinition($"effect-morale-{amount}", LocationEffectKind.ChangeMorale, text, amount: amount);
-    }
-
-    private static LocationEffectDefinition FactionMemory(string factionId, string memory, string text)
-    {
-        return new LocationEffectDefinition($"effect-memory-{factionId}", LocationEffectKind.AddFactionMemory, text, factionId: factionId, memory: memory);
     }
 
     private static LocationEffectDefinition Archive(string text)

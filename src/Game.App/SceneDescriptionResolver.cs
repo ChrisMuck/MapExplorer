@@ -75,6 +75,179 @@ public sealed class ObservableModifierScenePart
     public string Text { get; }
 }
 
+/// <summary>Read-only contact projection containing only visible or already-earned information.</summary>
+public sealed class ContactSceneView
+{
+    public ContactSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string identityStage, string contactStatus, IEnumerable<string>? knownContextTags,
+        string? subjectLabel = null, string? locale = null, string? deliveredText = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        IdentityStage = Require(identityStage, nameof(identityStage));
+        ContactStatus = Require(contactStatus, nameof(contactStatus));
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        SubjectLabel = Normalize(subjectLabel);
+        Locale = Normalize(locale);
+        DeliveredText = Normalize(deliveredText);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string IdentityStage { get; }
+    public string ContactStatus { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? SubjectLabel { get; }
+    public string? Locale { get; }
+    /// <summary>Player-facing text already delivered by an event; never objective event causality.</summary>
+    public string? DeliveredText { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
+/// <summary>Read-only projection of one immutable delivered scout-mission outcome.</summary>
+public sealed class ScoutReturnSceneView
+{
+    public ScoutReturnSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string missionStatus, IEnumerable<string> memberStatuses, string teamOutcome,
+        int? reportReliability, bool hasFindings, bool hasLeads, bool wasOverdue,
+        bool hasLostEquipment, string memberName, string? companionName, string daysOverdue,
+        string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        MissionStatus = Require(missionStatus, nameof(missionStatus));
+        MemberStatuses = (memberStatuses ?? throw new ArgumentNullException(nameof(memberStatuses)))
+            .Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        TeamOutcome = Require(teamOutcome, nameof(teamOutcome));
+        ReportReliability = reportReliability;
+        HasFindings = hasFindings;
+        HasLeads = hasLeads;
+        WasOverdue = wasOverdue;
+        HasLostEquipment = hasLostEquipment;
+        MemberName = Require(memberName, nameof(memberName));
+        CompanionName = Normalize(companionName);
+        DaysOverdue = Require(daysOverdue, nameof(daysOverdue));
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string MissionStatus { get; }
+    public IReadOnlyList<string> MemberStatuses { get; }
+    public string TeamOutcome { get; }
+    public int? ReportReliability { get; }
+    public bool HasFindings { get; }
+    public bool HasLeads { get; }
+    public bool WasOverdue { get; }
+    public bool HasLostEquipment { get; }
+    public string MemberName { get; }
+    public string? CompanionName { get; }
+    public string DaysOverdue { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
+/// <summary>Read-only projection of an event already delivered to the expedition.</summary>
+public sealed class ReportEventSceneView
+{
+    public ReportEventSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string deliveredText, IEnumerable<string>? knownContextTags, string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        DeliveredText = Require(deliveredText, nameof(deliveredText));
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string DeliveredText { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
+/// <summary>Immutable presentation facts emitted by one completed expedition.</summary>
+public sealed class BaseReturnSceneView
+{
+    public BaseReturnSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        string teamOutcome, bool hasFindings, IEnumerable<string>? knownContextTags, string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        TeamOutcome = Require(teamOutcome, nameof(teamOutcome));
+        HasFindings = hasFindings;
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public string TeamOutcome { get; }
+    public bool HasFindings { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
+/// <summary>Read-only memorial projection of one record already secured at the base.</summary>
+public sealed class ExpeditionMemorialSceneView
+{
+    public ExpeditionMemorialSceneView(string subjectRef, string title, string? subtitle, string? visualId,
+        IEnumerable<string>? knownContextTags, string? locale = null)
+    {
+        SubjectRef = Require(subjectRef, nameof(subjectRef));
+        Title = Require(title, nameof(title));
+        Subtitle = Normalize(subtitle);
+        VisualId = Normalize(visualId);
+        KnownContextTags = (knownContextTags ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.Ordinal).ToList();
+        Locale = Normalize(locale);
+    }
+
+    public string SubjectRef { get; }
+    public string Title { get; }
+    public string? Subtitle { get; }
+    public string? VisualId { get; }
+    public IReadOnlyList<string> KnownContextTags { get; }
+    public string? Locale { get; }
+
+    private static string Require(string value, string name) => string.IsNullOrWhiteSpace(value)
+        ? throw new ArgumentException("Value must not be empty.", name) : value.Trim();
+    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
 /// <summary>
 /// Read-only, already-authorized location observation. It contains no hidden context, modifier or
 /// faction claim that the inspection did not make visible.
@@ -183,6 +356,103 @@ public sealed class SceneDescriptionResolver
         return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question, view.KnowledgeAgeLabel);
     }
 
+    public SceneDescriptionResult ResolveContact(ContactSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "contact" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic contact scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "contact")
+            .Where(fragment => ContactSourceAllowed(fragment.Source, view))
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        if (view.DeliveredText != null)
+        {
+            eligible.Add(new ResolvedFragment("delivered:" + view.SubjectRef, "opening", view.DeliveredText,
+                "delivered-outcome", 90, new[] { "frag-contact-opening" }, null));
+        }
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Contact scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
+    public SceneDescriptionResult ResolveScoutReturn(ScoutReturnSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "scout-return" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic scout-return scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "scout-return")
+            .Where(fragment => fragment.Source.Kind is "delivered-outcome" or "direct-observation")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                Interpolate(catalog.Texts.Resolve(fragment.TextId, view.Locale), view), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Scout-return scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
+    public SceneDescriptionResult ResolveReportEvent(ReportEventSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "report-event" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic report-event scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "report-event")
+            .Where(fragment => fragment.Source.Kind is "delivered-outcome" or "direct-observation" or "testimony")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                catalog.Texts.Resolve(fragment.TextId, view.Locale), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        eligible.Add(new ResolvedFragment("delivered:" + view.SubjectRef, "opening", view.DeliveredText,
+            "delivered-outcome", 90, Array.Empty<string>(), null));
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Report-event scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
+    public SceneDescriptionResult ResolveBaseReturn(BaseReturnSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "base-return" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic base-return scene policy exists.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "base-return")
+            .Where(fragment => fragment.Source.Kind == "delivered-outcome")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                catalog.Texts.Resolve(fragment.TextId, view.Locale), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Base-return scene for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
+    public SceneDescriptionResult ResolveExpeditionMemorial(ExpeditionMemorialSceneView view)
+    {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var policy = catalog.Policies.Values.SingleOrDefault(item => item.SubjectKind == "base-return" && item.ArchetypeId == null)
+            ?? throw new LocationDataException("No generic base-return scene policy exists for expedition memorials.");
+        var eligible = catalog.Fragments.Values.Where(fragment => fragment.SubjectKind == "base-return")
+            .Where(fragment => fragment.Source.Kind == "stored-observation")
+            .Where(fragment => Matches(fragment.When, view))
+            .Select(fragment => new ResolvedFragment(fragment.Id, fragment.Group,
+                catalog.Texts.Resolve(fragment.TextId, view.Locale), fragment.Source.Kind, fragment.Priority,
+                fragment.SupersedesFragmentIds, fragment.ExclusiveTag)).ToList();
+        var selected = Select(policy, eligible, view.SubjectRef);
+        var paragraphs = AssembleParagraphs(policy, selected);
+        if (paragraphs.Count == 0) throw new LocationDataException($"Expedition memorial for '{view.SubjectRef}' contains no eligible fragment.");
+        var question = Matches(policy.QuestionResolvedWhen, view) ? null : catalog.Texts.Resolve(policy.QuestionTextId, view.Locale);
+        return new SceneDescriptionResult(view.Title, view.Subtitle, view.VisualId, paragraphs, question);
+    }
+
     private static bool Applies(SceneFragmentDefinition fragment, LocationSceneView view) =>
         (fragment.AppliesTo.ArchetypeIds.Count == 0 || fragment.AppliesTo.ArchetypeIds.Contains(view.ArchetypeId, StringComparer.Ordinal)) &&
         (fragment.AppliesTo.VariantIds.Count == 0 || fragment.AppliesTo.VariantIds.Contains(view.VariantId, StringComparer.Ordinal));
@@ -224,7 +494,7 @@ public sealed class SceneDescriptionResolver
         if (when.MaxKnownStateAgeDays != null && !view.HasCurrentObservation &&
             (view.PreviousKnownCondition == null || view.CurrentWorldDay - view.PreviousKnownCondition.ObservedWorldDay > when.MaxKnownStateAgeDays)) return false;
         if (when.CurrentObservationDiffersFromStored != null && when.CurrentObservationDiffersFromStored != view.CurrentObservationDiffersFromStored) return false;
-        if (when.HasFindings != null || when.HasLeads != null || when.WasOverdue != null || when.HasLostEquipment != null ||
+        if (when.HasFindings != null || when.HasLeads != null || when.WasOverdue != null || when.HasLostEquipment != null || when.HasCompanion != null ||
             when.IsSecondHandAccount != null || when.IsUrgent != null || when.HasOwnArchiveEntryForLocation != null ||
             when.HasLostExpeditionRecordForLocation != null || when.MissionStatusAny.Count > 0 || when.MemberStatusAny.Count > 0 || when.TeamOutcome != null ||
             when.ReportReliabilityAtLeast != null || when.ReportReliabilityBelow != null) return false;
@@ -235,6 +505,101 @@ public sealed class SceneDescriptionResolver
 
     private static string Interpolate(string text, LocationSceneView view) =>
         text.Replace("{subjectLabel}", view.SubjectLabel ?? string.Empty, StringComparison.Ordinal);
+
+    private static string Interpolate(string text, ContactSceneView view) =>
+        text.Replace("{subjectLabel}", view.SubjectLabel ?? string.Empty, StringComparison.Ordinal);
+
+    private static string Interpolate(string text, ScoutReturnSceneView view) => text
+        .Replace("{memberName}", view.MemberName, StringComparison.Ordinal)
+        .Replace("{companionName}", view.CompanionName ?? string.Empty, StringComparison.Ordinal)
+        .Replace("{daysOverdue}", view.DaysOverdue, StringComparison.Ordinal);
+
+    private static bool ContactSourceAllowed(SceneFragmentSourceDefinition source, ContactSceneView view) => source.Kind switch
+    {
+        "direct-observation" => true,
+        "signature-identification" => view.IdentityStage is "signature-recognised" or "identified",
+        "testimony" => true,
+        "delivered-outcome" => true,
+        _ => false
+    };
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ContactSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        if (!MatchesAny(when.ContactStatusAny, view.ContactStatus)) return false;
+        if (when.IdentityStage != null && when.IdentityStage != view.IdentityStage) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.MissionStatusAny.Count == 0 && when.MemberStatusAny.Count == 0 && when.TeamOutcome == null &&
+            when.ReportReliabilityAtLeast == null && when.ReportReliabilityBelow == null && when.HasFindings == null &&
+            when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ScoutReturnSceneView view)
+    {
+        if (!MatchesAny(when.MissionStatusAny, view.MissionStatus)) return false;
+        if (!MatchesAnyOverlap(when.MemberStatusAny, view.MemberStatuses)) return false;
+        if (when.TeamOutcome != null && when.TeamOutcome != view.TeamOutcome) return false;
+        if (when.ReportReliabilityAtLeast != null && (view.ReportReliability == null || view.ReportReliability < when.ReportReliabilityAtLeast)) return false;
+        if (when.ReportReliabilityBelow != null && (view.ReportReliability == null || view.ReportReliability >= when.ReportReliabilityBelow)) return false;
+        if (when.HasFindings != null && when.HasFindings != view.HasFindings) return false;
+        if (when.HasLeads != null && when.HasLeads != view.HasLeads) return false;
+        if (when.WasOverdue != null && when.WasOverdue != view.WasOverdue) return false;
+        if (when.HasLostEquipment != null && when.HasLostEquipment != view.HasLostEquipment) return false;
+        if (when.HasCompanion != null && when.HasCompanion != (view.CompanionName != null)) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.KnownContextTagsAny.Count == 0 &&
+            when.ObservableModifierIdsAny.Count == 0 && when.ObservableRelationKindsAny.Count == 0 &&
+            when.KnowledgeLevelAtLeast == null && when.ContactStatusAny.Count == 0 && when.IdentityStage == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null &&
+            when.HasOwnArchiveEntryForLocation == null && when.CurrentObservationDiffersFromStored == null &&
+            when.HasLostExpeditionRecordForLocation == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ReportEventSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.ContactStatusAny.Count == 0 && when.IdentityStage == null && when.MissionStatusAny.Count == 0 &&
+            when.MemberStatusAny.Count == 0 && when.TeamOutcome == null && when.ReportReliabilityAtLeast == null &&
+            when.ReportReliabilityBelow == null && when.HasFindings == null && when.HasLeads == null &&
+            when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null && when.HasOwnArchiveEntryForLocation == null &&
+            when.CurrentObservationDiffersFromStored == null && when.HasLostExpeditionRecordForLocation == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, BaseReturnSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        if (when.TeamOutcome != null && when.TeamOutcome != view.TeamOutcome) return false;
+        if (when.HasFindings != null && when.HasFindings != view.HasFindings) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.ContactStatusAny.Count == 0 && when.IdentityStage == null && when.MissionStatusAny.Count == 0 &&
+            when.MemberStatusAny.Count == 0 && when.ReportReliabilityAtLeast == null && when.ReportReliabilityBelow == null &&
+            when.HasLeads == null && when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null && when.HasOwnArchiveEntryForLocation == null &&
+            when.CurrentObservationDiffersFromStored == null && when.HasLostExpeditionRecordForLocation == null;
+    }
+
+    private static bool Matches(SceneFragmentConditionDefinition when, ExpeditionMemorialSceneView view)
+    {
+        if (!MatchesAnyOverlap(when.KnownContextTagsAny, view.KnownContextTags)) return false;
+        return when.KnownInteractionStatesAny.Count == 0 && when.KnownOperationalStatesAny.Count == 0 &&
+            when.KnownPresenceStatesAny.Count == 0 && when.ObservableModifierIdsAny.Count == 0 &&
+            when.ObservableRelationKindsAny.Count == 0 && when.KnowledgeLevelAtLeast == null &&
+            when.ContactStatusAny.Count == 0 && when.IdentityStage == null && when.MissionStatusAny.Count == 0 &&
+            when.MemberStatusAny.Count == 0 && when.TeamOutcome == null && when.ReportReliabilityAtLeast == null &&
+            when.ReportReliabilityBelow == null && when.HasFindings == null && when.HasLeads == null &&
+            when.WasOverdue == null && when.HasLostEquipment == null && when.HasCompanion == null &&
+            when.IsSecondHandAccount == null && when.IsUrgent == null && when.HasOwnArchiveEntryForLocation == null &&
+            when.CurrentObservationDiffersFromStored == null && when.HasLostExpeditionRecordForLocation == null;
+    }
     private static bool MatchesAnyOverlap(IEnumerable<string> expected, IEnumerable<string> actual)
     {
         var required = expected.ToList();

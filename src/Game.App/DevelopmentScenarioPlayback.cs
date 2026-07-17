@@ -157,6 +157,14 @@ public sealed class DevelopmentScenarioPlayback
         return Session.AdvanceLocationProject(locationId);
     }
 
+    /// <summary>Completes the active expedition through the shared session for client-parity inspection.</summary>
+    public CompleteExpeditionResult CompleteExpedition()
+    {
+        if (!CanExecuteInteractive(out var error)) return CompleteExpeditionResult.Rejected(error);
+        HasInteractiveCommands = true;
+        return Session.CompleteExpedition();
+    }
+
     public DevelopmentScenarioRunResult RunToCompletion()
     {
         while (HasNextCommand)

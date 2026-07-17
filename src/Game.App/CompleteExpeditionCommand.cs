@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Linq;
 using Game.Core;
 
 namespace Game.App
@@ -43,6 +44,11 @@ public sealed class CompleteExpeditionCommand
         var securedKnowledge = game.Expedition.ClearUnsecuredKnowledge();
         game.Base.AddKnowledgePoints(securedKnowledge);
         var returnedFindings = findingAnalysisHandoffService?.TransferReturnedFindings(game) ?? Array.Empty<EvaluationItemState>();
+        var absentMembers = game.Expedition.Members.Count(member =>
+            member.Status is ExpeditionMemberStatus.Missing or ExpeditionMemberStatus.Dead);
+        var teamOutcome = absentMembers == 0
+            ? "all-returned"
+            : absentMembers == game.Expedition.Members.Count ? "none-returned" : "partial-return";
 
         game.Expedition.SetStatus(ExpeditionStatus.Returned);
         game.Base.ScheduleNextExpedition(ExpeditionStatus.Returned, game.World.WorldDay, NormalPreparationDays);
@@ -62,9 +68,12 @@ public sealed class CompleteExpeditionCommand
             game.Base.Location,
             game.Expedition.ExpeditionNumber,
             game.Expedition.ExpeditionDay,
+            game.World.WorldDay,
             game.Base.NextExpeditionAvailableWorldDay,
             securedKnowledge,
             game.Base.KnowledgePoints,
+            returnedFindings.Count,
+            teamOutcome,
             archiveEntry);
     }
 }
