@@ -18,11 +18,11 @@ public static class SceneVisualPresenter
         }
 
         var hash = StableHash(definition.VisualAssetId);
-        container.style.backgroundColor = new Color32(
+        container.style.backgroundColor = new StyleColor(new Color32(
             (byte)(42 + hash % 45),
             (byte)(48 + (hash >> 8) % 42),
             (byte)(43 + (hash >> 16) % 48),
-            255);
+            255));
         container.tooltip = definition.Description ?? definition.DisplayName;
 
         if (!string.IsNullOrWhiteSpace(definition.AssetPath))
@@ -51,8 +51,8 @@ public static class SceneVisualPresenter
             label = new Label { name = "scene-visual-label", pickingMode = PickingMode.Ignore };
             label.style.whiteSpace = WhiteSpace.Normal;
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
-            label.style.color = new Color32(232, 227, 214, 255);
-            label.style.backgroundColor = new Color(0f, 0f, 0f, 0.38f);
+            label.style.color = new StyleColor(new Color32(232, 227, 214, 255));
+            label.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.38f));
             label.style.paddingLeft = 8;
             label.style.paddingRight = 8;
             label.style.paddingTop = 5;
