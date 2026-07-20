@@ -1170,6 +1170,8 @@
 }
 .campaign-choice:hover { background-color: rgba(143, 174, 116, 0.16); }
 .campaign-choice--selected { background-color: rgb(104, 154, 104); color: rgb(18, 25, 20); border-color: rgb(143, 174, 116); -unity-font-style: bold; }
+.campaign-choice--wide { min-width: 190px; }
+.campaign-generation-options { max-height: 500px; min-height: 0; flex-shrink: 1; }
 .campaign-message { margin-top: 28px; color: rgb(178, 170, 151); font-size: 14px; }
 .campaign-begin {
     margin-top: 14px;

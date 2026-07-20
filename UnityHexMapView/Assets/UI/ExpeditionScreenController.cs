@@ -16,6 +16,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         Project
     }
 
+    private enum CampaignMapMode
+    {
+        Tutorial,
+        Generated
+    }
+
     private const string Reports = "reports";
     private const string Scouts = "scouts";
     private const string Journal = "journal";
@@ -45,6 +51,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
     private ScoutMissionBehavior scoutBehavior = ScoutMissionBehavior.Balanced;
     private readonly List<WorldGenerationPreset> campaignPresets = new List<WorldGenerationPreset>();
     private readonly List<WorldGenerationOptionPreset> campaignOptionPresets = new List<WorldGenerationOptionPreset>();
+    private CampaignMapMode campaignMapMode = CampaignMapMode.Generated;
     private string campaignPresetId = "medium";
     private int campaignFactionCount = 3;
     private string campaignFactionMood = "Gemischt";
@@ -133,6 +140,8 @@ public sealed class ExpeditionScreenController : MonoBehaviour
 
         RegisterClick("action-open-base", () => mapView?.RequestOpenBaseCampFromUi());
 
+        RegisterClick("campaign-mode-tutorial", () => SetCampaignMapMode(CampaignMapMode.Tutorial));
+        RegisterClick("campaign-mode-generated", () => SetCampaignMapMode(CampaignMapMode.Generated));
         RegisterClick("campaign-size-small", () => SetCampaignPreset("small"));
         RegisterClick("campaign-size-medium", () => SetCampaignPreset("medium"));
         RegisterClick("campaign-size-large", () => SetCampaignPreset("large"));
@@ -156,7 +165,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RegisterClick("campaign-settlement-wilderness", () => SetCampaignOption("settlement", "wilderness"));
         RegisterClick("campaign-settlement-balanced", () => SetCampaignOption("settlement", "balanced"));
         RegisterClick("campaign-settlement-dense", () => SetCampaignOption("settlement", "dense"));
-        RegisterClick("campaign-begin", BeginGeneratedCampaign);
+        RegisterClick("campaign-begin", BeginCampaign);
         EnsureCampaignPresets();
 
         if (string.IsNullOrEmpty(openSection))
@@ -262,6 +271,12 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
     }
 
+    private void SetCampaignMapMode(CampaignMapMode mode)
+    {
+        campaignMapMode = mode;
+        RefreshCampaignSetup();
+    }
+
     private void SetCampaignFactionCount(int count)
     {
         campaignFactionCount = count;
@@ -292,10 +307,16 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshCampaignSetup();
     }
 
-    private void BeginGeneratedCampaign()
+    private void BeginCampaign()
     {
         if (mapView == null)
         {
+            return;
+        }
+
+        if (campaignMapMode == CampaignMapMode.Tutorial)
+        {
+            mapView.RequestStartTutorialCampaignFromUi();
             return;
         }
 
@@ -351,6 +372,19 @@ public sealed class ExpeditionScreenController : MonoBehaviour
             return;
         }
 
+        var generated = campaignMapMode == CampaignMapMode.Generated;
+        SetCampaignSelected("campaign-mode-tutorial", !generated);
+        SetCampaignSelected("campaign-mode-generated", generated);
+        SetDisplay("campaign-generation-options", generated);
+        SetText("campaign-title", generated ? "Eine unbekannte Welt vorbereiten" : "Die Tutorialkarte erkunden");
+        SetText("campaign-copy", generated
+            ? "Diese Auswahl beschreibt nur die Art der Reise. Die erzeugte Karte wird erst nach dem Aufbruch sichtbar und kann nicht neu gewürfelt werden."
+            : "Die feste Tutorialkarte ist reproduzierbar und für gezielte Tests des Expeditionsablaufs, der Orte, Scouts und Fraktionen vorgesehen.");
+        SetText("campaign-message", generated
+            ? "Die Karte bleibt bis zum Aufbruch unbekannt."
+            : "Die Tutorialkarte verwendet bei jedem Start denselben Aufbau und denselben Startzustand.");
+        SetText("campaign-begin", generated ? "EXPEDITION BEGINNEN" : "TUTORIAL STARTEN");
+
         SetCampaignSelected("campaign-size-small", campaignPresetId == "small");
         SetCampaignSelected("campaign-size-medium", campaignPresetId == "medium");
         SetCampaignSelected("campaign-size-large", campaignPresetId == "large");
@@ -374,7 +408,6 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetCampaignSelected("campaign-settlement-wilderness", campaignSettlementId == "wilderness");
         SetCampaignSelected("campaign-settlement-balanced", campaignSettlementId == "balanced");
         SetCampaignSelected("campaign-settlement-dense", campaignSettlementId == "dense");
-        SetText("campaign-message", "Die Karte bleibt bis zum Aufbruch unbekannt.");
     }
 
     private void SetCampaignSelected(string elementName, bool selected)

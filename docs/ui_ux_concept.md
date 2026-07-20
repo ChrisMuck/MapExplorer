@@ -547,6 +547,16 @@ The MVP should support these conceptual UI modes:
 
 The implementation may be simple, but the modes should not be mixed into one confusing screen.
 
+Before Expedition Mode, the Unity start gate exposes a clearly labelled map-source switch:
+
+- **Tutorialkarte** starts the reproducible tutorial/test world. Generation controls are hidden.
+- **Generierte Karte** shows the existing preset-level generation controls.
+
+The selected source, explanatory text and start-button label must remain visible together. The
+tutorial choice is not a generated-map preview, and the generated choice must still hide world truth
+until departure. The current tutorial layout remains a fixed implementation fixture; its later
+hand-authored redesign requires a separate gameplay/design review.
+
 ---
 
 ## 14. Information Honesty
