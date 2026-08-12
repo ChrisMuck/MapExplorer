@@ -359,6 +359,17 @@ public enum GameMode
 }
 ```
 
+Before either runtime mode begins, the Unity start gate offers two world sources:
+
+- **Tutorial map:** creates the fixed, reproducible tutorial session through
+  `SimulationSession.CreateTutorial`.
+- **Generated map:** collects the existing player-facing generation presets and creates one unseen
+  world through `SimulationSession.CreateGenerated`.
+
+This is a presentation-level choice between two application entry points. It must not duplicate
+simulation rules in Unity, and selecting the tutorial must not pass through the procedural generator.
+The generated-map path still provides no preview, seed control or reroll in player mode.
+
 ### 6.2 Expedition Day Flow
 
 Each expedition turn represents one expedition day.

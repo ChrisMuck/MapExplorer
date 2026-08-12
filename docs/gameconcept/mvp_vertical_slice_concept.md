@@ -389,6 +389,12 @@ The first expedition should be capable but incomplete.
 
 It should discover something that requires a later better-prepared expedition.
 
+For development and playtesting, the Unity start gate may explicitly choose between this reproducible
+tutorial map and a newly generated map. The tutorial choice exists so individual systems and the
+intended learning sequence can be tested without first completing an arbitrary generated approach.
+Its terrain, routes, factions, locations and staged discoveries should ultimately be hand-authored as
+one coherent test journey; that layout is a separate human-reviewed design task.
+
 ### 24A.6 Suggested First Expedition Flow
 
 ### Day 1–2

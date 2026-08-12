@@ -44,6 +44,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private float activeZoomedOutSize;
     private GameState coreGameState;
     private WorldGenerationRequest generatedCampaignRequest;
+    private bool hasStartedCampaign;
     // Game.Core bounds require non-negative Q values. WorldGen axial coordinates are therefore
     // shifted in the bridge; presentation restores that shift before placing hexes.
     private int generatedCoreQOffset;
@@ -104,7 +105,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     };
 
     public GameState CurrentGameState => coreGameState;
-    public bool HasStartedCampaign => generatedCampaignRequest != null;
+    public bool HasStartedCampaign => hasStartedCampaign;
     public WorldGenerationPresetCatalog? WorldGenerationCatalog => gameDataCatalog.WorldGeneration;
 
     public string CurrentInteractionMessage => interactionMessage;
@@ -630,10 +631,23 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         generatedCampaignRequest = request;
+        hasStartedCampaign = true;
         generatedCoreQOffset = 0;
         useCoreTutorialState = true;
         Rebuild();
         interactionMessage = "Eine unbekannte Welt wurde vorbereitet. Die Expedition beginnt an der Küste.";
+        RefreshToolkitHud();
+    }
+
+    /// <summary>Starts the fixed, reproducible tutorial world through the same application session as normal play.</summary>
+    public void RequestStartTutorialCampaignFromUi()
+    {
+        generatedCampaignRequest = null;
+        hasStartedCampaign = true;
+        generatedCoreQOffset = 0;
+        useCoreTutorialState = true;
+        Rebuild();
+        interactionMessage = "Die Tutorialkarte wurde vorbereitet. Die Expedition beginnt an der Basis.";
         RefreshToolkitHud();
     }
 
