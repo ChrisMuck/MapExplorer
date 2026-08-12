@@ -23,6 +23,7 @@ Detailed systems are maintained in the linked specialist documents. AI coding ag
 - [`mvp_vertical_slice_concept.md`](mvp_vertical_slice_concept.md): goal system, MVP scope, required slice content and explicit non-goals
 - [`technical_design_notes_for_agents.md`](technical_design_notes_for_agents.md): design-level data structures and agent guidance
 - [`open_questions.md`](open_questions.md): only unresolved questions
+- [`../next_implementation_concept.md`](../next_implementation_concept.md): proposed next phase for the curated tutorial, content workflow and editor decision
 
 The former single-file concept is preserved as [`exploration_game_concept_full_updated.md`](exploration_game_concept_full_updated.md).
 
