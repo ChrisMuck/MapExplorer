@@ -85,6 +85,15 @@
 .bc-tab .ico { font-size: 12px; margin-right: 8px; opacity: 0.85; }
 .bc-tab.active { color: rgb(244, 237, 224); border-bottom-color: rgb(240, 207, 122); }
 
+/* ---------- Geführter Tutorial-Auftakt / Rückkehr ---------- */
+.tutorial-base-guide {
+    flex-shrink: 0; padding: 11px 20px 12px; flex-direction: row; align-items: baseline;
+    background-color: rgba(240, 207, 122, 0.08);
+    border-bottom-width: 1px; border-bottom-color: rgba(240, 207, 122, 0.24);
+}
+.tutorial-base-guide-title { flex-shrink: 0; color: rgb(240, 207, 122); font-size: 9px; letter-spacing: 1.6px; margin-right: 16px; }
+.tutorial-base-guide-body { flex-grow: 1; color: rgb(220, 214, 199); font-size: 12px; white-space: normal; }
+
 /* ---------- Body / Sektionen ---------- */
 .bc-body { flex-grow: 1; }
 .bc-section { display: none; flex-grow: 1; }

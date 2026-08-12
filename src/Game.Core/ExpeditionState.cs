@@ -26,9 +26,12 @@ public sealed class ExpeditionState
         ExpeditionStatus status = ExpeditionStatus.Active,
         int unsecuredKnowledge = 0)
     {
-        if (expeditionNumber < 1)
+        // Number zero represents the base-preparation placeholder before the campaign's first
+        // departure. It is never an active expedition and lets the normal start command create
+        // Expedition 1 without inventing a completed predecessor.
+        if (expeditionNumber < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(expeditionNumber), expeditionNumber, "Expedition number must be at least 1.");
+            throw new ArgumentOutOfRangeException(nameof(expeditionNumber), expeditionNumber, "Expedition number must not be negative.");
         }
 
         if (expeditionDay < 1)

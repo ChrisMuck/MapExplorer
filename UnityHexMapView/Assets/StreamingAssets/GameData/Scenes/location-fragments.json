@@ -29,6 +29,9 @@
     { "id": "frag-loc-investigation-op-sealed", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["sealed"] }, "textId": "scene.fragment.investigation.operational.sealed" },
     { "id": "frag-loc-investigation-op-open", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["open"] }, "textId": "scene.fragment.investigation.operational.open" },
     { "id": "frag-loc-investigation-op-disturbed", "group": "operational-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownOperationalStatesAny": ["disturbed"] }, "textId": "scene.fragment.investigation.operational.disturbed" },
+    { "id": "frag-loc-camp-op-none", "group": "operational-state", "appliesTo": { "variantIds": ["abandoned-camp"] }, "when": { "knownOperationalStatesAny": ["none"] }, "textId": "scene.fragment.camp.operational.none" },
+    { "id": "frag-loc-camp-op-cleared", "group": "operational-state", "appliesTo": { "variantIds": ["abandoned-camp"] }, "when": { "knownOperationalStatesAny": ["cleared"] }, "textId": "scene.fragment.camp.operational.cleared" },
+    { "id": "frag-loc-camp-op-unsafe", "group": "operational-state", "appliesTo": { "variantIds": ["abandoned-camp"] }, "when": { "knownOperationalStatesAny": ["unsafe"] }, "textId": "scene.fragment.camp.operational.unsafe" },
 
     { "id": "frag-loc-marker-op-standing", "group": "operational-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownOperationalStatesAny": ["standing"] }, "textId": "scene.fragment.marker.operational.standing" },
     { "id": "frag-loc-marker-op-respected", "group": "operational-state", "appliesTo": { "archetypeIds": ["territorial-marker"] }, "when": { "knownOperationalStatesAny": ["respected"] }, "textId": "scene.fragment.marker.operational.respected" },
@@ -59,6 +62,7 @@
     { "id": "frag-loc-presence-present", "group": "presence-state", "appliesTo": { "archetypeIds": ["contact-site"] }, "when": { "knownPresenceStatesAny": ["present"] }, "textId": "scene.fragment.presence.present" },
     { "id": "frag-loc-presence-empty", "group": "presence-state", "appliesTo": { "archetypeIds": ["investigation-site"] }, "when": { "knownPresenceStatesAny": ["empty"] }, "textId": "scene.fragment.presence.empty" },
     { "id": "frag-loc-presence-spreading", "group": "presence-state", "appliesTo": { "archetypeIds": ["hazard-site"] }, "when": { "knownPresenceStatesAny": ["spreading"] }, "textId": "scene.fragment.presence.spreading" },
+    { "id": "frag-loc-camp-presence-recent", "group": "presence-state", "appliesTo": { "variantIds": ["abandoned-camp"] }, "when": { "knownPresenceStatesAny": ["recently-used"] }, "textId": "scene.fragment.camp.presence.recent" },
 
     { "id": "frag-loc-interaction-untouched", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["untouched", "unapproached"] }, "textId": "scene.fragment.interaction.untouched" },
     { "id": "frag-loc-interaction-inspected", "group": "interaction-state", "when": { "knownInteractionStatesAny": ["inspected"] }, "textId": "scene.fragment.interaction.inspected" },

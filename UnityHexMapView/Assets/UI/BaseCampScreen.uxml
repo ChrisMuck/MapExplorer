@@ -59,6 +59,11 @@
                 </ui:VisualElement>
             </ui:VisualElement>
 
+            <ui:VisualElement name="tutorial-base-guide" class="tutorial-base-guide" style="display: none;">
+                <ui:Label name="tutorial-base-guide-title" text="BASISNOTIZ" class="tutorial-base-guide-title mono" />
+                <ui:Label name="tutorial-base-guide-body" text="" class="tutorial-base-guide-body" />
+            </ui:VisualElement>
+
             <!-- ======================= BODY ======================= -->
             <ui:VisualElement class="bc-body">
 
@@ -334,6 +339,7 @@
                             <ui:VisualElement class="auswerter">
                                 <ui:Label text="◆" class="ico" /><ui:Label text="Auswerter belegt" /><ui:VisualElement class="bc-spacer" /><ui:Label name="auswerter-info" text="2/3" class="mono" style="color: rgb(244,237,224);" />
                             </ui:VisualElement>
+                            <ui:Label name="knowledge-advance-time" text="Einen Tag für die Auswertung vergehen lassen" class="up-btn up-btn--go" style="margin-top: 12px; display: none;" />
                         </ui:VisualElement>
                         <ui:ScrollView name="queue-scroll" class="queue-scroll">
                             <ui:VisualElement class="queue-card queue-card--ready">

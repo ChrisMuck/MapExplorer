@@ -33,7 +33,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         "Übermütig", "Langsam", "Wortkarg", "Sturköpfig", "Berechnend", "Zerstreut", "Narbig", "Kränklich"
     };
 
-    private const int TeamCap = 6;
+    private const int DefaultTeamCap = 6;
 
     // Mirror of StartNewExpeditionCommand's base budgets so the UI preview matches the command's clamping.
     private const int RationBudget = 40;
@@ -100,6 +100,7 @@ public sealed class BaseCampScreenController : MonoBehaviour
         Click("btn-engineer", () => SendBaseAction(BaseActionKind.RequestEngineer));
         Click("btn-prepare-supplies", PrepareSupplies);
         Click("btn-advance-time", AdvanceTime);
+        Click("knowledge-advance-time", AdvanceTime);
         Click("btn-ready", StartExpedition);
         Click("rations-dec", () => StepRations(-1));
         Click("rations-inc", () => StepRations(1));
@@ -161,6 +162,11 @@ public sealed class BaseCampScreenController : MonoBehaviour
         {
             Open();
             return;
+        }
+
+        if (mapView != null && mapView.IsTutorialCampaign && result.ExpeditionNumber == 1)
+        {
+            openTab = "wissen";
         }
 
         Open();
@@ -277,6 +283,36 @@ public sealed class BaseCampScreenController : MonoBehaviour
         BuildWissen(state);
         BuildFactions(state);
         BuildArchive(state);
+        RefreshTutorialBaseGuide(state);
+    }
+
+    private int TeamCap => mapView != null && mapView.IsTutorialCampaign &&
+        mapView.CurrentGameState?.Expedition.ExpeditionNumber == 0
+            ? 8
+            : DefaultTeamCap;
+
+    private void RefreshTutorialBaseGuide(GameState state)
+    {
+        var isInitialPreparation = mapView.IsTutorialCampaign && state.Expedition.ExpeditionNumber == 0;
+        var isFirstReturn = mapView.IsTutorialCampaign && state.Expedition.ExpeditionNumber == 1 &&
+            state.Expedition.Status == ExpeditionStatus.Returned;
+        var guide = root.Q<VisualElement>("tutorial-base-guide");
+        if (guide == null)
+        {
+            return;
+        }
+
+        guide.style.display = isInitialPreparation || isFirstReturn ? DisplayStyle.Flex : DisplayStyle.None;
+        if (guide.style.display == DisplayStyle.None)
+        {
+            return;
+        }
+
+        SetText("tutorial-base-guide-title", mapView.ResolveGameTextForUi("tutorial.base-guide.title", "BASISNOTIZ"));
+        var textId = isInitialPreparation
+            ? openTab == "aufbruch" ? "tutorial.base-guide.departure" : "tutorial.base-guide.team"
+            : "tutorial.base-guide.return";
+        SetText("tutorial-base-guide-body", mapView.ResolveGameTextForUi(textId, string.Empty));
     }
 
     // ---------------------------------------------------------------- team
@@ -797,6 +833,11 @@ public sealed class BaseCampScreenController : MonoBehaviour
         }
 
         SetText("auswerter-info", $"{inProgress.Count}/{queue.EvaluatorCapacity}");
+        var advance = root.Q<Label>("knowledge-advance-time");
+        if (advance != null)
+        {
+            advance.style.display = pending.Any(item => !item.IsReady) ? DisplayStyle.Flex : DisplayStyle.None;
+        }
 
         var queueScroll = root.Q<ScrollView>("queue-scroll");
         if (queueScroll != null)

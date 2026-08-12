@@ -48,6 +48,27 @@
       "connectionTags": ["burial-custom", "boundary-signature"]
     },
     {
+      "id": "scenario-abandoned-camp",
+      "archetypeId": "investigation-site",
+      "variantId": "abandoned-camp",
+      "stateProfileId": "state-abandoned-camp",
+      "contentProfileId": "content-abandoned-camp",
+      "worldgen": { "anchorKinds": ["Point"], "terrainTagsAny": ["old-route", "camp"], "initialModifierPoolIds": ["modifier-searchable", "modifier-campable", "modifier-weather-damaged"], "claimEligibility": "never" },
+      "actionSet": {
+        "sharedActionIds": ["action-inspect", "action-mark", "action-leave"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          { "whenInteractionStatesAny": ["inspected"], "addActionIds": ["action-document", "action-search", "action-investigate"] }
+        ]
+      },
+      "evidencePoolIds": ["evidence-old-structure"],
+      "findingPoolIds": ["finding-abandoned-survey-record"],
+      "consequencePoolIds": [],
+      "connectionTags": ["old-survey", "old-trade-route", "damaged-crossing"]
+    },
+    {
       "id": "scenario-border-warning",
       "archetypeId": "territorial-marker",
       "variantId": "border-warning-sign",

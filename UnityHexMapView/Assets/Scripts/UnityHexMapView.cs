@@ -106,7 +106,20 @@ public sealed class UnityHexMapView : MonoBehaviour
 
     public GameState CurrentGameState => coreGameState;
     public bool HasStartedCampaign => hasStartedCampaign;
+    /// <summary>Presentation-only source marker for the fixed curated campaign.</summary>
+    public bool IsTutorialCampaign => hasStartedCampaign && generatedCampaignRequest == null;
     public WorldGenerationPresetCatalog? WorldGenerationCatalog => gameDataCatalog.WorldGeneration;
+
+    /// <summary>Resolves player-facing authored text for UI-only notices without exposing world state.</summary>
+    public string ResolveGameTextForUi(string textId, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(textId))
+        {
+            return fallback ?? string.Empty;
+        }
+
+        return gameDataCatalog.Scenes.Texts.Resolve(textId, "de") ?? fallback ?? string.Empty;
+    }
 
     public string CurrentInteractionMessage => interactionMessage;
 
@@ -649,6 +662,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         Rebuild();
         interactionMessage = "Die Tutorialkarte wurde vorbereitet. Die Expedition beginnt an der Basis.";
         RefreshToolkitHud();
+        RequestOpenBaseCampFromUi();
     }
 
     public LocationInteractionQueryResult GetLocationInteractionForUi(string locationId)

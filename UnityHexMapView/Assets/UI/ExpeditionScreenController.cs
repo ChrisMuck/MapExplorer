@@ -233,6 +233,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         }
 
         RefreshSelectedField(state);
+        RefreshTutorialBrief(state);
         RefreshAlert(state);
         RefreshReport(state);
         RefreshActionBar(state);
@@ -692,6 +693,31 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         SetText("selected-sign-1", markers.Count > 0 ? markers[markers.Count - 1].Label : "Keine Marker");
         SetText("selected-sign-2", mapView.CurrentInteractionMessage);
         SetText("selected-note", notes.Count > 0 ? $"„{notes[notes.Count - 1].Text}”" : "„Noch keine Notiz für dieses Feld.”");
+    }
+
+    /// <summary>
+    /// A compact field note keeps the curated campaign legible without a target marker, mandate
+    /// tracker or access to unconfirmed locations. The text is authored localization content and
+    /// only branches on the already visible expedition number.
+    /// </summary>
+    private void RefreshTutorialBrief(GameState state)
+    {
+        var visible = mapView != null && mapView.IsTutorialCampaign &&
+            state != null && state.Expedition.Status == ExpeditionStatus.Active;
+        SetDisplay("tutorial-brief-card", visible);
+        if (!visible)
+        {
+            return;
+        }
+
+        var secondExpedition = state.Expedition.ExpeditionNumber >= 2;
+        SetText("tutorial-brief-title", mapView.ResolveGameTextForUi(
+            "tutorial.field-brief.title", "FELDNOTIZ"));
+        SetText("tutorial-brief-body", mapView.ResolveGameTextForUi(
+            secondExpedition ? "tutorial.field-brief.second-expedition" : "tutorial.field-brief.first-expedition",
+            secondExpedition
+                ? "Nutze die gesicherten Aufzeichnungen, prüfe den alten Weg erneut und entscheide vor Ort, was sich verantwortbar verändern lässt."
+                : "Folge den sichtbaren Spuren der alten Handelsstraße vorsichtig. Sichere Hinweise, aber kehre mit Aufzeichnungen zurück, bevor die Lage dich dazu zwingt."));
     }
 
     private void RefreshSelectedLocation(SpecialLocationState location, KnowledgeLevel knowledge, LostExpeditionRecord lostExpedition, HexCoord coord)
