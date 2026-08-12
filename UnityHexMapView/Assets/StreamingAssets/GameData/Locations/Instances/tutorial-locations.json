@@ -1,0 +1,75 @@
+{
+  "documentType": "location-instances",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "coastal-landing",
+      "name": "Uferzeichen",
+      "locationKind": "Settlement",
+      "archetypeId": "contact-site",
+      "variantId": "first-contact",
+      "anchor": { "kind": "Point", "hexes": [[8, 15]] },
+      "modifierIds": ["modifier-invitation", "modifier-guarded"],
+      "contentProfileId": "content-first-contact",
+      "initialState": { "interaction": "unapproached", "operational": "available", "presence": "present" }
+    },
+    {
+      "id": "broken-ravine",
+      "name": "Zerstoerte Bruecke",
+      "locationKind": "BrokenRavine",
+      "archetypeId": "route-obstacle",
+      "variantId": "broken-bridge",
+      "anchor": { "kind": "Edge", "hexes": [[16, 17], [17, 17]] },
+      "modifierIds": ["modifier-repairable", "modifier-unstable", "modifier-watched"],
+      "contentProfileId": "content-old-trade-road-bridge",
+      "initialState": { "interaction": "untouched", "operational": "blocked", "presence": "watched" }
+    },
+    {
+      "id": "marked-grave",
+      "name": "Markiertes Grab",
+      "locationKind": "MarkedGrave",
+      "archetypeId": "investigation-site",
+      "variantId": "marked-grave",
+      "anchor": { "kind": "Point", "hexes": [[12, 18]] },
+      "modifierIds": ["modifier-sacred", "modifier-faction-owned"],
+      "factionIds": ["border-wardens"],
+      "contentProfileId": "content-marked-grave",
+      "initialState": { "interaction": "untouched", "operational": "sealed", "presence": "empty" }
+    },
+    {
+      "id": "abandoned-camp",
+      "name": "Verlassenes Lager",
+      "locationKind": "AbandonedCamp",
+      "archetypeId": "investigation-site",
+      "variantId": "abandoned-camp",
+      "anchor": { "kind": "Point", "hexes": [[14, 17]] },
+      "modifierIds": ["modifier-searchable", "modifier-campable"],
+      "contentProfileId": "content-abandoned-camp",
+      "initialState": { "interaction": "untouched", "operational": "none", "presence": "abandoned" }
+    },
+    {
+      "id": "border-warning",
+      "name": "Grenzwarnung",
+      "locationKind": "Landmark",
+      "archetypeId": "territorial-marker",
+      "variantId": "border-warning-sign",
+      "anchor": { "kind": "Point", "hexes": [[12, 16]] },
+      "modifierIds": ["modifier-faction-owned", "modifier-watched"],
+      "factionIds": ["border-wardens"],
+      "contentProfileId": "content-border-warning",
+      "initialState": { "interaction": "untouched", "operational": "standing", "presence": "watched" }
+    },
+    {
+      "id": "sealed-gate",
+      "name": "Versiegeltes Tor",
+      "locationKind": "Ruin",
+      "archetypeId": "containment-site",
+      "variantId": "sealed-gate",
+      "anchor": { "kind": "Point", "hexes": [[24, 13]] },
+      "modifierIds": ["modifier-sealed", "modifier-guarded"],
+      "contentProfileId": "content-sealed-gate",
+      "initialState": { "interaction": "untouched", "operational": "sealed", "presence": "unknown" }
+    }
+  ]
+}

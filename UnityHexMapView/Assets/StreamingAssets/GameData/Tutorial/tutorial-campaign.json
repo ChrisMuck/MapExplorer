@@ -1,0 +1,36 @@
+{
+  "documentType": "tutorial-campaign",
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "items": [
+    {
+      "id": "tutorial-coastal-survey",
+      "locationRelations": [
+        {
+          "locationId": "coastal-landing",
+          "factionId": "coastal-people",
+          "kind": "Guarded",
+          "contextTags": ["direct-contact", "coastal-route"]
+        },
+        {
+          "locationId": "marked-grave",
+          "factionId": "border-wardens",
+          "kind": "Sacred",
+          "contextTags": ["boundary-signature", "protected-remains"]
+        },
+        {
+          "locationId": "border-warning",
+          "factionId": "border-wardens",
+          "kind": "Watched",
+          "contextTags": ["boundary-signature", "watched-route"]
+        },
+        {
+          "locationId": "broken-ravine",
+          "factionId": "border-wardens",
+          "kind": "Watched",
+          "contextTags": ["old-trade-route"]
+        }
+      ]
+    }
+  ]
+}

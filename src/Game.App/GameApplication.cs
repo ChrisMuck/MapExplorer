@@ -151,7 +151,17 @@ public sealed class GameApplication
 
     public GameState CreateTutorialGame()
     {
-        return TutorialGameFactory.Create(locationInstances);
+        return TutorialGameFactory.Create(locationInstances, DataCatalog?.Tutorial);
+    }
+
+    /// <summary>
+    /// Creates the player-facing tutorial entry state before Expedition 1 has departed. The
+    /// simulation session uses this entry point; the active fixture above remains available for
+    /// focused command tests and developer scenarios.
+    /// </summary>
+    public GameState CreateTutorialBasePreparationGame()
+    {
+        return TutorialGameFactory.CreateAtBasePreparation(locationInstances, DataCatalog?.Tutorial);
     }
 
     /// <summary>Starts a campaign from an unseen generated world. Player-facing generation UI belongs in Unity.</summary>

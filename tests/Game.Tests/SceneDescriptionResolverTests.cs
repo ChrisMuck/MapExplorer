@@ -21,8 +21,9 @@ internal sealed class SceneDescriptionResolverTests
         var app = new GameApplication(LoadCatalog());
         var game = app.CreateTutorialGame();
         var location = game.World.Locations.Single(item => item.Id == "broken-ravine");
+        game.Expedition.SetPosition(new HexCoord(15, 17));
 
-        var movement = app.MoveExpedition(game, new HexCoord(2, 15));
+        var movement = app.MoveExpedition(game, location.Anchor.Coords[0]);
 
         AssertTrue(movement.Success, "Movement to a location anchor succeeds");
         AssertEqual(1, movement.ArrivalScenes.Count, "Movement returns one scene for the reached location anchor");
@@ -76,6 +77,7 @@ internal sealed class SceneDescriptionResolverTests
         var app = new GameApplication(catalog);
         var game = app.CreateTutorialGame();
         var location = game.World.Locations.Single(item => item.Id == "broken-ravine");
+        game.Expedition.SetPosition(location.Anchor.Coords[0]);
         new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, location.Coord);
         var inspection = app.InspectLocation(game, location.Coord);
         AssertTrue(inspection.Success, "Location inspection establishes a stored observation");

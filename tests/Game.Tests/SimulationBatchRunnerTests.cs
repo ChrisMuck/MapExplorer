@@ -26,7 +26,7 @@ internal sealed class SimulationBatchRunnerTests
         AssertEqual(3, first.GeneratedWorlds.Count, "Batch creates every requested deterministic generated world");
         AssertEqual(ProofScenarios().Count, first.Scenarios.Count, "Batch includes all proof scenarios");
         AssertTrue(first.Scenarios.All(result => result.Success), "All proof scenarios pass through the batch runner");
-        AssertEqual(7, catalog.Authoring.ScenarioProfiles.Count, "Batch release gates cover all seven initial archetype profiles");
+        AssertEqual(8, catalog.Authoring.ScenarioProfiles.Count, "Batch release gates cover the added legacy-camp scenario profile");
         AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.MissingStateChangeFollowUp), "State-changing scenario actions retain a follow-up choice");
         AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.MissingLeaveOrDeferChoice), "Every archetype path retains a generic leave, mark or defer choice");
         AssertTrue(!first.Issues.Any(issue => issue.Kind == SimulationBatchIssueKind.SpecialistGateDeadEnd), "Specialist gates retain a safe alternative");

@@ -98,6 +98,11 @@ public sealed class GameDataCatalog
         "visual-assets"
     };
 
+    private static readonly HashSet<string> TutorialDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "tutorial-campaign"
+    };
+
     private static readonly string[] RequiredManifestDocumentTypes =
     {
         "location-archetypes",
@@ -131,7 +136,8 @@ public sealed class GameDataCatalog
         "contact-presentation-profiles",
         "visual-assets",
         "world-generation-presets",
-        "world-generation-option-presets"
+        "world-generation-option-presets",
+        "tutorial-campaign"
     };
 
     private readonly List<GameDataDocumentInfo> documents;
@@ -146,6 +152,7 @@ public sealed class GameDataCatalog
         SceneDescriptionCatalog scenes,
         VisualAssetCatalog visualAssets,
         WorldGenerationPresetCatalog worldGeneration,
+        TutorialCampaignDefinition tutorial,
         IEnumerable<GameDataDocumentInfo> documents)
     {
         RootPath = RequireText(rootPath, nameof(rootPath));
@@ -157,6 +164,7 @@ public sealed class GameDataCatalog
         Scenes = scenes ?? throw new ArgumentNullException(nameof(scenes));
         VisualAssets = visualAssets ?? throw new ArgumentNullException(nameof(visualAssets));
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
+        Tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
     }
 
@@ -172,6 +180,8 @@ public sealed class GameDataCatalog
     /// <summary>Stable presentation-only visual IDs with safe fallback definitions.</summary>
     public VisualAssetCatalog VisualAssets { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
+    /// <summary>Validated deterministic composition of the curated tutorial world.</summary>
+    public TutorialCampaignDefinition Tutorial { get; }
     public IReadOnlyList<GameDataDocumentInfo> Documents => documents;
 
     /// <summary>
@@ -212,6 +222,7 @@ public sealed class GameDataCatalog
         var worldGenerationDocuments = sources.Where(source => WorldGenerationDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var sceneDocuments = sources.Where(source => SceneDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var visualDocuments = sources.Where(source => VisualDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
+        var tutorialDocuments = sources.Where(source => TutorialDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
 
         var unsupported = sources
             .Where(source => !LocationDocumentTypes.Contains(source.DocumentType)
@@ -219,7 +230,8 @@ public sealed class GameDataCatalog
                 && !TargetAuthoringDocumentTypes.Contains(source.DocumentType)
                 && !WorldGenerationDocumentTypes.Contains(source.DocumentType)
                 && !SceneDocumentTypes.Contains(source.DocumentType)
-                && !VisualDocumentTypes.Contains(source.DocumentType))
+                && !VisualDocumentTypes.Contains(source.DocumentType)
+                && !TutorialDocumentTypes.Contains(source.DocumentType))
             .Select(source => $"{source.RelativePath} ({source.DocumentType})")
             .ToList();
         if (unsupported.Count > 0)
@@ -227,7 +239,7 @@ public sealed class GameDataCatalog
             throw new LocationDataException("Game-data catalog contains unsupported document types: " + string.Join(", ", unsupported) + ".");
         }
 
-        if (locationDocuments.Count == 0 || crossSystemDocuments.Count == 0 || worldGenerationDocuments.Count == 0 || sceneDocuments.Count == 0 || visualDocuments.Count == 0)
+        if (locationDocuments.Count == 0 || crossSystemDocuments.Count == 0 || worldGenerationDocuments.Count == 0 || sceneDocuments.Count == 0 || visualDocuments.Count == 0 || tutorialDocuments.Count == 0)
         {
             throw new LocationDataException("Game-data catalog requires location, cross-system, scene and world-generation document groups.");
         }
@@ -242,6 +254,7 @@ public sealed class GameDataCatalog
             var visualAssets = VisualAssetDataLoader.LoadFromJson(visualDocuments);
             SceneDescriptionContentValidator.ValidateReferences(scenes, locations, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
+            var tutorial = TutorialCampaignDataLoader.LoadFromJson(tutorialDocuments, locations);
             return new GameDataCatalog(
                 rootPath,
                 usesManifest,
@@ -252,6 +265,7 @@ public sealed class GameDataCatalog
                 scenes,
                 visualAssets,
                 worldGeneration,
+                tutorial,
                 sources.Select(source => new GameDataDocumentInfo(source.RelativePath, source.DocumentType, source.SchemaVersion)));
         }
         catch (LocationDataException)

@@ -165,7 +165,12 @@ public sealed class BaseState
 
     public bool CanStartNextExpedition(int currentWorldDay)
     {
-        return LastExpeditionOutcome.HasValue && currentWorldDay >= NextExpeditionAvailableWorldDay;
+        // A campaign may be in its initial base-preparation state before Expedition 1 exists.
+        // Later departures still require the normal returned/lost outcome and its scheduled date.
+        return currentWorldDay >= NextExpeditionAvailableWorldDay &&
+            (!LastExpeditionOutcome.HasValue ||
+             LastExpeditionOutcome == ExpeditionStatus.Returned ||
+             LastExpeditionOutcome == ExpeditionStatus.Lost);
     }
 }
 }

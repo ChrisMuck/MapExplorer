@@ -5,6 +5,7 @@ Status: **Proposed — owner review required before implementation**
 Related documents:
 
 - `gameconcept/exploration_game_concept.md`
+- `tutorial_vertical_slice_route_spec.md`
 - `gameconcept/mvp_vertical_slice_concept.md`
 - `gameconcept/cross_system_integration_concept.md`
 - `gameconcept/situational_scene_description_concept.md`

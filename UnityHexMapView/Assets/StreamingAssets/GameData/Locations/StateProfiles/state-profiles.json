@@ -22,6 +22,15 @@
       }
     },
     {
+      "id": "state-abandoned-camp",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "none", "values": ["none", "cleared", "unsafe"] },
+        "presence": { "initial": "abandoned", "values": ["abandoned", "recently-used", "watched"] }
+      }
+    },
+    {
       "id": "state-border-warning",
       "archetypeId": "territorial-marker",
       "channels": {

@@ -79,6 +79,8 @@ var crossSystemContentValidationTests = new CrossSystemContentValidationTests();
 crossSystemContentValidationTests.RunAll();
 var gameDataCatalogTests = new GameDataCatalogTests();
 gameDataCatalogTests.RunAll();
+var tutorialVerticalSliceTests = new TutorialVerticalSliceTests();
+tutorialVerticalSliceTests.RunAll();
 var sceneDescriptionDataTests = new SceneDescriptionDataTests();
 sceneDescriptionDataTests.RunAll();
 var sceneDescriptionResolverTests = new SceneDescriptionResolverTests();
@@ -632,6 +634,7 @@ internal sealed class GameStateTests
     {
         TutorialGameInitializesSeparatedStateRoots();
         TutorialExpeditionHasExpectedStartingTeam();
+        TutorialPlayerSessionStartsAtBasePreparation();
         TutorialMapContainsBiomeVariety();
         TutorialWorldContainsPathsAndLocations();
         KnowledgeDoesNotExposeWorldTruthAutomatically();
@@ -667,6 +670,17 @@ internal sealed class GameStateTests
         AssertEqual(20, game.Expedition.Supplies, "Starting supplies");
         AssertEqual(3, game.Expedition.Medicine, "Starting medicine");
         AssertEqual(70, game.Expedition.Morale, "Starting morale");
+    }
+
+    private static void TutorialPlayerSessionStartsAtBasePreparation()
+    {
+        var game = new GameApplication().CreateTutorialBasePreparationGame();
+
+        AssertEqual(0, game.Expedition.ExpeditionNumber, "Tutorial player session waits for the first departure");
+        AssertEqual(ExpeditionStatus.Returned, game.Expedition.Status, "Tutorial player session starts in base preparation");
+        AssertEqual(0, game.Expedition.Members.Count, "No expedition team exists before the player chooses it");
+        AssertTrue(game.Roster.Members.All(member => member.IsAvailable), "The opening team screen offers the full rested tutorial roster");
+        AssertTrue(game.Base.CanStartNextExpedition(game.World.WorldDay), "The first departure is available without a fictitious returned expedition");
     }
 
     private static void TutorialMapContainsBiomeVariety()
@@ -1701,8 +1715,8 @@ internal sealed class LocationInteractionFrameworkTests
 {
     public void RunAll()
     {
-        TutorialBridgeIsImmediateEdgeLocation();
-        TutorialBridgeTileIsMovableFromBase();
+        TutorialBridgeIsRouteEdgeLocation();
+        TutorialBridgeTileIsMovableFromRoute();
         TutorialBridgeBlocksForwardRouteUntilBypassOpensIt();
         BridgeActionsComeFromScenarioProfileAndModifiers();
         LocationActionCostsLockWhenMovementIsMissing();
@@ -1712,28 +1726,32 @@ internal sealed class LocationInteractionFrameworkTests
         MarkedGraveUsesSameInteractionFramework();
     }
 
-    private static void TutorialBridgeIsImmediateEdgeLocation()
+    private static void TutorialBridgeIsRouteEdgeLocation()
     {
         var game = TutorialGameFactory.Create();
         var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
 
-        AssertEqual(new HexCoord(2, 15), bridge.Coord, "Bridge sits on first field after base");
+        AssertEqual(new HexCoord(17, 17), bridge.Coord, "Bridge sits beyond the tutorial's warning and legacy beats");
         AssertEqual(LocationAnchorKind.Edge, bridge.Anchor.Kind, "Bridge uses edge anchor");
-        AssertEqual(new HexCoord(2, 15), bridge.Anchor.Coords[0], "Bridge edge starts at bridge field");
-        AssertEqual(new HexCoord(3, 15), bridge.Anchor.Coords[1], "Bridge edge ends at field beyond bridge");
-        AssertEqual("broken-ravine", game.World.Map.GetTile(new HexCoord(2, 15)).LocationId, "First field points to bridge location");
+        AssertEqual(new HexCoord(16, 17), bridge.Anchor.Coords[0], "Bridge edge starts on the old survey route");
+        AssertEqual(new HexCoord(17, 17), bridge.Anchor.Coords[1], "Bridge edge ends beyond the ravine");
+        AssertEqual("broken-ravine", game.World.Map.GetTile(bridge.Anchor.Coords[0]).LocationId, "First bridge edge field points to bridge location");
+        AssertTrue(game.Base.Location.DistanceTo(bridge.Coord) >= 15, "Bridge is not an immediate base-adjacent tutorial obstacle");
     }
 
-    private static void TutorialBridgeTileIsMovableFromBase()
+    private static void TutorialBridgeTileIsMovableFromRoute()
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        var approach = new HexCoord(15, 17);
+        game.Expedition.SetPosition(approach);
 
-        var move = app.MoveExpedition(game, new HexCoord(2, 15));
+        var move = app.MoveExpedition(game, bridge.Anchor.Coords[0]);
         var interaction = app.GetLocationInteraction(game, "broken-ravine");
 
-        AssertTrue(move.Success, "Expedition can move from base to bridge field");
-        AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Expedition reaches bridge test field");
+        AssertTrue(move.Success, "Expedition can move from the old route to the bridge field");
+        AssertEqual(bridge.Anchor.Coords[0], game.Expedition.Position, "Expedition reaches bridge test field");
         AssertTrue(interaction.Success, "Bridge interaction is available after arrival");
         AssertTrue(interaction.Interaction != null && interaction.Interaction.Options.Count > 0, "Bridge interaction has actions after arrival");
     }
@@ -1742,13 +1760,15 @@ internal sealed class LocationInteractionFrameworkTests
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(new HexCoord(15, 17));
 
-        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        var arrival = app.MoveExpedition(game, bridge.Anchor.Coords[0]);
         AssertTrue(arrival.Success, "Expedition reaches bridge field");
 
-        var blocked = app.MoveExpedition(game, new HexCoord(3, 15));
+        var blocked = app.MoveExpedition(game, bridge.Anchor.Coords[1]);
         AssertFalse(blocked.Success, "Blocked bridge edge rejects forward map movement");
-        AssertEqual(new HexCoord(2, 15), game.Expedition.Position, "Blocked movement keeps position");
+        AssertEqual(bridge.Anchor.Coords[0], game.Expedition.Position, "Blocked movement keeps position");
 
         var beforeBypassMovement = game.Expedition.MovementPoints;
         var bypass = app.ResolveLocationAction(game, "broken-ravine", LocationInteractionContent.ActionFindBypass, LocationOutcomeTier.Success);
@@ -1756,7 +1776,7 @@ internal sealed class LocationInteractionFrameworkTests
         AssertEqual(beforeBypassMovement - 1, game.Expedition.MovementPoints, "Bypass spends declared movement cost");
         AssertTrue(game.World.Paths.Any(path => path.Id == "route-opened-broken-ravine"), "Bypass success opens a route over the blocked edge");
 
-        var opened = app.MoveExpedition(game, new HexCoord(3, 15));
+        var opened = app.MoveExpedition(game, bridge.Anchor.Coords[1]);
         AssertTrue(opened.Success, "Opened bypass allows forward movement");
     }
 
@@ -1788,7 +1808,9 @@ internal sealed class LocationInteractionFrameworkTests
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
-        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(new HexCoord(15, 17));
+        var arrival = app.MoveExpedition(game, bridge.Anchor.Coords[0]);
         AssertTrue(arrival.Success, "Expedition reaches bridge field");
         game.SetExpedition(new ExpeditionState(
             game.Expedition.ExpeditionNumber,
@@ -1816,7 +1838,9 @@ internal sealed class LocationInteractionFrameworkTests
     {
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
-        var arrival = app.MoveExpedition(game, new HexCoord(2, 15));
+        var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(new HexCoord(15, 17));
+        var arrival = app.MoveExpedition(game, bridge.Anchor.Coords[0]);
         AssertTrue(arrival.Success, "Expedition reaches bridge field");
 
         var beforeCrossingMovement = game.Expedition.MovementPoints;
@@ -1824,7 +1848,7 @@ internal sealed class LocationInteractionFrameworkTests
 
         AssertTrue(crossing.Success, "Crossing action resolves");
         AssertTrue(crossing.ExpeditionMoved, "Crossing result reports expedition movement");
-        AssertEqual(new HexCoord(3, 15), game.Expedition.Position, "Crossing moves expedition to the far side");
+        AssertEqual(bridge.Anchor.Coords[1], game.Expedition.Position, "Crossing moves expedition to the far side");
         AssertEqual(beforeCrossingMovement - 1, game.Expedition.MovementPoints, "Crossing spends declared movement cost");
     }
 
@@ -1833,6 +1857,7 @@ internal sealed class LocationInteractionFrameworkTests
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
         var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(bridge.Anchor.Coords[0]);
         new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
 
         var before = app.GetLocationInteraction(game, bridge.Id).Interaction;
@@ -1863,6 +1888,7 @@ internal sealed class LocationInteractionFrameworkTests
         var game = TutorialGameFactory.Create();
         var app = new GameApplication();
         var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(bridge.Anchor.Coords[0]);
         new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
 
         var withoutEngineer = app.GetLocationInteraction(game, bridge.Id).Interaction?.FindOption(LocationInteractionContent.ActionRebuildBridge);
@@ -2087,6 +2113,7 @@ internal sealed class LocationDataJsonTests
         var app = new GameApplication();
         var game = app.CreateTutorialGame();
         var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(bridge.Anchor.Coords[0]);
         new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
 
         var once = app.ResolveLocationAction(game, bridge.Id, "action-assess-crossing", LocationOutcomeTier.Success);
@@ -2112,6 +2139,7 @@ internal sealed class LocationDataJsonTests
         var app = new GameApplication();
         var game = app.CreateTutorialGame();
         var bridge = game.World.Locations.First(location => location.Id == "broken-ravine");
+        game.Expedition.SetPosition(bridge.Anchor.Coords[0]);
         new KnowledgeService().RevealFromExpedition(game.World.Map, game.Knowledge, bridge.Coord);
 
         var before = game.Expedition.Members.Count(member => member.Status == ExpeditionMemberStatus.Injured);

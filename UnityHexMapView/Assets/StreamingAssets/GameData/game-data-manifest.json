@@ -1,11 +1,12 @@
 {
   "documentType": "game-data-manifest",
   "schemaVersion": 1,
-  "contentVersion": 3,
+  "contentVersion": 4,
   "documents": [
     "Locations/Actions/actions.json",
     "Locations/Archetypes/archetypes.json",
     "Locations/ContentProfiles/content-profiles.json",
+    "Locations/Instances/tutorial-locations.json",
     "Locations/Modifiers/modifiers.json",
     "Locations/OutcomeTables/outcome-tables.json",
     "Locations/ScenarioProfiles/scenario-profiles.json",
@@ -31,6 +32,7 @@
     "Scouting/mission-types.json",
     "Scouting/outcome-tables.json",
     "Scouting/report-templates.json",
+    "Tutorial/tutorial-campaign.json",
     "World/consequence-definitions.json",
     "World/context-definitions.json",
     "World/evidence-definitions.json",

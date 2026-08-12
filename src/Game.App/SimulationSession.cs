@@ -41,7 +41,7 @@ public sealed class SimulationSession
     {
         if (catalog == null) throw new ArgumentNullException(nameof(catalog));
         var application = new GameApplication(catalog);
-        return new SimulationSession(application, application.CreateTutorialGame(), catalog.ContentVersion, seed);
+        return new SimulationSession(application, application.CreateTutorialBasePreparationGame(), catalog.ContentVersion, seed);
     }
 
     /// <summary>

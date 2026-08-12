@@ -10,7 +10,44 @@ public static class TutorialGameFactory
 {
     public static GameState Create()
     {
-        return Create(null);
+        return Create(null, null);
+    }
+
+    /// <summary>
+    /// Creates the player-facing tutorial entry state. The first expedition has not departed yet:
+    /// the base screen selects its team/loadout and the ordinary departure command creates
+    /// Expedition 1. <see cref="Create"/> remains the active-expedition fixture used by focused
+    /// Core tests and development scenarios.
+    /// </summary>
+    public static GameState CreateAtBasePreparation(
+        IReadOnlyList<SpecialLocationState>? interactionInstances,
+        TutorialCampaignDefinition? tutorial = null)
+    {
+        var game = Create(interactionInstances, tutorial);
+
+        // The initial roster is fully rested: the player should learn composition before the
+        // expedition introduces injuries/exhaustion through normal outcomes.
+        foreach (var member in game.Roster.Members)
+        {
+            if (!member.IsAvailable)
+            {
+                member.Heal();
+            }
+        }
+
+        game.SetExpedition(new ExpeditionState(
+            expeditionNumber: 0,
+            position: game.Base.Location,
+            members: Array.Empty<ExpeditionMemberState>(),
+            movementPoints: 0,
+            maxMovementPoints: 0,
+            supplies: 0,
+            medicine: 0,
+            morale: 70,
+            capacity: 0,
+            status: ExpeditionStatus.Returned));
+        game.Base.AddArchiveEntry("The coastal base is prepared for Expedition 1.");
+        return game;
     }
 
     /// <summary>
@@ -18,27 +55,22 @@ public static class TutorialGameFactory
     /// JSON location data), those archetype-driven locations are used; otherwise the in-code fallback
     /// instances are built. Plain map markers (settlements, base, watchtower, mine) are always in code.
     /// </summary>
-    public static GameState Create(IReadOnlyList<SpecialLocationState>? interactionInstances)
+    public static GameState Create(IReadOnlyList<SpecialLocationState>? interactionInstances, TutorialCampaignDefinition? tutorial = null)
     {
         var bounds = new HexMapBounds(40, 30);
         var map = GenerateTutorialMap(bounds);
         var baseCoord = BaseCoord();
 
         map.SetTile(new HexTileState(baseCoord, TerrainType.Coast, locationId: "base-camp"));
-        map.SetTile(new HexTileState(new HexCoord(2, 15), TerrainType.Coast, roadId: "old-coast-road", locationId: "broken-ravine"));
-        map.SetTile(new HexTileState(new HexCoord(3, 15), TerrainType.Grassland, roadId: "old-coast-road"));
-        map.SetTile(new HexTileState(new HexCoord(4, 15), TerrainType.Grassland, roadId: "old-coast-road"));
-        map.SetTile(new HexTileState(new HexCoord(5, 15), TerrainType.Forest, roadId: "old-coast-road"));
+        ApplyTutorialRouteTerrain(map);
         map.SetTile(new HexTileState(new HexCoord(7, 14), TerrainType.Hills));
         map.SetTile(new HexTileState(new HexCoord(8, 14), TerrainType.Mountain, elevation: 3));
         map.SetTile(new HexTileState(new HexCoord(9, 14), TerrainType.Mountain, elevation: 4, isBlocked: true));
         map.SetTile(new HexTileState(new HexCoord(6, 16), TerrainType.Swamp, riverId: "gray-river"));
-        // Landmarks sit on open ground so they are not hidden under forest canopy or mountains.
-        map.SetTile(new HexTileState(new HexCoord(12, 15), TerrainType.Grassland));
-        map.SetTile(new HexTileState(ViewCoord(-8, 4), TerrainType.Grassland, locationId: "marked-grave"));
-        map.SetTile(new HexTileState(ViewCoord(-2, 3), TerrainType.Grassland, locationId: "abandoned-camp"));
-        map.SetTile(new HexTileState(ViewCoord(-3, 1), TerrainType.Grassland, locationId: "border-warning"));
-        map.SetTile(new HexTileState(ViewCoord(5, -2), TerrainType.Hills, locationId: "sealed-gate"));
+        // The optional grave sits beside the old route on open ground; the main-route landmarks
+        // are already normalized by ApplyTutorialRouteTerrain.
+        map.SetTile(map.GetTile(new HexCoord(12, 18)).WithTerrain(TerrainType.Grassland, elevation: 1, isBlocked: false));
+        map.SetTile(new HexTileState(ViewCoord(5, -2), TerrainType.Hills));
 
         // Keep the ancient wall on open plains so it reads clearly instead of vanishing in the range.
         foreach (var coord in ViewPath(AncientWallRoute))
@@ -51,7 +83,9 @@ public static class TutorialGameFactory
 
         ApplyFactionTerritories(map);
 
-        var world = new WorldState(map, CreateTutorialPaths(), CreateTutorialLocations(interactionInstances));
+        var locations = CreateTutorialLocations(interactionInstances).ToList();
+        RegisterTutorialLocationAnchors(map, locations);
+        var world = new WorldState(map, CreateTutorialPaths(), locations);
         var knowledge = new KnowledgeState();
         new KnowledgeService().RevealFromExpedition(map, knowledge, baseCoord);
 
@@ -78,7 +112,9 @@ public static class TutorialGameFactory
         // so returning members reconcile into the pool instead of duplicating.
         var roster = new BaseRosterState(CreateTutorialRoster());
 
-        return new GameState(world, knowledge, notes, expedition, baseState, factions: CreateTutorialFactions(), roster: roster);
+        var factions = CreateTutorialFactions().ToList();
+        ApplyTutorialRelations(locations, factions, tutorial);
+        return new GameState(world, knowledge, notes, expedition, baseState, factions: factions, roster: roster);
     }
 
     /// <summary>
@@ -145,14 +181,11 @@ public static class TutorialGameFactory
     {
         return new[]
         {
-            new WorldPathState("river-gray", WorldPathKind.River, ViewPath(
-                (-8, 1), (-7, 1), (-6, 0), (-5, 0), (-4, 1), (-3, 1), (-2, 2), (-1, 2),
-                (0, 1), (1, 1), (2, 0), (3, 0), (4, -1), (5, -1), (6, -2), (7, -2))),
+            new WorldPathState("river-gray", WorldPathKind.River, TutorialRavineRoute),
             new WorldPathState("river-north", WorldPathKind.River, ViewPath(
                 (-2, -6), (-1, -6), (0, -6), (0, -5), (1, -5), (1, -4), (2, -4), (2, -3),
                 (3, -3), (4, -4))),
-            new WorldPathState("road-main", WorldPathKind.Road, ViewPath(
-                (-5, 2), (-4, 2), (-3, 2), (-2, 1), (-1, 0), (0, 0), (1, -1), (2, -1), (3, -2))),
+            new WorldPathState("road-main", WorldPathKind.Road, TutorialOldRoute),
             new WorldPathState("road-east-branch", WorldPathKind.Road, ViewPath(
                 (-1, 0), (-1, 1), (0, 2), (1, 2), (2, 2), (3, 2), (4, 3))),
             new WorldPathState("road-south-branch", WorldPathKind.Road, ViewPath(
@@ -170,13 +203,30 @@ public static class TutorialGameFactory
         (5, 3), (6, 3), (7, 3), (8, 3), (9, 3), (10, 3), (11, 2), (12, 2)
     };
 
+    // The old survey route is deliberately continuous: the contact, warning, abandoned camp and
+    // broken crossing read as one journey instead of disconnected prototype landmarks.
+    private static readonly HexCoord[] TutorialOldRoute =
+    {
+        new(1, 15), new(2, 15), new(3, 15), new(4, 15), new(5, 15), new(6, 15), new(7, 15), new(8, 15),
+        new(9, 15), new(9, 16), new(10, 16), new(11, 16), new(12, 16), new(12, 17), new(13, 17), new(14, 17), new(15, 17), new(16, 17),
+        new(17, 17), new(18, 16), new(19, 15), new(20, 15)
+    };
+
+    // The ravine approaches the route at the broken edge. It is a traceable visual path; movement
+    // access itself remains governed by the normal route-obstacle action/result contract.
+    private static readonly HexCoord[] TutorialRavineRoute =
+    {
+        new(17, 8), new(17, 9), new(18, 10), new(18, 11), new(18, 12), new(18, 13), new(18, 14),
+        new(18, 15), new(17, 16), new(17, 17), new(18, 18), new(19, 19)
+    };
+
     private static IEnumerable<SpecialLocationState> CreateTutorialLocations(IReadOnlyList<SpecialLocationState>? interactionInstances)
     {
         // Plain map markers with no archetype-driven interaction stay in code.
         var locations = new List<SpecialLocationState>
         {
             new SpecialLocationState("base-camp", LocationKind.BaseCamp, BaseCoord(), "Coastal Base"),
-            new SpecialLocationState("settlement-west", LocationKind.Settlement, ViewCoord(-5, 2), "Western Camp"),
+            new SpecialLocationState("settlement-west", LocationKind.Settlement, new HexCoord(5, 17), "Coastal Outpost"),
             new SpecialLocationState("settlement-crossing", LocationKind.Settlement, ViewCoord(-1, 0), "River Crossing"),
             new SpecialLocationState("settlement-east", LocationKind.Settlement, ViewCoord(3, -2), "Eastern Hamlet"),
             new SpecialLocationState("settlement-north", LocationKind.Settlement, ViewCoord(4, 3), "Northern Village"),
@@ -200,11 +250,24 @@ public static class TutorialGameFactory
         return new[]
         {
             new SpecialLocationState(
+                "coastal-landing",
+                LocationKind.Settlement,
+                new HexCoord(8, 15),
+                "Uferzeichen",
+                LocationAnchor.Point(new HexCoord(8, 15)),
+                "contact-site",
+                "first-contact",
+                new[] { "modifier-invitation", "modifier-guarded" },
+                contentProfileId: "content-first-contact",
+                interactionStateId: "unapproached",
+                operationalStateId: "available",
+                presenceStateId: "present"),
+            new SpecialLocationState(
                 "broken-ravine",
                 LocationKind.BrokenRavine,
-                new HexCoord(2, 15),
+                new HexCoord(17, 17),
                 "Zerstoerte Bruecke",
-                LocationAnchor.Edge(new HexCoord(2, 15), new HexCoord(3, 15)),
+                LocationAnchor.Edge(new HexCoord(16, 17), new HexCoord(17, 17)),
                 "route-obstacle",
                 "broken-bridge",
                 new[] { "modifier-repairable", "modifier-unstable", "modifier-watched" },
@@ -214,9 +277,9 @@ public static class TutorialGameFactory
             new SpecialLocationState(
                 "marked-grave",
                 LocationKind.MarkedGrave,
-                ViewCoord(-8, 4),
+                new HexCoord(12, 18),
                 "Markiertes Grab",
-                LocationAnchor.Point(ViewCoord(-8, 4)),
+                LocationAnchor.Point(new HexCoord(12, 18)),
                 "investigation-site",
                 "marked-grave",
                 new[] { "modifier-sacred", "modifier-faction-owned" },
@@ -227,9 +290,9 @@ public static class TutorialGameFactory
             new SpecialLocationState(
                 "abandoned-camp",
                 LocationKind.AbandonedCamp,
-                ViewCoord(-2, 3),
+                new HexCoord(14, 17),
                 "Verlassenes Lager",
-                LocationAnchor.Point(ViewCoord(-2, 3)),
+                LocationAnchor.Point(new HexCoord(14, 17)),
                 "investigation-site",
                 "abandoned-camp",
                 new[] { "modifier-searchable", "modifier-campable" },
@@ -239,9 +302,9 @@ public static class TutorialGameFactory
             new SpecialLocationState(
                 "border-warning",
                 LocationKind.Landmark,
-                ViewCoord(-3, 1),
+                new HexCoord(12, 16),
                 "Grenzwarnung",
-                LocationAnchor.Point(ViewCoord(-3, 1)),
+                LocationAnchor.Point(new HexCoord(12, 16)),
                 "territorial-marker",
                 "border-warning-sign",
                 new[] { "modifier-faction-owned", "modifier-watched" },
@@ -300,6 +363,71 @@ public static class TutorialGameFactory
         };
     }
 
+    private static void RegisterTutorialLocationAnchors(HexMapState map, IEnumerable<SpecialLocationState> locations)
+    {
+        foreach (var location in locations)
+        {
+            foreach (var coord in location.Anchor.Coords)
+            {
+                if (!map.TryGetTile(coord, out var tile) || tile == null)
+                {
+                    throw new InvalidOperationException($"Tutorial location '{location.Id}' references missing hex '{coord}'.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(tile.LocationId) &&
+                    !string.Equals(tile.LocationId, location.Id, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Tutorial location '{location.Id}' conflicts with '{tile.LocationId}' at hex '{coord}'.");
+                }
+
+                map.SetTile(tile.WithLocation(location.Id));
+            }
+        }
+    }
+
+    private static void ApplyTutorialRouteTerrain(HexMapState map)
+    {
+        foreach (var coord in TutorialOldRoute)
+        {
+            var tile = map.GetTile(coord);
+            var terrain = coord.Q <= 8 ? TerrainType.Coast : TerrainType.Grassland;
+            map.SetTile(tile.WithTerrain(terrain, elevation: 1, isBlocked: false).WithRoad("old-survey-route"));
+        }
+
+        foreach (var coord in TutorialRavineRoute)
+        {
+            var tile = map.GetTile(coord);
+            map.SetTile(tile.WithRiver("gray-ravine"));
+        }
+    }
+
+    private static void ApplyTutorialRelations(
+        IEnumerable<SpecialLocationState> locations,
+        IEnumerable<FactionState> factions,
+        TutorialCampaignDefinition? tutorial)
+    {
+        if (tutorial == null)
+        {
+            return;
+        }
+
+        var locationsById = locations.ToDictionary(location => location.Id, StringComparer.Ordinal);
+        var factionIds = factions.Select(faction => faction.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var relation in tutorial.LocationRelations)
+        {
+            if (!locationsById.TryGetValue(relation.LocationId, out var location))
+            {
+                throw new InvalidOperationException($"Tutorial relation references unavailable location '{relation.LocationId}'.");
+            }
+            if (!factionIds.Contains(relation.FactionId))
+            {
+                throw new InvalidOperationException($"Tutorial relation references unavailable faction '{relation.FactionId}'.");
+            }
+            location.AddFactionRelation(new LocationFactionRelationState(relation.FactionId, relation.Kind, relation.ContextTags));
+        }
+    }
+
     private static void ApplyFactionTerritories(HexMapState map)
     {
         foreach (var coord in CreateCoastalPeopleTerritory(map.Bounds))
@@ -331,22 +459,18 @@ public static class TutorialGameFactory
     private static IEnumerable<HexCoord> CreateCoastalPeopleTerritory(HexMapBounds bounds)
     {
         var coords = new HashSet<HexCoord>();
-        AddRadius(coords, ViewCoord(-12, -1), 3, bounds);
-        AddRadius(coords, ViewCoord(-10, 0), 3, bounds);
-        AddRadius(coords, ViewCoord(-8, 1), 3, bounds);
-        AddRadius(coords, ViewCoord(-15, 8), 3, bounds);
+        AddRadius(coords, new HexCoord(8, 15), 3, bounds);
+        AddRadius(coords, new HexCoord(6, 16), 2, bounds);
         return coords;
     }
 
     private static IEnumerable<HexCoord> CreateBorderWardenTerritory(HexMapBounds bounds)
     {
         var coords = new HashSet<HexCoord>();
-        foreach (var center in ViewPath((-10, 5), (-8, 4), (-6, 4), (-4, 4), (-2, 3), (0, 3), (2, 2), (4, 2), (6, 1), (8, 1)))
+        foreach (var center in new[] { new HexCoord(12, 16), new HexCoord(14, 17), new HexCoord(16, 17), new HexCoord(18, 16) })
         {
             AddRadius(coords, center, 3, bounds);
         }
-
-        AddRadius(coords, new HexCoord(12, 15), 3, bounds);
         return coords;
     }
 
@@ -401,13 +525,10 @@ public static class TutorialGameFactory
     {
         return new[]
         {
-            ViewCoord(-8, 4),
-            ViewCoord(-7, 4),
-            ViewCoord(-7, 5),
-            ViewCoord(-6, 4),
-            ViewCoord(-6, 5),
-            ViewCoord(-5, 5),
-            new HexCoord(12, 15)
+            new HexCoord(11, 16),
+            new HexCoord(12, 16),
+            new HexCoord(12, 17),
+            new HexCoord(13, 17)
         };
     }
 

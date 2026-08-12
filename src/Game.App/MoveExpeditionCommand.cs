@@ -138,7 +138,12 @@ public sealed class MoveExpeditionCommand
     {
         foreach (var path in world.Paths)
         {
-            if (path.Kind != WorldPathKind.Road)
+            // A authored visual road can still terminate at a damaged bridge or ravine. Only the
+            // ordinary OpenRoute effect creates a route that overrides an active edge obstacle.
+            // Without this distinction, a map artist could accidentally make a blocked location
+            // traversable merely by drawing the historical road through it.
+            if (path.Kind != WorldPathKind.Road ||
+                !path.Id.StartsWith("route-opened-", StringComparison.Ordinal))
             {
                 continue;
             }

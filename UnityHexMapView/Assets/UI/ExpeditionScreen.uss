@@ -140,7 +140,21 @@
     -unity-font-style: bold;
 }
 .location-card__action:hover {
-    color: rgb(183, 213, 146);
+      color: rgb(183, 213, 146);
+  }
+.tutorial-brief-card {
+    margin-top: 13px;
+    padding: 12px;
+    border-left-width: 2px;
+    border-left-color: rgba(240, 207, 122, 0.68);
+    background-color: rgba(240, 207, 122, 0.055);
+}
+.tutorial-brief-card__body {
+    margin-top: 7px;
+    color: rgb(216, 210, 196);
+    font-size: 14px;
+    line-height: 19px;
+    white-space: normal;
 }
 .hr { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin-top: 16px; margin-bottom: 16px; }
 .sign-row { flex-direction: row; margin-top: 7px; color: rgb(216, 210, 196); }
