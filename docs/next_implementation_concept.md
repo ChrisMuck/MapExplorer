@@ -12,6 +12,7 @@ Related documents:
 - `technical_concept.md`
 - `ui_ux_concept.md`
 - `map_presentation_simplified_concept.md`
+- `content_workbench_editor_concept.md` (detailed proposal for the editor decision in section 5)
 
 ## 1. Decision and Priority
 

@@ -24,6 +24,7 @@ Detailed systems are maintained in the linked specialist documents. AI coding ag
 - [`technical_design_notes_for_agents.md`](technical_design_notes_for_agents.md): design-level data structures and agent guidance
 - [`open_questions.md`](open_questions.md): only unresolved questions
 - [`../next_implementation_concept.md`](../next_implementation_concept.md): proposed next phase for the curated tutorial, content workflow and editor decision
+- [`../content_workbench_editor_concept.md`](../content_workbench_editor_concept.md): proposed data-driven Content Workbench for locations, events, scenes and their validated connections
 
 The former single-file concept is preserved as [`exploration_game_concept_full_updated.md`](exploration_game_concept_full_updated.md).
 
