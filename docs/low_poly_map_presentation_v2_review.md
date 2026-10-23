@@ -90,6 +90,10 @@ Nicht geprüft:
   die Breite zwischen den Ufern, wählt die schmalste, zentriert die Brücke zwischen den Ufern und streckt
   sie auf die Breite (Faktor 0,8 bis 1,5). Rechenprobe außerhalb von Unity: Tutorial Breite 3,0 statt
   keiner auffindbaren Ufer an der alten Stelle; generierte Welten 2,0 bis 3,5.
+- **Brückenhöhe (zweite Korrektur):** Die Ufer wurden zuerst am Wasserrand gemessen; dort lag das Deck rund
+  einen Meter unter der Kante (Tutorial: Höhe -0,78 statt 0,27). Jetzt gilt die Oberkante: Das Deck liegt
+  auf dem Gelände, das nicht mehr von der Schlucht oder vom Flussbett abgesenkt ist (Tutorial: Breite 4,5,
+  Streckung 1,15, Höhe 0,27).
 - Bäume meiden die Stellen gezeichneter Orte; dadurch verraten Lücken in bekanntem Wald keine
   unbekannten Orte, solange deren Feld unbekannt ist.
 - Die Ansicht liegt noch nicht im Spielablauf: Feldwahl, Befehle, Kamera und Overlays der alten Ansicht

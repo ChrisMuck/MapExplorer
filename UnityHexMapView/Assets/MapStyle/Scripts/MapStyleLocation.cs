@@ -168,6 +168,13 @@ namespace MapExplorer.MapStyle
         {
             var builder = new MapStyleMeshBuilder();
             build(builder);
+            if (builder.TriangleCount == 0)
+            {
+                // An empty mesh has no valid bounds; nothing to draw.
+                Debug.LogWarning("Part '" + name + "' of '" + DisplayName + "' has no geometry and was skipped.");
+                return null;
+            }
+
             var go = CreateMeshObject(name, builder.Build(name), emissive ? emissiveMaterial : litMaterial, true);
             go.transform.SetParent(partsRoot, false);
             go.transform.localPosition = position;

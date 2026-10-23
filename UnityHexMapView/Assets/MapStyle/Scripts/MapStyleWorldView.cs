@@ -303,6 +303,12 @@ namespace MapExplorer.MapStyle
                     }
 
                     var ground = GroundAt(point, useKnowledge);
+                    if (!IsFinite(ground))
+                    {
+                        Debug.LogWarning("Skipped a tree with a non-finite position: tile (" + coord.Q + "," + coord.R + "), index " + i + ", point " + point + ", ground " + ground);
+                        continue;
+                    }
+
                     if (blocked || ground.y > 1.6f || ground.y < -0.5f)
                     {
                         continue;
@@ -324,6 +330,12 @@ namespace MapExplorer.MapStyle
                 forest.SetKnowledge(level);
                 chunk.Forests.Add(forest);
             }
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !(float.IsNaN(value.x) || float.IsNaN(value.y) || float.IsNaN(value.z)
+                || float.IsInfinity(value.x) || float.IsInfinity(value.y) || float.IsInfinity(value.z));
         }
 
         private GameObject AddMesh(string name, Mesh mesh, Material material, bool shadows)
@@ -504,7 +516,7 @@ namespace MapExplorer.MapStyle
             return found;
         }
 
-        /// <summary>Walks away from a line in both directions until the ground rises above the water.</summary>
+        /// <summary>Walks away from a line in both directions until the carved ravine or river bed ends, that is the bank top.</summary>
         private bool TryFindBanks(Vector2 origin, Vector2 across, out float toBank1, out float toBank2)
         {
             toBank1 = ScanToBank(origin, across);
@@ -515,15 +527,19 @@ namespace MapExplorer.MapStyle
         private float ScanToBank(Vector2 origin, Vector2 direction)
         {
             const float step = 0.25f;
-            for (var distance = step; distance <= 8f; distance += step)
+            for (var distance = step; distance <= 10f; distance += step)
             {
-                var sample = terrain.SampleAt(origin + direction * distance, false);
+                var point = origin + direction * distance;
+                var sample = terrain.SampleAt(point, false);
                 if (!sample.Valid)
                 {
                     return -1f;
                 }
 
-                if (sample.Height > MapStyleWorldTerrain.WaterLevel + 0.15f)
+                // The deck rests on the crest: past the water and past everything the ravine or river carved.
+                if (sample.Height > MapStyleWorldTerrain.WaterLevel + 0.15f
+                    && terrain.TrenchFactor(point) < 0.03f
+                    && terrain.RiverFactor(point) < 0.03f)
                 {
                     return distance;
                 }

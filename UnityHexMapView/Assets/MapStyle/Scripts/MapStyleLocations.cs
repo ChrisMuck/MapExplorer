@@ -292,6 +292,13 @@ namespace MapExplorer.MapStyle
                 {
                     var p = positions[i];
                     var s = sizes[i];
+                    if (float.IsNaN(p.x) || float.IsNaN(p.y) || float.IsNaN(p.z) || float.IsInfinity(p.x) || float.IsInfinity(p.y) || float.IsInfinity(p.z)
+                        || float.IsNaN(s) || float.IsInfinity(s) || s <= 0f)
+                    {
+                        Debug.LogWarning("Forest '" + name + "' skipped item " + i + " with position " + p + " and size " + s);
+                        continue;
+                    }
+
                     var green = Color.Lerp(MapStyleLocation.C(0x4f7d3c), MapStyleLocation.C(0x5a8a42), TerrainHash(i));
                     b.AddPrism(p + V(0f, 0.25f * s, 0f), V(0.2f * s, 0.5f * s, 0.2f * s), NoRot, 5, 0.75f, MapStyleLocation.C(Wood));
                     b.AddPrism(p + V(0f, 0.9f * s, 0f), V(1.1f * s, 1.1f * s, 1.1f * s), NoRot, 6, 0f, green);
