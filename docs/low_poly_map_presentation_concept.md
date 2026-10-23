@@ -1,6 +1,8 @@
 # Konzept: Low-Poly-3D-Kartendarstellung mit Ortsbaukasten
 
-Status: **Vorschlag – Owner-Freigabe erforderlich; keine Implementierung**
+Status: **Vorschlag mit eingearbeiteten Owner-Entscheidungen (siehe 16); keine Implementierung**
+
+Umsetzungsplan: `low_poly_map_presentation_implementation_plan.md`
 
 Dieses Dokument ist bewusst **offen** angelegt. Es beschreibt ein Grundgerüst und Regeln für
 Erweiterungen. Der heutige Stand (Archetypen, Varianten, Modifier, Zustandskanäle) ist das
@@ -14,6 +16,7 @@ Verwandte Dokumente:
 - `visual_asset_tech_addendum.md`
 - `ui_ux_concept.md`
 - `content_workbench_editor_concept.md`
+- `gameconcept/factions_and_trade_concept.md`
 - `gameconcept/location_archetypes_and_interactions_concept.md`
 - `gameconcept/world_locations_and_events_concept.md`
 - `gameconcept/cross_system_json_authoring_schema.md`
@@ -38,7 +41,7 @@ Leitbild:
 ### 2.1 Was dieses Konzept festlegt
 
 - **Low-Poly-3D** mit fester Neigung, **frei drehbarer Kamera** und orthografischer Projektion
-  (isometrischer Eindruck bleibt).
+  (isometrischer Eindruck bleibt). Die Kamera bewegt sich nie von selbst; der Spieler behält die Kontrolle.
 - Orte, Figuren und Tiere werden aus einem **offenen Baukasten** von Teilen zusammengesetzt, nicht
   als Einzelmodell je Ort.
 - Das Aussehen eines Ortes ist eine **Funktion** aus Daten (Archetyp, Variante, Zustandskanäle,
@@ -52,13 +55,14 @@ Leitbild:
 
 | Bisher (`map_presentation_simplified_concept.md`) | Dieses Konzept | Folge |
 | --- | --- | --- |
-| flache isometrische 2D-Sprites | Low-Poly-3D, drehbare Kamera | Entscheidung des Owners nötig |
-| keine sichtbare Terrainhöhe | sichtbares Relief **nur optisch** (Gräben, Hänge, Gipfel) | Höhe bleibt außerhalb der Logik |
+| flache isometrische 2D-Sprites | Low-Poly-3D, drehbare Kamera | vom Owner entschieden |
+| keine sichtbare Terrainhöhe | sichtbares Relief **nur optisch** (Gräben, Schluchten, Hügel, Berge) | Höhe bleibt außerhalb der Logik |
 | Hexes unsichtbar | unverändert unsichtbar | keine Änderung |
 | Hindernisse als Objekte oder Kanten-Visuals | Hindernisse als Linien/Flächen mit Zustand | neue Darstellungsart |
 | `LocationKind` steuert die Darstellung | Archetyp, Variante, Modifier steuern sie | Visual-Resolver nötig |
+| Gebietsgrenzen als Linie (`TerritoryBorder`) | Gebiete werden nicht als farbige Linien oder Flächen gezeigt, Fraktionen erkennt man an Zeichen (`factions_and_trade_concept.md` 13.1) | vorhandene Grenzlinien nur Debug oder wissensabhängig |
 
-Bis zur Freigabe bleiben `AGENTS.md` und das bisherige Kartenkonzept maßgeblich.
+`AGENTS.md` und das bisherige Kartenkonzept müssen mit der Umsetzung entsprechend angepasst werden (Aufgabe in Stufe V0 des Umsetzungsplans).
 
 ### 2.3 Feste Grenzen
 
@@ -86,16 +90,19 @@ Bis zur Freigabe bleiben `AGENTS.md` und das bisherige Kartenkonzept maßgeblich
 
 - Orthografisch, feste Neigung, Drehung um die Kartenmitte oder den Fokus.
 - Zoomstufen sind Detailstufen (siehe 4.3), nicht nur Vergrößerung.
-- Die Kamera darf einer Expedition folgen und bei wichtigen, **dem Spieler bekannten** Ereignissen
-  sanft fokussieren.
+- Die Kamera bewegt sich **nie automatisch** auf Ereignisse. Folgen und Fokussieren geschieht nur
+  auf Wunsch des Spielers (Auswahl, Taste, optionaler Folgemodus, den er ein- und ausschaltet).
+  Wer ein Ereignis übersieht, übersieht es.
+- Die Drehung wird **nicht gespeichert**; nach dem Laden startet die Kamera in Standardausrichtung.
 - Die Drehung ist eine reine Ansichtsfunktion; Interaktion (Auswahl, Ziel) nutzt weiterhin die
   logische Hex-Koordinate.
 
 ### 4.2 Look
 
 - Flat-shaded Dreiecke mit Farbe pro Fläche; wenige Materialien; keine Texturen im Standardfall.
-- Gelände aus einem Mesh mit abgesenkten Bereichen für Gräben, Flussbetten und Schluchten; Wände in
-  Erd- oder Felsfarbe.
+- Gelände aus einem Mesh mit abgesenkten Bereichen für Gräben, Flussbetten und Schluchten sowie
+  erhöhten Bereichen für Hügel und Berge; Wände in Erd- oder Felsfarbe. Das Relief ist reine
+  Darstellung, die Hexe bleiben logisch eben.
 - Weiche Farbübergänge zwischen Biomen statt Hexgrenzen.
 - Schatten sind erwünscht, weil sie Tiefe und Lesbarkeit liefern.
 - Tageszeit, Nebel und Wetter sind Stimmung; Nachts sind Lichter und Feuer sichtbar.
@@ -115,7 +122,7 @@ Details erscheinen beim Heranzoomen (LOD). Zoom allein ändert nicht die **Grö�
 | Schicht | Inhalt | Quelle |
 | --- | --- | --- |
 | 1 Gelände | Boden, Relief, Biome | Weltgenerator, `WorldState` |
-| 2 Linien und Flächen | Fluss, Graben, Straße, Mauer, Grenze, Sumpf, Gefahrenfläche | `WorldPathState` und Flächenanker |
+| 2 Linien und Flächen | Fluss, Schlucht/Graben, Straße, Mauer, Sumpf, Gefahrenfläche | `WorldPathState` und Flächenanker |
 | 3 Orte | Bauteile, Kleinteile, Natur an Ankern | Ortsdaten, Visual-Resolver |
 | 4 Lebewesen | Expeditionen, Figuren, Tiere | Expeditions- und Ereignisdaten |
 | 5 Effekte | Rauch, Feuer, Staub, Nebel, Licht | Zustände und Modifier |
@@ -226,6 +233,28 @@ Anzeigenamen wie „intakt“ oder „beschädigt“ in Entwürfen sind Beschrif
 Nicht jedes Teil reagiert auf jeden Kanal. Eine Zustandskombination ohne eigene Regel fällt auf die
 Grundform zurück.
 
+### 7.5a Zustandskanäle kombinieren
+
+Ein Ort hat drei unabhängige Kanäle. Die Darstellung wird **pro Kanal** beschrieben, nicht pro
+Kombination. Bilder entstehen durch Überlagerung:
+
+| Kanal | Bestimmt | Beispiele |
+| --- | --- | --- |
+| `operational` | **Grundform** der Bauteile | Brücke intakt/beschädigt/zerstört, Tor offen/versiegelt |
+| `presence` | **Lebenszeichen** | Figuren, Feuer, Licht, Rauch, Überwuchs, Fahnen |
+| `interaction` | **Spuren der Erkundung** | Markierungen der Expedition, geöffnete Stellen, Fundflaggen |
+
+Regeln:
+
+- Jeder Kanal wählt unabhängig Formen und Zusatzteile. Kombinationen entstehen automatisch.
+- Wollen zwei Kanäle denselben Platz (Slot) belegen, gilt der Vorrang
+  `operational` vor `presence` vor `interaction`.
+- Ein Kanal im Zustand `unknown` oder ohne Regel trägt nichts bei.
+- Kombinationen, die zusammen unplausibel aussehen (zum Beispiel `destroyed` mit `occupied`), meldet
+  der Validator als Hinweis; die Spiellogik entscheidet, ob sie vorkommen dürfen.
+- Nur Kombinationen, die ein eigenes Bild brauchen (selten), erhalten eine eigene Komposition mit
+  höherer Spezifität (7.2).
+
 ### 7.6 Übergänge
 
 Zustandswechsel werden **übergeblendet**, nicht getauscht:
@@ -240,19 +269,28 @@ Zustandswechsel werden **übergeblendet**, nicht getauscht:
 
 ### 8.1 Figuren
 
+- **Gruppen statt Einzelpersonen.** Eine Expedition erscheint als eine Gruppe von wenigen Figuren,
+  nicht als jedes Mitglied einzeln. Wer dabei ist, zeigt die UI bei der Auswahl der Gruppe.
 - Modularer Aufbau: Körper, Kleidung/Ausrüstung, Rollenprop, Fraktionszeichen.
-- **Expeditionsmitglieder** zeigen ihre Rolle durch Ausrüstung und ihren Zustand (Last, Verletzung,
-  Erschöpfung) durch Haltung und Kleinteile.
-- **Fraktionsangehörige** erkennt man an Silhouette, Ausrüstung und Banner. Die Fraktionsfarbe kommt
-  aus den Fraktionsdaten.
-- Ist die Fraktion dem Spieler **nicht bekannt**, bleibt die Darstellung neutral (kein Banner, keine
-  Fraktionsfarbe, keine verräterische Ausrüstung).
+- Die Gruppe zeigt ihren Gesamtzustand (Last, Verletzte, Erschöpfung) durch Haltung, Tempo und
+  Kleinteile, nicht pro Person.
+- **Fraktionsangehörige** (Patrouillen, Posten, Dörfer) erscheinen ebenfalls als Gruppen. Sie werden
+  an Silhouette, Ausrüstung und dem Fraktionszeichen erkannt. Die Farbe kommt aus den
+  Fraktionsdaten (`Faction.Color`, beim Erstellen der Fraktion festgelegt), das Zeichen aus den
+  Signaturen der Fraktion (`signatures.json`).
+- Fraktionsfarbe und -zeichen erscheinen **nur**, wenn die Fraktion dem Spieler bekannt ist. Sonst
+  bleibt die Darstellung neutral (kein Banner, keine Farbe, keine verräterische Ausrüstung).
+- Gebiete werden nicht als farbige Flächen oder Linien gezeigt. Die Karte vermittelt Gebiete über
+  wiederholte Zeichen, Patrouillen und Wegmarken, wie in `factions_and_trade_concept.md` 13.1.
 - Verbündet, neutral oder feindlich ergibt sich aus dem bekannten Verhältnis, nicht aus der
   Welt-Wahrheit.
 
 ### 8.2 Tiere und Kreaturen
 
 - Artenkatalog mit Größenklasse, Verhalten (Herde, Einzelgänger, Raubtier) und Lebensraum-Tags.
+- Der Start umfasst **Raubtiere in wenigen Varianten** (zum Beispiel Rudeljäger, Einzeljäger,
+  Sumpf- oder Dschungeljäger) und bei Bedarf Herdentiere für Ressourcenorte. Welche Arten wo
+  vorkommen, ergibt sich mit den Orten und Biomen und wird später ergänzt.
 - Der Katalog ist offen; neue Arten nutzen vorhandene Skelett- und Animationsmuster.
 - Unbekannte Kreaturen erscheinen als Spuren, Schatten oder Zeichen, bis sie bestätigt sind.
 
@@ -266,13 +304,15 @@ läuft der Logik hinterher, nie voraus.
 
 Beispiel: Die Expedition wird im Dschungel von Tieren angegriffen.
 
-- Die Logik löst das Ereignis auf (Risiko, Ergebnis, Folgen).
-- Die Darstellung **inszeniert das Ergebnis**: Tiere erscheinen, nähern sich, der Ausgang wird
-  gezeigt. Sie entscheidet nichts und simuliert keinen Kampf.
-- Die Situation ist zeitlich begrenzt und endet mit einer sichtbaren Spur (Fußabdrücke, Verletzte,
-  Beute).
-- Was der Spieler sieht, richtet sich nach Beobachtung und Bericht. Ein unbeobachteter Angriff
-  erscheint erst als Bericht, nicht als Live-Szene.
+- Dynamische Situationen erscheinen **als Bild und Bericht**, wie bisher (Ereignisbild, Szenentext,
+  Archiv). Es gibt keine Live-Inszenierung auf der Karte.
+- Die Logik löst das Ereignis auf (Risiko, Ergebnis, Folgen); die Karte zeigt höchstens die
+  **Spur** danach: Markierung am Ort, Fußabdrücke, Rauch, zurückgelassene Teile.
+- Tiere und Figuren auf der Karte sind Teil des Alltagsbildes (Herden, Patrouillen, Gruppen), nicht
+  eines Gefechts.
+- Was der Spieler sieht, richtet sich nach Beobachtung und Bericht. Ein unbeobachtetes Ereignis
+  erscheint erst als Bericht.
+- Eine spätere Live-Inszenierung wäre eine eigene, vom Owner freizugebende Erweiterung.
 
 ## 9. Farbcode
 
@@ -313,8 +353,10 @@ Die Farbwerte stammen aus einer farbenblind-freundlichen Palette (Okabe-Ito) und
   Ring ein Fragezeichen. Der Ring darf den Typ nie früher verraten als der `KnowledgeState`.
 - Modifier erscheinen als bis zu drei kleine Symbole am Ring (z. B. besetzt, versiegelt, brennend).
 - Der Wissensgrad ändert Sättigung und Kantenschärfe des Rings genauso wie die der Objekte.
-- Farbpaletten für Fraktionen müssen sich in Farbton oder Träger von den Archetypfarben
-  unterscheiden; der Validator warnt bei zu großer Nähe.
+- Fraktionsfarben kommen aus den Fraktionsdaten (beim Erstellen der Fraktion festgelegt) und liegen
+  auf anderen Trägern (Kleidung, Banner) als die Archetypfarben. Der Validator warnt, wenn eine
+  Fraktionsfarbe einer Archetypfarbe zu nahe kommt.
+- Fraktionsfarben erscheinen nur bei bekannten Fraktionen (siehe 8.1).
 
 ## 10. Maßstab und Zoom
 
@@ -349,8 +391,8 @@ Die Darstellung zeigt nie mehr, als der `KnowledgeState` erlaubt.
 | Wissensgrad | Darstellung |
 | --- | --- |
 | bestätigt | scharf, volle Farbe, Details |
-| berichtet | entsättigt, leicht durchscheinend, Quellenhinweis |
-| alt | verblasst, mit Alter; zeigt den **letzten bekannten** Stand |
+| berichtet | entsättigt, leicht durchscheinend |
+| alt | verblasst; zeigt den **letzten bekannten** Stand |
 | unbekannt | leere Fläche oder neutraler Platzhalter, keine Details |
 
 Besondere Regeln:
@@ -361,6 +403,9 @@ Besondere Regeln:
 - Unbekanntes Gelände wird nicht nur ausgeblendet, sondern auch **flach** dargestellt, damit das
   Relief (zum Beispiel ein Graben) nichts verrät.
 - Spuren und Zeichen dürfen auf Unbekanntes hinweisen, ohne es zu benennen.
+- **Alter und Sicherheit** einer Information zeigt die Ansicht nicht an. Sie ergeben sich aus den
+  Notizen, Berichten und dem Archiv (wie lange her, wie verlässlich, von wem). Die Ansicht
+  unterscheidet nur die vier Wissensgrade.
 
 ## 12. Datenmodell (Skizze)
 
@@ -410,9 +455,11 @@ Das Content-Workbench-Konzept wäre der natürliche Ort für diesen Ablauf.
 
 ## 13. Umsetzung in Unity (Richtung)
 
-- **`Game.Core`**: unverändert; kein Bezug zu Darstellung. Eine neue Pfadart für Gräben oder
-  Schluchten (und ein Zustand für Durchlässe) wäre ein eigenes, vorher abzustimmendes Thema
-  (Save-Format).
+- **`Game.Core`**: kein Bezug zu Darstellung. Eine kleine Ergänzung: `WorldPathKind` erhält am Ende
+  den Wert `Chasm` (Schlucht oder Graben). Der Zustand der Brücke bleibt ausschließlich am
+  Kantenort (`operational`); der Pfad trägt keinen eigenen Zustand. Pfade werden nicht im
+  Laufzeit-Snapshot gespeichert, sondern mit der Weltgenerierung bereitgestellt; daher ändert sich
+  das Save-Format nicht. Siehe 13.2.
 - **`Game.App`**: Visual-Resolver, Wissens- und Zustandsabfrage, Darstellungsbeschreibung.
 - **Unity**:
   - Teile-Bibliothek (Prefabs mit Platzhalterformen), Pooling,
@@ -424,6 +471,30 @@ Das Content-Workbench-Konzept wäre der natürliche Ort für diesen Ablauf.
   entsteht in eigenen Bausteinen.
 - Prefabs enthalten Geometrie und Materialien, keine Regeln.
 
+### 13.1 Assets
+
+- Die ersten Teile werden **erzeugt**: aus einfachen Grundformen per Code oder Werkzeug (so wie im
+  Schaufenster-Entwurf) und als Prefabs abgelegt. Sie sind Platzhalter mit gutem Aussehen.
+- Jedes Teil hat eine stabile ID. Austausch oder Erweiterung durch bessere Modelle ändert Daten
+  und Logik nicht.
+- Eine Qualitätsstufe pro Teil (`placeholder`, `generated`, `final`) zeigt, was noch fehlt.
+
+### 13.2 Gräben und Schluchten in den Weltdaten
+
+Entscheidung:
+
+- Neue Pfadart `WorldPathKind.Chasm` für durchgehende Gräben und Schluchten.
+- Flüsse bleiben `River`. Eine Brücke über einen Fluss liegt auf einem `River`-Pfad, eine über
+  eine Schlucht auf einem `Chasm`-Pfad.
+- Die Sperre bleibt, wo sie ist: am Kantenort (`LocationAnchorKind.Edge`) und seinem
+  `operational`-Zustand. Der Pfad ist nur die sichtbare Linie. So gibt es eine einzige Quelle der
+  Wahrheit.
+- Eine Validierung stellt sicher, dass jeder sperrende Kantenort eines Wegehindernisses auf einem
+  `River`- oder `Chasm`-Pfad liegt, damit Karte und Logik übereinstimmen.
+- Der Weltgenerator erzeugt den `Chasm`-Pfad zusammen mit dem Hindernis (heute: „Verschütteter
+  Pass“ und Höhensprünge); die Tutorialwelt stellt `river-gray` entsprechend um.
+- Der Pfad selbst wird nicht im Laufzeit-Snapshot gespeichert, daher entsteht kein Migrationsbedarf.
+
 ## 14. Lieferstufen
 
 | Stufe | Ergebnis | Nicht enthalten |
@@ -431,9 +502,9 @@ Das Content-Workbench-Konzept wäre der natürliche Ort für diesen Ablauf.
 | V0 | Stilprototyp in einer Unity-Testszene: ein Ausschnitt mit Graben, Brücke, Lager, Expedition in drei Wissensgraden | Anbindung an Spielzustand |
 | V1 | Gelände mit Relief und Linienobjekten (Graben, Fluss, Straße) mit Zustand; Brücken-Durchstich | weitere Orte |
 | V2 | Visual-Resolver, Teile- und Kompositionsdaten, Tutorial-Orte (6) | Figuren, Tiere |
-| V3 | Generator-Orte (Ruine, Höhle, Turm, Ressourcen, Sumpf, Vulkan, Landmarken) und Modifier-Schichten | dynamische Situationen |
-| V4 | Figuren, Fraktionsdarstellung, Expeditionsgruppen | Tiere, Angriffe |
-| V5 | Tiere, dynamische Situationen, Ereignisinszenierung | – |
+| V3 | Generator-Orte (Ruine, Höhle, Mine, Siedlung, Turm, Ressourcen, Sumpf, Vulkan, Landmarken) und Modifier-Schichten | Figuren, Tiere |
+| V4 | Figurengruppen, Fraktionsdarstellung (Farbe und Zeichen nur bei bekannten Fraktionen), Expeditionsgruppen | Tiere |
+| V5 | Tiere (Raubtiere, Herden) und Spuren von Ereignissen auf der Karte | Live-Inszenierung von Ereignissen (nicht geplant) |
 | V6 | Workbench-Anbindung: Teile und Kompositionen bearbeiten, Vorschau | – |
 
 Jede Stufe ist einzeln nutzbar; der Rest der Darstellung bleibt davon unberührt.
@@ -450,15 +521,37 @@ Jede Stufe ist einzeln nutzbar; der Rest der Darstellung bleibt davon unberührt
 | Leistung (viele Teile, Schatten) | Pooling, LOD, Teile nur im Sichtbereich |
 | Stil-Wechsel kostet Zeit | V0 als Stilprobe vor allem anderen |
 
-## 16. Offene Fragen
+## 16. Entscheidungen und offene Fragen
 
-1. Freigabe des Wechsels von 2D-Isometrie zu Low-Poly-3D mit drehbarer Kamera (Owner).
-2. Wie weit darf das optische Relief gehen (nur Gräben und Schluchten oder auch Hügel und Berge)?
-3. Darf die Kamera bei Ereignissen automatisch fokussieren, oder nur auf Wunsch?
-4. Welche Fraktionen und Tierarten braucht die erste Version?
-5. Soll die Drehung der Karte gespeichert werden (Spielereinstellung)?
-6. Wie werden Gräben und Schluchten in den Weltdaten modelliert (neue Pfadart, Kantenorte, beides)?
-7. Wie viel vom Konzept soll in den Vertical Slice, und was folgt danach?
+### 16.1 Vom Owner entschieden
+
+| Thema | Entscheidung |
+| --- | --- |
+| Stilwechsel | Low-Poly-3D mit drehbarer Kamera ist beschlossen |
+| Relief | optisch auch für Hügel und Berge, nicht nur Gräben |
+| Kamera | bewegt sich nie von selbst; Fokus und Folgen nur auf Wunsch |
+| Kameradrehung | wird nicht gespeichert |
+| Fraktionen | die drei MVP-Fraktionen aus `world_locations_and_events_concept.md` 11.3.5 |
+| Tiere | zunächst Raubtiere in wenigen Varianten; weitere folgen mit den Orten |
+| Gräben in den Weltdaten | beste Passung: `WorldPathKind.Chasm` (13.2) |
+| Umfang | alles wird umgesetzt, in den Stufen V0 bis V6 |
+| Zustandskanäle | Kombination durch Überlagerung pro Kanal (7.5a) |
+| Alter und Sicherheit | stehen in den Notizen, nicht in der Ansicht |
+| fehlende Orte | werden ergänzt (Anhang A.2) |
+| Höhle | Variante des Untersuchungsorts |
+| Fraktionsfarben | kommen aus den Fraktionsdaten, bei der Erstellung festgelegt |
+| Figuren | Gruppen statt Einzelpersonen |
+| Dynamische Situationen | nur als Bild und Bericht |
+| Assets | zunächst erzeugt, später austauschbar |
+
+### 16.2 Noch offen
+
+1. Welche Raubtier-Varianten genau, und für welche Biome? (mit den Orten festlegen)
+2. Wie viele Figuren zeigt eine Gruppe je nach Größe (zum Beispiel 3 bis 6)?
+3. Wie sehen Fraktionsgruppen konkret aus, bevor ihr Zeichen bekannt ist?
+4. Welche Mine- und Siedlungsvarianten sind als Daten gewünscht (Anhang A.2)?
+5. Wie viel Detail ist im Tutorialumfang (V2) nötig, bevor die Stilprobe (V0) bestätigt ist?
+6. Wie wird `TerritoryBorder` in Unity künftig behandelt (Debug oder entfernt)?
 
 ## 17. Nicht-Ziele
 
@@ -490,6 +583,17 @@ Startpunkt, kein Abschluss.
 | --- | --- | --- |
 | Unruhiges Moor | `hazard-site` | Sumpffläche, Schilf, Nebel, Blasen |
 | Windgeformter Gipfel | `natural-phenomenon` | Fels/Gipfel, Bänder, Wind-Effekt |
+
+**Zu ergänzende Varianten** (Owner-Entscheidung, Ortsdaten noch anzulegen):
+
+| Variante | Archetyp | Teile (Beispiel) |
+| --- | --- | --- |
+| Höhle | `investigation-site` | Felsmasse, Eingang (offen/blockiert/eingestürzt), Feuerstelle, Geröll |
+| Mine | `resource-site` | Stollen mit Balken, Loren, Schutthalde, Fackeln, Eingang (offen/versiegelt/eingestürzt) |
+| Siedlung | `contact-site` | Häuser, Mauer, Turm, Tor, Markt, Rauch, Figurengruppen (größer als das Dorf) |
+| Dorf | `contact-site` | Häuser, Zaun, Tor, Rauch, Figurengruppen |
+
+Die Ortsarten werden in den Ortsdaten angelegt; Teile und Kompositionen entstehen dazu im Baukasten.
 
 ### A.3 Vom Generator vergebene Ortsnamen
 

@@ -1,0 +1,346 @@
+# Umsetzungsplan: Low-Poly-Kartendarstellung mit Ortsbaukasten
+
+Status: **Entwurf – Owner-Review vor Beginn von V0 erforderlich**
+Vorgeschlagener Branch je Stufe: `codex/map-presentation-v<N>-<kurzname>`
+Umfang: Darstellung der Karte, Orte, Figurengruppen und Tiere gemäß dem Konzept; kein neues Spielsystem.
+
+Zugehöriges Konzept:
+
+- `low_poly_map_presentation_concept.md`
+
+Verwandte Dokumente:
+
+- `map_presentation_simplified_concept.md` (wird angepasst, siehe V0)
+- `technical_concept.md`
+- `visual_asset_tech_addendum.md`
+- `content_workbench_editor_concept.md`
+- `gameconcept/location_archetypes_and_interactions_concept.md`
+- `gameconcept/factions_and_trade_concept.md`
+- `cross_system_foundation_implementation_plan.md` (Vorbild für Aufbau und Teststrategie)
+
+## 1. Ziel
+
+Die Karte zeigt Ortszustand, Wissensgrad, Hindernisse, Expeditionen, Fraktionsgruppen und Tiere als
+lesbares Low-Poly-3D-Bild mit drehbarer Kamera. Das Aussehen entsteht aus JSON-Daten über einen
+testbaren Resolver in `Game.App`. Unity baut und animiert nur, was der Resolver beschreibt.
+
+Der Plan hält die Projektregeln ein: keine Spielregeln in Szenen oder Prefabs, keine Preisgabe
+verborgener Weltwahrheit, Befehle für Spieleraktionen, Tests bei Änderungen an `Game.Core`.
+
+## 2. Verifizierter Ausgangspunkt
+
+Aus dem Code und den Daten geprüft:
+
+- `Game.Core` und `Game.App` sind frei von Unity-Typen; die Tests laufen als Programm in
+  `tests/Game.Tests` (`Program.cs`), Entwicklungsszenarien liegen in `tests/DevelopmentScenarios`.
+- `UnityHexMapView.cs` hat über 4500 Zeilen und baut die Karte aus Prefabs. Orte werden nach
+  `LocationKind` gezeichnet (`BuildCoreFeatures`), nicht nach Archetyp oder Variante.
+  `HexMapPrefabLibrary`, `HexMapPlaceholderPrefab` und der Editor-Generator
+  `HexMapPrefabGenerator` erzeugen heute Platzhalter-Prefabs.
+- Die Weltpfade (`WorldPathKind`: `River`, `Road`, `TerritoryBorder`, `Wall`) werden **nicht** im
+  Laufzeit-Snapshot gespeichert, sondern mit der Welt bereitgestellt
+  (`WorldRuntimeSnapshot.Restore`). Ein neuer Pfadtyp ändert das Save-Format nicht.
+- Sperren zwischen Feldern setzt `MoveExpeditionCommand.IsBlockedByEdgeLocation` anhand von
+  Kantenorten und deren `operational`-Zustand. Ein geöffneter Weg (`route-opened-*`) hebt die Sperre auf.
+- `Game.Core` kennt `TerrainType` je Feld (unter anderem `Hills`, `Mountain`, `Snow`, `Swamp`),
+  aber **keine Höhe**. Die Höhe `Elevation` gibt es nur im Weltgenerator (`WorldGen`).
+- Die Tutorialwelt modelliert die Schlucht heute als Pfad `river-gray` vom Typ `River`.
+- Der Weltgenerator vergibt Varianten als deutsche Namen. `WorldGenBridge.VariantIdFor` bildet nur vier
+  davon auf Katalog-IDs ab (`broken-bridge`, `marked-grave`, `abandoned-camp`, `sealed-gate`); alle
+  anderen werden zu `worldgen-<name>` ohne Katalogeintrag.
+- **Gefundener Fehler:** In `WorldGenBridge.cs` stehen die Umlaute von „Zerstörte Brücke“ doppelt
+  kodiert (`ZerstÃ¶rte BrÃ¼cke`). Der Generator liefert „Zerstörte Brücke“ korrekt, daher passt der
+  Vergleich nicht, und generierte Brücken erhalten `worldgen-…` statt `broken-bridge`. Das wird in
+  V1a mit einem Test behoben.
+- Datenbasis liegt in `UnityHexMapView/Assets/StreamingAssets/GameData` mit
+  `game-data-manifest.json` (7 Archetypen, 8 Varianten, 8 Zustandsprofile, 30 Modifier,
+  19 Visual-Assets, Fraktionssignaturen in `Factions/signatures.json`).
+- Der Zustand der Orte im Wissen des Spielers wird über `KnowledgeState` (`FindLocationCondition`,
+  `ObserveLocationCondition`) geführt. Die Fraktionsfarbe steckt im Generator als optionales
+  `Faction.Color`.
+
+## 3. Arbeitsregeln für alle Stufen
+
+1. **Wissen vor Optik.** Jede Stufe hat Tests, dass nichts über den `KnowledgeState` hinaus gezeigt wird.
+2. **Resolver zuerst testbar.** Logik in `Game.App`, Unity nur Abspielen.
+3. **Platzhalter bleiben gültig.** Jedes Teil hat einen Fallback; fehlende Teile brechen nichts.
+4. **Kleine Schritte.** Jede Stufe ist einzeln nutzbar und entfernt nichts, was noch gebraucht wird.
+   Das alte Rendering läuft hinter einem Schalter weiter, bis die neue Darstellung geprüft ist.
+5. **`UnityHexMapView.cs` wächst nicht.** Neue Darstellung entsteht in eigenen Klassen; nur
+   Einhängepunkte dürfen in der großen Datei stehen.
+6. **Review-Punkte** (laut Projektregeln Freigabe durch den Owner): Änderung von `AGENTS.md`, neue
+   Pfadart in `Game.Core`, neue Datendokumente im Manifest, Szenen- und Prefab-Architektur.
+7. **Daten statt Code** für alles, was Autorinnen und Autoren später ändern sollen.
+
+## 4. Übersicht der Stufen
+
+| Stufe | Inhalt | Größe | Abhängig von | Tor |
+| --- | --- | --- | --- | --- |
+| V0 | Stilprototyp in Unity, Dokumente anpassen | M | – | G0: Stil bestätigt |
+| V1a | `Chasm`-Pfad, Weltdaten, Validierung, Fehlerkorrektur | M | G0 | G1 |
+| V1b | Gelände mit Relief, Linienobjekte, Kamera | L | V1a | G1: Brücken-Durchstich sichtbar |
+| V2 | Resolver, Datenformat, Tutorial-Orte | L | V1b | G2: Tutorial spielbar |
+| V3 | Alle Generator-Orte, neue Varianten, Modifier | XL | V2 | G3 |
+| V4 | Figurengruppen und Fraktionen | L | V2 | G4 |
+| V5 | Tiere und Spuren | M | V3, V4 | G5 |
+| V6 | Anbindung an die Content Workbench | M | V2, Workbench E1 | G6 |
+
+V4 kann parallel zu V3 laufen, wenn zwei Personen oder Sitzungen beteiligt sind; sie berühren
+unterschiedliche Dateien.
+
+## 5. Stufe V0 – Stilprototyp
+
+Ziel: Der Owner bestätigt den Look am echten Unity-Rendering, bevor Daten und Logik angefasst werden.
+
+Arbeitspakete:
+
+1. Neue Testszene (zum Beispiel `MapStyleSandbox`) im Unity-Projekt, ohne Anbindung an `GameState`.
+2. Erzeugtes Gelände: Relief mit Graben, Hügeln und Bergen, Wasser im Graben, Wände in Erd- und Felsfarbe.
+3. Teile aus Grundformen, per Editor-Werkzeug als Prefabs erzeugt (Erweiterung von
+   `HexMapPrefabGenerator` oder eigenes Werkzeug): Brücke in vier Formen, Lager, Grab, Tor,
+   Turm, Höhle, Zaun, Bäume, Expeditionsgruppe.
+4. Wissens-Shader mit den Stufen bestätigt, berichtet, unbekannt; unbekanntes Gelände flach.
+5. Archetyp-Markerring mit Symbol und Farbe (Palette aus Konzept 9.2).
+6. Orbit-Kamera (Drehung, Zoom, Fokus auf Wunsch), orthografisch.
+7. Entwurf der Dokumentänderungen: `AGENTS.md` (Regel zur Kartendarstellung),
+   `map_presentation_simplified_concept.md` (als abgelöst markieren), `ui_ux_concept.md` (Kamera,
+   Marker). **Nur als Entwurf zur Freigabe.**
+
+Abnahme (G0):
+
+- Der Owner bestätigt Look, Lesbarkeit der Zustände und Wissensgrade, Kamera und Leistung.
+- Frame-Zeit auf der Zielhardware ist akzeptabel (Messwert wird im Plan nachgetragen).
+- Entscheidung über die Dokumentänderungen.
+
+Nicht enthalten: Anbindung an den Spielzustand, Daten, Resolver.
+
+## 6. Stufe V1a – Pfadart, Weltdaten, Validierung
+
+Ziel: Die Weltdaten kennen Gräben und Schluchten als sichtbare Linie. Die Sperrlogik bleibt am Kantenort.
+
+Arbeitspakete:
+
+1. `WorldPathKind.Chasm` am Ende des Enums ergänzen (`Game.Core`). Review-Punkt.
+2. `WorldGenBridge`: für Kantenhindernisse einen `Chasm`-Pfad erzeugen (Höhensprung und
+   „Verschütteter Pass“); Flussüberquerungen verweisen auf den bestehenden `River`-Pfad.
+3. `TutorialGameFactory`: `river-gray` als `Chasm` führen, Verlauf unverändert.
+4. Validierung: jeder sperrende Kantenort eines `route-obstacle` liegt auf einem `River`- oder
+   `Chasm`-Pfad. Meldung mit Ort, Pfad und Kante.
+5. Fehler in `WorldGenBridge.VariantIdFor` (doppelt kodierte Umlaute) beheben und mit einem Test
+   absichern; Quelldatei auf UTF-8 prüfen.
+6. Tabelle `VariantIdFor` zu einer datengetriebenen Zuordnung ausbauen (Generatorname zu
+   Varianten-ID), damit neue Varianten ohne Codeänderung angebunden werden. Die Tabelle liegt als
+   JSON im Manifest.
+
+Tests (`Game.Tests`):
+
+- `Chasm`-Pfad wird erzeugt und liegt auf der Hindernis-Kante.
+- Validator meldet Hindernis ohne Pfad und Pfad ohne Hindernis (Hinweis).
+- Variantenzuordnung für „Zerstörte Brücke“ liefert `broken-bridge`.
+- Bestehende Tutorial- und Bewegungstests bleiben grün; Snapshots ohne Änderung ladbar.
+
+Abnahme: alle Tests grün, Save-Kompatibilität bestätigt, Review der Core-Änderung.
+
+## 7. Stufe V1b – Gelände, Linien, Kamera
+
+Ziel: Das Brückenproblem ist gelöst: Der Graben läuft sichtbar durch, die Sperre ist erkennbar.
+
+Arbeitspakete:
+
+1. `MapTerrainBuilder` (Unity): erzeugt das Gelände-Mesh aus `TerrainType`, Pfaden und Seed. Hügel
+   und Berge erhalten Relief aus dem Geländetyp mit deterministischem Rauschen (Core hat keine
+   Höhe). Gräben und Flussbetten werden abgesenkt. Das Relief ist reine Darstellung.
+2. **Wissen im Gelände:** Das Mesh wird aus dem bekannten Teil der Karte gebaut. Unbekanntes ist
+   flach und pale; berichtetes Gelände ist weicher. Es verrät kein Relief.
+3. `MapLineBuilder`: Linienobjekte für `River`, `Chasm`, `Road`, `Wall` mit durchgehender Geometrie,
+   Wänden und Wasserfläche. Straßen enden sichtbar an Hindernissen.
+4. Darstellung der Sperre: Der Durchlass in der Linie folgt dem `operational`-Zustand des
+   Kantenorts (Brücke noch als einfacher Platzhalter).
+5. `MapCameraController`: Orbit, begrenzte Neigung, Zoomstufen Übersicht/Gebiet/Ort, Objektzoom
+   auf Wunsch, kein automatisches Folgen. Die Drehung wird nicht gespeichert.
+6. Alte Darstellung hinter einem Schalter weiter erhaltbar.
+7. `TerritoryBorder` wird nicht als farbige Linie gezeigt (nur Debug); Entscheidung dokumentieren.
+
+Tests:
+
+- Terrain-Builder ist deterministisch (gleicher Seed, gleiches Mesh), prüfbar ohne Szene.
+- Wissenstest: unbekannte Felder liefern flache Höhe.
+- Lauftests in Unity manuell: Brücken-Durchstich in allen Betriebszuständen.
+
+Abnahme (G1): Der Graben läuft durch, die Brücke ist nicht umgehbar, die Sperre stimmt mit der
+Logik überein; Kamera bedienbar; Leistung im Rahmen.
+
+## 8. Stufe V2 – Resolver, Daten, Tutorial-Orte
+
+Ziel: Die sechs Tutorial-Orte werden vollständig über Daten und Resolver dargestellt, in allen ihren Zuständen.
+
+Arbeitspakete:
+
+1. Datendokumente anlegen und im Manifest eintragen: `Visuals/visual-parts.json`,
+   `Visuals/visual-compositions.json`, `Visuals/visual-markers.json`. Schemas gemäß
+   `cross_system_json_authoring_schema.md`. Review-Punkt.
+2. Typen in `Game.Core` oder `Game.App` (je nach Reichweite) und Lader im `GameDataCatalog`;
+   Validierung: unbekannte Teile, Zustands-IDs, verbotene Verweise, fehlende Fallbacks.
+3. `LocationVisualResolver` in `Game.App`: Eingaben sind Ort, Anker, Archetyp, Variante, Modifier,
+   Zustandskanäle und Wissensstand. Ausgabe ist `LocationVisualDescription` (Teile, Formen, Posen,
+   Effekte, Marker, Wissensgrad).
+4. Auswahlregeln gemäß Konzept 7.2 und Kanalüberlagerung gemäß 7.5a.
+5. Unity-Bausteine: `PartLibrary`, `CompositionBuilder`, `TransitionAnimator` (Posen, Ein- und
+   Ausblenden, Übergangseffekte), Markerring, Wissens-Shader.
+6. Die sechs Tutorial-Orte per Daten abbilden; `BuildLandmarkObject`-Zweig für diese Arten
+   abschalten, sobald geprüft.
+7. Übergänge nur bei Wissen: Zustandswechsel ohne Beobachtung ändern die Karte nicht.
+
+Tests:
+
+- Pro Variante und Betriebszustand liefert der Resolver die erwartete Beschreibung.
+- Überlagerung der Kanäle und Vorrang bei Slot-Konflikten.
+- **Wissenstests:** unbekannt ergibt neutralen Marker ohne Details; berichtet ist entsättigt; alt
+  zeigt den letzten bekannten Stand und wird nicht aktualisiert; der Ring verrät den Typ nicht vor
+  dem Wissen.
+- Fallbacks: fehlende Komposition, fehlendes Teil, unbekannter Zustand.
+- Tutorialroute läuft durch, Karte und Logik stimmen überein.
+
+Abnahme (G2): Tutorial vollständig spielbar mit der neuen Darstellung; Owner prüft alle
+Zustandsübergänge im Spiel.
+
+## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
+
+Ziel: Alle heute vom Generator erzeugten Orte und die ergänzten Varianten haben ein Bild.
+
+Arbeitspakete:
+
+1. **Neue Varianten als Daten** (Review-Punkt, da Autorendaten): Höhle (`investigation-site`),
+   Mine (`resource-site`), Siedlung und Dorf (`contact-site`). Jeweils Variante, Szenarioprofil,
+   Zustandsprofil, Inhaltsprofil, Texte (`de.json`), Visual-Platzhalter und Zuordnung im Generator.
+   Diese Arbeit folgt `content_workbench_editor_concept.md` und den vorhandenen Schemas.
+2. Weitere Generatorvarianten als Katalogvarianten anlegen (Anhang A.3 des Konzepts), damit sie
+   nicht mehr als `worldgen-<name>` ohne Definition laufen.
+3. Teile und Kompositionen für alle Gruppen: Untersuchungs-, Verwahrungs-, Spuren-,
+   Ressourcenorte, Gefahrenzonen, Landmarken, Grenzzeichen (Pfadanker), Wegehindernisse.
+4. Ankerarten: Punkt, Fläche (Decal und Streuung), Kante, Pfad (Zeichen in Abständen).
+5. Modifier-Schichten für alle 30 Modifier, mit eigenen Teilen nur dort, wo nötig.
+6. Archetyp-Vorlagen (Konzept 7.4) und generischer Platzhalter für unbekannte Varianten.
+7. Leistungsmaßnahmen: Pooling, LOD nach Größenklasse, Sichtbarkeit nach Zoomstufe.
+
+Tests:
+
+- **Abdeckungstest:** jede Katalogvariante und jeder Modifier hat Komposition oder Fallback.
+- Generator-Läufe mit festen Seeds: jeder platzierte Ort wird aufgelöst, keiner fällt auf einen
+  ungültigen Zustand.
+- Wissens- und Fallbacktests wie in V2 für die neuen Gruppen.
+
+Abnahme (G3): Eine generierte Welt (mehrere Seeds) ist vollständig dargestellt; Leistungsmessung
+mit vielen Orten im Rahmen.
+
+## 10. Stufe V4 – Figurengruppen und Fraktionen
+
+Ziel: Expeditionen und Fraktionsgruppen sind lesbar, ohne Weltwahrheit zu verraten.
+
+Arbeitspakete:
+
+1. Figurenbaukasten (Körper, Ausrüstung, Rollenprops) als erzeugte Teile; Animationen `idle`,
+   `walk`, `alert`, `act`, `down`.
+2. Gruppendarstellung: Expedition (Zustand der Gruppe, nicht pro Person), Patrouillen, Posten,
+   Dorfbewohner.
+3. Fraktionsdarstellung aus `Faction.Color` und den Signaturen; **nur bei bekannter Fraktion**,
+   sonst neutral. Gebiete bleiben ohne Farbfläche und ohne Linie.
+4. Bewegung folgt dem Pfad der Logik und läuft ihr nach, nie voraus.
+5. Resolver-Erweiterung `GroupVisualDescription` mit denselben Wissensregeln.
+6. Validator: Fraktionsfarbe zu nah an einer Archetypfarbe ergibt einen Hinweis.
+
+Tests:
+
+- Unbekannte Fraktion erscheint neutral; bekannte mit Farbe und Zeichen.
+- Verbündet, neutral oder feindlich folgt dem **bekannten** Verhältnis.
+- Gruppengröße und Zustand ergeben sich aus der Logik.
+
+Abnahme (G4): Expedition begleiten und Fraktionsbegegnung im Tutorial prüfen.
+
+## 11. Stufe V5 – Tiere und Spuren
+
+Ziel: Raubtiere und Herdentiere sind Teil von Orten, Ereignisse hinterlassen Spuren.
+
+Arbeitspakete:
+
+1. Artenkatalog (`Visuals/visual-creatures.json`) mit wenigen Raubtier-Varianten und Herdentieren;
+   Lebensraum-Tags aus Biom und Ortsvariante.
+2. Tiere erscheinen **nur** als Teil von Orten und Zuständen (Raubtiergebiet, Tierherde,
+   Dschungel- und Sumpfjäger) oder als Spuren. Es gibt keine freien, nicht erklärten Tiere,
+   die verborgene Welt verraten könnten.
+3. Spuren von Ereignissen (Fußabdrücke, Rauch, zurückgelassene Teile, Markierung am Ort), sichtbar
+   gemäß Wissen. Die Ereignisse selbst bleiben Bild und Bericht.
+4. Animationen: Herde, Raubtier `idle`, `alert`, `act`.
+
+Tests: Tiere folgen Ort und Wissensgrad; unbeobachtete Ereignisse erzeugen keine Spuren vor dem Bericht.
+
+Abnahme (G5): Dschungel- und Sumpfort mit Raubtierspuren prüfen.
+
+## 12. Stufe V6 – Anbindung an die Content Workbench
+
+Ziel: Teile und Kompositionen sind in der Workbench bearbeitbar und mit Vorschau prüfbar.
+
+Arbeitspakete (abhängig vom Stand der Workbench E1/E2):
+
+1. Visual-Dokumente in die Dokumentfamilien der Workbench aufnehmen (Referenzindex, Validierung).
+2. Vorschau über den Resolver (ohne Unity), optional Unity-Vorschau über die Testszene aus V0.
+3. Prüfungen: fehlende Teile, ungenutzte Teile, Zustandslücken, Wissensvorschau.
+
+Abnahme (G6): Eine neue Variante entsteht nur durch Daten und erscheint korrekt im Spiel.
+
+## 13. Querschnitt
+
+### 13.1 Leistung
+
+Vorgaben (Messwerte werden in V0 festgelegt): Zeitbudget pro Bild, Zahl sichtbarer Teile, Zahl der
+Lichter und Schatten. Maßnahmen: Pooling, LOD, Sichtbarkeitsprüfung, günstige Materialien, Limit für
+gleichzeitig aktive Lichter.
+
+### 13.2 Tests und Qualitätssicherung
+
+- Alle Logik in `Game.App` mit Tests in `Game.Tests`; Unity-Teil mit manuellen Prüflisten je Stufe.
+- Regressionsprüfung des Tutorialverlaufs nach jeder Stufe.
+- Sichtprüfungen mit Screenshots der Wissensstände und Zustände pro Ort (Referenzbilder im
+  Repository, soweit sinnvoll).
+
+### 13.3 Dokumentation
+
+- Konzept bei jeder Stufe aktualisieren (Entscheidungen, Teilekatalog).
+- `AGENTS.md`, `map_presentation_simplified_concept.md`, `ui_ux_concept.md` nach G0 anpassen.
+- `gameconcept/CHANGELOG.md` ergänzen.
+
+### 13.4 Refactoring der großen Unity-Datei
+
+`UnityHexMapView.cs` wird nicht umgebaut, sondern schrittweise verschlankt: Gelände und Linien in
+V1b, Orte in V2, Figuren in V4. Pro Stufe werden die ersetzten Abschnitte hinter dem Schalter
+entfernt, sobald der Owner sie freigegeben hat.
+
+## 14. Risiken
+
+| Risiko | Gegenmaßnahme |
+| --- | --- |
+| Stil bewährt sich nicht in Unity | V0 mit Tor G0 vor allem anderen |
+| Aufwand der Teile wächst | erzeugte Teile, Platzhalter, Priorisierung nach Spielrelevanz |
+| Relief verrät Weltwahrheit | Gelände wird aus Wissen gebaut; Tests |
+| Karte und Logik laufen auseinander | Sperre am Kantenort, Validierung, Tutorialtests |
+| Leistung bei vielen Orten | Pooling, LOD, Messung ab V0 |
+| Datenformat passt später nicht | Schema im Review, offene Felder, Version im Dokument |
+| Generatorvarianten ohne Definition | V1a-Zuordnung, V3-Abdeckungstest |
+| Doppelt kodierte Umlaute auch anderswo | Prüfung der Quelldateien auf Kodierung in V1a |
+
+## 15. Nicht im Umfang
+
+- Echte Terrainhöhe in der Logik, Sichtlinien, Deckung.
+- Live-Inszenierung von Ereignissen auf der Karte.
+- Finale Kunstassets und Audio.
+- Neue Archetypen oder neue Spielsysteme.
+- Änderung des Save-Formats (V1a bestätigt, dass keine nötig ist).
+
+## 16. Review-Punkte für den Owner
+
+1. Freigabe von V0 (Beginn) und danach G0 (Stil).
+2. Änderung der Projektregeln in `AGENTS.md` und den Kartendokumenten.
+3. Neue Pfadart `Chasm` in `Game.Core`.
+4. Neue Datendokumente im Manifest und deren Schemas.
+5. Neue Varianten (Höhle, Mine, Siedlung, Dorf) einschließlich Texten.
+6. Entscheidung, wann die alte Darstellung entfernt wird.
