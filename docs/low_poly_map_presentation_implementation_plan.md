@@ -266,7 +266,14 @@ wie beim Lager. Die Testhilfen der Entwicklungsansicht gelten für jeden Ort mit
 **V2e – Tor, Grenzwarnung, Ufer aus Daten (umgesetzt, in Unity ungeprüft)**
 
 Alle sechs Tutorial-Orte kommen jetzt aus Kompositionen: `vis-sealed-gate`, `vis-border-warning`, `vis-coastal-landing`.
-Einzelheiten: `low_poly_map_presentation_v2e_review.md`. Offen: alte Darstellungszweige entfernen, Wege an Brückenenden.
+Einzelheiten: `low_poly_map_presentation_v2e_review.md`. Offen: Wege an Brückenenden.
+
+**V2f – Orts-Modelle des klassischen Renderers entfernt**
+
+`BuildLandmarkObject` und die Zweige für Grab, Lager, Schlucht, Ruine und Landmarke sind gelöscht. Der klassische Rückfall
+(Shader fehlt, Schalter aus, Prozedural-Modus) zeichnet nur noch Gelände, Siedlungen, Türme, Minen und Mauern; Orte ohne
+Meshes erscheinen dort nur über die Overlays. Chunk-Renderer, Prozedural-Modus und die Prefab-Bibliothek bleiben bewusst
+bestehen (Entscheidung des Owners: nur Orts-Modelle). Die Prefab-Felder (`gravePrefabs` usw.) sind jetzt ungenutzt.
 
 Umgesetzt (V2b): Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
 Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
