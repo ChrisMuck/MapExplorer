@@ -454,8 +454,9 @@ namespace MapExplorer.MapStyle
 
         /// <summary>
         /// Puts an edge location where the ravine or river that explains it is narrowest and straightest near
-        /// the blocked edge: the deck crosses the line at right angles, is centered between the two banks and is
-        /// stretched to span them.
+        /// the blocked edge. Positions along the line and directions up to 40 degrees off the right angle are
+        /// tried; a spot scores better the shorter the crossing, the closer to the edge and the more dry land
+        /// lies beside both bridge ends. The bridge is centered between the banks and stretched to span them.
         /// </summary>
         private bool TryPlaceOnLine(SpecialLocationState location, LocationVisualDescription description, out Vector3 position, out float yaw, out float span)
         {
@@ -483,37 +484,67 @@ namespace MapExplorer.MapStyle
             var bestScore = float.MaxValue;
             for (var step = -5; step <= 5; step++)
             {
-                var candidate = hit.Point + hit.Tangent * (step * 0.8f);
-                var line = lines.Nearest(candidate);
+                var line = lines.Nearest(hit.Point + hit.Tangent * (step * 0.8f));
                 if (line.Distance > 1f)
                 {
                     continue;
                 }
 
-                var across = new Vector2(-line.Tangent.y, line.Tangent.x);
-                if (!TryFindBanks(line.Point, across, out var toBank1, out var toBank2))
+                var perpendicular = new Vector2(-line.Tangent.y, line.Tangent.x);
+                for (var angle = -40; angle <= 40; angle += 10)
                 {
-                    continue;
-                }
+                    var across = Rotate(perpendicular, angle);
+                    if (!TryFindBanks(line.Point, across, out var toBank1, out var toBank2))
+                    {
+                        continue;
+                    }
 
-                var width = toBank1 + toBank2;
-                var score = width + Mathf.Abs(step) * 0.12f;
-                if (score >= bestScore)
-                {
-                    continue;
-                }
+                    var end1 = line.Point + across * toBank1;
+                    var end2 = line.Point - across * toBank2;
+                    var score = toBank1 + toBank2 + Mathf.Abs(step) * 0.12f + Mathf.Abs(angle) * 0.015f + SideLandPenalty(end1, across) + SideLandPenalty(end2, across);
+                    if (score >= bestScore)
+                    {
+                        continue;
+                    }
 
-                bestScore = score;
-                found = true;
-                span = width;
-                var center = line.Point + across * ((toBank1 - toBank2) * 0.5f);
-                var bank1 = GroundAt(line.Point + across * toBank1, false);
-                var bank2 = GroundAt(line.Point - across * toBank2, false);
-                position = new Vector3(center.x, (bank1.y + bank2.y) * 0.5f + 0.2f, center.y);
-                yaw = Mathf.Atan2(across.x, across.y) * Mathf.Rad2Deg;
+                    bestScore = score;
+                    found = true;
+                    span = toBank1 + toBank2;
+                    var center = line.Point + across * ((toBank1 - toBank2) * 0.5f);
+                    var height1 = GroundAt(end1, false).y;
+                    var height2 = GroundAt(end2, false).y;
+                    position = new Vector3(center.x, (height1 + height2) * 0.5f + 0.2f, center.y);
+                    yaw = Mathf.Atan2(across.x, across.y) * Mathf.Rad2Deg;
+                }
             }
 
             return found;
+        }
+
+        private static Vector2 Rotate(Vector2 value, float degrees)
+        {
+            var radians = degrees * Mathf.Deg2Rad;
+            var cos = Mathf.Cos(radians);
+            var sin = Mathf.Sin(radians);
+            return new Vector2(value.x * cos - value.y * sin, value.x * sin + value.y * cos);
+        }
+
+        /// <summary>Penalty when the ground beside a bridge end is water or carved away instead of dry land.</summary>
+        private float SideLandPenalty(Vector2 end, Vector2 across)
+        {
+            var side = new Vector2(-across.y, across.x);
+            var penalty = 0f;
+            foreach (var sign in new[] { -1f, 1f })
+            {
+                var point = end + side * (sign * 1.2f);
+                var sample = terrain.SampleAt(point, false);
+                if (!sample.Valid || sample.Height <= MapStyleWorldTerrain.WaterLevel + 0.15f || terrain.TrenchFactor(point) > 0.5f || terrain.RiverFactor(point) > 0.5f)
+                {
+                    penalty += 0.6f;
+                }
+            }
+
+            return penalty;
         }
 
         /// <summary>Walks away from a line in both directions until the carved ravine or river bed ends, that is the bank top.</summary>

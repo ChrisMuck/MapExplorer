@@ -94,6 +94,11 @@ Nicht geprüft:
   einen Meter unter der Kante (Tutorial: Höhe -0,78 statt 0,27). Jetzt gilt die Oberkante: Das Deck liegt
   auf dem Gelände, das nicht mehr von der Schlucht oder vom Flussbett abgesenkt ist (Tutorial: Breite 4,5,
   Streckung 1,15, Höhe 0,27).
+- **Ausrichtung und Warnschild (dritte Korrektur):** Die Ansicht probiert Stellen entlang der Linie und
+  Richtungen bis 40 Grad neben dem rechten Winkel aus und bewertet zusätzlich, ob neben beiden Brückenenden
+  trockenes Land liegt (sonst Abzug). Das Warnschild steht nicht mehr seitlich neben dem Deck, wo bei einer
+  Flussbiegung Wasser sein kann, sondern hinter dem Brückenende auf dem Ufer (`warning-sign` bei
+  `0,9 / 0,45 / -2,75`).
 - Bäume meiden die Stellen gezeichneter Orte; dadurch verraten Lücken in bekanntem Wald keine
   unbekannten Orte, solange deren Feld unbekannt ist.
 - Die Ansicht liegt noch nicht im Spielablauf: Feldwahl, Befehle, Kamera und Overlays der alten Ansicht

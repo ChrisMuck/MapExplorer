@@ -638,7 +638,7 @@
         {
           "id": "warning-sign",
           "part": "warning-sign",
-          "position": [1.7, 0.45, -1.7],
+          "position": [0.9, 0.45, -2.75],
           "shows": {
             "channel": "operational",
             "in": ["blocked", "risky-passage", "destroyed"]
