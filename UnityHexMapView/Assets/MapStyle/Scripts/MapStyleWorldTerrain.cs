@@ -91,6 +91,11 @@ namespace MapExplorer.MapStyle
                 Amplitude = BaseAmplitude(terrain);
                 Knowledge = knowledge;
             }
+
+            public Tile WithKnowledge(float knowledge)
+            {
+                return new Tile(Core, Terrain, knowledge);
+            }
         }
 
         public struct Sample
@@ -361,46 +366,122 @@ namespace MapExplorer.MapStyle
             }
         }
 
-        // ---- Mesh ------------------------------------------------------------------------------
+        // ---- Chunked mesh -------------------------------------------------------------------------
 
-        public Mesh BuildMesh(bool useKnowledge)
+        /// <summary>Quads per chunk side. A chunk is rebuilt on its own when the knowledge around it changes.</summary>
+        public const int ChunkCells = 24;
+
+        private int VertexCountX => Mathf.CeilToInt((max.x - min.x) / VertexStep) + 1;
+
+        private int VertexCountZ => Mathf.CeilToInt((max.y - min.y) / VertexStep) + 1;
+
+        public int ChunkCountX => Mathf.CeilToInt((VertexCountX - 1) / (float)ChunkCells);
+
+        public int ChunkCountZ => Mathf.CeilToInt((VertexCountZ - 1) / (float)ChunkCells);
+
+        public static float ChunkWorldSize => ChunkCells * VertexStep;
+
+        /// <summary>The chunk a world position falls into, clamped to the map.</summary>
+        public Vector2Int ChunkOf(Vector2 point)
         {
-            var nx = Mathf.CeilToInt((max.x - min.x) / VertexStep) + 1;
-            var nz = Mathf.CeilToInt((max.y - min.y) / VertexStep) + 1;
-            var samples = new Sample[nx, nz];
-            var positions = new Vector3[nx, nz];
-            for (var iz = 0; iz < nz; iz++)
+            return new Vector2Int(
+                Mathf.Clamp(Mathf.FloorToInt((point.x - min.x) / ChunkWorldSize), 0, ChunkCountX - 1),
+                Mathf.Clamp(Mathf.FloorToInt((point.y - min.y) / ChunkWorldSize), 0, ChunkCountZ - 1));
+        }
+
+        /// <summary>
+        /// Replaces the knowledge values of all tiles and returns the chunks whose ground changes, so a caller
+        /// can rebuild only those. A tile influences the ground up to about one and a half hexes away.
+        /// </summary>
+        public HashSet<Vector2Int> UpdateKnowledge(Func<HexCoord, float> knowledgeOf)
+        {
+            var dirty = new HashSet<Vector2Int>();
+            var changed = new List<KeyValuePair<HexCoord, Tile>>();
+            foreach (var pair in tiles)
             {
-                for (var ix = 0; ix < nx; ix++)
+                var knowledge = knowledgeOf(pair.Value.Core);
+                if (Mathf.Abs(knowledge - pair.Value.Knowledge) > 0.0001f)
+                {
+                    changed.Add(new KeyValuePair<HexCoord, Tile>(pair.Key, pair.Value.WithKnowledge(knowledge)));
+                }
+            }
+
+            var reach = HexSize * 1.35f + VertexStep * 2f;
+            foreach (var pair in changed)
+            {
+                tiles[pair.Key] = pair.Value;
+                var center = ViewToWorld(pair.Key);
+                var low = ChunkOf(center - Vector2.one * reach);
+                var high = ChunkOf(center + Vector2.one * reach);
+                for (var x = low.x; x <= high.x; x++)
+                {
+                    for (var z = low.y; z <= high.y; z++)
+                    {
+                        dirty.Add(new Vector2Int(x, z));
+                    }
+                }
+            }
+
+            return dirty;
+        }
+
+        public Mesh BuildChunkMesh(Vector2Int chunk, bool useKnowledge)
+        {
+            var nx = VertexCountX;
+            var nz = VertexCountZ;
+            var ix0 = chunk.x * ChunkCells;
+            var iz0 = chunk.y * ChunkCells;
+            var ix1 = Mathf.Min(ix0 + ChunkCells, nx - 1);
+            var iz1 = Mathf.Min(iz0 + ChunkCells, nz - 1);
+            var width = ix1 - ix0 + 1;
+            var depth = iz1 - iz0 + 1;
+            var samples = new Sample[width, depth];
+            var positions = new Vector3[width, depth];
+            for (var iz = iz0; iz <= iz1; iz++)
+            {
+                for (var ix = ix0; ix <= ix1; ix++)
                 {
                     var jitter = new Vector2(
                         (Hash(ix, iz) - 0.5f) * VertexStep * 0.45f,
                         (Hash(iz, ix + 17f) - 0.5f) * VertexStep * 0.45f);
                     var p = new Vector2(min.x + ix * VertexStep, min.y + iz * VertexStep) + jitter;
                     var sample = SampleAt(p, useKnowledge);
-                    samples[ix, iz] = sample;
-                    positions[ix, iz] = new Vector3(p.x, sample.Height, p.y);
+                    samples[ix - ix0, iz - iz0] = sample;
+                    positions[ix - ix0, iz - iz0] = new Vector3(p.x, sample.Height, p.y);
                 }
             }
 
             var builder = new MapStyleMeshBuilder();
-            var face = 0;
-            for (var iz = 0; iz < nz - 1; iz++)
+            for (var iz = iz0; iz < iz1; iz++)
             {
-                for (var ix = 0; ix < nx - 1; ix++)
+                for (var ix = ix0; ix < ix1; ix++)
                 {
-                    if (!samples[ix, iz].Valid || !samples[ix + 1, iz].Valid || !samples[ix, iz + 1].Valid || !samples[ix + 1, iz + 1].Valid)
+                    var lx = ix - ix0;
+                    var lz = iz - iz0;
+                    if (!samples[lx, lz].Valid || !samples[lx + 1, lz].Valid || !samples[lx, lz + 1].Valid || !samples[lx + 1, lz + 1].Valid)
                     {
-                        face += 2;
                         continue;
                     }
 
-                    AddFace(builder, positions[ix, iz], positions[ix, iz + 1], positions[ix + 1, iz + 1], samples[ix, iz], useKnowledge, face++);
-                    AddFace(builder, positions[ix, iz], positions[ix + 1, iz + 1], positions[ix + 1, iz], samples[ix + 1, iz + 1], useKnowledge, face++);
+                    var face = (iz * (nx - 1) + ix) * 2;
+                    AddFace(builder, positions[lx, lz], positions[lx, lz + 1], positions[lx + 1, lz + 1], samples[lx, lz], useKnowledge, face);
+                    AddFace(builder, positions[lx, lz], positions[lx + 1, lz + 1], positions[lx + 1, lz], samples[lx + 1, lz + 1], useKnowledge, face + 1);
                 }
             }
 
-            return builder.Build(useKnowledge ? "MapStyleWorldKnown" : "MapStyleWorldTruth");
+            return builder.Build("MapStyleChunk-" + chunk.x + "-" + chunk.y);
+        }
+
+        /// <summary>Forest tiles whose center lies in the chunk, as (axial view coordinate, Game.Core coordinate).</summary>
+        public IEnumerable<KeyValuePair<HexCoord, HexCoord>> ForestTilesIn(Vector2Int chunk)
+        {
+            foreach (var pair in tiles)
+            {
+                if (pair.Value.Terrain == TerrainType.Forest && ChunkOf(ViewToWorld(pair.Key)) == chunk)
+                {
+                    yield return new KeyValuePair<HexCoord, HexCoord>(pair.Key, pair.Value.Core);
+                }
+            }
         }
 
         public Mesh BuildWaterMesh()

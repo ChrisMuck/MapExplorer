@@ -412,10 +412,17 @@ Besondere Regeln:
 Neue Dokumente, die im `game-data-manifest.json` eingetragen werden. Die Feldnamen sind ein
 Vorschlag und werden mit den Schemaregeln des Projekts abgeglichen.
 
-- `Visuals/visual-parts.json`: Teile-Katalog (Kategorie, Größenklasse, Formen, Tags, Fallbacks).
-- `Visuals/visual-compositions.json`: Kompositionen und Modifier-Schichten.
-- `Visuals/visual-markers.json`: Archetypfarben, Symbole, Modifier-Symbole.
-- `Visuals/visual-creatures.json`: Figuren- und Tierkataloge.
+**Entscheidung:** Zunächst ein gemeinsames Dokument `Visuals/visual-definitions.json` (documentType
+`visual-definitions`) mit den Abschnitten `markers` (Archetypfarbe und Ringlücken), `parts`
+(Teile aus Grundformen) und `compositions` (Elemente je Archetyp oder Variante). Es lässt sich
+später aufteilen, zum Beispiel um Figuren- und Tierkataloge. Das Dokument ist im Katalog optional;
+ohne Dokument fällt jeder Ort auf einen schlichten Marker zurück.
+
+Aufbau eines Elements: Teil, Position, Drehung, optional `shows` (Zustandskanal und Zustands-IDs, in
+denen es sichtbar ist) und `poses` (Versatz, Drehung, Skalierung je Zustand). Zustands-IDs sind die
+der Zustandsprofile; der Sonderwert `unknown` gilt, wenn der Spieler den Zustand nicht kennt. Die
+Validierung prüft Archetyp, Variante, Teile und Zustands-IDs und verlangt, dass eine Komposition
+jeden Wert eines Kanals abdeckt, auf den sie reagiert.
 
 Beispiel (gekürzt):
 

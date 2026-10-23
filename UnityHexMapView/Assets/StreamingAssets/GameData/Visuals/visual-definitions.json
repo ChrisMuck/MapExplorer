@@ -1,0 +1,650 @@
+{
+  "documentType": "visual-definitions",
+  "schemaVersion": 1,
+  "markers": [
+    {
+      "archetypeId": "*",
+      "color": "#C8B88A",
+      "ringGaps": 6
+    },
+    {
+      "archetypeId": "route-obstacle",
+      "color": "#E69F00",
+      "ringGaps": 3
+    },
+    {
+      "archetypeId": "investigation-site",
+      "color": "#0072B2",
+      "ringGaps": 4
+    },
+    {
+      "archetypeId": "contact-site",
+      "color": "#009E73",
+      "ringGaps": 5
+    },
+    {
+      "archetypeId": "containment-site",
+      "color": "#CC79A7",
+      "ringGaps": 2
+    },
+    {
+      "archetypeId": "territorial-marker",
+      "color": "#F0E442",
+      "ringGaps": 7
+    },
+    {
+      "archetypeId": "hazard-site",
+      "color": "#D55E00",
+      "ringGaps": 8
+    },
+    {
+      "archetypeId": "natural-phenomenon",
+      "color": "#F2EFE6",
+      "ringGaps": 0
+    }
+  ],
+  "parts": [
+    {
+      "id": "bridge-plank-old-a",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 0.1, 0.36],
+          "color": "#A88556"
+        }
+      ]
+    },
+    {
+      "id": "bridge-plank-old-b",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 0.1, 0.36],
+          "color": "#9A7A4A"
+        }
+      ]
+    },
+    {
+      "id": "bridge-plank-new-a",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 0.1, 0.36],
+          "color": "#DCB478"
+        }
+      ]
+    },
+    {
+      "id": "bridge-plank-new-b",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 0.1, 0.36],
+          "color": "#D2A96A"
+        }
+      ]
+    },
+    {
+      "id": "bridge-stringer-full",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.14, 0.16, 4.6],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "bridge-stringer-half",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.14, 0.16, 1.7],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "bridge-rail",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.07, 0.07, 4.4],
+          "color": "#6B5230"
+        }
+      ]
+    },
+    {
+      "id": "bridge-post",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.14, 0.7, 0.14],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "bridge-beam",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.16, 0.2, 1.6],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "bridge-debris-plank",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.4, 0.08, 1.1],
+          "color": "#9A7A4A"
+        }
+      ]
+    },
+    {
+      "id": "bridge-scaffold-leg",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.1, 1.4, 0.1],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "bridge-scaffold-beam",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.2, 0.08, 0.08],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "warning-sign",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38"
+        },
+        {
+          "shape": "box",
+          "size": [0.45, 0.3, 0.04],
+          "color": "#B23A2A",
+          "position": [0.25, 0.3, 0]
+        }
+      ]
+    }
+  ],
+  "compositions": [
+    {
+      "id": "vis-broken-bridge",
+      "match": {
+        "archetypeId": "route-obstacle",
+        "variantId": "broken-bridge"
+      },
+      "anchorMode": "edge",
+      "ringRadius": 2.2,
+      "elements": [
+        {
+          "id": "plank-old-0",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, -2.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-old-1",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, -1.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-old-2",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, -1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-old-3",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, -1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          },
+          "poses": {
+            "blocked": {
+              "position": [0, -0.1, 0.05],
+              "euler": [29, 0, 0]
+            },
+            "risky-passage": {
+              "position": [0, -0.1, 0.05],
+              "euler": [29, 0, 0]
+            }
+          }
+        },
+        {
+          "id": "plank-old-4",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, -0.6],
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "plank-old-5",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, -0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "plank-old-6",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "plank-old-7",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, 0.6],
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "plank-old-8",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, 1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          },
+          "poses": {
+            "blocked": {
+              "position": [0, -0.1, -0.05],
+              "euler": [-29, 0, 0]
+            },
+            "risky-passage": {
+              "position": [0, -0.1, -0.05],
+              "euler": [-29, 0, 0]
+            }
+          }
+        },
+        {
+          "id": "plank-old-9",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-old-10",
+          "part": "bridge-plank-old-a",
+          "position": [0, 0, 1.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-old-11",
+          "part": "bridge-plank-old-b",
+          "position": [0, 0, 2.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "plank-new-0",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, -2.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-1",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, -1.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-2",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, -1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-3",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, -1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-4",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, -0.6],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-5",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, -0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-6",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-7",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, 0.6],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-8",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, 1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-9",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-10",
+          "part": "bridge-plank-new-a",
+          "position": [0, 0, 1.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "plank-new-11",
+          "part": "bridge-plank-new-b",
+          "position": [0, 0, 2.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "stringer-full-l",
+          "part": "bridge-stringer-full",
+          "position": [-0.62, -0.14, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "repaired", "provisional"]
+          }
+        },
+        {
+          "id": "stringer-half-l-a",
+          "part": "bridge-stringer-half",
+          "position": [-0.62, -0.14, -1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "stringer-half-l-b",
+          "part": "bridge-stringer-half",
+          "position": [-0.62, -0.14, 1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "rail-l",
+          "part": "bridge-rail",
+          "position": [-0.806, 0.55, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "repaired", "provisional"]
+          }
+        },
+        {
+          "id": "post-l-a",
+          "part": "bridge-post",
+          "position": [-0.806, 0.3, -2.0],
+          "poses": {
+            "destroyed": {
+              "position": [0, -0.28, 0],
+              "euler": [0, 0, 7],
+              "scale": [1, 0.4, 1]
+            }
+          }
+        },
+        {
+          "id": "post-l-b",
+          "part": "bridge-post",
+          "position": [-0.806, 0.3, 2.0],
+          "poses": {
+            "destroyed": {
+              "position": [0, -0.28, 0],
+              "euler": [0, 0, 7],
+              "scale": [1, 0.4, 1]
+            }
+          }
+        },
+        {
+          "id": "stringer-full-r",
+          "part": "bridge-stringer-full",
+          "position": [0.62, -0.14, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "repaired", "provisional"]
+          }
+        },
+        {
+          "id": "stringer-half-r-a",
+          "part": "bridge-stringer-half",
+          "position": [0.62, -0.14, -1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "stringer-half-r-b",
+          "part": "bridge-stringer-half",
+          "position": [0.62, -0.14, 1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage"]
+          }
+        },
+        {
+          "id": "rail-r",
+          "part": "bridge-rail",
+          "position": [0.806, 0.55, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "repaired", "provisional"]
+          }
+        },
+        {
+          "id": "post-r-a",
+          "part": "bridge-post",
+          "position": [0.806, 0.3, -2.0],
+          "poses": {
+            "destroyed": {
+              "position": [0, -0.28, 0],
+              "euler": [0, 0, 7],
+              "scale": [1, 0.4, 1]
+            }
+          }
+        },
+        {
+          "id": "post-r-b",
+          "part": "bridge-post",
+          "position": [0.806, 0.3, 2.0],
+          "poses": {
+            "destroyed": {
+              "position": [0, -0.28, 0],
+              "euler": [0, 0, 7],
+              "scale": [1, 0.4, 1]
+            }
+          }
+        },
+        {
+          "id": "beam-hanging",
+          "part": "bridge-beam",
+          "position": [0.45, -1.1, -0.5],
+          "euler": [52, 0, 6],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage", "destroyed"]
+          }
+        },
+        {
+          "id": "debris-plank",
+          "part": "bridge-debris-plank",
+          "position": [-0.5, -1.05, 0.4],
+          "euler": [6, 29, 6],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage", "destroyed"]
+          }
+        },
+        {
+          "id": "scaffold-leg-a",
+          "part": "bridge-scaffold-leg",
+          "position": [-1.2, 0.3, -1.7],
+          "euler": [0, 0, 23],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "scaffold-leg-b",
+          "part": "bridge-scaffold-leg",
+          "position": [-1.2, 0.3, -1.7],
+          "euler": [0, 0, -23],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "scaffold-beam",
+          "part": "bridge-scaffold-beam",
+          "position": [-1.0, 0.8, -1.7],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "provisional"]
+          }
+        },
+        {
+          "id": "warning-sign",
+          "part": "warning-sign",
+          "position": [1.7, 0.45, -1.7],
+          "shows": {
+            "channel": "operational",
+            "in": ["blocked", "risky-passage", "destroyed"]
+          }
+        }
+      ]
+    }
+  ]
+}

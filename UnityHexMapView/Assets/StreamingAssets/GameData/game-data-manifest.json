@@ -28,6 +28,7 @@
     "Scenes/scene-policies.json",
     "Scenes/scout-return-fragments.json",
     "Visuals/visual-assets.json",
+    "Visuals/visual-definitions.json",
     "Scouting/focuses.json",
     "Scouting/mission-types.json",
     "Scouting/outcome-tables.json",

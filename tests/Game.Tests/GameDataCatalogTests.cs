@@ -25,7 +25,7 @@ internal sealed class GameDataCatalogTests
             ?? throw new InvalidOperationException("Game-data catalog was not loaded.");
 
         AssertTrue(catalog.UsesManifest, "Authored game data uses an explicit manifest");
-        AssertEqual(37, catalog.Documents.Count, "Manifest declares simulation, scene, visual, localization, tutorial-instance and tutorial-campaign documents");
+        AssertEqual(38, catalog.Documents.Count, "Manifest declares simulation, scene, visual, localization, tutorial-instance and tutorial-campaign documents");
         AssertEqual(6, catalog.Locations.Instances.Count, "Tutorial interaction locations load from the shared catalog");
         AssertEqual("tutorial-coastal-survey", catalog.Tutorial.Id, "Tutorial campaign composition loads from the shared catalog");
         AssertTrue(catalog.Documents.Any(document => document.DocumentType == "scout-mission-types"), "Scouting mission types are in the shared catalog");
@@ -140,7 +140,7 @@ internal sealed class GameDataCatalogTests
             var catalog = GameDataCatalog.LoadFromDirectory(root)
                 ?? throw new InvalidOperationException("Legacy game-data catalog was not loaded.");
             AssertFalse(catalog.UsesManifest, "Catalog reports legacy directory discovery");
-            AssertEqual(37, catalog.Documents.Count, "Legacy discovery still finds simulation, scene, visual, tutorial-instance and tutorial-campaign documents");
+            AssertEqual(38, catalog.Documents.Count, "Legacy discovery still finds simulation, scene, visual, tutorial-instance and tutorial-campaign documents");
         }
         finally
         {
