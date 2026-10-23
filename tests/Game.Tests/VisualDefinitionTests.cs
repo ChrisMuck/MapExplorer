@@ -22,6 +22,9 @@ internal sealed class VisualDefinitionTests
         CampCombinesTheThreeStateChannels();
         CampUnknownConditionShowsOnlyNeutralParts();
         CampFireIsALightAndSmokeOnlyWhenLived();
+        GraveShowsSealedOpenAndDisturbedForms();
+        GraveCombinesPresenceAndInteraction();
+        GraveUnknownConditionShowsOnlyNeutralParts();
         PlainStatesCountAsCoveredAndAreValidated();
     }
 
@@ -258,6 +261,59 @@ internal sealed class VisualDefinitionTests
 
         var abandoned = ResolveCamp(resolver, Camp(game), "none", "abandoned", "untouched");
         AssertTrue(!abandoned.Elements.Single(element => element.Id == "fire-light").Shown && !abandoned.Elements.Single(element => element.Id == "fire-smoke").Shown, "A cold camp has neither");
+    }
+
+    private static LocationVisualDescription ResolveGrave(LocationVisualResolver resolver, GameState game, string? operational, string? presence, string? interaction)
+    {
+        var grave = game.World.Locations.First(location => location.Id == "marked-grave");
+        return resolver.Resolve(grave, new LocationVisualContext(VisualKnowledge.Confirmed, operational, presence, interaction));
+    }
+
+    private static void GraveShowsSealedOpenAndDisturbedForms()
+    {
+        var visuals = Catalog().VisualDefinitions;
+        var composition = visuals.FindComposition("investigation-site", "marked-grave");
+        AssertTrue(composition != null, "The marked grave has a composition");
+        AssertEqual("vis-marked-grave", composition!.Id, "Grave composition id");
+        AssertEqual("point", composition.AnchorMode, "A grave sits on a single hex");
+
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(visuals);
+        AssertEqual(10, ShownCount(ResolveGrave(resolver, game, "sealed", "empty", "untouched")), "Sealed grave: mound, entrance, stones, cross and two seal bars");
+        AssertEqual(12, ShownCount(ResolveGrave(resolver, game, "open", "empty", "untouched")), "Open grave: dark opening, shovel, dirt and green glow instead of the seal");
+        AssertEqual(10, ShownCount(ResolveGrave(resolver, game, "disturbed", "empty", "untouched")), "Disturbed grave: opening and dirt, no seal");
+
+        var sealedSlab = ResolveGrave(resolver, game, "sealed", "empty", "untouched").Elements.Single(element => element.Id == "slab");
+        var openSlab = ResolveGrave(resolver, game, "open", "empty", "untouched").Elements.Single(element => element.Id == "slab");
+        AssertTrue(openSlab.Pose.Position.X > sealedSlab.Pose.Position.X, "The slab is pushed aside when the grave is open");
+
+        var light = ResolveGrave(resolver, game, "open", "empty", "untouched").Elements.Single(element => element.Id == "tomb-glow");
+        AssertEqual(VisualElementKind.Light, light.Kind, "The tomb glow is a light");
+        AssertTrue(light.Shown, "An open grave glows");
+        AssertTrue(!ResolveGrave(resolver, game, "sealed", "empty", "untouched").Elements.Single(element => element.Id == "tomb-glow").Shown, "A sealed grave does not glow");
+    }
+
+    private static void GraveCombinesPresenceAndInteraction()
+    {
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(Catalog().VisualDefinitions);
+        var baseCount = ShownCount(ResolveGrave(resolver, game, "sealed", "empty", "untouched"));
+
+        AssertEqual(baseCount + 1, ShownCount(ResolveGrave(resolver, game, "sealed", "watched", "untouched")), "A watched grave shows a watcher");
+        AssertEqual(baseCount + 2, ShownCount(ResolveGrave(resolver, game, "sealed", "abandoned", "untouched")), "An abandoned grave is overgrown");
+        AssertEqual(baseCount + 1, ShownCount(ResolveGrave(resolver, game, "sealed", "empty", "inspected")), "An inspected grave carries the expedition stake");
+        AssertEqual(baseCount + 3, ShownCount(ResolveGrave(resolver, game, "sealed", "empty", "searched")), "A searched grave adds dug soil");
+        AssertEqual(baseCount + 4, ShownCount(ResolveGrave(resolver, game, "sealed", "empty", "documented")), "A documented grave adds the field board");
+    }
+
+    private static void GraveUnknownConditionShowsOnlyNeutralParts()
+    {
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(Catalog().VisualDefinitions);
+        var unknown = ResolveGrave(resolver, game, null, null, null);
+
+        AssertEqual(8, ShownCount(unknown), "An unobserved grave shows the mound, entrance frame, stones and cross only");
+        AssertTrue(unknown.ShownElements.All(element => element.Kind == VisualElementKind.Part), "No glow without an observation");
     }
 
     private static void PlainStatesCountAsCoveredAndAreValidated()
