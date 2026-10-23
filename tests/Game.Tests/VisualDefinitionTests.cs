@@ -25,6 +25,9 @@ internal sealed class VisualDefinitionTests
         GraveShowsSealedOpenAndDisturbedForms();
         GraveCombinesPresenceAndInteraction();
         GraveUnknownConditionShowsOnlyNeutralParts();
+        SealedGateCombinesTheThreeStateChannels();
+        BorderWarningCombinesTheThreeStateChannels();
+        CoastalLandingCombinesTheThreeStateChannels();
         PlainStatesCountAsCoveredAndAreValidated();
     }
 
@@ -314,6 +317,75 @@ internal sealed class VisualDefinitionTests
 
         AssertEqual(8, ShownCount(unknown), "An unobserved grave shows the mound, entrance frame, stones and cross only");
         AssertTrue(unknown.ShownElements.All(element => element.Kind == VisualElementKind.Part), "No glow without an observation");
+    }
+
+    private static int CountFor(LocationVisualResolver resolver, GameState game, string locationId, string? operational, string? presence, string? interaction)
+    {
+        var location = game.World.Locations.First(item => item.Id == locationId);
+        return ShownCount(resolver.Resolve(location, new LocationVisualContext(VisualKnowledge.Confirmed, operational, presence, interaction)));
+    }
+
+    private static void SealedGateCombinesTheThreeStateChannels()
+    {
+        var visuals = Catalog().VisualDefinitions;
+        AssertEqual("vis-sealed-gate", visuals.FindComposition("containment-site", "sealed-gate")!.Id, "The sealed gate has a composition");
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(visuals);
+        int Count(string? o, string? p, string? i) => CountFor(resolver, game, "sealed-gate", o, p, i);
+
+        AssertEqual(8, Count("sealed", "unknown", "untouched"), "Sealed gate: frame, wall, doors and the seal bar");
+        AssertEqual(8, Count("opened", "unknown", "untouched"), "Opened gate: frame, wall, doors and a glow");
+        AssertEqual(9, Count("breached", "unknown", "untouched"), "Breached gate: frame, doors and two piles of rubble");
+        AssertEqual(9, Count("sealed", "watched", "untouched"), "A watched gate shows one guard");
+        AssertEqual(10, Count("sealed", "guarded", "untouched"), "A guarded gate shows two guards");
+        AssertEqual(10, Count("sealed", "abandoned", "untouched"), "An abandoned gate is overgrown");
+        AssertEqual(9, Count("sealed", "unknown", "inspected"), "An inspected gate carries the stake");
+        AssertEqual(10, Count("sealed", "unknown", "investigated"), "An investigated gate adds dug soil");
+        AssertEqual(10, Count("sealed", "unknown", "secured"), "A secured gate is braced");
+        AssertEqual(10, Count("sealed", "unknown", "documented"), "A documented gate shows the field board");
+        AssertEqual(7, Count(null, null, null), "An unobserved gate shows only frame, wall and doors");
+
+        var closed = resolver.Resolve(game.World.Locations.First(item => item.Id == "sealed-gate"), new LocationVisualContext(VisualKnowledge.Confirmed, "sealed", "unknown", "untouched"));
+        var open = resolver.Resolve(game.World.Locations.First(item => item.Id == "sealed-gate"), new LocationVisualContext(VisualKnowledge.Confirmed, "opened", "unknown", "untouched"));
+        AssertTrue(open.Elements.Single(element => element.Id == "door-l").Pose.Position.Z > closed.Elements.Single(element => element.Id == "door-l").Pose.Position.Z, "Opened doors swing out");
+    }
+
+    private static void BorderWarningCombinesTheThreeStateChannels()
+    {
+        var visuals = Catalog().VisualDefinitions;
+        AssertEqual("vis-border-warning", visuals.FindComposition("territorial-marker", "border-warning-sign")!.Id, "The border warning has a composition");
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(visuals);
+        int Count(string? o, string? p, string? i) => CountFor(resolver, game, "border-warning", o, p, i);
+
+        AssertEqual(5, Count("standing", "unknown", "untouched"), "Standing sign: post, board and three stones");
+        AssertEqual(8, Count("respected", "unknown", "untouched"), "A respected sign has a tidy line of stones");
+        AssertEqual(6, Count("violated", "unknown", "untouched"), "A violated sign is knocked over and the ground trampled");
+        AssertEqual(6, Count("standing", "watched", "untouched"), "A watched sign shows a watcher");
+        AssertEqual(7, Count("standing", "guarded", "untouched"), "A guarded sign shows two watchers");
+        AssertEqual(6, Count("standing", "unknown", "observed"), "An observed sign carries the stake");
+        AssertEqual(7, Count("standing", "unknown", "interpreted"), "An interpreted sign adds the field board");
+        AssertEqual(8, Count("standing", "unknown", "documented"), "A documented sign adds a survey cairn");
+        AssertEqual(5, Count(null, null, null), "An unobserved sign shows the plain marker");
+    }
+
+    private static void CoastalLandingCombinesTheThreeStateChannels()
+    {
+        var visuals = Catalog().VisualDefinitions;
+        AssertEqual("vis-coastal-landing", visuals.FindComposition("contact-site", "first-contact")!.Id, "The coastal landing has a composition");
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(visuals);
+        int Count(string? o, string? p, string? i) => CountFor(resolver, game, "coastal-landing", o, p, i);
+
+        AssertEqual(5, Count("available", "unknown", "unapproached"), "Landing: deck, posts, boat and hut");
+        AssertEqual(7, Count("closed", "unknown", "unapproached"), "A closed landing is fenced off");
+        AssertEqual(8, Count("invited", "unknown", "unapproached"), "An invitation shows a banner and a lantern");
+        AssertEqual(7, Count("available", "present", "unapproached"), "Present people stand on the jetty");
+        AssertEqual(9, Count("available", "guarded", "unapproached"), "Guards carry spears");
+        AssertEqual(6, Count("available", "unknown", "approached"), "An approached landing carries the stake");
+        AssertEqual(7, Count("available", "unknown", "contacted"), "A contacted landing adds the field board");
+        AssertEqual(7, Count("available", "unknown", "withdrawn"), "A withdrawn expedition leaves cold remains");
+        AssertEqual(5, Count(null, null, null), "An unobserved landing shows the plain buildings");
     }
 
     private static void PlainStatesCountAsCoveredAndAreValidated()

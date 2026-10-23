@@ -263,6 +263,11 @@ grünes Licht) oder gestört (Platte halb verschoben); Anwesenheit beobachtet (F
 wie beim Lager. Die Testhilfen der Entwicklungsansicht gelten für jeden Ort mit Punktkomposition. Einzelheiten:
 `low_poly_map_presentation_v2d_review.md`.
 
+**V2e – Tor, Grenzwarnung, Ufer aus Daten (umgesetzt, in Unity ungeprüft)**
+
+Alle sechs Tutorial-Orte kommen jetzt aus Kompositionen: `vis-sealed-gate`, `vis-border-warning`, `vis-coastal-landing`.
+Einzelheiten: `low_poly_map_presentation_v2e_review.md`. Offen: alte Darstellungszweige entfernen, Wege an Brückenenden.
+
 Umgesetzt (V2b): Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
 Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
 Q und E drehen die Karte, Aktualisierung nach Befehlen und alle 0,25 Sekunden. Einzelheiten und Prüfanleitung:
