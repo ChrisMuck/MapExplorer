@@ -39,6 +39,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     [Tooltip("Location id the debug key jumps the expedition to, for example abandoned-camp or broken-ravine.")]
     [SerializeField] private string debugJumpLocationId = "abandoned-camp";
     [SerializeField] private KeyCode debugJumpKey = KeyCode.F9;
+    [Tooltip("Movement points every active expedition gets while testing (0 switches the aid off). The normal value is 4.")]
+    [Min(0)] [SerializeField] private int debugMovementPoints = 50;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -921,6 +923,8 @@ public sealed class UnityHexMapView : MonoBehaviour
         {
             DebugJumpToLocation();
         }
+
+        DebugRaiseMovementPoints();
 #endif
 
         UpdateHoverPreview();
@@ -930,6 +934,52 @@ public sealed class UnityHexMapView : MonoBehaviour
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// Test aid: gives an active expedition <see cref="debugMovementPoints"/> movement points (and the same daily maximum)
+    /// so a place can be tested without running out of moves. The expedition state keeps its movement maximum fixed, so
+    /// the expedition is replaced by a copy that has everything else unchanged. Editor and development builds only.
+    /// </summary>
+    private void DebugRaiseMovementPoints()
+    {
+        if (debugMovementPoints <= 0 || coreGameState == null)
+        {
+            return;
+        }
+
+        var expedition = coreGameState.Expedition;
+        if (expedition == null || expedition.ExpeditionNumber < 1 || expedition.Status != ExpeditionStatus.Active || expedition.MaxMovementPoints >= debugMovementPoints)
+        {
+            return;
+        }
+
+        var copy = new ExpeditionState(
+            expedition.ExpeditionNumber,
+            expedition.Position,
+            expedition.Members,
+            expedition.ExpeditionDay,
+            debugMovementPoints,
+            debugMovementPoints,
+            expedition.Supplies,
+            expedition.Medicine,
+            expedition.Morale,
+            expedition.Capacity,
+            expedition.Status,
+            expedition.UnsecuredKnowledge);
+        foreach (var mission in expedition.ScoutMissions)
+        {
+            copy.AddScoutMission(mission);
+        }
+
+        foreach (var finding in expedition.FieldFindings)
+        {
+            copy.AddFieldFinding(finding);
+        }
+
+        coreGameState.SetExpedition(copy);
+        interactionMessage = $"Debug: movement points raised to {debugMovementPoints}.";
+        RefreshHud();
+    }
+
     /// <summary>
     /// Test aid: puts the expedition next to a chosen location and reveals the ground around it, so a place can be
     /// checked without walking the whole route. It bypasses the movement command on purpose and exists only in the

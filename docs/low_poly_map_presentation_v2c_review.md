@@ -70,6 +70,12 @@ ganzen Weg laufen muss, gibt es zwei Testhilfen, die den Tutorialentwurf nicht �
   usw. möglich) und deckt den Umkreis auf. Der Sprung umgeht bewusst den Bewegungsbefehl. Er funktioniert, sobald die
   Expedition unterwegs ist.
 
+- **Bewegungspunkte:** Im Editor und in Development-Builds bekommt jede aktive Expedition 50 Bewegungspunkte (Feld
+  `Debug Movement Points` am Objekt `UnityHexMapView`; 0 schaltet die Hilfe aus, der normale Wert ist 4). Der
+  Expeditionszustand hält sein Tagesmaximum fest; deshalb ersetzt die Hilfe die Expedition durch eine Kopie mit
+  sonst unverändertem Zustand (Mitglieder, Vorräte, Funde, Spähtrupps). Rechenprobe: Nach dem Ersetzen laufen zwölf
+  Bewegungen hintereinander durch, danach bleiben 38 von 50 Punkten.
+
 ## 3. Was geprüft wurde und was nicht
 
 Geprüft:
