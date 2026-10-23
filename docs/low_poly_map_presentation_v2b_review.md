@@ -50,6 +50,18 @@ Nicht geprüft (kein Unity-Start möglich):
 - Höhe und Lage der Overlays auf Hängen, Wirkung von UI-Blockern auf die neue Feldwahl.
 - Das Ende des Aufbaus bei neuen Kampagnen (`Rebuild` räumt die Karte auf; die Meshes werden freigegeben).
 
+## 3a. Korrekturen nach der ersten Sichtprüfung im Spiel
+
+- **Dorflicht überblendete alles:** Punktlichter (Feuer, Fackeln, Dorfmitte) skalieren nicht mit ihrem Ort. Die
+  Dörfer sind in der Spielansicht stark verkleinert, die Lichter behielten aber ihre Reichweite und Stärke. Jetzt
+  folgt die Reichweite der Skalierung des Ortes und die Stärke ihrem Quadrat (der Abfall mit der Entfernung ist
+  1 durch Entfernung zum Quadrat). Das Licht sieht damit in jedem Maßstab gleich aus.
+- **Nebel verriet Flüsse und Berge:** Unbekanntes Gelände war nur auf 15 Prozent abgeflacht und noch zu 16 Prozent
+  gefärbt; Flussläufe, Hügel und Seen schimmerten durch. Das widerspricht dem Konzept (Abschnitt 11: Relief darf
+  nichts verraten). Jetzt ist unbekanntes Gelände vollständig flach (Höhe 0) und ganz Papierfarbe. Berichtetes
+  Gelände zeigt weiter 70 Prozent des Reliefs. Rechenprobe: Alle rund 23.700 Proben auf unbekanntem Gelände der
+  Tutorialkarte haben exakt Höhe 0 und volle Papierfarbe.
+
 ## 4. Bekannte Einschränkungen
 
 - Die Orte außer Brücke sind noch Prototyp-Modelle oder Marker; Kompositionen folgen mit V2c/V3.

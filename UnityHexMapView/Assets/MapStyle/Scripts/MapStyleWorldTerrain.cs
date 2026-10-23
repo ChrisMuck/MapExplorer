@@ -216,6 +216,7 @@ namespace MapExplorer.MapStyle
             }
         }
 
+        /// <summary>Share of the real relief that is shown: all of it when confirmed, 70 percent when reported, none when unknown.</summary>
         public static float FlattenFactor(float knowledge)
         {
             if (knowledge <= 0.55f)
@@ -223,7 +224,18 @@ namespace MapExplorer.MapStyle
                 return 1f - 0.3f * (knowledge / 0.55f);
             }
 
-            return 0.7f - 0.55f * Mathf.Clamp01((knowledge - 0.55f) / 0.4f);
+            return 0.7f * (1f - Mathf.Clamp01((knowledge - 0.55f) / 0.35f));
+        }
+
+        /// <summary>Share of the paper color mixed over the real ground color: unknown ground shows no color information at all.</summary>
+        public static float PaperMix(float knowledge)
+        {
+            if (knowledge <= 0.55f)
+            {
+                return knowledge * 0.88f;
+            }
+
+            return Mathf.Lerp(0.484f, 1f, Mathf.Clamp01((knowledge - 0.55f) / 0.35f));
         }
 
         // ---- Heights --------------------------------------------------------------------------
@@ -524,7 +536,7 @@ namespace MapExplorer.MapStyle
             var color = FaceColor(point, center.y, Mathf.Abs(normal.y), sample.Terrain, face);
             if (useKnowledge)
             {
-                color = Color.Lerp(color, Paper, sample.Knowledge * 0.88f);
+                color = Color.Lerp(color, Paper, PaperMix(sample.Knowledge));
             }
 
             builder.AddTriangleUp(a, b, c, color);
