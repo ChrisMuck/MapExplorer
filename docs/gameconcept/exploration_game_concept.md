@@ -25,6 +25,7 @@ Detailed systems are maintained in the linked specialist documents. AI coding ag
 - [`open_questions.md`](open_questions.md): only unresolved questions
 - [`../next_implementation_concept.md`](../next_implementation_concept.md): proposed next phase for the curated tutorial, content workflow and editor decision
 - [`../content_workbench_editor_concept.md`](../content_workbench_editor_concept.md): proposed data-driven Content Workbench for locations, events, scenes and their validated connections
+- [`../low_poly_map_presentation_concept.md`](../low_poly_map_presentation_concept.md): proposed low-poly 3D map presentation with a data-driven location, figure and creature kit
 
 The former single-file concept is preserved as [`exploration_game_concept_full_updated.md`](exploration_game_concept_full_updated.md).
 
