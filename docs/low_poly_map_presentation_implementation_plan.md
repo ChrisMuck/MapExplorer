@@ -275,6 +275,14 @@ Einzelheiten: `low_poly_map_presentation_v2e_review.md`. Offen: Wege an Brücken
 Meshes erscheinen dort nur über die Overlays. Chunk-Renderer, Prozedural-Modus und die Prefab-Bibliothek bleiben bewusst
 bestehen (Entscheidung des Owners: nur Orts-Modelle). Die Prefab-Felder (`gravePrefabs` usw.) sind jetzt ungenutzt.
 
+**V2g – Wege an Brückenenden (umgesetzt, in Unity ungeprüft)**
+
+Sobald eine Brücke platziert ist, zieht `MapStyleMapController.LinkRoadToBridgeEnd` von jedem Brückenende eine kurze Wegstrecke
+zum nächsten Weg auf trockenem Land (höchstens 6 Einheiten; ein Weg direkt am Ende bleibt unberührt). Die Strecke liegt im
+Wegeindex, färbt also das Gelände und hält Wald frei. Bekannte Grenze: Wird eine Brücke erst später bekannt, werden nur die
+von der Aufdeckung betroffenen Geländeblöcke neu gebaut; ragt die Strecke in einen anderen Block, folgt dessen Färbung
+erst bei dessen nächster Aktualisierung.
+
 Umgesetzt (V2b): Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
 Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
 Q und E drehen die Karte, Aktualisierung nach Befehlen und alle 0,25 Sekunden. Einzelheiten und Prüfanleitung:

@@ -603,6 +603,8 @@ namespace MapExplorer.MapStyle
 
             var found = false;
             var bestScore = float.MaxValue;
+            var bestEnd1 = Vector2.zero;
+            var bestEnd2 = Vector2.zero;
             for (var step = -5; step <= 5; step++)
             {
                 var line = lines.Nearest(hit.Point + hit.Tangent * (step * 0.8f));
@@ -630,6 +632,8 @@ namespace MapExplorer.MapStyle
 
                     bestScore = score;
                     found = true;
+                    bestEnd1 = end1;
+                    bestEnd2 = end2;
                     span = toBank1 + toBank2;
                     var center = line.Point + across * ((toBank1 - toBank2) * 0.5f);
                     var height1 = GroundAt(end1, false).y;
@@ -639,7 +643,52 @@ namespace MapExplorer.MapStyle
                 }
             }
 
+            if (found)
+            {
+                LinkRoadToBridgeEnd(location.Id + ":a", bestEnd1);
+                LinkRoadToBridgeEnd(location.Id + ":b", bestEnd2);
+            }
+
             return found;
+        }
+
+        /// <summary>
+        /// Draws a short road from a bridge end to the nearest road on dry land, so the bridge does not stand beside
+        /// the road that leads to it. A road that already passes the end is left alone. Only the colour of the ground
+        /// follows the road, so the link has to exist before the chunks that contain it are built.
+        /// </summary>
+        private void LinkRoadToBridgeEnd(string linkId, Vector2 end)
+        {
+            var near = Terrain.Roads.Nearest(end);
+            if (float.IsInfinity(near.Distance) || near.Distance < 0.9f)
+            {
+                return;
+            }
+
+            var found = false;
+            var best = Vector2.zero;
+            var bestDistance = float.MaxValue;
+            for (var offset = -3f; offset <= 3f; offset += 0.5f)
+            {
+                var candidate = Terrain.Roads.Nearest(near.Point + near.Tangent * offset).Point;
+                if (Terrain.TrenchFactor(candidate) > 0.05f || Terrain.RiverFactor(candidate) > 0.05f)
+                {
+                    continue;
+                }
+
+                var distance = Vector2.Distance(end, candidate);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = candidate;
+                    found = true;
+                }
+            }
+
+            if (found && bestDistance < 6f)
+            {
+                Terrain.Roads.AddPolyline("bridge-link:" + linkId, new[] { end, best });
+            }
         }
 
         private static Vector2 Rotate(Vector2 value, float degrees)
