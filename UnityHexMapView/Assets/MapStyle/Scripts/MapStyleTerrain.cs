@@ -27,7 +27,9 @@ namespace MapExplorer.MapStyle
         public static float Hash(float a, float b)
         {
             var s = Mathf.Sin(a * 127.1f + b * 311.7f) * 43758.5453f;
-            return s - Mathf.Floor(s);
+            var h = s - Mathf.Floor(s);
+            // For tiny negative s the float subtraction can round to exactly 1, which would index past the palette.
+            return h >= 1f ? 0f : h;
         }
 
         public static float SmoothStep(float a, float b, float x)
@@ -152,7 +154,7 @@ namespace MapExplorer.MapStyle
 
         private static Color FaceColor(Vector3 center, float flatness, IReadOnlyList<Vector2[]> roads, int face)
         {
-            var color = Grass[Mathf.FloorToInt(Hash(face, 5f) * 4f) % 4];
+            var color = Grass[Mathf.Clamp(Mathf.FloorToInt(Hash(face, 5f) * Grass.Length), 0, Grass.Length - 1)];
             var trench = Trench(center.x, center.z);
             if (center.y > 2.6f)
             {

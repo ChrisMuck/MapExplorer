@@ -70,6 +70,7 @@ namespace MapExplorer.MapStyle
         private GameObject ringUnknown;
         private Material litMaterial;
         private Material emissiveMaterial;
+        private Material ringMaterial;
         private Mesh dustMesh;
 
         public string DisplayName { get; private set; }
@@ -106,6 +107,8 @@ namespace MapExplorer.MapStyle
             litMaterial = new Material(shader) { name = displayName + "-lit" };
             emissiveMaterial = new Material(shader) { name = displayName + "-emissive" };
             emissiveMaterial.SetFloat("_Emissive", 1.2f);
+            ringMaterial = new Material(shader) { name = displayName + "-ring" };
+            ringMaterial.SetFloat("_Flat", 1f);
             partsRoot = new GameObject("Parts").transform;
             partsRoot.SetParent(transform, false);
 
@@ -113,7 +116,7 @@ namespace MapExplorer.MapStyle
             {
                 var ring = new MapStyleMeshBuilder();
                 ring.AddRing(new Vector3(0f, 0.04f, 0f), 3.3f, 3.55f, 36, ringGaps, archetypeColor);
-                ringKnown = CreateMeshObject("RingKnown", ring.Build(displayName + "-ring"), emissiveMaterial, false);
+                ringKnown = CreateMeshObject("RingKnown", ring.Build(displayName + "-ring"), ringMaterial, false);
                 ringKnown.transform.SetParent(transform, false);
 
                 var unknown = new MapStyleMeshBuilder();
@@ -273,6 +276,7 @@ namespace MapExplorer.MapStyle
             var pale = Knowledge == 1 ? 0.8f : 0f;
             litMaterial.SetFloat("_Pale", pale);
             emissiveMaterial.SetFloat("_Pale", pale);
+            ringMaterial.SetFloat("_Pale", pale);
             emissiveMaterial.SetFloat("_Emissive", Knowledge == 1 ? 0f : 1.2f);
             partsRoot.gameObject.SetActive(Knowledge < 2);
             if (ringKnown != null)

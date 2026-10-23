@@ -8,6 +8,7 @@ Shader "MapStyle/LowPolyLit"
         _Pale ("Pale (knowledge)", Range(0, 1)) = 0
         _PaperColor ("Paper color", Color) = (0.85, 0.83, 0.76, 1)
         _Emissive ("Emissive", Range(0, 2)) = 0
+        _Flat ("Flat color (ignore lighting)", Range(0, 1)) = 0
     }
 
     SubShader
@@ -49,6 +50,7 @@ Shader "MapStyle/LowPolyLit"
                 float _Pale;
                 float4 _PaperColor;
                 float _Emissive;
+                float _Flat;
             CBUFFER_END
 
             Varyings Vert(Attributes IN)
@@ -84,7 +86,7 @@ Shader "MapStyle/LowPolyLit"
                 }
                 #endif
 
-                half3 color = albedo * lighting + albedo * _Emissive;
+                half3 color = lerp(albedo * lighting + albedo * _Emissive, albedo, _Flat);
                 return half4(color, 1.0h);
             }
             ENDHLSL
