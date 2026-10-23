@@ -70,6 +70,14 @@ ganzen Weg laufen muss, gibt es zwei Testhilfen, die den Tutorialentwurf nicht �
   usw. möglich) und deckt den Umkreis auf. Der Sprung umgeht bewusst den Bewegungsbefehl. Er funktioniert, sobald die
   Expedition unterwegs ist.
 
+- **Zustände des Lagers durchschalten:** Im Tutorial verändern nur die Untersuchungen den Zustand eines Lagers
+  (Erkundungskanal). Anwesenheit (verlassen, benutzt, beobachtet) und Betrieb (geräumt, unsicher) ändern erst spätere
+  Spiellogik, Weltzüge und Folgen; daher sieht man Feuer, Licht, Figuren, Steinhaufen und Warnschild im Spiel noch nicht.
+  Für die Prüfung gibt es Testhilfen, die den Zustand der Welt setzen und den Spieler ihn sofort beobachten lassen:
+  Spielszene **F8** (Anwesenheit), **F7** (Betrieb), **F6** (Erkundung), jeweils zum nächsten Wert des Zustandsprofils, für
+  den Ort aus `Debug Jump Location Id`; Entwicklungsansicht: Reihen von Knöpfen „Lagerzustand“. Das gilt nur im Editor und
+  in Development-Builds. Rechenprobe: verlassen 11 Elemente, benutzt 13 mit Licht und Rauch, beobachtet 15 mit zwei
+  Figuren, unsicher zeigt das Schild.
 - **Bewegungspunkte:** Im Editor und in Development-Builds bekommt jede aktive Expedition 50 Bewegungspunkte (Feld
   `Debug Movement Points` am Objekt `UnityHexMapView`; 0 schaltet die Hilfe aus, der normale Wert ist 4). Der
   Expeditionszustand hält sein Tagesmaximum fest; deshalb ersetzt die Hilfe die Expedition durch eine Kopie mit

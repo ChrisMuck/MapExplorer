@@ -41,6 +41,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     [SerializeField] private KeyCode debugJumpKey = KeyCode.F9;
     [Tooltip("Movement points every active expedition gets while testing (0 switches the aid off). The normal value is 4.")]
     [Min(0)] [SerializeField] private int debugMovementPoints = 50;
+    [Tooltip("Keys that move the debug location to the next presence, operational or interaction state and let the player observe it.")]
+    [SerializeField] private KeyCode debugCyclePresenceKey = KeyCode.F8;
+    [SerializeField] private KeyCode debugCycleOperationalKey = KeyCode.F7;
+    [SerializeField] private KeyCode debugCycleInteractionKey = KeyCode.F6;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -925,6 +929,20 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         DebugRaiseMovementPoints();
+        if (Input.GetKeyDown(debugCyclePresenceKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Presence);
+        }
+
+        if (Input.GetKeyDown(debugCycleOperationalKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Operational);
+        }
+
+        if (Input.GetKeyDown(debugCycleInteractionKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Interaction);
+        }
 #endif
 
         UpdateHoverPreview();
@@ -934,6 +952,33 @@ public sealed class UnityHexMapView : MonoBehaviour
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// Test aid: moves the debug location to the next state of a channel and lets the player observe it, so every
+    /// picture of a place can be checked. In the game these states change through commands and consequences.
+    /// </summary>
+    private void DebugCycleLocationState(string channel)
+    {
+        if (coreGameState == null || string.IsNullOrWhiteSpace(debugJumpLocationId))
+        {
+            return;
+        }
+
+        var location = coreGameState.World.Locations.FirstOrDefault(item => item.Id == debugJumpLocationId.Trim());
+        if (location == null)
+        {
+            interactionMessage = $"Debug state: no location '{debugJumpLocationId}' in this world.";
+            RefreshHud();
+            return;
+        }
+
+        var next = MapStyleDebug.NextState(gameDataCatalog, location, channel);
+        MapStyleDebug.SetAndObserve(coreGameState, location, channel, next);
+        interactionMessage = $"Debug: {location.Name} {channel} is now '{next}'.";
+        RefreshKnowledgeOverlays();
+        RefreshHexOverlays();
+        RefreshHud();
+    }
+
     /// <summary>
     /// Test aid: gives an active expedition <see cref="debugMovementPoints"/> movement points (and the same daily maximum)
     /// so a place can be tested without running out of moves. The expedition state keeps its movement maximum fixed, so
