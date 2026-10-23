@@ -216,6 +216,7 @@ namespace MapExplorer.MapStyle
             }
         }
 
+        /// <summary>Share of the real relief that is shown: all of it when confirmed, 70 percent when reported, none when unknown.</summary>
         public static float FlattenFactor(float knowledge)
         {
             if (knowledge <= 0.55f)
@@ -223,7 +224,18 @@ namespace MapExplorer.MapStyle
                 return 1f - 0.3f * (knowledge / 0.55f);
             }
 
-            return 0.7f - 0.55f * Mathf.Clamp01((knowledge - 0.55f) / 0.4f);
+            return 0.7f * (1f - Mathf.Clamp01((knowledge - 0.55f) / 0.35f));
+        }
+
+        /// <summary>Share of the paper color mixed over the real ground color: unknown ground shows no color information at all.</summary>
+        public static float PaperMix(float knowledge)
+        {
+            if (knowledge <= 0.55f)
+            {
+                return knowledge * 0.88f;
+            }
+
+            return Mathf.Lerp(0.484f, 1f, Mathf.Clamp01((knowledge - 0.55f) / 0.35f));
         }
 
         // ---- Heights --------------------------------------------------------------------------
@@ -352,6 +364,24 @@ namespace MapExplorer.MapStyle
                 nearestDistance = distance;
                 nearest = tile.Terrain;
             }
+        }
+
+        public bool HasTile(HexCoord view)
+        {
+            return tiles.ContainsKey(view);
+        }
+
+        /// <summary>The Game.Core coordinate of the tile under a world position, if the map has one there.</summary>
+        public bool TryGetCoreAt(Vector2 point, out HexCoord core)
+        {
+            if (tiles.TryGetValue(WorldToView(point), out var tile))
+            {
+                core = tile.Core;
+                return true;
+            }
+
+            core = default;
+            return false;
         }
 
         /// <summary>Forest tiles as (axial view coordinate, Game.Core coordinate).</summary>
@@ -487,7 +517,7 @@ namespace MapExplorer.MapStyle
         public Mesh BuildWaterMesh()
         {
             var builder = new MapStyleMeshBuilder();
-            var margin = HexSize * 3f;
+            var margin = HexSize * 14f;
             var a = new Vector3(min.x - margin, WaterLevel, min.y - margin);
             var b = new Vector3(min.x - margin, WaterLevel, max.y + margin);
             var c = new Vector3(max.x + margin, WaterLevel, max.y + margin);
@@ -506,7 +536,7 @@ namespace MapExplorer.MapStyle
             var color = FaceColor(point, center.y, Mathf.Abs(normal.y), sample.Terrain, face);
             if (useKnowledge)
             {
-                color = Color.Lerp(color, Paper, sample.Knowledge * 0.88f);
+                color = Color.Lerp(color, Paper, PaperMix(sample.Knowledge));
             }
 
             builder.AddTriangleUp(a, b, c, color);

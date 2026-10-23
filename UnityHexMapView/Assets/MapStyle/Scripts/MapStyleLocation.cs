@@ -47,6 +47,7 @@ namespace MapExplorer.MapStyle
             public Light Light;
             public string[] States;
             public float Base;
+            public float BaseRange;
             public float Current;
         }
 
@@ -256,7 +257,7 @@ namespace MapExplorer.MapStyle
             light.color = color;
             light.range = range;
             light.shadows = LightShadows.None;
-            var runtime = new LightRuntime { Light = light, States = states, Base = intensity };
+            var runtime = new LightRuntime { Light = light, States = states, Base = intensity, BaseRange = range };
             runtime.Current = states == null || Array.IndexOf(states, State) >= 0 ? 1f : 0f;
             light.intensity = 0f;
             lights.Add(runtime);
@@ -412,7 +413,11 @@ namespace MapExplorer.MapStyle
                 var target = light.States == null || Array.IndexOf(light.States, State) >= 0 ? 1f : 0f;
                 light.Current += (target - light.Current) * blend;
                 var flicker = 1f + Mathf.Sin(Time.time * 9f + light.Base * 7f) * 0.08f;
-                light.Light.intensity = light.Current * light.Base * LightScale * (0.55f + NightFactor * 2f) * flicker;
+                // A point light does not scale with its parent. Keep its look when the place is drawn smaller:
+                // range follows the scale and intensity follows its square (distance falloff is 1 / d squared).
+                var scale = Mathf.Max(0.01f, transform.lossyScale.x);
+                light.Light.range = light.BaseRange * scale;
+                light.Light.intensity = light.Current * light.Base * LightScale * (0.55f + NightFactor * 2f) * flicker * scale * scale;
             }
         }
 

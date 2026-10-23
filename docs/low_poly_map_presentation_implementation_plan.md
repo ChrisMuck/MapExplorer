@@ -246,7 +246,13 @@ Aufteilung:
   0,25 Sekunden und Entwicklerknöpfen.
 - Tests: `VisualDefinitionTests.cs`.
 
-**V2b – Ersatz der alten Spielansicht (offen)**
+**V2b – Ersatz der alten Spielansicht (Schritte 1 bis 3 umgesetzt, in Unity ungeprüft)**
+
+Umgesetzt: Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
+Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
+Q und E drehen die Karte, Aktualisierung nach Befehlen und alle 0,25 Sekunden. Einzelheiten und Prüfanleitung:
+`low_poly_map_presentation_v2b_review.md`. Offen aus der Liste unten: Overlays als eigene Linienobjekte,
+Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 
 - Die neue Ansicht rendert im echten Spielablauf (`UnityHexMapView`, Befehle, UI): Gelände, Linien,
   Orte, Expedition; Feldwahl und Hover über das Relief (Strahlen gegen das Gelände); Kamera; Auswahl-,
