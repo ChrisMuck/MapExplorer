@@ -13,6 +13,7 @@ Related documents:
 - `ui_ux_concept.md`
 - `map_presentation_simplified_concept.md`
 - `content_workbench_editor_concept.md` (detailed proposal for the editor decision in section 5)
+- `low_poly_map_presentation_concept.md` (proposed map presentation; would supersede parts of `map_presentation_simplified_concept.md` after owner approval)
 
 ## 1. Decision and Priority
 
