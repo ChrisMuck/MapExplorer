@@ -6,6 +6,60 @@ using UnityEngine;
 namespace MapExplorer.MapStyle
 {
     /// <summary>
+    /// Maps Game.Core tile coordinates to the axial view grid the map is drawn on. The tutorial world stores
+    /// offset (column, row) coordinates and generated worlds store axial ones, exactly as the existing map view
+    /// treats them, so both draw as an upright rectangle instead of a sheared one.
+    /// </summary>
+    public sealed class MapStyleHexLayout
+    {
+        private readonly bool offsetRows;
+        private readonly int width;
+        private readonly int height;
+        private readonly int qOffset;
+
+        private MapStyleHexLayout(bool offsetRows, int width, int height, int qOffset)
+        {
+            this.offsetRows = offsetRows;
+            this.width = width;
+            this.height = height;
+            this.qOffset = qOffset;
+        }
+
+        public static MapStyleHexLayout OffsetCentered(int width, int height)
+        {
+            return new MapStyleHexLayout(true, width, height, 0);
+        }
+
+        public static MapStyleHexLayout Axial(int qOffset)
+        {
+            return new MapStyleHexLayout(false, 0, 0, qOffset);
+        }
+
+        public HexCoord ToView(HexCoord core)
+        {
+            if (!offsetRows)
+            {
+                return new HexCoord(core.Q - qOffset, core.R);
+            }
+
+            var row = core.R - height / 2;
+            var column = core.Q - width / 2;
+            return new HexCoord(column - (row - (row & 1)) / 2, row);
+        }
+
+        public HexCoord ToCore(HexCoord view)
+        {
+            if (!offsetRows)
+            {
+                return new HexCoord(view.Q + qOffset, view.R);
+            }
+
+            var column = view.Q + (view.R - (view.R & 1)) / 2;
+            return new HexCoord(column + width / 2, view.R + height / 2);
+        }
+    }
+
+    /// <summary>
     /// Builds relief terrain for a real <see cref="WorldState"/>: heights come from the terrain type of
     /// each hex (blended so hills and mountains rise smoothly), ravines and rivers are carved along the
     /// world paths, and roads tint the ground. The relief is presentation only; the hex grid stays the
@@ -23,13 +77,15 @@ namespace MapExplorer.MapStyle
 
         private readonly struct Tile
         {
+            public readonly HexCoord Core;
             public readonly TerrainType Terrain;
             public readonly float Height;
             public readonly float Amplitude;
             public readonly float Knowledge;
 
-            public Tile(TerrainType terrain, float knowledge)
+            public Tile(HexCoord core, TerrainType terrain, float knowledge)
             {
+                Core = core;
                 Terrain = terrain;
                 Height = BaseHeight(terrain);
                 Amplitude = BaseAmplitude(terrain);
@@ -46,18 +102,21 @@ namespace MapExplorer.MapStyle
         }
 
         private readonly Dictionary<HexCoord, Tile> tiles = new();
+        private readonly MapStyleHexLayout layout;
         private readonly Vector2 min;
         private readonly Vector2 max;
 
-        public MapStyleWorldTerrain(WorldState world, Func<HexCoord, float> knowledgeOf)
+        public MapStyleWorldTerrain(WorldState world, MapStyleHexLayout layout, Func<HexCoord, float> knowledgeOf)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
+            this.layout = layout ?? throw new ArgumentNullException(nameof(layout));
             var lo = new Vector2(float.MaxValue, float.MaxValue);
             var hi = new Vector2(float.MinValue, float.MinValue);
             foreach (var tile in world.Map.Tiles)
             {
-                tiles[tile.Coord] = new Tile(tile.Terrain, knowledgeOf(tile.Coord));
-                var p = HexToWorld(tile.Coord);
+                var view = layout.ToView(tile.Coord);
+                tiles[view] = new Tile(tile.Coord, tile.Terrain, knowledgeOf(tile.Coord));
+                var p = ViewToWorld(view);
                 lo = Vector2.Min(lo, p);
                 hi = Vector2.Max(hi, p);
             }
@@ -73,7 +132,7 @@ namespace MapExplorer.MapStyle
                 var points = new List<Vector2>(path.Coords.Count);
                 foreach (var coord in path.Coords)
                 {
-                    points.Add(HexToWorld(coord));
+                    points.Add(CoreToWorld(coord));
                 }
 
                 switch (path.Kind)
@@ -103,12 +162,19 @@ namespace MapExplorer.MapStyle
 
         // ---- Hex layout (pointy-top axial) ------------------------------------------------
 
-        public static Vector2 HexToWorld(HexCoord coord)
+        /// <summary>World position of a Game.Core tile coordinate.</summary>
+        public Vector2 CoreToWorld(HexCoord core)
         {
-            return new Vector2(HexSize * Sqrt3 * (coord.Q + coord.R * 0.5f), HexSize * 1.5f * coord.R);
+            return ViewToWorld(layout.ToView(core));
         }
 
-        public static HexCoord WorldToHex(Vector2 point)
+        /// <summary>World position of an axial view coordinate.</summary>
+        public static Vector2 ViewToWorld(HexCoord view)
+        {
+            return new Vector2(HexSize * Sqrt3 * (view.Q + view.R * 0.5f), HexSize * 1.5f * view.R);
+        }
+
+        public static HexCoord WorldToView(Vector2 point)
         {
             var q = (Sqrt3 / 3f * point.x - point.y / 3f) / HexSize;
             var r = (2f / 3f * point.y) / HexSize;
@@ -162,7 +228,7 @@ namespace MapExplorer.MapStyle
             switch (terrain)
             {
                 case TerrainType.Water: return -2.4f;
-                case TerrainType.Coast: return -0.15f;
+                case TerrainType.Coast: return -0.4f;
                 case TerrainType.Grassland: return 0.1f;
                 case TerrainType.DryPlains: return 0.15f;
                 case TerrainType.Forest: return 0.2f;
@@ -222,7 +288,7 @@ namespace MapExplorer.MapStyle
 
         public Sample SampleAt(Vector2 point, bool useKnowledge)
         {
-            var center = WorldToHex(point);
+            var center = WorldToView(point);
             float weightSum = 0f, heightSum = 0f, amplitudeSum = 0f, knowledgeSum = 0f;
             var nearest = TerrainType.Grassland;
             var nearestDistance = float.MaxValue;
@@ -269,7 +335,7 @@ namespace MapExplorer.MapStyle
                 return;
             }
 
-            var distance = Vector2.Distance(point, HexToWorld(coord));
+            var distance = Vector2.Distance(point, ViewToWorld(coord));
             var weight = Mathf.Max(0f, 1f - distance / (HexSize * 1.35f));
             weight *= weight;
             weightSum += weight;
@@ -283,32 +349,16 @@ namespace MapExplorer.MapStyle
             }
         }
 
-        public bool TryGetTileTerrain(HexCoord coord, out TerrainType terrain)
-        {
-            if (tiles.TryGetValue(coord, out var tile))
-            {
-                terrain = tile.Terrain;
-                return true;
-            }
-
-            terrain = TerrainType.Grassland;
-            return false;
-        }
-
-        public IEnumerable<KeyValuePair<HexCoord, TerrainType>> ForestTiles()
+        /// <summary>Forest tiles as (axial view coordinate, Game.Core coordinate).</summary>
+        public IEnumerable<KeyValuePair<HexCoord, HexCoord>> ForestTiles()
         {
             foreach (var pair in tiles)
             {
                 if (pair.Value.Terrain == TerrainType.Forest)
                 {
-                    yield return new KeyValuePair<HexCoord, TerrainType>(pair.Key, pair.Value.Terrain);
+                    yield return new KeyValuePair<HexCoord, HexCoord>(pair.Key, pair.Value.Core);
                 }
             }
-        }
-
-        public float KnowledgeOfTile(HexCoord coord)
-        {
-            return tiles.TryGetValue(coord, out var tile) ? tile.Knowledge : 0.95f;
         }
 
         // ---- Mesh ------------------------------------------------------------------------------

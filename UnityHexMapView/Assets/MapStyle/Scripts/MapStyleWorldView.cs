@@ -76,6 +76,14 @@ namespace MapExplorer.MapStyle
             }
         }
 
+        /// <summary>The tutorial world stores offset coordinates, generated worlds axial ones (as the existing map view reads them).</summary>
+        private MapStyleHexLayout CreateLayout(WorldState world)
+        {
+            return source == Source.Tutorial
+                ? MapStyleHexLayout.OffsetCentered(world.Map.Bounds.Width, world.Map.Bounds.Height)
+                : MapStyleHexLayout.Axial((world.Map.Bounds.Height - 1) >> 1);
+        }
+
         private GameState CreateGame()
         {
             if (source == Source.Tutorial)
@@ -153,7 +161,7 @@ namespace MapExplorer.MapStyle
             var world = game.World;
             var useKnowledge = !showTruth;
 
-            terrain = new MapStyleWorldTerrain(world, coord => showTruth ? 0f : MapStyleWorldTerrain.PaleOf(game.Knowledge.GetTileKnowledge(coord)));
+            terrain = new MapStyleWorldTerrain(world, CreateLayout(world), coord => showTruth ? 0f : MapStyleWorldTerrain.PaleOf(game.Knowledge.GetTileKnowledge(coord)));
             AddMesh("Terrain", terrain.BuildMesh(useKnowledge), terrainMaterial, true);
             AddMesh("Water", terrain.BuildWaterMesh(), plainMaterial, false);
 
@@ -229,7 +237,7 @@ namespace MapExplorer.MapStyle
                     }
                 }
 
-                var point = MapStyleWorldTerrain.HexToWorld(location.Anchor.PrimaryCoord);
+                var point = terrain.CoreToWorld(location.Anchor.PrimaryCoord);
                 occupied.Add(point);
                 var marker = CreateMarker(location, GroundAt(point, useKnowledge));
                 marker.SetKnowledge(level);
@@ -267,8 +275,8 @@ namespace MapExplorer.MapStyle
         /// <summary>Places a bridge on the ravine or river line that explains a blocking edge; the deck crosses the line.</summary>
         private MapStyleLocation BuildBridge(SpecialLocationState location, bool useKnowledge, int level)
         {
-            var a = MapStyleWorldTerrain.HexToWorld(location.Anchor.Coords[0]);
-            var b = MapStyleWorldTerrain.HexToWorld(location.Anchor.Coords[1]);
+            var a = terrain.CoreToWorld(location.Anchor.Coords[0]);
+            var b = terrain.CoreToWorld(location.Anchor.Coords[1]);
             var middle = (a + b) * 0.5f;
             var chasm = terrain.Chasms.Nearest(middle);
             var river = terrain.Rivers.Nearest(middle);
@@ -325,13 +333,13 @@ namespace MapExplorer.MapStyle
             foreach (var pair in terrain.ForestTiles())
             {
                 var coord = pair.Key;
-                var level = KnowledgeLevelOf(coord, useKnowledge);
+                var level = KnowledgeLevelOf(pair.Value, useKnowledge);
                 if (level >= 2)
                 {
                     continue;
                 }
 
-                var center = MapStyleWorldTerrain.HexToWorld(coord);
+                var center = MapStyleWorldTerrain.ViewToWorld(coord);
                 for (var i = 0; i < 7; i++)
                 {
                     var angle = MapStyleWorldTerrain.Hash(coord.Q * 7 + i, coord.R + 3f) * Mathf.PI * 2f;
@@ -378,7 +386,7 @@ namespace MapExplorer.MapStyle
                 return;
             }
 
-            var point = MapStyleWorldTerrain.HexToWorld(game.Expedition.Position);
+            var point = terrain.CoreToWorld(game.Expedition.Position);
             var group = MapStyleLocations.ExpeditionGroup(root, GroundAt(point, useKnowledge), shader, 180f);
             group.transform.localScale = Vector3.one * 0.8f;
             markers.Add(group);
@@ -387,7 +395,7 @@ namespace MapExplorer.MapStyle
         private void FrameExpedition()
         {
             var point = game.Expedition != null
-                ? MapStyleWorldTerrain.HexToWorld(game.Expedition.Position)
+                ? terrain.CoreToWorld(game.Expedition.Position)
                 : (terrain.Min + terrain.Max) * 0.5f;
             orbit.Place(new Vector3(point.x, 0f, point.y), 22f);
         }

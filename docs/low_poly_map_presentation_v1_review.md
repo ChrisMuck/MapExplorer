@@ -70,7 +70,7 @@ Geprüft:
   Schluchtlinie ist unbenutzt.
 - Die MapStyle-Skripte kompilieren gegen die Unity-6000.5.2f1-Assemblies, auch die neuen
   Weltansicht-Bausteine mit `Game.Core` und `Game.App`.
-- Rechenprobe des Geländes außerhalb von Unity (Tutorialwelt mit 1200 Feldern, rund 234 mal 111
+- Rechenprobe des Geländes außerhalb von Unity (Tutorialwelt mit 1200 Feldern, rund 176 mal 114
   Einheiten): Hexumrechnung ohne Fehler; die Schlucht ist am Querschnitt rund 3 Einheiten breit und
   2 Einheiten tief; rund 33.000 Höhenproben dauern etwa 100 Millisekunden; Brückenposition auf der
   Linie berechenbar. Bei einer generierten Welt (Seed 42) liegt das Hindernis auf einem Fluss.
@@ -82,12 +82,22 @@ Nicht geprüft (Unity-Batch ohne Lizenz):
 - Die Wälder, Marker und die Beschriftungen auf großen Karten.
 - Die Szene `MapStyleWorld.unity` entsteht erst über das Menü.
 
+## 3a. Korrektur nach der ersten Sichtprüfung
+
+Die erste Prüfung in Unity zeigte die Karte verzerrt (als Parallelogramm). Ursache: Die Tutorialwelt
+speichert Versatzkoordinaten (Spalte, Zeile), generierte Welten axiale Koordinaten, und die bestehende
+Kartenansicht rechnet beides in ein gemeinsames Gitter um. Die neue Ansicht behandelte alles als axial.
+Seitdem übernimmt `MapStyleHexLayout` diese Umrechnung. Rechenprobe: Die Tutorialkarte füllt ihr
+Begrenzungsrechteck zu 100 Prozent (176 mal 114 Einheiten); mit der alten, falschen Umrechnung waren es
+237 mal 114 Einheiten mit leeren Ecken. Küsten sind außerdem etwas flacher, damit einzelne Seefelder
+weniger wie Gruben wirken.
+
 ## 4. Fragen für die Freigabe (G1)
 
 1. Ist die Schlucht als sichtbarer Graben lesbar und die Brücke dort glaubwürdig platziert?
 2. Wirkt das Relief für Hügel und Berge gut, oder soll es kräftiger oder flacher sein?
 3. Ist der Zustand „unbekannt“ der Brücke (nur Schlucht und Pfosten) verständlich?
-4. Reichen Zoomgrenze und Schwenken für die Tutorialkarte (rund 234 mal 111 Einheiten)?
+4. Reichen Zoomgrenze und Schwenken für die Tutorialkarte (rund 176 mal 114 Einheiten)?
 5. Soll die Karte bei neuem Wissen sofort neu aufgebaut werden (V2) oder inkrementell pro Chunk?
 
 ## 5. Bekannte Einschränkungen
