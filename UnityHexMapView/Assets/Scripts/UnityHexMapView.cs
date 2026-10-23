@@ -2132,53 +2132,11 @@ public sealed class UnityHexMapView : MonoBehaviour
                 case LocationKind.Mine:
                     BuildMine(coord);
                     break;
-                case LocationKind.MarkedGrave:
-                    BuildLandmarkObject(coord, Prefabs.gravePrefabs, "MarkedGrave", 9301, featureMaterials["WallStone"]);
-                    break;
-                case LocationKind.AbandonedCamp:
-                    BuildLandmarkObject(coord, Prefabs.abandonedCampPrefabs, "AbandonedCamp", 9302, featureMaterials["ExpeditionCloth"]);
-                    break;
-                case LocationKind.BrokenRavine:
-                    BuildLandmarkObject(coord, Prefabs.ravinePrefabs, "BrokenRavine", 9303, featureMaterials["DarkRock"]);
-                    break;
-                case LocationKind.Ruin:
-                    BuildLandmarkObject(coord, Prefabs.ruinPrefabs, "Ruin", 9304, featureMaterials["WallStone"]);
-                    break;
-                case LocationKind.Landmark:
-                    BuildLandmarkObject(coord, Prefabs.landmarkPrefabs, "Landmark", 9305, featureMaterials["Rock"]);
-                    break;
                 case LocationKind.WallSegment:
                     BuildTower(coord);
                     break;
             }
         }
-    }
-
-    // Places a discovery/landmark prefab (grave, abandoned camp, ravine, ruin, standing stones)
-    // with a simple fallback marker if no prefab is assigned. Registered as a feature so it
-    // obeys fog/knowledge like every other placed object.
-    private void BuildLandmarkObject(Vector2Int coord, GameObject[] prefabs, string label, int seed, Material fallbackMaterial)
-    {
-        if (!tiles.TryGetValue(coord, out var tile))
-        {
-            return;
-        }
-
-        var root = NewChild($"{label}_{coord.x}_{coord.y}");
-        RegisterFeatureObject(coord, root);
-        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.02f);
-        root.transform.localRotation = Quaternion.Euler(0f, Hash01(coord.x, coord.y, seed) * 360f, 0f);
-        if (TryPlacePrefab(prefabs, root.transform, $"{label}Prefab", Vector3.zero, Quaternion.identity, Vector3.one * hexSize, coord.x, coord.y, seed, out _))
-        {
-            return;
-        }
-
-        var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        marker.name = label;
-        marker.transform.SetParent(root.transform, false);
-        marker.transform.localPosition = new Vector3(0f, 0.12f, 0f);
-        marker.transform.localScale = new Vector3(0.24f, 0.24f, 0.24f);
-        marker.GetComponent<MeshRenderer>().sharedMaterial = fallbackMaterial;
     }
 
     private IReadOnlyList<Vector2Int> CorePathToViewPath(IReadOnlyList<HexCoord> coords)
