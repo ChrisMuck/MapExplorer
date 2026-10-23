@@ -248,7 +248,15 @@ Aufteilung:
 
 **V2b – Ersatz der alten Spielansicht (Schritte 1 bis 3 umgesetzt, in Unity ungeprüft)**
 
-Umgesetzt: Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
+**V2c – weitere Orte aus Daten (Verlassenes Lager umgesetzt, in Unity ungeprüft)**
+
+Das Datenformat kennt Licht- und Rauchelemente, `scale` und `plain`. Das verlassene Lager
+(`vis-abandoned-camp`, 24 Elemente) zeigt die drei Zustandskanäle überlagert: Anwesenheit bestimmt Zelte,
+Feuer, Licht, Rauch, Kisten, Fahne und Figuren, der Betrieb Steinhaufen oder Warnschild, die Erkundung Spuren der
+Expedition (Pfahl, Grabungen, Feldtafel). Offen: Grab, Tor, Grenzwarnung, Ufer. Einzelheiten:
+`low_poly_map_presentation_v2c_review.md`.
+
+Umgesetzt (V2b): Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
 Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
 Q und E drehen die Karte, Aktualisierung nach Befehlen und alle 0,25 Sekunden. Einzelheiten und Prüfanleitung:
 `low_poly_map_presentation_v2b_review.md`. Offen aus der Liste unten: Overlays als eigene Linienobjekte,

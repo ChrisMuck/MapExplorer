@@ -102,6 +102,16 @@ public sealed class VisualPoseDefinition
     public VisualVec3 Scale { get; }
 }
 
+public enum VisualElementKind
+{
+    /// <summary>A part of the kit placed in the scene.</summary>
+    Part,
+    /// <summary>A point light, for example a fire.</summary>
+    Light,
+    /// <summary>Rising smoke puffs.</summary>
+    Smoke
+}
+
 /// <summary>A part placed in a composition, visible in some states of one state channel and posed per state.</summary>
 public sealed class VisualElementDefinition
 {
@@ -113,8 +123,18 @@ public sealed class VisualElementDefinition
         string? showChannel,
         IEnumerable<string>? showStates,
         string poseChannel,
-        IReadOnlyDictionary<string, VisualPoseDefinition> poses)
+        IReadOnlyDictionary<string, VisualPoseDefinition> poses,
+        VisualElementKind kind = VisualElementKind.Part,
+        string? colorHex = null,
+        float intensity = 1f,
+        float range = 5f,
+        float size = 1f)
     {
+        Kind = kind;
+        ColorHex = colorHex;
+        Intensity = intensity;
+        Range = range;
+        Size = size;
         Id = id;
         PartId = partId;
         Position = position;
@@ -126,9 +146,17 @@ public sealed class VisualElementDefinition
     }
 
     public string Id { get; }
+    public VisualElementKind Kind { get; }
+    /// <summary>Part id; empty for lights and smoke.</summary>
     public string PartId { get; }
     public VisualVec3 Position { get; }
     public VisualVec3 Euler { get; }
+    /// <summary>Color of a light or smoke element.</summary>
+    public string? ColorHex { get; }
+    public float Intensity { get; }
+    public float Range { get; }
+    /// <summary>Size multiplier of smoke puffs.</summary>
+    public float Size { get; }
     /// <summary>State channel that decides visibility; null means always visible.</summary>
     public string? ShowChannel { get; }
     public IReadOnlyList<string>? ShowStates { get; }
@@ -139,8 +167,18 @@ public sealed class VisualElementDefinition
 /// <summary>How a location looks: chosen by archetype and optionally variant, most specific first.</summary>
 public sealed class VisualCompositionDefinition
 {
-    public VisualCompositionDefinition(string id, string archetypeId, string? variantId, string anchorMode, float ringRadius, IEnumerable<VisualElementDefinition> elements)
+    public VisualCompositionDefinition(
+        string id,
+        string archetypeId,
+        string? variantId,
+        string anchorMode,
+        float ringRadius,
+        IEnumerable<VisualElementDefinition> elements,
+        float scale = 1f,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? plainStates = null)
     {
+        Scale = scale;
+        PlainStates = plainStates ?? new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         Id = id;
         ArchetypeId = archetypeId;
         VariantId = variantId;
@@ -154,6 +192,10 @@ public sealed class VisualCompositionDefinition
     public string? VariantId { get; }
     public string AnchorMode { get; }
     public float RingRadius { get; }
+    /// <summary>Scale of the whole place on the map; 1 keeps the authored size.</summary>
+    public float Scale { get; }
+    /// <summary>States that deliberately have no visual of their own, per channel.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> PlainStates { get; }
     public IReadOnlyList<VisualElementDefinition> Elements { get; }
 }
 
@@ -210,7 +252,7 @@ public sealed class VisualDefinitionSet
 
             foreach (var element in composition.Elements)
             {
-                if (!this.parts.ContainsKey(element.PartId))
+                if (element.Kind == VisualElementKind.Part && !this.parts.ContainsKey(element.PartId))
                 {
                     throw new LocationDataException($"Visual composition '{composition.Id}' element '{element.Id}' uses unknown part '{element.PartId}'.");
                 }
@@ -347,12 +389,41 @@ public static class VisualDefinitionLoader
             (string?)match["variantId"],
             (string?)item["anchorMode"] ?? "point",
             (float?)item["ringRadius"] ?? 3.3f,
-            elements);
+            elements,
+            (float?)item["scale"] ?? 1f,
+            ParsePlainStates(id, item["plain"] as JObject));
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>> ParsePlainStates(string compositionId, JObject? plain)
+    {
+        var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        if (plain == null)
+        {
+            return result;
+        }
+
+        foreach (var channel in plain.Properties())
+        {
+            var states = (channel.Value as JArray)?.Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Trim()).ToList();
+            if (states == null || states.Count == 0)
+            {
+                throw new LocationDataException($"Visual composition '{compositionId}' lists no states for plain channel '{channel.Name}'.");
+            }
+
+            result[channel.Name] = states;
+        }
+
+        return result;
     }
 
     private static VisualElementDefinition ParseElement(string compositionId, JObject item)
     {
         var id = Required(item, "id");
+        var kindText = (string?)item["kind"] ?? "part";
+        if (!Enum.TryParse<VisualElementKind>(kindText, ignoreCase: true, out var kind))
+        {
+            throw new LocationDataException($"Visual composition '{compositionId}' element '{id}' has an unknown kind '{kindText}'.");
+        }
         string? channel = null;
         List<string>? states = null;
         if (item["shows"] is JObject shows)
@@ -375,15 +446,22 @@ public static class VisualDefinitionLoader
             }
         }
 
+        var partId = kind == VisualElementKind.Part ? Required(item, "part") : string.Empty;
+        var colorHex = kind == VisualElementKind.Part ? null : Color(item, "color");
         return new VisualElementDefinition(
             id,
-            Required(item, "part"),
+            partId,
             Vec(item, "position", VisualVec3.Zero),
             Vec(item, "euler", VisualVec3.Zero),
             channel,
             states,
             (string?)item["poseChannel"] ?? channel ?? "operational",
-            poses);
+            poses,
+            kind,
+            colorHex,
+            (float?)item["intensity"] ?? 1f,
+            (float?)item["range"] ?? 5f,
+            (float?)item["size"] ?? 1f);
     }
 
     private static IEnumerable<JObject> Objects(JObject parent, string field)
@@ -453,6 +531,34 @@ public static class VisualDefinitionValidator
                 foreach (var pose in element.Poses)
                 {
                     CheckStates(composition, element, element.PoseChannel, new[] { pose.Key }, profiles, used);
+                }
+            }
+
+            foreach (var plain in composition.PlainStates)
+            {
+                if (!KnownChannels.Contains(plain.Key))
+                {
+                    throw new LocationDataException($"Visual composition '{composition.Id}' lists plain states for unknown channel '{plain.Key}'.");
+                }
+
+                var allowedPlain = profiles.SelectMany(profile => profile.Channels.TryGetValue(plain.Key, out var definition) ? definition.Values : Array.Empty<string>()).ToHashSet(StringComparer.Ordinal);
+                foreach (var state in plain.Value)
+                {
+                    if (state != VisualDefinitionSet.UnknownState && !allowedPlain.Contains(state))
+                    {
+                        throw new LocationDataException($"Visual composition '{composition.Id}' lists plain {plain.Key} state '{state}' that its state profile does not define.");
+                    }
+                }
+
+                if (!used.TryGetValue(plain.Key, out var usedStates))
+                {
+                    usedStates = new HashSet<string>(StringComparer.Ordinal) { VisualDefinitionSet.UnknownState };
+                    used[plain.Key] = usedStates;
+                }
+
+                foreach (var state in plain.Value)
+                {
+                    usedStates.Add(state);
                 }
             }
 

@@ -497,7 +497,7 @@ namespace MapExplorer.MapStyle
                     continue;
                 }
 
-                if (description.CompositionId != null && EnsureDataView(location, description))
+                if (description.CompositionId != null && EnsureDataView(location, description, useKnowledge))
                 {
                     seen.Add(location.Id);
                     continue;
@@ -529,18 +529,32 @@ namespace MapExplorer.MapStyle
             }
         }
 
-        /// <summary>Data-driven location (a bridge today). Returns false when it cannot be placed.</summary>
-        private bool EnsureDataView(SpecialLocationState location, LocationVisualDescription description)
+        /// <summary>Data-driven location (bridge, camp). Returns false when it cannot be placed.</summary>
+        private bool EnsureDataView(SpecialLocationState location, LocationVisualDescription description, bool useKnowledge)
         {
+            var onHex = description.AnchorMode == "point";
             if (!dataViews.TryGetValue(location.Id, out var view))
             {
-                if (!TryPlaceOnLine(location, description, out var position, out var yaw, out var span))
+                Vector3 position;
+                float yaw;
+                var scale = Vector3.one * description.Scale;
+                if (onHex)
                 {
-                    return false;
+                    position = GroundAt(Terrain.CoreToWorld(location.Anchor.PrimaryCoord), useKnowledge);
+                    yaw = 0f;
+                }
+                else
+                {
+                    if (!TryPlaceOnLine(location, description, out position, out yaw, out var span))
+                    {
+                        return false;
+                    }
+
+                    scale = new Vector3(1f, 1f, Mathf.Clamp((span + 0.8f) / DeckLength, 0.8f, 1.5f));
                 }
 
                 view = MapStyleLocationView.Create(location.Id, DisplayNameOf(location), Root, position, yaw, shader, kit);
-                view.transform.localScale = new Vector3(1f, 1f, Mathf.Clamp((span + 0.8f) / DeckLength, 0.8f, 1.5f));
+                view.transform.localScale = scale;
                 dataViews[location.Id] = view;
                 view.Apply(description);
                 view.Snap();
@@ -548,6 +562,11 @@ namespace MapExplorer.MapStyle
             else
             {
                 view.Apply(description);
+                if (onHex)
+                {
+                    // The ground under a place changes with knowledge, so it follows it.
+                    view.transform.localPosition = GroundAt(Terrain.CoreToWorld(location.Anchor.PrimaryCoord), useKnowledge);
+                }
             }
 
             drawnPoints.Add(new Vector2(view.transform.localPosition.x, view.transform.localPosition.z));

@@ -35,8 +35,24 @@ public sealed class LocationVisualContext
 /// <summary>One element of a resolved visual: where it sits, whether it is shown and how it is posed right now.</summary>
 public sealed class VisualElementState
 {
-    public VisualElementState(string id, string partId, VisualVec3 position, VisualVec3 euler, bool shown, VisualPoseDefinition pose)
+    public VisualElementState(
+        string id,
+        string partId,
+        VisualVec3 position,
+        VisualVec3 euler,
+        bool shown,
+        VisualPoseDefinition pose,
+        VisualElementKind kind = VisualElementKind.Part,
+        string? colorHex = null,
+        float intensity = 1f,
+        float range = 5f,
+        float size = 1f)
     {
+        Kind = kind;
+        ColorHex = colorHex;
+        Intensity = intensity;
+        Range = range;
+        Size = size;
         Id = id;
         PartId = partId;
         Position = position;
@@ -46,9 +62,14 @@ public sealed class VisualElementState
     }
 
     public string Id { get; }
+    public VisualElementKind Kind { get; }
     public string PartId { get; }
     public VisualVec3 Position { get; }
     public VisualVec3 Euler { get; }
+    public string? ColorHex { get; }
+    public float Intensity { get; }
+    public float Range { get; }
+    public float Size { get; }
     public bool Shown { get; }
     public VisualPoseDefinition Pose { get; }
 }
@@ -69,8 +90,10 @@ public sealed class LocationVisualDescription
         string anchorMode,
         VisualKnowledge knowledge,
         string stateKey,
-        IReadOnlyList<VisualElementState> elements)
+        IReadOnlyList<VisualElementState> elements,
+        float scale = 1f)
     {
+        Scale = scale;
         LocationId = locationId;
         CompositionId = compositionId;
         ArchetypeId = archetypeId;
@@ -91,6 +114,8 @@ public sealed class LocationVisualDescription
     public int RingGaps { get; }
     public float RingRadius { get; }
     public string AnchorMode { get; }
+    /// <summary>Scale of the whole place on the map.</summary>
+    public float Scale { get; }
     public VisualKnowledge Knowledge { get; }
     /// <summary>Compact text of the resolved state, used to skip updates when nothing changed.</summary>
     public string StateKey { get; }
@@ -130,7 +155,9 @@ public sealed class LocationVisualResolver
             {
                 var shown = element.ShowChannel == null || (element.ShowStates?.Contains(states[element.ShowChannel]) ?? false);
                 var pose = element.Poses.TryGetValue(states[element.PoseChannel], out var found) ? found : VisualPoseDefinition.Neutral;
-                elements.Add(new VisualElementState(element.Id, element.PartId, element.Position, element.Euler, shown, pose));
+                elements.Add(new VisualElementState(
+                    element.Id, element.PartId, element.Position, element.Euler, shown, pose,
+                    element.Kind, element.ColorHex, element.Intensity, element.Range, element.Size));
             }
         }
 
@@ -145,7 +172,8 @@ public sealed class LocationVisualResolver
             composition?.AnchorMode ?? "point",
             context.Knowledge,
             stateKey,
-            elements);
+            elements,
+            composition?.Scale ?? 1f);
     }
 
     /// <summary>

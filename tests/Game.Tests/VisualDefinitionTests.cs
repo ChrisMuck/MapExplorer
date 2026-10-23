@@ -18,6 +18,11 @@ internal sealed class VisualDefinitionTests
         WorldTruthViewUsesTheLiveState();
         CompositionFallsBackFromVariantToArchetypeToMarker();
         ValidatorRejectsBadReferences();
+        CampCompositionLoadsAndShowsPresenceStates();
+        CampCombinesTheThreeStateChannels();
+        CampUnknownConditionShowsOnlyNeutralParts();
+        CampFireIsALightAndSmokeOnlyWhenLived();
+        PlainStatesCountAsCoveredAndAreValidated();
     }
 
     private static GameDataCatalog Catalog()
@@ -179,6 +184,118 @@ internal sealed class VisualDefinitionTests
         catch (LocationDataException exception)
         {
             AssertTrue(exception.Message.Contains("unknown part"), "Unknown part ids are rejected when the set is built");
+        }
+    }
+
+    private static SpecialLocationState Camp(GameState game) => game.World.Locations.First(location => location.Id == "abandoned-camp");
+
+    private static LocationVisualDescription ResolveCamp(LocationVisualResolver resolver, SpecialLocationState camp, string? operational, string? presence, string? interaction)
+    {
+        return resolver.Resolve(camp, new LocationVisualContext(VisualKnowledge.Confirmed, operational, presence, interaction));
+    }
+
+    private static void CampCompositionLoadsAndShowsPresenceStates()
+    {
+        var visuals = Catalog().VisualDefinitions;
+        var composition = visuals.FindComposition("investigation-site", "abandoned-camp");
+        AssertTrue(composition != null, "The abandoned camp has a composition");
+        AssertEqual("vis-abandoned-camp", composition!.Id, "Camp composition id");
+        AssertEqual(24, composition.Elements.Count, "Camp composition lists tents, logs, fire, props, figures and traces");
+        AssertEqual("point", composition.AnchorMode, "A camp sits on a single hex");
+        AssertEqual(0.65f, composition.Scale, "A camp is drawn smaller than its authored size");
+
+        var game = TutorialGameFactory.Create();
+        var camp = Camp(game);
+        var resolver = new LocationVisualResolver(visuals);
+        AssertEqual(11, ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "untouched")), "Abandoned camp: tents, logs, ash, overturned crate, torn flag");
+        AssertEqual(13, ShownCount(ResolveCamp(resolver, camp, "none", "recently-used", "untouched")), "Recently used camp adds fire, light, smoke, crate and flag");
+        AssertEqual(15, ShownCount(ResolveCamp(resolver, camp, "none", "watched", "untouched")), "A watched camp also shows two figures");
+        AssertEqual(0.5f, ResolveCamp(resolver, camp, "none", "abandoned", "untouched").Elements.Single(element => element.Id == "tent-1").Pose.Scale.Y, "Abandoned tents sag");
+        AssertEqual(1f, ResolveCamp(resolver, camp, "none", "recently-used", "untouched").Elements.Single(element => element.Id == "tent-1").Pose.Scale.Y, "Used tents stand");
+    }
+
+    private static void CampCombinesTheThreeStateChannels()
+    {
+        var game = TutorialGameFactory.Create();
+        var camp = Camp(game);
+        var resolver = new LocationVisualResolver(Catalog().VisualDefinitions);
+        var baseCount = ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "untouched"));
+
+        AssertEqual(baseCount + 1, ShownCount(ResolveCamp(resolver, camp, "cleared", "abandoned", "untouched")), "A cleared camp adds a cairn");
+        AssertEqual(baseCount + 1, ShownCount(ResolveCamp(resolver, camp, "unsafe", "abandoned", "untouched")), "An unsafe camp adds a warning sign");
+        AssertEqual(baseCount + 1, ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "inspected")), "An inspected camp carries the expedition stake");
+        AssertEqual(baseCount + 3, ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "searched")), "A searched camp adds dug soil");
+        AssertEqual(baseCount + 3, ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "investigated")), "An investigated camp keeps those traces");
+        AssertEqual(baseCount + 4, ShownCount(ResolveCamp(resolver, camp, "none", "abandoned", "documented")), "A documented camp adds the field board");
+        AssertEqual(baseCount + 5, ShownCount(ResolveCamp(resolver, camp, "unsafe", "abandoned", "documented")), "Channels combine without extra cases (sign plus the documented traces)");
+    }
+
+    private static void CampUnknownConditionShowsOnlyNeutralParts()
+    {
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(Catalog().VisualDefinitions);
+        var unknown = ResolveCamp(resolver, Camp(game), null, null, null);
+
+        AssertEqual(8, ShownCount(unknown), "An unobserved camp shows tents, logs and the flag pole only");
+        AssertTrue(unknown.ShownElements.All(element => element.Kind == VisualElementKind.Part), "No fire, light or smoke without an observation");
+        AssertEqual(1f, unknown.Elements.Single(element => element.Id == "tent-2").Pose.Scale.Y, "Unknown condition shows standing tents, not a guess");
+    }
+
+    private static void CampFireIsALightAndSmokeOnlyWhenLived()
+    {
+        var game = TutorialGameFactory.Create();
+        var resolver = new LocationVisualResolver(Catalog().VisualDefinitions);
+        var lived = ResolveCamp(resolver, Camp(game), "none", "recently-used", "untouched");
+        var light = lived.Elements.Single(element => element.Id == "fire-light");
+        var smoke = lived.Elements.Single(element => element.Id == "fire-smoke");
+
+        AssertEqual(VisualElementKind.Light, light.Kind, "The fire light is a light element");
+        AssertEqual("#FFA040", light.ColorHex, "The fire light is warm");
+        AssertEqual(1.2f, light.Intensity, "The fire light strength comes from the data");
+        AssertEqual(6f, light.Range, "The fire light range comes from the data");
+        AssertEqual(VisualElementKind.Smoke, smoke.Kind, "The fire smoke is a smoke element");
+        AssertTrue(light.Shown && smoke.Shown, "A lived camp has light and smoke");
+
+        var abandoned = ResolveCamp(resolver, Camp(game), "none", "abandoned", "untouched");
+        AssertTrue(!abandoned.Elements.Single(element => element.Id == "fire-light").Shown && !abandoned.Elements.Single(element => element.Id == "fire-smoke").Shown, "A cold camp has neither");
+    }
+
+    private static void PlainStatesCountAsCoveredAndAreValidated()
+    {
+        var catalog = Catalog();
+        string Camp(string plainInteraction, string plainOperational = "\"none\"")
+        {
+            return $$"""
+            {
+              "documentType": "visual-definitions", "schemaVersion": 1,
+              "markers": [],
+              "parts": [ { "id": "block", "primitives": [ { "shape": "box", "size": [1, 1, 1], "color": "#808080" } ] } ],
+              "compositions": [
+                { "id": "test", "match": { "archetypeId": "investigation-site", "variantId": "abandoned-camp" },
+                  "plain": { "interaction": [{{plainInteraction}}], "operational": [{{plainOperational}}] },
+                  "elements": [
+                    { "id": "a", "part": "block", "shows": { "channel": "interaction", "in": ["inspected"] } },
+                    { "id": "b", "part": "block", "shows": { "channel": "operational", "in": ["cleared", "unsafe"] } }
+                  ] }
+              ]
+            }
+            """;
+        }
+
+        var valid = VisualDefinitionLoader.LoadFromJson(new[] { Camp("\"untouched\", \"searched\", \"investigated\", \"documented\"") });
+        VisualDefinitionValidator.Validate(valid, catalog.Locations, catalog.Authoring);
+
+        ExpectFailure(Camp("\"untouched\", \"searched\", \"investigated\""), catalog, "does not cover", "A state that is neither shown nor plain is reported");
+        ExpectFailure(Camp("\"untouched\", \"searched\", \"investigated\", \"documented\", \"flying\""), catalog, "does not define", "A plain state the profile lacks is rejected");
+
+        try
+        {
+            VisualDefinitionLoader.LoadFromJson(new[] { Camp("\"untouched\"").Replace("\"plain\": {", "\"unused\": {").Replace("{ \"id\": \"a\", \"part\": \"block\",", "{ \"id\": \"a\", \"kind\": \"light\",") });
+            throw new InvalidOperationException("A light without a color should be rejected.");
+        }
+        catch (LocationDataException exception)
+        {
+            AssertTrue(exception.Message.Contains("color"), "A light needs a color (" + exception.Message + ")");
         }
     }
 
