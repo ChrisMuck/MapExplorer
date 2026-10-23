@@ -107,7 +107,7 @@ public sealed class WorldGenBridge
             locationId: locationByCell.TryGetValue(ToCore(cell), out var locationId) ? locationId : null,
             ownerId: cell.Faction >= 0 && factionIds.TryGetValue(cell.Faction, out var ownerId) ? ownerId : null));
         var bounds = new HexMapBounds(generated.Grid.W + qOffset, generated.Grid.H);
-        var paths = BuildPaths(generated, ToCore);
+        var paths = BuildPaths(generated, ToCore, locations, bounds);
         // The generated-world seed is also the seed for later non-generator simulation choices.
         // This keeps a full campaign reproducible from its generation request and command history.
         var world = new WorldState(
@@ -267,11 +267,28 @@ public sealed class WorldGenBridge
         return result;
     }
 
-    private static IReadOnlyList<WorldPathState> BuildPaths(GeneratedWorld world, Func<HexCell, HexCoord> toCore)
+    private static IReadOnlyList<WorldPathState> BuildPaths(
+        GeneratedWorld world,
+        Func<HexCell, HexCoord> toCore,
+        IReadOnlyList<SpecialLocationState> locations,
+        HexMapBounds bounds)
     {
         var paths = new List<WorldPathState>();
         for (var index = 0; index < world.Roads.Count; index++) paths.Add(new WorldPathState($"road-{index + 1}", WorldPathKind.Road, world.Roads[index].Select(toCore)));
         for (var index = 0; index < world.Rivers.Count; index++) paths.Add(new WorldPathState($"river-{index + 1}", WorldPathKind.River, world.Rivers[index].Cells.Select(toCore)));
+
+        // A blocking edge needs a visible line. Crossings over rivers already have one; every other
+        // route obstacle (for example a collapsed pass) gets a Chasm line across its edge.
+        var chasmIndex = 0;
+        foreach (var location in locations.Where(WorldObstaclePathRules.IsRouteObstacleEdge))
+        {
+            var a = location.Anchor.Coords[0];
+            var b = location.Anchor.Coords[1];
+            if (WorldObstaclePathRules.PathSupportsEdge(paths, a, b)) continue;
+            chasmIndex++;
+            paths.Add(new WorldPathState($"chasm-{chasmIndex}", WorldPathKind.Chasm, WorldObstaclePathRules.CrossingLine(a, b, bounds)));
+        }
+
         return paths;
     }
 
@@ -310,7 +327,7 @@ public sealed class WorldGenBridge
 
     private static string VariantIdFor(string variant) => variant switch
     {
-        "ZerstÃ¶rte BrÃ¼cke" => "broken-bridge",
+        "Zerstörte Brücke" => "broken-bridge",
         "Vergessenes Grab" => "marked-grave",
         "Verlassenes Lager" => "abandoned-camp",
         "Versiegeltes Tor" => "sealed-gate",

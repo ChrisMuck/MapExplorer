@@ -208,9 +208,9 @@ namespace MapExplorer.MapStyle
         /// Bridge over a ditch. With banks (showcase pedestal) it brings its own ditch; without banks
         /// (landscape) it sits in the terrain ditch, with the deck at local height 0.
         /// </summary>
-        public static MapStyleLocation Bridge(Transform parent, Vector3 position, Shader shader, bool withBanks)
+        public static MapStyleLocation Bridge(Transform parent, Vector3 position, Shader shader, bool withBanks, float ringRadius = 3.3f, float yaw = 0f)
         {
-            var l = MapStyleLocation.Create("Brücke", S("intakt", "beschädigt", "repariert", "zerstört"), parent, position, 0f, shader, ArchetypeObstacle, 3);
+            var l = MapStyleLocation.Create("Brücke", S("intakt", "beschädigt", "repariert", "zerstört", "unbekannt"), parent, position, yaw, shader, ArchetypeObstacle, 3, ringRadius);
             var shift = withBanks ? 0f : -0.6f;
             float Y(float y) => y + shift;
             var wood = MapStyleLocation.C(Wood);

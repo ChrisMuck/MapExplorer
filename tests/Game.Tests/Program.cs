@@ -103,6 +103,8 @@ var worldGenerationPresetTests = new WorldGenerationPresetTests();
 worldGenerationPresetTests.RunAll();
 var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
+var worldObstaclePathTests = new WorldObstaclePathTests();
+worldObstaclePathTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 }
@@ -230,7 +232,7 @@ internal sealed class CrossSystemStateTests
             "structural-cuts",
             EvidenceSourceKind.LocationInspection,
             EvidenceKnowledgeState.Reported,
-            "Mehrere TrÃ¤ger wurden gezielt entfernt.",
+            "Mehrere Träger wurden gezielt entfernt.",
             subjectLocationId: "bridge-1",
             confidence: 55);
 
@@ -698,7 +700,8 @@ internal sealed class GameStateTests
     {
         var game = TutorialGameFactory.Create();
 
-        AssertEqual(2, CountPathKind(game, WorldPathKind.River), "Tutorial river count");
+        AssertEqual(1, CountPathKind(game, WorldPathKind.River), "Tutorial river count");
+        AssertEqual(1, CountPathKind(game, WorldPathKind.Chasm), "Tutorial chasm count");
         AssertEqual(3, CountPathKind(game, WorldPathKind.Road), "Tutorial road count");
         AssertEqual(1, CountPathKind(game, WorldPathKind.TerritoryBorder), "Tutorial border count");
         AssertEqual(1, CountPathKind(game, WorldPathKind.Wall), "Tutorial wall count");

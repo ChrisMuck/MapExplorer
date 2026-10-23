@@ -14,12 +14,28 @@ namespace MapExplorer.MapStyle.EditorTools
     public static class MapStyleSandboxEditor
     {
         private const string ScenePath = "Assets/MapStyle/Scenes/MapStyleSandbox.unity";
+        private const string WorldScenePath = "Assets/MapStyle/Scenes/MapStyleWorld.unity";
         private const string ShaderPath = "Assets/MapStyle/Shaders/MapStyleLit.shader";
 
         [MenuItem("Map Style/Create Sandbox Scene")]
         public static void CreateScene()
         {
             CreateSceneInternal();
+        }
+
+        [MenuItem("Map Style/Create World Scene (real world data)")]
+        public static void CreateWorldScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var go = new GameObject("MapStyleWorldView");
+            var view = go.AddComponent<MapStyleWorldView>();
+            view.shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            if (!AssetDatabase.IsValidFolder("Assets/MapStyle/Scenes"))
+            {
+                AssetDatabase.CreateFolder("Assets/MapStyle", "Scenes");
+            }
+
+            EditorSceneManager.SaveScene(scene, WorldScenePath);
         }
 
         private static MapStyleSandbox CreateSceneInternal()
