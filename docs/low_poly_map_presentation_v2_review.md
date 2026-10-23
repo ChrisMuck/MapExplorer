@@ -84,6 +84,12 @@ Nicht geprüft:
 
 - Die Brücke sitzt auf der Höhe des echten Geländes; auf nur berichtetem Gelände (abgeflacht) kann sie
   leicht darüber schweben.
+- **Platzierung (nach der ersten Sichtprüfung verbessert):** Die Brücke stand an der Stelle der Linie, die
+  der blockierenden Kante am nächsten liegt; bei der Tutorialwelt war das eine breite Wasserfläche, in der
+  die Pfosten im Wasser standen. Jetzt prüft die Ansicht Stellen entlang der Linie nahe der Kante, misst
+  die Breite zwischen den Ufern, wählt die schmalste, zentriert die Brücke zwischen den Ufern und streckt
+  sie auf die Breite (Faktor 0,8 bis 1,5). Rechenprobe außerhalb von Unity: Tutorial Breite 3,0 statt
+  keiner auffindbaren Ufer an der alten Stelle; generierte Welten 2,0 bis 3,5.
 - Bäume meiden die Stellen gezeichneter Orte; dadurch verraten Lücken in bekanntem Wald keine
   unbekannten Orte, solange deren Feld unbekannt ist.
 - Die Ansicht liegt noch nicht im Spielablauf: Feldwahl, Befehle, Kamera und Overlays der alten Ansicht

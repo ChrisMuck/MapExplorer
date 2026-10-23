@@ -418,12 +418,13 @@ namespace MapExplorer.MapStyle
         {
             if (!dataViews.TryGetValue(location.Id, out var view))
             {
-                if (!TryPlaceOnLine(location, description, out var position, out var yaw))
+                if (!TryPlaceOnLine(location, description, out var position, out var yaw, out var span))
                 {
                     return false;
                 }
 
                 view = MapStyleLocationView.Create(location.Id, DisplayNameOf(location), root, position, yaw, shader, kit);
+                view.transform.localScale = new Vector3(1f, 1f, Mathf.Clamp((span + 0.8f) / DeckLength, 0.8f, 1.5f));
                 dataViews[location.Id] = view;
                 view.Apply(description);
                 view.Snap();
@@ -437,11 +438,18 @@ namespace MapExplorer.MapStyle
             return true;
         }
 
-        /// <summary>Puts an edge location on the ravine or river line that explains it; the deck crosses the line.</summary>
-        private bool TryPlaceOnLine(SpecialLocationState location, LocationVisualDescription description, out Vector3 position, out float yaw)
+        private const float DeckLength = 4.6f;
+
+        /// <summary>
+        /// Puts an edge location where the ravine or river that explains it is narrowest and straightest near
+        /// the blocked edge: the deck crosses the line at right angles, is centered between the two banks and is
+        /// stretched to span them.
+        /// </summary>
+        private bool TryPlaceOnLine(SpecialLocationState location, LocationVisualDescription description, out Vector3 position, out float yaw, out float span)
         {
             position = Vector3.zero;
             yaw = 0f;
+            span = DeckLength;
             if (description.AnchorMode != "edge" || !WorldObstaclePathRules.IsRouteObstacleEdge(location))
             {
                 return false;
@@ -452,18 +460,76 @@ namespace MapExplorer.MapStyle
             var middle = (a + b) * 0.5f;
             var chasm = terrain.Chasms.Nearest(middle);
             var river = terrain.Rivers.Nearest(middle);
+            var lines = chasm.Distance <= river.Distance ? terrain.Chasms : terrain.Rivers;
             var hit = chasm.Distance <= river.Distance ? chasm : river;
             if (float.IsInfinity(hit.Distance))
             {
                 return false;
             }
 
-            var along = new Vector2(-hit.Tangent.y, hit.Tangent.x);
-            var end1 = GroundAt(hit.Point + along * 2.8f, false);
-            var end2 = GroundAt(hit.Point - along * 2.8f, false);
-            position = new Vector3(hit.Point.x, (end1.y + end2.y) * 0.5f + 0.2f, hit.Point.y);
-            yaw = Mathf.Atan2(along.x, along.y) * Mathf.Rad2Deg;
-            return true;
+            var found = false;
+            var bestScore = float.MaxValue;
+            for (var step = -5; step <= 5; step++)
+            {
+                var candidate = hit.Point + hit.Tangent * (step * 0.8f);
+                var line = lines.Nearest(candidate);
+                if (line.Distance > 1f)
+                {
+                    continue;
+                }
+
+                var across = new Vector2(-line.Tangent.y, line.Tangent.x);
+                if (!TryFindBanks(line.Point, across, out var toBank1, out var toBank2))
+                {
+                    continue;
+                }
+
+                var width = toBank1 + toBank2;
+                var score = width + Mathf.Abs(step) * 0.12f;
+                if (score >= bestScore)
+                {
+                    continue;
+                }
+
+                bestScore = score;
+                found = true;
+                span = width;
+                var center = line.Point + across * ((toBank1 - toBank2) * 0.5f);
+                var bank1 = GroundAt(line.Point + across * toBank1, false);
+                var bank2 = GroundAt(line.Point - across * toBank2, false);
+                position = new Vector3(center.x, (bank1.y + bank2.y) * 0.5f + 0.2f, center.y);
+                yaw = Mathf.Atan2(across.x, across.y) * Mathf.Rad2Deg;
+            }
+
+            return found;
+        }
+
+        /// <summary>Walks away from a line in both directions until the ground rises above the water.</summary>
+        private bool TryFindBanks(Vector2 origin, Vector2 across, out float toBank1, out float toBank2)
+        {
+            toBank1 = ScanToBank(origin, across);
+            toBank2 = ScanToBank(origin, -across);
+            return toBank1 > 0f && toBank2 > 0f;
+        }
+
+        private float ScanToBank(Vector2 origin, Vector2 direction)
+        {
+            const float step = 0.25f;
+            for (var distance = step; distance <= 8f; distance += step)
+            {
+                var sample = terrain.SampleAt(origin + direction * distance, false);
+                if (!sample.Valid)
+                {
+                    return -1f;
+                }
+
+                if (sample.Height > MapStyleWorldTerrain.WaterLevel + 0.15f)
+                {
+                    return distance;
+                }
+            }
+
+            return -1f;
         }
 
         private void EnsureLegacyMarker(SpecialLocationState location, LocationVisualDescription description, bool useKnowledge)
