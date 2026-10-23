@@ -366,6 +366,15 @@ gleichzeitig aktive Lichter.
 V1b, Orte in V2, Figuren in V4. Pro Stufe werden die ersetzten Abschnitte hinter dem Schalter
 entfernt, sobald der Owner sie freigegeben hat.
 
+## 13a. Bekannte Punkte für später
+
+Bei der Sichtprüfung von V2a aufgefallen und bewusst vertagt:
+
+| Punkt | Beobachtung | Zuordnung |
+| --- | --- | --- |
+| Straße führt nicht zur Brücke | Straßen sind nur Bodenfarbe entlang ihrer Pfadpunkte und enden vor der Schlucht; die Brücke steht an der besten Stelle der Schlucht, nicht auf dem Straßenverlauf. | V2b oder V3: Straßen als Linienobjekte, die an beiden Brückenenden anschließen |
+| Generierte Brücke an unpassender Stelle | Der Generator setzt das Wegehindernis auf eine Straßenkante entlang eines Flusses oder an einem Höhensprung; das ergibt nicht immer einen sinnvollen Übergang (zum Beispiel am Berg ohne Wasser). | V3: Platzierung im Generator neu bewerten, etwa nur dort, wo eine Straße einen Fluss oder eine Schlucht wirklich kreuzt |
+
 ## 14. Risiken
 
 | Risiko | Gegenmaßnahme |
