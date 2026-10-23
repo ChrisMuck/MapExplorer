@@ -173,6 +173,86 @@ namespace MapExplorer.MapStyle
             controller.Refresh(false);
         }
 
+        /// <summary>Test aid: moves the expedition next to the abandoned camp and reveals the ground around it.</summary>
+        private void JumpToCamp()
+        {
+            SpecialLocationState camp = null;
+            foreach (var location in game.World.Locations)
+            {
+                if (location.ArchetypeId == "investigation-site" && location.VariantId == "abandoned-camp")
+                {
+                    camp = location;
+                    break;
+                }
+            }
+
+            if (camp == null || game.Expedition == null)
+            {
+                return;
+            }
+
+            var terrain = controller.Terrain;
+            var center = terrain.CoreToWorld(camp.Coord);
+            foreach (var tile in game.World.Map.Tiles)
+            {
+                if (Vector2.Distance(center, terrain.CoreToWorld(tile.Coord)) <= 2f * MapStyleWorldTerrain.HexSize * 1.75f)
+                {
+                    game.Knowledge.SetTileKnowledge(tile.Coord, KnowledgeLevel.Confirmed);
+                }
+            }
+
+            game.Expedition.SetPosition(camp.Coord);
+            controller.Refresh(false);
+            FrameExpedition();
+        }
+
+        private SpecialLocationState FindCamp()
+        {
+            foreach (var location in game.World.Locations)
+            {
+                if (location.ArchetypeId == "investigation-site" && location.VariantId == "abandoned-camp")
+                {
+                    return location;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Test aid: one row of buttons per state channel; a click sets the world state and lets the player observe it.</summary>
+        private void DrawCampStateControls()
+        {
+            var camp = FindCamp();
+            if (camp == null)
+            {
+                return;
+            }
+
+            GUILayout.Label("Lagerzustand (Dev: setzt und beobachtet)");
+            foreach (var channel in new[] { LocationStateChannels.Presence, LocationStateChannels.Operational, LocationStateChannels.Interaction })
+            {
+                var values = MapStyleDebug.StateValues(catalog, camp, channel);
+                if (values.Count == 0)
+                {
+                    continue;
+                }
+
+                var names = new string[values.Count];
+                for (var i = 0; i < names.Length; i++)
+                {
+                    names[i] = values[i];
+                }
+
+                var current = Array.IndexOf(names, MapStyleDebug.CurrentState(camp, channel));
+                var chosen = GUILayout.SelectionGrid(current, names, 3);
+                if (chosen != current && chosen >= 0)
+                {
+                    MapStyleDebug.SetAndObserve(game, camp, channel, names[chosen]);
+                    controller.Refresh(false);
+                }
+            }
+        }
+
         private void ObserveObstacles()
         {
             foreach (var location in game.World.Locations)
@@ -285,9 +365,11 @@ namespace MapExplorer.MapStyle
 
             GUILayout.Space(4f);
             GUILayout.Label("Entwickleraktionen (ändern den Spielzustand dieser Testwelt)");
+            if (GUILayout.Button("Expedition zum Lager springen")) JumpToCamp();
             if (GUILayout.Button("Erkunden +1 um die Expedition")) ExploreMore();
             if (GUILayout.Button("Brückenzustand beobachten")) ObserveObstacles();
             if (GUILayout.Button("Welt: Brückenzustand wechseln")) CycleWorldBridgeState();
+            DrawCampStateControls();
 
             GUILayout.Label("Tageszeit");
             var time = GUILayout.HorizontalSlider(timeOfDay, 0f, 100f);

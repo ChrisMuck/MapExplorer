@@ -26,7 +26,29 @@ namespace MapExplorer.MapStyle
             public bool Removing;
         }
 
+        private sealed class LightRuntime
+        {
+            public Light Light;
+            public float Intensity;
+            public float Range;
+            public bool On;
+            public float Current;
+            public float Seed;
+        }
+
+        private sealed class SmokeRuntime
+        {
+            public Transform[] Puffs;
+            public float[] Age;
+            public bool[] Off;
+            public Vector3 Origin;
+            public float Size;
+            public bool On;
+        }
+
         private readonly Dictionary<string, ElementRuntime> elements = new();
+        private readonly Dictionary<string, LightRuntime> lights = new();
+        private readonly Dictionary<string, SmokeRuntime> smokes = new();
         private MapStyleVisualKit kit;
         private Material litMaterial;
         private Material emissiveMaterial;
@@ -77,13 +99,25 @@ namespace MapExplorer.MapStyle
 
             lastSignature = signature;
             Knowledge = description.Knowledge;
-            StateText = description.StateKey.Split('|')[0];
+            StateText = DescribeState(description.StateKey);
             ApplyKnowledgeLook(description.Knowledge);
             ApplyRing(description);
 
             var present = new HashSet<string>();
             foreach (var element in description.Elements)
             {
+                if (element.Kind == VisualElementKind.Light)
+                {
+                    ApplyLight(element);
+                    continue;
+                }
+
+                if (element.Kind == VisualElementKind.Smoke)
+                {
+                    ApplySmoke(element);
+                    continue;
+                }
+
                 present.Add(element.Id);
                 if (!elements.TryGetValue(element.Id, out var runtime) || runtime.Removing)
                 {
@@ -109,9 +143,144 @@ namespace MapExplorer.MapStyle
             return true;
         }
 
+        private static string DescribeState(string stateKey)
+        {
+            var parts = stateKey.Split('|');
+            var known = new List<string>();
+            for (var i = 0; i < 3 && i < parts.Length; i++)
+            {
+                if (parts[i] != VisualDefinitionSet.UnknownState)
+                {
+                    known.Add(parts[i]);
+                }
+            }
+
+            return known.Count == 0 ? "unbekannt" : string.Join(", ", known);
+        }
+
+        private void ApplyLight(VisualElementState element)
+        {
+            if (!lights.TryGetValue(element.Id, out var runtime))
+            {
+                var go = new GameObject(element.Id);
+                go.transform.SetParent(partsRoot, false);
+                go.transform.localPosition = MapStyleVisualKit.ToVector(element.Position);
+                var light = go.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = MapStyleVisualKit.ParseColor(element.ColorHex ?? "#FFFFFF");
+                light.shadows = LightShadows.None;
+                light.intensity = 0f;
+                runtime = new LightRuntime { Light = light, Seed = lights.Count * 1.7f };
+                lights[element.Id] = runtime;
+            }
+
+            runtime.Intensity = element.Intensity;
+            runtime.Range = element.Range;
+            runtime.On = element.Shown;
+        }
+
+        private void ApplySmoke(VisualElementState element)
+        {
+            if (!smokes.TryGetValue(element.Id, out var runtime))
+            {
+                var builder = new MapStyleMeshBuilder();
+                builder.AddIco(Vector3.zero, Vector3.one * 0.4f, Vector3.zero, MapStyleVisualKit.ParseColor(element.ColorHex ?? "#B8B2A4"));
+                var mesh = builder.Build(element.Id + "-puff");
+                runtime = new SmokeRuntime
+                {
+                    Puffs = new Transform[6],
+                    Age = new float[6],
+                    Off = new bool[6],
+                    Origin = MapStyleVisualKit.ToVector(element.Position),
+                    Size = element.Size
+                };
+                for (var i = 0; i < runtime.Puffs.Length; i++)
+                {
+                    var go = new GameObject("puff");
+                    go.transform.SetParent(partsRoot, false);
+                    go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    var renderer = go.AddComponent<MeshRenderer>();
+                    renderer.sharedMaterial = litMaterial;
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    runtime.Puffs[i] = go.transform;
+                    runtime.Age[i] = i / 6f;
+                    runtime.Off[i] = true;
+                    go.SetActive(false);
+                }
+
+                smokes[element.Id] = runtime;
+            }
+
+            runtime.On = element.Shown;
+        }
+
+        private void UpdateLights(float blend, bool snap)
+        {
+            var scale = Mathf.Max(0.01f, transform.lossyScale.x);
+            foreach (var runtime in lights.Values)
+            {
+                var target = runtime.On ? 1f : 0f;
+                runtime.Current = snap ? target : runtime.Current + (target - runtime.Current) * blend;
+                var flicker = 1f + Mathf.Sin(Time.time * 9f + runtime.Seed * 7f) * 0.08f;
+                // Point lights do not scale with their parent: range follows the scale, strength its square.
+                runtime.Light.range = runtime.Range * scale;
+                runtime.Light.intensity = runtime.Current * runtime.Intensity * MapStyleLocation.LightScale * (0.55f + MapStyleLocation.NightFactor * 2f) * flicker * scale * scale;
+            }
+        }
+
+        private void UpdateSmoke(float dt)
+        {
+            foreach (var runtime in smokes.Values)
+            {
+                for (var i = 0; i < runtime.Puffs.Length; i++)
+                {
+                    var puff = runtime.Puffs[i];
+                    if (runtime.Off[i])
+                    {
+                        if (!runtime.On)
+                        {
+                            continue;
+                        }
+
+                        runtime.Off[i] = false;
+                        runtime.Age[i] = 0f;
+                        puff.gameObject.SetActive(true);
+                    }
+
+                    runtime.Age[i] += dt * 0.3f;
+                    if (runtime.Age[i] >= 1f)
+                    {
+                        runtime.Age[i] = 0f;
+                        if (!runtime.On)
+                        {
+                            runtime.Off[i] = true;
+                            puff.gameObject.SetActive(false);
+                            continue;
+                        }
+                    }
+
+                    var u = runtime.Age[i];
+                    puff.localPosition = runtime.Origin + new Vector3(Mathf.Sin(u * 5f + i * 1.7f) * 0.12f, u * 1.8f * runtime.Size, Mathf.Cos(u * 4f + i) * 0.1f);
+                    puff.localScale = Vector3.one * ((0.35f + u * 1.2f) * runtime.Size * Mathf.Max(0.05f, Mathf.Sin(u * Mathf.PI)));
+                }
+            }
+        }
+
         /// <summary>Jumps to the final pose without animation (screenshots, first appearance).</summary>
         public void Snap()
         {
+            UpdateLights(1f, true);
+            foreach (var runtime in smokes.Values)
+            {
+                for (var i = 0; i < runtime.Puffs.Length; i++)
+                {
+                    runtime.Off[i] = !runtime.On;
+                    runtime.Puffs[i].gameObject.SetActive(runtime.On);
+                    runtime.Age[i] = (i + 1) / 7f;
+                }
+            }
+
+            UpdateSmoke(0f);
             foreach (var runtime in elements.Values)
             {
                 runtime.Visible = runtime.Shown ? 1f : 0f;
@@ -125,6 +294,8 @@ namespace MapExplorer.MapStyle
         private void Update()
         {
             var blend = 1f - Mathf.Exp(-Time.deltaTime * 7f);
+            UpdateLights(blend, false);
+            UpdateSmoke(Time.deltaTime);
             List<string> finished = null;
             foreach (var pair in elements)
             {

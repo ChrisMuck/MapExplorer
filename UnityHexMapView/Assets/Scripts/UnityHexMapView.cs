@@ -35,6 +35,16 @@ public sealed class UnityHexMapView : MonoBehaviour
     [SerializeField] private bool useMapStyleRenderer = true;
     [SerializeField] private Shader mapStyleShader;
     [Range(20f, 200f)] public float cameraRotateSpeed = 70f;
+    [Header("Test aid (editor and development builds only)")]
+    [Tooltip("Location id the debug key jumps the expedition to, for example abandoned-camp or broken-ravine.")]
+    [SerializeField] private string debugJumpLocationId = "abandoned-camp";
+    [SerializeField] private KeyCode debugJumpKey = KeyCode.F9;
+    [Tooltip("Movement points every active expedition gets while testing (0 switches the aid off). The normal value is 4.")]
+    [Min(0)] [SerializeField] private int debugMovementPoints = 50;
+    [Tooltip("Keys that move the debug location to the next presence, operational or interaction state and let the player observe it.")]
+    [SerializeField] private KeyCode debugCyclePresenceKey = KeyCode.F8;
+    [SerializeField] private KeyCode debugCycleOperationalKey = KeyCode.F7;
+    [SerializeField] private KeyCode debugCycleInteractionKey = KeyCode.F6;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -912,11 +922,152 @@ public sealed class UnityHexMapView : MonoBehaviour
             }
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Input.GetKeyDown(debugJumpKey))
+        {
+            DebugJumpToLocation();
+        }
+
+        DebugRaiseMovementPoints();
+        if (Input.GetKeyDown(debugCyclePresenceKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Presence);
+        }
+
+        if (Input.GetKeyDown(debugCycleOperationalKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Operational);
+        }
+
+        if (Input.GetKeyDown(debugCycleInteractionKey))
+        {
+            DebugCycleLocationState(LocationStateChannels.Interaction);
+        }
+#endif
+
         UpdateHoverPreview();
         HandleMapInput();
         UpdateCameraPan();
         UpdateCameraZoom();
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// Test aid: moves the debug location to the next state of a channel and lets the player observe it, so every
+    /// picture of a place can be checked. In the game these states change through commands and consequences.
+    /// </summary>
+    private void DebugCycleLocationState(string channel)
+    {
+        if (coreGameState == null || string.IsNullOrWhiteSpace(debugJumpLocationId))
+        {
+            return;
+        }
+
+        var location = coreGameState.World.Locations.FirstOrDefault(item => item.Id == debugJumpLocationId.Trim());
+        if (location == null)
+        {
+            interactionMessage = $"Debug state: no location '{debugJumpLocationId}' in this world.";
+            RefreshHud();
+            return;
+        }
+
+        var next = MapStyleDebug.NextState(gameDataCatalog, location, channel);
+        MapStyleDebug.SetAndObserve(coreGameState, location, channel, next);
+        interactionMessage = $"Debug: {location.Name} {channel} is now '{next}'.";
+        RefreshKnowledgeOverlays();
+        RefreshHexOverlays();
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// Test aid: gives an active expedition <see cref="debugMovementPoints"/> movement points (and the same daily maximum)
+    /// so a place can be tested without running out of moves. The expedition state keeps its movement maximum fixed, so
+    /// the expedition is replaced by a copy that has everything else unchanged. Editor and development builds only.
+    /// </summary>
+    private void DebugRaiseMovementPoints()
+    {
+        if (debugMovementPoints <= 0 || coreGameState == null)
+        {
+            return;
+        }
+
+        var expedition = coreGameState.Expedition;
+        if (expedition == null || expedition.ExpeditionNumber < 1 || expedition.Status != ExpeditionStatus.Active || expedition.MaxMovementPoints >= debugMovementPoints)
+        {
+            return;
+        }
+
+        var copy = new ExpeditionState(
+            expedition.ExpeditionNumber,
+            expedition.Position,
+            expedition.Members,
+            expedition.ExpeditionDay,
+            debugMovementPoints,
+            debugMovementPoints,
+            expedition.Supplies,
+            expedition.Medicine,
+            expedition.Morale,
+            expedition.Capacity,
+            expedition.Status,
+            expedition.UnsecuredKnowledge);
+        foreach (var mission in expedition.ScoutMissions)
+        {
+            copy.AddScoutMission(mission);
+        }
+
+        foreach (var finding in expedition.FieldFindings)
+        {
+            copy.AddFieldFinding(finding);
+        }
+
+        coreGameState.SetExpedition(copy);
+        interactionMessage = $"Debug: movement points raised to {debugMovementPoints}.";
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// Test aid: puts the expedition next to a chosen location and reveals the ground around it, so a place can be
+    /// checked without walking the whole route. It bypasses the movement command on purpose and exists only in the
+    /// editor and development builds; the tutorial design is unchanged.
+    /// </summary>
+    private void DebugJumpToLocation()
+    {
+        if (coreGameState == null || string.IsNullOrWhiteSpace(debugJumpLocationId))
+        {
+            return;
+        }
+
+        var location = coreGameState.World.Locations.FirstOrDefault(item => item.Id == debugJumpLocationId.Trim());
+        if (location == null)
+        {
+            interactionMessage = $"Debug jump: no location '{debugJumpLocationId}' in this world.";
+            RefreshHud();
+            return;
+        }
+
+        var center = CoreCoordToViewCoord(location.Coord);
+        foreach (var tile in coreGameState.World.Map.Tiles)
+        {
+            if (HexDistance(CoreCoordToViewCoord(tile.Coord), center) <= 2)
+            {
+                coreGameState.Knowledge.SetTileKnowledge(tile.Coord, KnowledgeLevel.Confirmed);
+            }
+        }
+
+        coreGameState.Expedition.SetPosition(location.Coord);
+        selectedPreviewHex = center;
+        hasInspectedHex = false;
+        inspectedLocation = null;
+        interactionMessage = $"Debug jump to {location.Name}.";
+        UpdateExpeditionMarkerPosition();
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+        FocusCameraOnCoord(selectedPreviewHex);
+    }
+#endif
 
     private void OnGUI()
     {

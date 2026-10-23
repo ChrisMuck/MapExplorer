@@ -419,7 +419,10 @@ später aufteilen, zum Beispiel um Figuren- und Tierkataloge. Das Dokument ist i
 ohne Dokument fällt jeder Ort auf einen schlichten Marker zurück.
 
 Aufbau eines Elements: Teil, Position, Drehung, optional `shows` (Zustandskanal und Zustands-IDs, in
-denen es sichtbar ist) und `poses` (Versatz, Drehung, Skalierung je Zustand). Zustands-IDs sind die
+denen es sichtbar ist) und `poses` (Versatz, Drehung, Skalierung je Zustand). Statt eines Teils kann ein
+Element ein Licht (`kind: light`, Farbe, Stärke, Reichweite) oder Rauch (`kind: smoke`, Farbe, Größe) sein.
+Eine Komposition kann mit `scale` verkleinert werden und mit `plain` Zustände nennen, die bewusst kein
+eigenes Bild haben (zum Beispiel `interaction: untouched`); sie zählen dann als abgedeckt. Zustands-IDs sind die
 der Zustandsprofile; der Sonderwert `unknown` gilt, wenn der Spieler den Zustand nicht kennt. Die
 Validierung prüft Archetyp, Variante, Teile und Zustands-IDs und verlangt, dass eine Komposition
 jeden Wert eines Kanals abdeckt, auf den sie reagiert.

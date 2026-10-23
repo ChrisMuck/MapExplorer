@@ -218,6 +218,228 @@
           "position": [0.25, 0.3, 0]
         }
       ]
+    },
+    {
+      "id": "tent-a",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.8, 1.1, 1.8],
+          "sides": 4,
+          "topScale": 0.0,
+          "color": "#C9B27A"
+        }
+      ]
+    },
+    {
+      "id": "tent-b",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.8, 1.1, 1.8],
+          "sides": 4,
+          "topScale": 0.0,
+          "color": "#B5683C"
+        }
+      ]
+    },
+    {
+      "id": "camp-log",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.1, 0.1],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "campfire-flame",
+      "category": "effect",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.4, 0.55, 0.4],
+          "sides": 5,
+          "topScale": 0.0,
+          "color": "#FFA030",
+          "emissive": true
+        }
+      ]
+    },
+    {
+      "id": "ash-ring",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.8, 0.04, 0.8],
+          "sides": 7,
+          "topScale": 1.0,
+          "color": "#2A2622"
+        }
+      ]
+    },
+    {
+      "id": "crate",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.4, 0.5],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "flag-pole",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.5, 0.06],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "flag-cloth",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.3, 0.04],
+          "color": "#B23A2A"
+        }
+      ]
+    },
+    {
+      "id": "flag-torn",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.4, 0.22, 0.04],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "camp-person",
+      "category": "figure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.28, 0.45, 0.28],
+          "sides": 6,
+          "topScale": 0.71,
+          "color": "#3A6EA5",
+          "position": [0, 0.23, 0]
+        },
+        {
+          "shape": "ico",
+          "size": [0.22, 0.22, 0.22],
+          "color": "#E0B890",
+          "position": [0, 0.55, 0]
+        }
+      ]
+    },
+    {
+      "id": "cairn",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.7, 0.55, 0.7],
+          "color": "#CFCAB8",
+          "position": [0, 0.27, 0]
+        },
+        {
+          "shape": "ico",
+          "size": [0.45, 0.4, 0.45],
+          "color": "#D6D1C0",
+          "position": [0.05, 0.65, 0]
+        }
+      ]
+    },
+    {
+      "id": "expedition-stake",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.05, 0.9, 0.05],
+          "color": "#7A5A38",
+          "position": [0, 0.45, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.35, 0.2, 0.04],
+          "color": "#3D8BD9",
+          "position": [0.2, 0.75, 0]
+        }
+      ]
+    },
+    {
+      "id": "dug-soil",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.9, 0.25, 0.9],
+          "color": "#6B4A2F",
+          "position": [0, 0.1, 0]
+        }
+      ]
+    },
+    {
+      "id": "field-board",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.3, 0.4],
+          "color": "#7A5A38",
+          "position": [0, 0.15, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.4, 0.02, 0.3],
+          "color": "#E8E4D4",
+          "position": [0, 0.31, 0]
+        }
+      ]
     }
   ],
   "compositions": [
@@ -642,6 +864,237 @@
           "shows": {
             "channel": "operational",
             "in": ["blocked", "risky-passage", "destroyed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-abandoned-camp",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "abandoned-camp"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"],
+        "operational": ["none"]
+      },
+      "elements": [
+        {
+          "id": "tent-1",
+          "part": "tent-a",
+          "position": [-1.1, 0.55, -0.3],
+          "euler": [0, 46, 0],
+          "poseChannel": "presence",
+          "poses": {
+            "abandoned": {
+              "position": [0, -0.27, 0],
+              "euler": [0, 0, 14],
+              "scale": [1, 0.5, 1]
+            }
+          }
+        },
+        {
+          "id": "tent-2",
+          "part": "tent-b",
+          "position": [1.0, 0.55, -0.9],
+          "euler": [0, 17, 0],
+          "poseChannel": "presence",
+          "poses": {
+            "abandoned": {
+              "position": [0, -0.25, 0],
+              "euler": [11, 0, -11],
+              "scale": [1, 0.45, 1]
+            }
+          }
+        },
+        {
+          "id": "log-0",
+          "part": "camp-log",
+          "position": [0.65, 0.07, 1.0],
+          "euler": [0, 90.0, 0]
+        },
+        {
+          "id": "log-1",
+          "part": "camp-log",
+          "position": [0.339, 0.07, 1.428],
+          "euler": [0, 18.0, 0]
+        },
+        {
+          "id": "log-2",
+          "part": "camp-log",
+          "position": [-0.164, 0.07, 1.265],
+          "euler": [0, -54.0, 0]
+        },
+        {
+          "id": "log-3",
+          "part": "camp-log",
+          "position": [-0.164, 0.07, 0.735],
+          "euler": [0, -126.0, 0]
+        },
+        {
+          "id": "log-4",
+          "part": "camp-log",
+          "position": [0.339, 0.07, 0.572],
+          "euler": [0, -198.0, 0]
+        },
+        {
+          "id": "fire-flame",
+          "part": "campfire-flame",
+          "position": [0.2, 0.3, 1.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "fire-light",
+          "kind": "light",
+          "position": [0.2, 0.9, 1.0],
+          "color": "#FFA040",
+          "intensity": 1.2,
+          "range": 6,
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "fire-smoke",
+          "kind": "smoke",
+          "position": [0.2, 0.7, 1.0],
+          "color": "#B8B2A4",
+          "size": 1,
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "ash",
+          "part": "ash-ring",
+          "position": [0.2, 0.04, 1.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "crate-upright",
+          "part": "crate",
+          "position": [-1.6, 0.2, 1.3],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "crate-overturned",
+          "part": "crate",
+          "position": [-1.5, 0.15, 1.6],
+          "euler": [29, 23, 34],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "flag-pole",
+          "part": "flag-pole",
+          "position": [1.9, 0.75, 0.7]
+        },
+        {
+          "id": "flag-cloth",
+          "part": "flag-cloth",
+          "position": [2.15, 1.3, 0.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "flag-torn",
+          "part": "flag-torn",
+          "position": [2.1, 1.0, 0.7],
+          "euler": [0, 0, 29],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "person-a",
+          "part": "camp-person",
+          "position": [-0.3, 0, 0.2],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "person-b",
+          "part": "camp-person",
+          "position": [0.9, 0, 0.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "cleared-cairn",
+          "part": "cairn",
+          "position": [-2.4, 0, -1.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["cleared"]
+          }
+        },
+        {
+          "id": "unsafe-sign",
+          "part": "warning-sign",
+          "position": [2.6, 0.45, -1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["unsafe"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.1, 0, 0.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.6, 0, -1.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.4, 0, -1.7],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.2, 0, 2.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
           }
         }
       ]
