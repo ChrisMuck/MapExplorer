@@ -440,6 +440,449 @@
           "position": [0, 0.31, 0]
         }
       ]
+    },
+    {
+      "id": "grave-mound",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "dome",
+          "size": [3.4, 1.87, 3.4],
+          "color": "#6F9A50"
+        }
+      ]
+    },
+    {
+      "id": "grave-pillar",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.32, 1.1, 0.32],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "grave-lintel",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.6, 0.28, 0.4],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "grave-opening",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.9, 0.95, 0.2],
+          "color": "#050403"
+        }
+      ]
+    },
+    {
+      "id": "grave-slab",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.9, 1.0, 0.16],
+          "color": "#9A978C"
+        }
+      ]
+    },
+    {
+      "id": "grave-seal-bar",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.1, 0.1, 0.06],
+          "color": "#B23A2A"
+        }
+      ]
+    },
+    {
+      "id": "grave-headstone-a",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.35, 0.7, 0.1],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "grave-headstone-b",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.35, 0.5, 0.1],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "grave-cross",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.1, 0.9, 0.1],
+          "color": "#7A5A38"
+        },
+        {
+          "shape": "box",
+          "size": [0.5, 0.1, 0.1],
+          "color": "#7A5A38",
+          "position": [0, 0.25, 0]
+        }
+      ]
+    },
+    {
+      "id": "grave-shovel",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38"
+        },
+        {
+          "shape": "box",
+          "size": [0.22, 0.28, 0.04],
+          "color": "#777770",
+          "position": [-0.15, -0.4, 0]
+        }
+      ]
+    },
+    {
+      "id": "grave-dirt",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [1.26, 0.54, 0.9],
+          "color": "#6B4A2F"
+        }
+      ]
+    },
+    {
+      "id": "grave-bush",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.7, 0.5, 0.7],
+          "color": "#4F7D3C"
+        }
+      ]
+    },
+    {
+      "id": "gate-pillar",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.55, 2.2, 0.55],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "gate-lintel",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [2.4, 0.4, 0.65],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "gate-wall",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 1.2, 0.5],
+          "color": "#7E7B72"
+        }
+      ]
+    },
+    {
+      "id": "gate-door",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.95, 1.8, 0.15],
+          "color": "#3E4048"
+        }
+      ]
+    },
+    {
+      "id": "gate-seal-bar",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [2.0, 0.12, 0.08],
+          "color": "#B23A2A"
+        }
+      ]
+    },
+    {
+      "id": "gate-brace",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [2.0, 0.12, 0.1],
+          "color": "#7A5A38",
+          "euler": [0, 0, 35]
+        },
+        {
+          "shape": "box",
+          "size": [2.0, 0.12, 0.1],
+          "color": "#7A5A38",
+          "position": [0, 0, 0.02],
+          "euler": [0, 0, -35]
+        }
+      ]
+    },
+    {
+      "id": "gate-rubble",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.8, 0.4, 0.7],
+          "color": "#8D8A80",
+          "position": [0, 0.2, 0]
+        }
+      ]
+    },
+    {
+      "id": "border-post",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.14, 1.6, 0.14],
+          "color": "#7A5A38",
+          "position": [0, 0.8, 0]
+        }
+      ]
+    },
+    {
+      "id": "border-board",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.85, 0.45, 0.08],
+          "color": "#D9C23A"
+        },
+        {
+          "shape": "box",
+          "size": [0.6, 0.1, 0.09],
+          "color": "#B23A2A"
+        }
+      ]
+    },
+    {
+      "id": "border-stone",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.5, 0.35, 0.5],
+          "color": "#8D8A80",
+          "position": [0, 0.15, 0]
+        }
+      ]
+    },
+    {
+      "id": "border-line-stone",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.3, 0.2, 0.3],
+          "color": "#E4E0D0",
+          "position": [0, 0.08, 0]
+        }
+      ]
+    },
+    {
+      "id": "landing-deck",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.8, 0.12, 0.6],
+          "color": "#A88556",
+          "position": [0, 0.3, 0]
+        }
+      ]
+    },
+    {
+      "id": "landing-post",
+      "category": "structure",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.12, 0.5, 0.12],
+          "color": "#7A5A38",
+          "position": [0, 0.25, 0]
+        }
+      ]
+    },
+    {
+      "id": "landing-boat",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.2, 0.25, 0.5],
+          "color": "#5E4528",
+          "position": [0, 0.12, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.05, 0.9, 0.05],
+          "color": "#7A5A38",
+          "position": [0, 0.7, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.5, 0.5, 0.03],
+          "color": "#E8E0C8",
+          "position": [0.0, 0.75, 0]
+        }
+      ]
+    },
+    {
+      "id": "landing-hut",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.4, 0.9, 1.4],
+          "sides": 4,
+          "topScale": 0.0,
+          "color": "#C9B27A"
+        }
+      ]
+    },
+    {
+      "id": "landing-barrier",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.4, 0.1, 0.1],
+          "color": "#7A5A38",
+          "position": [0, 0.6, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.1, 0.7, 0.1],
+          "color": "#7A5A38",
+          "position": [-0.65, 0.35, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.1, 0.7, 0.1],
+          "color": "#7A5A38",
+          "position": [0.65, 0.35, 0]
+        }
+      ]
+    },
+    {
+      "id": "landing-spear",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.05, 1.3, 0.05],
+          "color": "#7A5A38",
+          "position": [0, 0.65, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.12, 0.2, 0.04],
+          "color": "#9A978C",
+          "position": [0, 1.35, 0]
+        }
+      ]
     }
   ],
   "compositions": [
@@ -1095,6 +1538,674 @@
           "shows": {
             "channel": "interaction",
             "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-marked-grave",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "marked-grave"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"],
+        "presence": ["empty"]
+      },
+      "elements": [
+        {
+          "id": "mound",
+          "part": "grave-mound",
+          "position": [0, 0, -0.2]
+        },
+        {
+          "id": "pillar-l",
+          "part": "grave-pillar",
+          "position": [-0.62, 0.55, 1.05]
+        },
+        {
+          "id": "pillar-r",
+          "part": "grave-pillar",
+          "position": [0.62, 0.55, 1.05]
+        },
+        {
+          "id": "lintel",
+          "part": "grave-lintel",
+          "position": [0, 1.2, 1.05]
+        },
+        {
+          "id": "opening",
+          "part": "grave-opening",
+          "position": [0, 0.48, 1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "disturbed"]
+          }
+        },
+        {
+          "id": "slab",
+          "part": "grave-slab",
+          "position": [0, 0.5, 1.12],
+          "poseChannel": "operational",
+          "poses": {
+            "open": {
+              "position": [1.0, -0.05, 0.55],
+              "euler": [0, 34, 17]
+            },
+            "disturbed": {
+              "position": [0.45, -0.02, 0.3],
+              "euler": [0, 14, 7]
+            }
+          }
+        },
+        {
+          "id": "seal-bar-a",
+          "part": "grave-seal-bar",
+          "position": [0, 0.5, 1.24],
+          "euler": [0, 0, 34],
+          "shows": {
+            "channel": "operational",
+            "in": ["sealed"]
+          }
+        },
+        {
+          "id": "seal-bar-b",
+          "part": "grave-seal-bar",
+          "position": [0, 0.5, 1.25],
+          "euler": [0, 0, -34],
+          "shows": {
+            "channel": "operational",
+            "in": ["sealed"]
+          }
+        },
+        {
+          "id": "headstone-a",
+          "part": "grave-headstone-a",
+          "position": [-2.0, 0.35, 0.6],
+          "euler": [0, 17, 6]
+        },
+        {
+          "id": "headstone-b",
+          "part": "grave-headstone-b",
+          "position": [2.0, 0.25, 0.3],
+          "euler": [0, -17, -7]
+        },
+        {
+          "id": "cross",
+          "part": "grave-cross",
+          "position": [1.3, 0.45, 1.9]
+        },
+        {
+          "id": "shovel",
+          "part": "grave-shovel",
+          "position": [1.7, 0.5, 0.9],
+          "euler": [0, 0, -17],
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "dirt",
+          "part": "grave-dirt",
+          "position": [1.4, 0.15, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["open", "disturbed"]
+          }
+        },
+        {
+          "id": "tomb-glow",
+          "kind": "light",
+          "position": [0, 0.6, 1.5],
+          "color": "#7AFF9A",
+          "intensity": 0.9,
+          "range": 5,
+          "shows": {
+            "channel": "operational",
+            "in": ["open"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.4, 0, 2.3],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.0, 0.2, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.0, 0.18, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-1.9, 0, 1.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.6, 0, -1.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.5, 0, -1.9],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.2, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-sealed-gate",
+      "match": {
+        "archetypeId": "containment-site",
+        "variantId": "sealed-gate"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "pillar-l",
+          "part": "gate-pillar",
+          "position": [-1.0, 1.1, 0]
+        },
+        {
+          "id": "pillar-r",
+          "part": "gate-pillar",
+          "position": [1.0, 1.1, 0]
+        },
+        {
+          "id": "lintel",
+          "part": "gate-lintel",
+          "position": [0, 2.4, 0]
+        },
+        {
+          "id": "wall-l",
+          "part": "gate-wall",
+          "position": [-2.0, 0.6, -0.05]
+        },
+        {
+          "id": "wall-r",
+          "part": "gate-wall",
+          "position": [2.0, 0.6, -0.05]
+        },
+        {
+          "id": "door-l",
+          "part": "gate-door",
+          "position": [-0.48, 0.9, 0.05],
+          "poseChannel": "operational",
+          "poses": {
+            "opened": {
+              "position": [-0.42, 0, 0.5],
+              "euler": [0, -82, 0]
+            },
+            "breached": {
+              "position": [-0.75, -0.55, 0.65],
+              "euler": [-72, 0, 9]
+            }
+          }
+        },
+        {
+          "id": "door-r",
+          "part": "gate-door",
+          "position": [0.48, 0.9, 0.05],
+          "poseChannel": "operational",
+          "poses": {
+            "opened": {
+              "position": [0.42, 0, 0.5],
+              "euler": [0, 82, 0]
+            },
+            "breached": {
+              "position": [0.5, -0.4, 0.95],
+              "euler": [-66, 0, -14]
+            }
+          }
+        },
+        {
+          "id": "seal-bar",
+          "part": "gate-seal-bar",
+          "position": [0, 0.95, 0.18],
+          "shows": {
+            "channel": "operational",
+            "in": ["sealed"]
+          }
+        },
+        {
+          "id": "gate-glow",
+          "kind": "light",
+          "position": [0, 1.0, 0.8],
+          "color": "#9CC8FF",
+          "intensity": 0.8,
+          "range": 5,
+          "shows": {
+            "channel": "operational",
+            "in": ["opened"]
+          }
+        },
+        {
+          "id": "rubble-a",
+          "part": "gate-rubble",
+          "position": [-0.3, 0, 0.7],
+          "shows": {
+            "channel": "operational",
+            "in": ["breached"]
+          }
+        },
+        {
+          "id": "rubble-b",
+          "part": "gate-rubble",
+          "position": [0.6, 0, 1.1],
+          "euler": [0, 50, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["breached"]
+          }
+        },
+        {
+          "id": "guard-a",
+          "part": "camp-person",
+          "position": [-1.0, 0, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched", "guarded"]
+          }
+        },
+        {
+          "id": "guard-b",
+          "part": "camp-person",
+          "position": [1.0, 0, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["guarded"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 0.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.4, 0.18, 0.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "brace",
+          "part": "gate-brace",
+          "position": [0, 1.0, 0.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["secured"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.2, 0, 1.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "investigated", "secured", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil",
+          "part": "dug-soil",
+          "position": [0.2, 0, 1.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["investigated"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [-1.6, 0, 2.0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-border-warning",
+      "match": {
+        "archetypeId": "territorial-marker",
+        "variantId": "border-warning-sign"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.8,
+      "plain": {
+        "operational": ["standing"],
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "post",
+          "part": "border-post",
+          "position": [0, 0, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "violated": {
+              "position": [0.5, 0.2, 0],
+              "euler": [0, 0, 72]
+            }
+          }
+        },
+        {
+          "id": "board",
+          "part": "border-board",
+          "position": [0, 1.35, 0.1],
+          "poseChannel": "operational",
+          "poses": {
+            "violated": {
+              "position": [1.1, 0.25, 0.3],
+              "euler": [0, 12, 78]
+            }
+          }
+        },
+        {
+          "id": "stone-a",
+          "part": "border-stone",
+          "position": [-0.5, 0, 0.1]
+        },
+        {
+          "id": "stone-b",
+          "part": "border-stone",
+          "position": [0.5, 0, -0.1]
+        },
+        {
+          "id": "stone-c",
+          "part": "border-stone",
+          "position": [0, 0, 0.5]
+        },
+        {
+          "id": "line-a",
+          "part": "border-line-stone",
+          "position": [-0.9, 0, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["respected"]
+          }
+        },
+        {
+          "id": "line-b",
+          "part": "border-line-stone",
+          "position": [0, 0, 1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["respected"]
+          }
+        },
+        {
+          "id": "line-c",
+          "part": "border-line-stone",
+          "position": [0.9, 0, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["respected"]
+          }
+        },
+        {
+          "id": "trample",
+          "part": "dug-soil",
+          "position": [0, 0, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["violated"]
+          }
+        },
+        {
+          "id": "watcher-a",
+          "part": "camp-person",
+          "position": [-1.5, 0, -1.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched", "guarded"]
+          }
+        },
+        {
+          "id": "watcher-b",
+          "part": "camp-person",
+          "position": [1.5, 0, -1.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["guarded"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-1.8, 0, 1.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "interpreted", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [1.7, 0, 1.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["interpreted", "documented"]
+          }
+        },
+        {
+          "id": "survey-cairn",
+          "part": "cairn",
+          "position": [2.2, 0, 0.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-coastal-landing",
+      "match": {
+        "archetypeId": "contact-site",
+        "variantId": "first-contact"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["available"],
+        "interaction": ["unapproached"]
+      },
+      "elements": [
+        {
+          "id": "deck",
+          "part": "landing-deck",
+          "position": [0, 0, 0.8]
+        },
+        {
+          "id": "post-a",
+          "part": "landing-post",
+          "position": [-0.8, 0, 1.15]
+        },
+        {
+          "id": "post-b",
+          "part": "landing-post",
+          "position": [0.8, 0, 1.15]
+        },
+        {
+          "id": "boat",
+          "part": "landing-boat",
+          "position": [1.7, 0, 1.6],
+          "euler": [0, 25, 0]
+        },
+        {
+          "id": "hut",
+          "part": "landing-hut",
+          "position": [-0.2, 0.45, -1.1],
+          "euler": [0, 15, 0]
+        },
+        {
+          "id": "barrier-a",
+          "part": "landing-barrier",
+          "position": [-0.5, 0, 2.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["closed"]
+          }
+        },
+        {
+          "id": "barrier-b",
+          "part": "landing-barrier",
+          "position": [0.9, 0, 2.2],
+          "euler": [0, 10, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["closed"]
+          }
+        },
+        {
+          "id": "invite-pole",
+          "part": "flag-pole",
+          "position": [-1.6, 0.75, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["invited"]
+          }
+        },
+        {
+          "id": "invite-cloth",
+          "part": "flag-cloth",
+          "position": [-1.35, 1.25, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["invited"]
+          }
+        },
+        {
+          "id": "lantern",
+          "kind": "light",
+          "position": [-0.2, 0.8, 0.6],
+          "color": "#FFC070",
+          "intensity": 0.9,
+          "range": 5,
+          "shows": {
+            "channel": "operational",
+            "in": ["invited"]
+          }
+        },
+        {
+          "id": "islander-a",
+          "part": "camp-person",
+          "position": [-0.4, 0.36, 0.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["present", "guarded"]
+          }
+        },
+        {
+          "id": "islander-b",
+          "part": "camp-person",
+          "position": [0.4, 0.36, 0.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["present", "guarded"]
+          }
+        },
+        {
+          "id": "spear-a",
+          "part": "landing-spear",
+          "position": [-0.75, 0.36, 0.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["guarded"]
+          }
+        },
+        {
+          "id": "spear-b",
+          "part": "landing-spear",
+          "position": [0.75, 0.36, 0.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["guarded"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-1.3, 0, 2.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["approached", "contacted", "withdrawn"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.1, 0.36, 1.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["contacted"]
+          }
+        },
+        {
+          "id": "cold-log",
+          "part": "camp-log",
+          "position": [0.9, 0, 0.1],
+          "shows": {
+            "channel": "interaction",
+            "in": ["withdrawn"]
           }
         }
       ]

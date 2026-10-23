@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.App;
 using Game.Core;
 using UnityEngine;
@@ -173,26 +174,41 @@ namespace MapExplorer.MapStyle
             controller.Refresh(false);
         }
 
-        /// <summary>Test aid: moves the expedition next to the abandoned camp and reveals the ground around it.</summary>
-        private void JumpToCamp()
+        private int testLocationIndex;
+
+        /// <summary>Locations that are drawn from a point composition; the test aids work on one of them.</summary>
+        private List<SpecialLocationState> TestLocations()
         {
-            SpecialLocationState camp = null;
+            var result = new List<SpecialLocationState>();
             foreach (var location in game.World.Locations)
             {
-                if (location.ArchetypeId == "investigation-site" && location.VariantId == "abandoned-camp")
+                var composition = catalog.VisualDefinitions.FindComposition(location.ArchetypeId, location.VariantId);
+                if (composition != null && composition.AnchorMode == "point")
                 {
-                    camp = location;
-                    break;
+                    result.Add(location);
                 }
             }
 
-            if (camp == null || game.Expedition == null)
+            return result;
+        }
+
+        private SpecialLocationState FindTestLocation()
+        {
+            var locations = TestLocations();
+            return locations.Count == 0 ? null : locations[Mathf.Clamp(testLocationIndex, 0, locations.Count - 1)];
+        }
+
+        /// <summary>Test aid: moves the expedition onto the chosen test location and reveals the ground around it.</summary>
+        private void JumpToTestLocation()
+        {
+            var target = FindTestLocation();
+            if (target == null || game.Expedition == null)
             {
                 return;
             }
 
             var terrain = controller.Terrain;
-            var center = terrain.CoreToWorld(camp.Coord);
+            var center = terrain.CoreToWorld(target.Coord);
             foreach (var tile in game.World.Map.Tiles)
             {
                 if (Vector2.Distance(center, terrain.CoreToWorld(tile.Coord)) <= 2f * MapStyleWorldTerrain.HexSize * 1.75f)
@@ -201,34 +217,21 @@ namespace MapExplorer.MapStyle
                 }
             }
 
-            game.Expedition.SetPosition(camp.Coord);
+            game.Expedition.SetPosition(target.Coord);
             controller.Refresh(false);
             FrameExpedition();
         }
 
-        private SpecialLocationState FindCamp()
-        {
-            foreach (var location in game.World.Locations)
-            {
-                if (location.ArchetypeId == "investigation-site" && location.VariantId == "abandoned-camp")
-                {
-                    return location;
-                }
-            }
-
-            return null;
-        }
-
         /// <summary>Test aid: one row of buttons per state channel; a click sets the world state and lets the player observe it.</summary>
-        private void DrawCampStateControls()
+        private void DrawTestLocationStateControls()
         {
-            var camp = FindCamp();
+            var camp = FindTestLocation();
             if (camp == null)
             {
                 return;
             }
 
-            GUILayout.Label("Lagerzustand (Dev: setzt und beobachtet)");
+            GUILayout.Label("Ortszustand (Dev: setzt und beobachtet)");
             foreach (var channel in new[] { LocationStateChannels.Presence, LocationStateChannels.Operational, LocationStateChannels.Interaction })
             {
                 var values = MapStyleDebug.StateValues(catalog, camp, channel);
@@ -365,11 +368,17 @@ namespace MapExplorer.MapStyle
 
             GUILayout.Space(4f);
             GUILayout.Label("Entwickleraktionen (ändern den Spielzustand dieser Testwelt)");
-            if (GUILayout.Button("Expedition zum Lager springen")) JumpToCamp();
+            var testLocation = FindTestLocation();
+            if (GUILayout.Button("Testort: " + (testLocation == null ? "-" : testLocation.Id) + " (wechseln)"))
+            {
+                testLocationIndex = (testLocationIndex + 1) % Mathf.Max(1, TestLocations().Count);
+            }
+
+            if (GUILayout.Button("Expedition zum Testort springen")) JumpToTestLocation();
             if (GUILayout.Button("Erkunden +1 um die Expedition")) ExploreMore();
             if (GUILayout.Button("Brückenzustand beobachten")) ObserveObstacles();
             if (GUILayout.Button("Welt: Brückenzustand wechseln")) CycleWorldBridgeState();
-            DrawCampStateControls();
+            DrawTestLocationStateControls();
 
             GUILayout.Label("Tageszeit");
             var time = GUILayout.HorizontalSlider(timeOfDay, 0f, 100f);

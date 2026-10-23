@@ -253,8 +253,20 @@ Aufteilung:
 Das Datenformat kennt Licht- und Rauchelemente, `scale` und `plain`. Das verlassene Lager
 (`vis-abandoned-camp`, 24 Elemente) zeigt die drei Zustandskanäle überlagert: Anwesenheit bestimmt Zelte,
 Feuer, Licht, Rauch, Kisten, Fahne und Figuren, der Betrieb Steinhaufen oder Warnschild, die Erkundung Spuren der
-Expedition (Pfahl, Grabungen, Feldtafel). Offen: Grab, Tor, Grenzwarnung, Ufer. Einzelheiten:
+Expedition (Pfahl, Grabungen, Feldtafel). Offen: Tor, Grenzwarnung, Ufer. Einzelheiten:
 `low_poly_map_presentation_v2c_review.md`.
+
+**V2d – Markiertes Grab aus Daten (umgesetzt, in Unity ungeprüft)**
+
+`vis-marked-grave` (21 Elemente): Betrieb versiegelt (rote Siegelbalken), offen (Platte zur Seite, dunkle Öffnung, Schaufel,
+grünes Licht) oder gestört (Platte halb verschoben); Anwesenheit beobachtet (Figur) oder verlassen (Bewuchs); Erkundung
+wie beim Lager. Die Testhilfen der Entwicklungsansicht gelten für jeden Ort mit Punktkomposition. Einzelheiten:
+`low_poly_map_presentation_v2d_review.md`.
+
+**V2e – Tor, Grenzwarnung, Ufer aus Daten (umgesetzt, in Unity ungeprüft)**
+
+Alle sechs Tutorial-Orte kommen jetzt aus Kompositionen: `vis-sealed-gate`, `vis-border-warning`, `vis-coastal-landing`.
+Einzelheiten: `low_poly_map_presentation_v2e_review.md`. Offen: alte Darstellungszweige entfernen, Wege an Brückenenden.
 
 Umgesetzt (V2b): Die Spielszene zeichnet Gelände, Orte und Wasser mit dem Low-Poly-Relief (`MapStyleMapController`,
 Schalter `useMapStyleRenderer`), die Feldwahl läuft über das Relief, Overlays liegen auf der Geländehöhe,
