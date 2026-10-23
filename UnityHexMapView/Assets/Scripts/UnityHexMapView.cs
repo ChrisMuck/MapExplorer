@@ -1872,6 +1872,8 @@ public sealed class UnityHexMapView : MonoBehaviour
             switch (path.Kind)
             {
                 case WorldPathKind.River:
+                case WorldPathKind.Chasm:
+                    // Until the relief terrain (V1b) draws ravines, the old view shows a chasm like a river line.
                     BuildRiver(coords);
                     break;
                 case WorldPathKind.Road:

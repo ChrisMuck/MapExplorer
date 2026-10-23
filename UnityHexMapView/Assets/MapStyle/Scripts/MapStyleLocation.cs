@@ -87,18 +87,19 @@ namespace MapExplorer.MapStyle
             float yaw,
             Shader shader,
             Color archetypeColor,
-            int ringGaps)
+            int ringGaps,
+            float ringRadius = 3.3f)
         {
             var go = new GameObject(displayName);
             go.transform.SetParent(parent, false);
             go.transform.localPosition = position;
             go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             var location = go.AddComponent<MapStyleLocation>();
-            location.Initialize(displayName, states, shader, archetypeColor, ringGaps);
+            location.Initialize(displayName, states, shader, archetypeColor, ringGaps, ringRadius);
             return location;
         }
 
-        private void Initialize(string displayName, string[] states, Shader shader, Color archetypeColor, int ringGaps)
+        private void Initialize(string displayName, string[] states, Shader shader, Color archetypeColor, int ringGaps, float ringRadius)
         {
             DisplayName = displayName;
             States = states;
@@ -115,12 +116,12 @@ namespace MapExplorer.MapStyle
             if (ringGaps >= 0)
             {
                 var ring = new MapStyleMeshBuilder();
-                ring.AddRing(new Vector3(0f, 0.04f, 0f), 3.3f, 3.55f, 36, ringGaps, archetypeColor);
+                ring.AddRing(new Vector3(0f, 0.04f, 0f), ringRadius, ringRadius + 0.25f, 36, ringGaps, archetypeColor);
                 ringKnown = CreateMeshObject("RingKnown", ring.Build(displayName + "-ring"), ringMaterial, false);
                 ringKnown.transform.SetParent(transform, false);
 
                 var unknown = new MapStyleMeshBuilder();
-                unknown.AddRing(new Vector3(0f, 0.04f, 0f), 3.3f, 3.55f, 36, 6, new Color32(0xa0, 0x9c, 0x90, 255));
+                unknown.AddRing(new Vector3(0f, 0.04f, 0f), ringRadius, ringRadius + 0.25f, 36, 6, new Color32(0xa0, 0x9c, 0x90, 255));
                 unknown.AddIco(new Vector3(0f, 0.25f, 0f), new Vector3(1f, 0.8f, 1f), Vector3.zero, new Color32(0xcf, 0xca, 0xb8, 255));
                 unknown.AddIco(new Vector3(0.1f, 0.7f, 0.05f), new Vector3(0.75f, 0.6f, 0.75f), new Vector3(0f, 30f, 0f), new Color32(0xd6, 0xd1, 0xc0, 255));
                 unknown.AddIco(new Vector3(-0.05f, 1.05f, 0f), new Vector3(0.55f, 0.45f, 0.55f), new Vector3(0f, 70f, 0f), new Color32(0xdd, 0xd8, 0xc8, 255));

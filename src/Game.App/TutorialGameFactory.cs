@@ -181,7 +181,7 @@ public static class TutorialGameFactory
     {
         return new[]
         {
-            new WorldPathState("river-gray", WorldPathKind.River, TutorialRavineRoute),
+            new WorldPathState("chasm-gray", WorldPathKind.Chasm, TutorialRavineRoute),
             new WorldPathState("river-north", WorldPathKind.River, ViewPath(
                 (-2, -6), (-1, -6), (0, -6), (0, -5), (1, -5), (1, -4), (2, -4), (2, -3),
                 (3, -3), (4, -4))),

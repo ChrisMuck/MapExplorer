@@ -229,7 +229,7 @@ public sealed class ExpeditionScreenController : MonoBehaviour
         RefreshKnowledgeStats(state);
         if (state.Expedition.Status == ExpeditionStatus.Returned)
         {
-            SetText("value-expedition-day", "Expedition Â· Abgeschlossen");
+            SetText("value-expedition-day", "Expedition · Abgeschlossen");
         }
 
         RefreshSelectedField(state);

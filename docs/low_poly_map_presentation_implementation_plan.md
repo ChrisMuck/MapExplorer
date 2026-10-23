@@ -1,6 +1,6 @@
 # Umsetzungsplan: Low-Poly-Kartendarstellung mit Ortsbaukasten
 
-Status: **Entwurf – Owner-Review vor Beginn von V0 erforderlich**
+Status: **V0 abgeschlossen (G0 bestätigt); V1a umgesetzt und getestet; V1b als Prototyp umgesetzt, Owner-Prüfung (G1) offen**
 Vorgeschlagener Branch je Stufe: `codex/map-presentation-v<N>-<kurzname>`
 Umfang: Darstellung der Karte, Orte, Figurengruppen und Tiere gemäß dem Konzept; kein neues Spielsystem.
 
@@ -130,7 +130,9 @@ Arbeitspakete:
    absichern; Quelldatei auf UTF-8 prüfen.
 6. Tabelle `VariantIdFor` zu einer datengetriebenen Zuordnung ausbauen (Generatorname zu
    Varianten-ID), damit neue Varianten ohne Codeänderung angebunden werden. Die Tabelle liegt als
-   JSON im Manifest.
+   JSON im Manifest. **Auf V3 verschoben:** Erst dort entstehen die Katalogvarianten, auf die die
+   Zuordnung zeigt; vorher wäre sie ein Datendokument ohne Inhalt. Der Fehler selbst ist behoben
+   (Punkt 5).
 
 Tests (`Game.Tests`):
 
@@ -140,6 +142,18 @@ Tests (`Game.Tests`):
 - Bestehende Tutorial- und Bewegungstests bleiben grün; Snapshots ohne Änderung ladbar.
 
 Abnahme: alle Tests grün, Save-Kompatibilität bestätigt, Review der Core-Änderung.
+
+Umgesetzt (V1a):
+
+- `WorldPathKind.Chasm`; die Tutorialwelt führt die Schlucht als `chasm-gray`.
+- `WorldObstaclePathRules` (`Game.App`): Stützregel, Querlinie und Validierung. Eine Kante gilt als
+  gestützt, wenn eines ihrer Felder auf einem `River`- oder `Chasm`-Pfad liegt oder eine Pfadstrecke
+  quer über die Kante zwischen den beiden gemeinsamen Nachbarfeldern läuft.
+- `WorldGenBridge` erzeugt für jedes Wegehindernis ohne Linie einen `Chasm`-Pfad quer über die Kante.
+- Kodierungsfehler behoben: `WorldGenBridge.cs`, ein Testtext und die Expeditions-Anzeige
+  (`ExpeditionScreenController.cs`, dort stand „Â·“).
+- Tests in `WorldObstaclePathTests.cs`; der Variantentest schlägt mit dem alten Kodierungsfehler fehl.
+- Die alte Unity-Ansicht zeichnet `Chasm` vorläufig wie einen Fluss, damit die Schlucht bis V2 sichtbar bleibt.
 
 ## 7. Stufe V1b – Gelände, Linien, Kamera
 
@@ -169,6 +183,14 @@ Tests:
 
 Abnahme (G1): Der Graben läuft durch, die Brücke ist nicht umgehbar, die Sperre stimmt mit der
 Logik überein; Kamera bedienbar; Leistung im Rahmen.
+
+Umgesetzt (V1b) als eigenständige Weltansicht, damit die große Datei `UnityHexMapView.cs` unberührt
+bleibt: `MapStyleWorldView` rendert einen echten `GameState` (Tutorial oder generierte Welt).
+Bausteine: `MapStyleWorldTerrain` (Relief aus Geländetypen, Schluchten und Flüsse aus Pfaden, Wissen),
+`MapStylePolylineIndex`, `MapStyleOrbitCamera`, `MapStyleLighting`. Brücken stehen auf der
+Schluchten- oder Flusslinie, quer zur Linie, ihr Zustand ist der **bekannte** Zustand. Die Einbindung
+in den eigentlichen Spielablauf (Befehle, UI, Neuaufbau bei neuem Wissen) folgt mit V2, wenn die
+Ansicht die alte ersetzt.
 
 ## 8. Stufe V2 – Resolver, Daten, Tutorial-Orte
 
