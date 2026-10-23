@@ -282,11 +282,18 @@ namespace MapExplorer.MapStyle
             return l;
         }
 
+        /// <summary>One scenery mesh that obeys knowledge like a location; <paramref name="build"/> adds its geometry.</summary>
+        public static MapStyleLocation Scenery(Transform parent, Shader shader, string name, System.Action<MapStyleMeshBuilder> build)
+        {
+            var l = MapStyleLocation.Create(name, S("steht"), parent, Vector3.zero, 0f, shader, Color.clear, -1);
+            l.Part(name, null, Vector3.zero, Vector3.zero, build);
+            return l;
+        }
+
         /// <summary>Merges many small low-poly items into one scenery mesh that obeys knowledge like a location.</summary>
         public static MapStyleLocation Forest(Transform parent, Shader shader, string name, IList<Vector3> positions, IList<float> sizes)
         {
-            var l = MapStyleLocation.Create(name, S("steht"), parent, Vector3.zero, 0f, shader, Color.clear, -1);
-            l.Part("trees", null, Vector3.zero, Vector3.zero, b =>
+            return Scenery(parent, shader, name, b =>
             {
                 for (var i = 0; i < positions.Count; i++)
                 {
@@ -305,7 +312,6 @@ namespace MapExplorer.MapStyle
                     b.AddPrism(p + V(0f, 1.5f * s, 0f), V(0.76f * s, 0.9f * s, 0.76f * s), NoRot, 6, 0f, Color.Lerp(green, Color.white, 0.06f));
                 }
             });
-            return l;
         }
 
         public static MapStyleLocation Route(Transform parent, Shader shader, IList<Vector3> points)

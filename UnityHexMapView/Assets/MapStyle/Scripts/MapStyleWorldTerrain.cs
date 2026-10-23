@@ -354,6 +354,24 @@ namespace MapExplorer.MapStyle
             }
         }
 
+        public bool HasTile(HexCoord view)
+        {
+            return tiles.ContainsKey(view);
+        }
+
+        /// <summary>The Game.Core coordinate of the tile under a world position, if the map has one there.</summary>
+        public bool TryGetCoreAt(Vector2 point, out HexCoord core)
+        {
+            if (tiles.TryGetValue(WorldToView(point), out var tile))
+            {
+                core = tile.Core;
+                return true;
+            }
+
+            core = default;
+            return false;
+        }
+
         /// <summary>Forest tiles as (axial view coordinate, Game.Core coordinate).</summary>
         public IEnumerable<KeyValuePair<HexCoord, HexCoord>> ForestTiles()
         {
@@ -487,7 +505,7 @@ namespace MapExplorer.MapStyle
         public Mesh BuildWaterMesh()
         {
             var builder = new MapStyleMeshBuilder();
-            var margin = HexSize * 3f;
+            var margin = HexSize * 14f;
             var a = new Vector3(min.x - margin, WaterLevel, min.y - margin);
             var b = new Vector3(min.x - margin, WaterLevel, max.y + margin);
             var c = new Vector3(max.x + margin, WaterLevel, max.y + margin);

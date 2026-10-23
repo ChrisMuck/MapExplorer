@@ -5,6 +5,7 @@ using Game.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using MapExplorer.MapStyle;
 
 [ExecuteAlways]
 public sealed class UnityHexMapView : MonoBehaviour
@@ -30,6 +31,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     [SerializeField] private bool usePrefabOverrides = true;
     [SerializeField] private bool autoRebuildInEditMode = false;
     [SerializeField] private HexMapPrefabLibrary prefabLibrary;
+    [Tooltip("Draw the map with the low-poly relief renderer (Assets/MapStyle). Off keeps the classic hex tile renderer.")]
+    [SerializeField] private bool useMapStyleRenderer = true;
+    [SerializeField] private Shader mapStyleShader;
+    [Range(20f, 200f)] public float cameraRotateSpeed = 70f;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -57,6 +62,8 @@ public sealed class UnityHexMapView : MonoBehaviour
     private Texture2D hexTerrainNoiseTexture;
     private HexDecorationLibrary hexDecorationLibrary;
     private HexMapChunkRenderer hexMapChunkRenderer;
+    private MapStyleMapController mapStyle;
+    private float mapStyleRefreshTimer;
     private Transform terrainRoot;
     private Transform featureRoot;
     private Transform systemsRoot;
@@ -895,6 +902,16 @@ public sealed class UnityHexMapView : MonoBehaviour
             return;
         }
 
+        if (mapStyle != null)
+        {
+            mapStyleRefreshTimer += Time.deltaTime;
+            if (mapStyleRefreshTimer >= 0.25f)
+            {
+                mapStyleRefreshTimer = 0f;
+                mapStyle.Refresh(false);
+            }
+        }
+
         UpdateHoverPreview();
         HandleMapInput();
         UpdateCameraPan();
@@ -953,6 +970,9 @@ public sealed class UnityHexMapView : MonoBehaviour
         // a subsequent rebuild from trying to refresh an old world.
         hexMapChunkRenderer?.Dispose();
         hexMapChunkRenderer = null;
+        mapStyle?.Dispose();
+        mapStyle = null;
+        mapStyleRefreshTimer = 0f;
         ClearGeneratedChildren();
         ClearGeneratedRuntimeAssets();
         tiles.Clear();
@@ -983,25 +1003,37 @@ public sealed class UnityHexMapView : MonoBehaviour
         BuildMap();
 
         hexDecorationLibrary = new HexDecorationLibrary();
-        hexMapChunkRenderer = new HexMapChunkRenderer(
-            terrainRoot,
-            prefabLibrary,
-            usePrefabOverrides,
-            hexDecorationLibrary,
-            hexTerrainMaterial,
-            featureMaterials["UnknownFog"],
-            featureMaterials["ReportedFog"],
-            hexNatureMaterialTemplate,
-            hexSize,
-            VisualTileTopY,
-            VisualTileTopY + 0.115f,
-            zoomedOutSize * 0.6f);
-        hexMapChunkRenderer.Build(tiles, ActiveVisualSeed(), IsDecorationVisibleForCoord, FogStateForCoord);
+        mapStyle = TryCreateMapStyle();
+        if (mapStyle != null)
+        {
+            mapStyle.Refresh(true);
+        }
+        else
+        {
+            hexMapChunkRenderer = new HexMapChunkRenderer(
+                terrainRoot,
+                prefabLibrary,
+                usePrefabOverrides,
+                hexDecorationLibrary,
+                hexTerrainMaterial,
+                featureMaterials["UnknownFog"],
+                featureMaterials["ReportedFog"],
+                hexNatureMaterialTemplate,
+                hexSize,
+                VisualTileTopY,
+                VisualTileTopY + 0.115f,
+                zoomedOutSize * 0.6f);
+            hexMapChunkRenderer.Build(tiles, ActiveVisualSeed(), IsDecorationVisibleForCoord, FogStateForCoord);
+        }
 
         featureRoot = NewRootGroup("Features");
         currentBuildRoot = featureRoot;
-        BuildFeatures();
-        BuildCoastFlags();
+        if (mapStyle == null)
+        {
+            BuildFeatures();
+            BuildCoastFlags();
+        }
+
         BuildExpeditionMarker();
         UpdateFeatureVisibility();
 
@@ -1015,7 +1047,10 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         systemsRoot = NewRootGroup("Systems");
         currentBuildRoot = systemsRoot;
-        BuildWaterPlane();
+        if (mapStyle == null)
+        {
+            BuildWaterPlane();
+        }
 
         lightingRoot = NewRootGroup("Lighting");
         currentBuildRoot = lightingRoot;
@@ -1028,6 +1063,49 @@ public sealed class UnityHexMapView : MonoBehaviour
         currentBuildRoot = hudRoot;
         BuildHud();
         currentBuildRoot = null;
+    }
+
+    /// <summary>
+    /// Creates the low-poly relief renderer for the running campaign, or returns null so the classic renderer is used
+    /// (switch off, no core state, or the MapStyle shader is missing).
+    /// </summary>
+    private MapStyleMapController TryCreateMapStyle()
+    {
+        if (!useMapStyleRenderer || !useCoreTutorialState || coreGameState == null)
+        {
+            return null;
+        }
+
+        var shader = mapStyleShader != null ? mapStyleShader : Shader.Find("MapStyle/LowPolyLit");
+        if (shader == null)
+        {
+            Debug.LogWarning("MapStyle/LowPolyLit shader was not found; using the classic map renderer.");
+            return null;
+        }
+
+        var bounds = coreGameState.World.Map.Bounds;
+        var layout = generatedCampaignRequest == null
+            ? MapStyleHexLayout.OffsetCentered(bounds.Width, bounds.Height)
+            : MapStyleHexLayout.Axial(generatedCoreQOffset);
+        try
+        {
+            return new MapStyleMapController(coreGameState, layout, gameDataCatalog, shader, terrainRoot, hexSize / MapStyleWorldTerrain.HexSize)
+            {
+                ShowTruth = !showKnowledgeFog || showDebugHexGrid,
+                DrawExpedition = false
+            };
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogException(exception);
+            return null;
+        }
+    }
+
+    // Ground height of a hex in view units; zero for the classic renderer, whose tiles are flat.
+    private float StyleGroundY(Vector2Int coord, bool highest)
+    {
+        return mapStyle != null ? mapStyle.GroundHeight(coord, highest) : 0f;
     }
 
     private void RequestRebuild()
@@ -1972,6 +2050,7 @@ public sealed class UnityHexMapView : MonoBehaviour
     private void RefreshKnowledgeOverlays()
     {
         hexMapChunkRenderer?.RefreshKnowledge(IsDecorationVisibleForCoord, FogStateForCoord);
+        mapStyle?.Refresh(false);
     }
 
     // Whether decoration (forest/mountain/foothill/ground-scatter instances) should render for this
@@ -2246,7 +2325,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var root = NewChild($"Marker_{marker.Kind}_{marker.Coord.Q}_{marker.Coord.R}", playerAnnotationRoot);
-        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.16f);
+        root.transform.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.16f + StyleGroundY(coord, false));
         var material = MarkerMaterial(marker.Kind);
         AddMesh(root, "MarkerRing", HexRingMesh(hexSize * 0.25f, hexSize * 0.16f, 0f), material);
 
@@ -2268,7 +2347,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var root = NewChild($"Note_{note.Coord.Q}_{note.Coord.R}", playerAnnotationRoot);
-        root.transform.localPosition = tile.World + new Vector3(0.22f * hexSize, VisualTileTopY + 0.17f, -0.16f * hexSize);
+        root.transform.localPosition = tile.World + new Vector3(0.22f * hexSize, VisualTileTopY + 0.17f + StyleGroundY(coord, false), -0.16f * hexSize);
         root.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
 
         var noteCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -2975,6 +3054,17 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var ray = strategyCamera.ScreenPointToRay(Input.mousePosition);
+        if (mapStyle != null)
+        {
+            if (!mapStyle.TryRaycast(ray, out var styleHex))
+            {
+                return false;
+            }
+
+            coord = styleHex;
+            return tiles.ContainsKey(coord);
+        }
+
         var plane = new Plane(transform.up, transform.TransformPoint(new Vector3(0f, VisualTileTopY, 0f)));
         if (!plane.Raycast(ray, out var distance))
         {
@@ -3003,6 +3093,16 @@ public sealed class UnityHexMapView : MonoBehaviour
         if (cameraRig == null || strategyCamera == null)
         {
             return;
+        }
+
+        // The relief renderer lets the player turn the map; the rotation is not saved.
+        if (mapStyle != null)
+        {
+            var rotate = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f);
+            if (Mathf.Abs(rotate) > 0.001f)
+            {
+                cameraRig.Rotate(0f, rotate * cameraRotateSpeed * Time.deltaTime, 0f, Space.World);
+            }
         }
 
         var right = strategyCamera.transform.right;
@@ -3274,7 +3374,7 @@ public sealed class UnityHexMapView : MonoBehaviour
 
         var marker = NewChild("ExpeditionMarker");
         expeditionMarker = marker.transform;
-        expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f);
+        expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f + StyleGroundY(coord, false));
 
         AddMesh(marker, "ExpeditionRing", HexRingMesh(hexSize * 0.42f, hexSize * 0.32f, 0f), featureMaterials["ExpeditionRing"]);
 
@@ -3315,7 +3415,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         var coord = CoreCoordToViewCoord(coreGameState.Expedition.Position);
         if (tiles.TryGetValue(coord, out var tile))
         {
-            expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f);
+            expeditionMarker.localPosition = tile.World + Vector3.up * (VisualTileTopY + 0.12f + StyleGroundY(coord, false));
         }
     }
 
@@ -3327,7 +3427,7 @@ public sealed class UnityHexMapView : MonoBehaviour
         }
 
         var overlay = NewChild($"{name}_{coord.x}_{coord.y}", overlayRoot);
-        overlay.transform.localPosition = tile.World;
+        overlay.transform.localPosition = tile.World + Vector3.up * StyleGroundY(coord, true);
         AddMesh(overlay, name, HexRingMesh(hexSize * outerScale, hexSize * innerScale, VisualTileTopY + yOffset), material);
     }
 
