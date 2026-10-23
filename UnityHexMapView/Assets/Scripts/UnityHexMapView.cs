@@ -35,6 +35,10 @@ public sealed class UnityHexMapView : MonoBehaviour
     [SerializeField] private bool useMapStyleRenderer = true;
     [SerializeField] private Shader mapStyleShader;
     [Range(20f, 200f)] public float cameraRotateSpeed = 70f;
+    [Header("Test aid (editor and development builds only)")]
+    [Tooltip("Location id the debug key jumps the expedition to, for example abandoned-camp or broken-ravine.")]
+    [SerializeField] private string debugJumpLocationId = "abandoned-camp";
+    [SerializeField] private KeyCode debugJumpKey = KeyCode.F9;
 
     private const float Sqrt3 = 1.73205080757f;
     private const float VisualTileTopY = 0.08f;
@@ -912,11 +916,63 @@ public sealed class UnityHexMapView : MonoBehaviour
             }
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Input.GetKeyDown(debugJumpKey))
+        {
+            DebugJumpToLocation();
+        }
+#endif
+
         UpdateHoverPreview();
         HandleMapInput();
         UpdateCameraPan();
         UpdateCameraZoom();
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    /// <summary>
+    /// Test aid: puts the expedition next to a chosen location and reveals the ground around it, so a place can be
+    /// checked without walking the whole route. It bypasses the movement command on purpose and exists only in the
+    /// editor and development builds; the tutorial design is unchanged.
+    /// </summary>
+    private void DebugJumpToLocation()
+    {
+        if (coreGameState == null || string.IsNullOrWhiteSpace(debugJumpLocationId))
+        {
+            return;
+        }
+
+        var location = coreGameState.World.Locations.FirstOrDefault(item => item.Id == debugJumpLocationId.Trim());
+        if (location == null)
+        {
+            interactionMessage = $"Debug jump: no location '{debugJumpLocationId}' in this world.";
+            RefreshHud();
+            return;
+        }
+
+        var center = CoreCoordToViewCoord(location.Coord);
+        foreach (var tile in coreGameState.World.Map.Tiles)
+        {
+            if (HexDistance(CoreCoordToViewCoord(tile.Coord), center) <= 2)
+            {
+                coreGameState.Knowledge.SetTileKnowledge(tile.Coord, KnowledgeLevel.Confirmed);
+            }
+        }
+
+        coreGameState.Expedition.SetPosition(location.Coord);
+        selectedPreviewHex = center;
+        hasInspectedHex = false;
+        inspectedLocation = null;
+        interactionMessage = $"Debug jump to {location.Name}.";
+        UpdateExpeditionMarkerPosition();
+        RefreshKnowledgeOverlays();
+        UpdateFeatureVisibility();
+        RefreshHexOverlays();
+        RefreshPlayerAnnotations();
+        RefreshHud();
+        FocusCameraOnCoord(selectedPreviewHex);
+    }
+#endif
 
     private void OnGUI()
     {

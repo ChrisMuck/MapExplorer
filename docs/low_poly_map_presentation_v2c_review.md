@@ -57,6 +57,19 @@ Die Kanäle überlagern sich ohne Sonderfälle (Konzept 7.5a).
    je nach Fortschritt).
 4. Bei Nacht (Entwicklungsansicht, Tageszeit) leuchtet das Feuer, wenn das Lager benutzt wirkt.
 
+## 2a. Testhilfe: schnell zum Lager
+
+Das Lager liegt im Tutorial bewusst weit von der Basis (nach der Grenzwarnung, vor der Schlucht); ein Test
+(`GameDataCatalogTests`) verlangt, dass es höchstens 3 Felder vom Warnzeichen liegt. Damit man zum Prüfen nicht den
+ganzen Weg laufen muss, gibt es zwei Testhilfen, die den Tutorialentwurf nicht ändern:
+
+- **Entwicklungsansicht:** Knopf „Expedition zum Lager springen“. Er setzt die Expedition aufs Lager, deckt das Gelände
+  im Umkreis von zwei Feldern auf und richtet die Kamera aus.
+- **Spielszene:** Taste **F9** (nur im Editor und in Development-Builds). Sie setzt die Expedition auf den Ort aus dem Feld
+  `Debug Jump Location Id` am Objekt `UnityHexMapView` (Standard `abandoned-camp`, auch `broken-ravine`, `marked-grave`
+  usw. möglich) und deckt den Umkreis auf. Der Sprung umgeht bewusst den Bewegungsbefehl. Er funktioniert, sobald die
+  Expedition unterwegs ist.
+
 ## 3. Was geprüft wurde und was nicht
 
 Geprüft:
