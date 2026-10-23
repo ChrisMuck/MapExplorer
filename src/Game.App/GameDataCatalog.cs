@@ -98,6 +98,12 @@ public sealed class GameDataCatalog
         "visual-assets"
     };
 
+    // Optional while the visual kit grows: without the document every location falls back to a plain marker.
+    private static readonly HashSet<string> VisualDefinitionDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "visual-definitions"
+    };
+
     private static readonly HashSet<string> TutorialDocumentTypes = new(StringComparer.Ordinal)
     {
         "tutorial-campaign"
@@ -151,6 +157,7 @@ public sealed class GameDataCatalog
         CrossSystemAuthoringBundle authoring,
         SceneDescriptionCatalog scenes,
         VisualAssetCatalog visualAssets,
+        VisualDefinitionSet visualDefinitions,
         WorldGenerationPresetCatalog worldGeneration,
         TutorialCampaignDefinition tutorial,
         IEnumerable<GameDataDocumentInfo> documents)
@@ -163,6 +170,7 @@ public sealed class GameDataCatalog
         Authoring = authoring ?? throw new ArgumentNullException(nameof(authoring));
         Scenes = scenes ?? throw new ArgumentNullException(nameof(scenes));
         VisualAssets = visualAssets ?? throw new ArgumentNullException(nameof(visualAssets));
+        VisualDefinitions = visualDefinitions ?? throw new ArgumentNullException(nameof(visualDefinitions));
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
         Tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
@@ -179,6 +187,8 @@ public sealed class GameDataCatalog
     public SceneDescriptionCatalog Scenes { get; }
     /// <summary>Stable presentation-only visual IDs with safe fallback definitions.</summary>
     public VisualAssetCatalog VisualAssets { get; }
+    /// <summary>Parts, compositions and archetype markers that describe how locations look on the map.</summary>
+    public VisualDefinitionSet VisualDefinitions { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
     /// <summary>Validated deterministic composition of the curated tutorial world.</summary>
     public TutorialCampaignDefinition Tutorial { get; }
@@ -222,6 +232,7 @@ public sealed class GameDataCatalog
         var worldGenerationDocuments = sources.Where(source => WorldGenerationDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var sceneDocuments = sources.Where(source => SceneDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var visualDocuments = sources.Where(source => VisualDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
+        var visualDefinitionDocuments = sources.Where(source => VisualDefinitionDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var tutorialDocuments = sources.Where(source => TutorialDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
 
         var unsupported = sources
@@ -231,6 +242,7 @@ public sealed class GameDataCatalog
                 && !WorldGenerationDocumentTypes.Contains(source.DocumentType)
                 && !SceneDocumentTypes.Contains(source.DocumentType)
                 && !VisualDocumentTypes.Contains(source.DocumentType)
+                && !VisualDefinitionDocumentTypes.Contains(source.DocumentType)
                 && !TutorialDocumentTypes.Contains(source.DocumentType))
             .Select(source => $"{source.RelativePath} ({source.DocumentType})")
             .ToList();
@@ -252,6 +264,10 @@ public sealed class GameDataCatalog
             CrossSystemContentValidator.Validate(locations, crossSystem, authoring);
             var scenes = SceneDescriptionDataLoader.LoadFromJson(sceneDocuments);
             var visualAssets = VisualAssetDataLoader.LoadFromJson(visualDocuments);
+            var visualDefinitions = visualDefinitionDocuments.Count == 0
+                ? VisualDefinitionSet.Empty
+                : VisualDefinitionLoader.LoadFromJson(visualDefinitionDocuments);
+            VisualDefinitionValidator.Validate(visualDefinitions, locations, authoring);
             SceneDescriptionContentValidator.ValidateReferences(scenes, locations, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
             var tutorial = TutorialCampaignDataLoader.LoadFromJson(tutorialDocuments, locations);
@@ -264,6 +280,7 @@ public sealed class GameDataCatalog
                 authoring,
                 scenes,
                 visualAssets,
+                visualDefinitions,
                 worldGeneration,
                 tutorial,
                 sources.Select(source => new GameDataDocumentInfo(source.RelativePath, source.DocumentType, source.SchemaVersion)));

@@ -1,6 +1,6 @@
 # Umsetzungsplan: Low-Poly-Kartendarstellung mit Ortsbaukasten
 
-Status: **V0 abgeschlossen (G0 bestätigt); V1a umgesetzt und getestet; V1b als Prototyp umgesetzt, Owner-Prüfung (G1) offen**
+Status: **V0 und V1 abgeschlossen (G0, G1 bestätigt); V2a (Resolver, Daten, Brücke aus Daten, inkrementelle Aktualisierung) umgesetzt, Owner-Prüfung offen; V2b (Ersatz der alten Spielansicht) folgt**
 Vorgeschlagener Branch je Stufe: `codex/map-presentation-v<N>-<kurzname>`
 Umfang: Darstellung der Karte, Orte, Figurengruppen und Tiere gemäß dem Konzept; kein neues Spielsystem.
 
@@ -198,9 +198,9 @@ Ziel: Die sechs Tutorial-Orte werden vollständig über Daten und Resolver darge
 
 Arbeitspakete:
 
-1. Datendokumente anlegen und im Manifest eintragen: `Visuals/visual-parts.json`,
-   `Visuals/visual-compositions.json`, `Visuals/visual-markers.json`. Schemas gemäß
-   `cross_system_json_authoring_schema.md`. Review-Punkt.
+1. Datendokument anlegen und im Manifest eintragen: **ein** Dokument `Visuals/visual-definitions.json`
+   mit den Abschnitten `markers`, `parts` und `compositions` (Owner-Entscheidung; später teilbar).
+   Review-Punkt.
 2. Typen in `Game.Core` oder `Game.App` (je nach Reichweite) und Lader im `GameDataCatalog`;
    Validierung: unbekannte Teile, Zustands-IDs, verbotene Verweise, fehlende Fallbacks.
 3. `LocationVisualResolver` in `Game.App`: Eingaben sind Ort, Anker, Archetyp, Variante, Modifier,
@@ -225,6 +225,35 @@ Tests:
 
 Abnahme (G2): Tutorial vollständig spielbar mit der neuen Darstellung; Owner prüft alle
 Zustandsübergänge im Spiel.
+
+Owner-Entscheidungen zu V2: ein gemeinsames Datendokument; die neue Ansicht **ersetzt** die alte
+vollständig (das Projekt ist ein Spielplatz, bei Problemen wird zurückgesetzt); Aktualisierungen
+laufen **inkrementell** (nur geänderte Chunks und Orte, damit später auch Fraktionszüge einzelne Teile
+ändern); zuerst die Brücke als Durchstich, dann die übrigen Orte.
+
+Aufteilung:
+
+**V2a – Durchstich Brücke (umgesetzt, in der Entwicklungsansicht)**
+
+- `Visuals/visual-definitions.json` mit Markern, 13 Teilen und der Komposition `vis-broken-bridge`
+  (42 Elemente); im Manifest eingetragen; im `GameDataCatalog` als optionales Dokument geladen und
+  gegen Archetypen, Varianten und Zustandsprofile validiert (`VisualDefinitions.cs`).
+- `LocationVisualResolver` (`Game.App`): `Resolve`, `ResolveForPlayer` (nur Wissen, letzter beobachteter
+  Zustand, nichts auf unbekanntem Gelände) und `ResolveWorldTruth` (Entwicklersicht).
+- Unity: `MapStyleVisualKit` (Teile aus Grundformen), `MapStyleLocationView` (zeichnet eine
+  Beschreibung, aktualisiert nur geänderte Elemente), Geländechunks mit Teilaktualisierung
+  (`MapStyleWorldTerrain.UpdateKnowledge`, `BuildChunkMesh`), Weltansicht mit Aktualisierung alle
+  0,25 Sekunden und Entwicklerknöpfen.
+- Tests: `VisualDefinitionTests.cs`.
+
+**V2b – Ersatz der alten Spielansicht (offen)**
+
+- Die neue Ansicht rendert im echten Spielablauf (`UnityHexMapView`, Befehle, UI): Gelände, Linien,
+  Orte, Expedition; Feldwahl und Hover über das Relief (Strahlen gegen das Gelände); Kamera; Auswahl-,
+  Reichweiten-, Marker- und Notizdarstellung; Nebel aus dem Wissen.
+- Aktualisierung nach Befehlen und Weltzügen über denselben Weg wie V2a.
+- Danach die übrigen fünf Tutorial-Orte als Kompositionen (Grab, Lager, Tor, Grenzwarnung, Ufer) und
+  Abschalten der alten Darstellungszweige (`BuildLandmarkObject`, Chunk-Renderer).
 
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 
@@ -336,6 +365,15 @@ gleichzeitig aktive Lichter.
 `UnityHexMapView.cs` wird nicht umgebaut, sondern schrittweise verschlankt: Gelände und Linien in
 V1b, Orte in V2, Figuren in V4. Pro Stufe werden die ersetzten Abschnitte hinter dem Schalter
 entfernt, sobald der Owner sie freigegeben hat.
+
+## 13a. Bekannte Punkte für später
+
+Bei der Sichtprüfung von V2a aufgefallen und bewusst vertagt:
+
+| Punkt | Beobachtung | Zuordnung |
+| --- | --- | --- |
+| Straße führt nicht zur Brücke | Straßen sind nur Bodenfarbe entlang ihrer Pfadpunkte und enden vor der Schlucht; die Brücke steht an der besten Stelle der Schlucht, nicht auf dem Straßenverlauf. | V2b oder V3: Straßen als Linienobjekte, die an beiden Brückenenden anschließen |
+| Generierte Brücke an unpassender Stelle | Der Generator setzt das Wegehindernis auf eine Straßenkante entlang eines Flusses oder an einem Höhensprung; das ergibt nicht immer einen sinnvollen Übergang (zum Beispiel am Berg ohne Wasser). | V3: Platzierung im Generator neu bewerten, etwa nur dort, wo eine Straße einen Fluss oder eine Schlucht wirklich kreuzt |
 
 ## 14. Risiken
 

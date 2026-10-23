@@ -105,6 +105,8 @@ var worldGenBridgeTests = new WorldGenBridgeTests();
 worldGenBridgeTests.RunAll();
 var worldObstaclePathTests = new WorldObstaclePathTests();
 worldObstaclePathTests.RunAll();
+var visualDefinitionTests = new VisualDefinitionTests();
+visualDefinitionTests.RunAll();
 
 Console.WriteLine("All Game.Tests checks passed.");
 }
