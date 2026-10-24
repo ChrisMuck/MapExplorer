@@ -299,6 +299,9 @@ Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 > **V3-Vorarbeit (erledigt):** Die Generator-Orte kommen aus JSON-Regeln (`World/location-placement.json`) und haben 30 Katalogvarianten mit
 > Zuständen und Texten. Siehe `world_generator_location_data_concept.md` (Stand G1 bis G3). Die Bilder der Varianten (Arbeitspaket 3 unten)
 > sind der nächste Schritt; Flächenanker für Gefahrenzonen sind noch offen.
+>
+> **V3a (umgesetzt, in Unity ungeprüft):** Untersuchungs- und Spurenorte (Alte Ruine, Steinkreis, Verfallener Schrein, Kalte Feuerstelle,
+> Zerbrochener Karren, Altes Bootslager) als Kompositionen; siehe `low_poly_map_presentation_v3a_review.md`.
 
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 

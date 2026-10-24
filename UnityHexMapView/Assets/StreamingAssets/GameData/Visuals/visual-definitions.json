@@ -883,6 +883,445 @@
           "position": [0, 1.35, 0]
         }
       ]
+    },
+    {
+      "id": "ruin-wall",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [2.2, 1.6, 0.5],
+          "color": "#8A867B"
+        }
+      ]
+    },
+    {
+      "id": "ruin-wall-low",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.3, 0.8, 0.5],
+          "color": "#7E7B72"
+        }
+      ]
+    },
+    {
+      "id": "ruin-wall-side",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 1.3, 1.5],
+          "color": "#8A867B"
+        }
+      ]
+    },
+    {
+      "id": "ruin-pillar",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.55, 2.1, 0.55],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "ruin-rubble",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.8, 0.4, 0.7],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "ruin-prop",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.12, 1.4, 0.12],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "menhir",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.6, 1.9, 0.5],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "menhir-low",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 1.2, 0.45],
+          "color": "#7E7B72"
+        }
+      ]
+    },
+    {
+      "id": "circle-altar",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.1, 0.35, 1.1],
+          "color": "#9A978C"
+        }
+      ]
+    },
+    {
+      "id": "rune-disc",
+      "category": "effect",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.0, 0.03, 1.0],
+          "sides": 7,
+          "topScale": 1.0,
+          "color": "#7FE8FF",
+          "emissive": true
+        }
+      ]
+    },
+    {
+      "id": "shrine-base",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.8, 0.3, 1.4],
+          "color": "#8A867B"
+        }
+      ]
+    },
+    {
+      "id": "shrine-post",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.25, 1.5, 0.25],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "shrine-roof",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [2.1, 0.7, 1.7],
+          "sides": 4,
+          "topScale": 0.0,
+          "color": "#6E5A3A"
+        }
+      ]
+    },
+    {
+      "id": "shrine-idol",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.35, 0.75, 0.3],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "shrine-flower",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.25, 0.2, 0.25],
+          "color": "#D9B84A"
+        }
+      ]
+    },
+    {
+      "id": "shrine-stain",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.1, 0.04, 0.8],
+          "color": "#8B1E1E"
+        }
+      ]
+    },
+    {
+      "id": "fire-stone",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.45, 0.35, 0.4],
+          "color": "#77746B"
+        }
+      ]
+    },
+    {
+      "id": "ember",
+      "category": "effect",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.25, 0.2, 0.25],
+          "sides": 5,
+          "topScale": 0.0,
+          "color": "#FF6A20",
+          "emissive": true
+        }
+      ]
+    },
+    {
+      "id": "bedroll",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.9, 0.12, 0.45],
+          "color": "#8B6A4A"
+        }
+      ]
+    },
+    {
+      "id": "fresh-tracks",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.9, 0.02, 0.3],
+          "color": "#6B4A2F"
+        }
+      ]
+    },
+    {
+      "id": "cart-bed",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.7, 0.25, 0.95],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "cart-wheel",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.95, 0.14, 0.95],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#5E4528"
+        }
+      ]
+    },
+    {
+      "id": "cart-axle",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.5, 0.1, 0.1],
+          "color": "#4A3722"
+        }
+      ]
+    },
+    {
+      "id": "cart-sack",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.55, 0.5, 0.55],
+          "color": "#C9B27A"
+        }
+      ]
+    },
+    {
+      "id": "cart-rags",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.7, 0.12, 0.5],
+          "color": "#6B5A3A"
+        }
+      ]
+    },
+    {
+      "id": "cart-planks",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.0, 0.18, 0.5],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "boat-hull",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [2.2, 0.4, 0.8],
+          "color": "#5E4528"
+        }
+      ]
+    },
+    {
+      "id": "boat-mast",
+      "category": "structure",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.3, 0.06],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "boat-sail",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.6, 0.8, 0.03],
+          "color": "#E8E0C8"
+        }
+      ]
+    },
+    {
+      "id": "boat-patch",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.2, 0.82],
+          "color": "#A88556"
+        }
+      ]
+    },
+    {
+      "id": "boat-oar",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.1, 0.05, 0.08],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "drying-rack",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38",
+          "position": [-0.45, 0.5, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38",
+          "position": [0.45, 0.5, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.9, 0.5, 0.03],
+          "color": "#B8A878",
+          "position": [0, 0.7, 0]
+        }
+      ]
     }
   ],
   "compositions": [
@@ -2206,6 +2645,1070 @@
           "shows": {
             "channel": "interaction",
             "in": ["withdrawn"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-old-ruin",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "old-ruin"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["crumbling"],
+        "interaction": ["untouched"],
+        "presence": ["empty"]
+      },
+      "elements": [
+        {
+          "id": "wall-a",
+          "part": "ruin-wall",
+          "position": [0, 0.8, -0.9],
+          "poseChannel": "operational",
+          "poses": {
+            "collapsed": {
+              "position": [0.2, -0.6, 0.5],
+              "euler": [0, 0, 14],
+              "scale": [1, 0.45, 1]
+            }
+          }
+        },
+        {
+          "id": "wall-side",
+          "part": "ruin-wall-side",
+          "position": [-1.5, 0.65, 0.1]
+        },
+        {
+          "id": "wall-low",
+          "part": "ruin-wall-low",
+          "position": [1.2, 0.4, -0.6],
+          "euler": [0, 20, 0]
+        },
+        {
+          "id": "pillar",
+          "part": "ruin-pillar",
+          "position": [1.7, 1.05, 0.6],
+          "poseChannel": "operational",
+          "poses": {
+            "collapsed": {
+              "position": [0.2, -0.9, 0.3],
+              "euler": [0, 0, 80]
+            }
+          }
+        },
+        {
+          "id": "rubble-a",
+          "part": "ruin-rubble",
+          "position": [-0.3, 0.2, 0.4]
+        },
+        {
+          "id": "rubble-b",
+          "part": "ruin-rubble",
+          "position": [0.8, 0.15, 0.9]
+        },
+        {
+          "id": "rubble-c",
+          "part": "ruin-rubble",
+          "position": [0.1, 0.2, -0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["collapsed"]
+          }
+        },
+        {
+          "id": "rubble-d",
+          "part": "ruin-rubble",
+          "position": [-0.9, 0.18, 0.9],
+          "euler": [0, 50, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["collapsed"]
+          }
+        },
+        {
+          "id": "prop-a",
+          "part": "ruin-prop",
+          "position": [-0.6, 0.7, 0.3],
+          "euler": [0, 0, 20],
+          "shows": {
+            "channel": "operational",
+            "in": ["shored-up"]
+          }
+        },
+        {
+          "id": "prop-b",
+          "part": "ruin-prop",
+          "position": [0.7, 0.7, 0.2],
+          "euler": [0, 0, -20],
+          "shows": {
+            "channel": "operational",
+            "in": ["shored-up"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.6, 0, 1.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.0, 0.2, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.0, 0.18, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-1.9, 0, 1.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.6, 0, -1.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.5, 0, -2.2],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.2, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-stone-circle",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "stone-circle"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["dormant"],
+        "interaction": ["untouched"],
+        "presence": ["empty"]
+      },
+      "elements": [
+        {
+          "id": "stone-0",
+          "part": "menhir",
+          "position": [1.9, 0.95, 0.0],
+          "euler": [0, -0.0, 0]
+        },
+        {
+          "id": "stone-1",
+          "part": "menhir-low",
+          "position": [1.185, 0.6, 1.485],
+          "euler": [0, -51.4, 0]
+        },
+        {
+          "id": "stone-2",
+          "part": "menhir",
+          "position": [-0.423, 0.95, 1.852],
+          "euler": [0, -102.9, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "broken": {
+              "position": [0, -0.55, 0.3],
+              "euler": [0, 0, 78]
+            }
+          }
+        },
+        {
+          "id": "stone-3",
+          "part": "menhir-low",
+          "position": [-1.712, 0.6, 0.824],
+          "euler": [0, -154.3, 0]
+        },
+        {
+          "id": "stone-4",
+          "part": "menhir",
+          "position": [-1.712, 0.95, -0.824],
+          "euler": [0, -205.7, 0]
+        },
+        {
+          "id": "stone-5",
+          "part": "menhir-low",
+          "position": [-0.423, 0.6, -1.852],
+          "euler": [0, -257.1, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "broken": {
+              "position": [0, -0.35, -0.3],
+              "euler": [0, 0, -70]
+            }
+          }
+        },
+        {
+          "id": "stone-6",
+          "part": "menhir",
+          "position": [1.185, 0.95, -1.485],
+          "euler": [0, -308.6, 0]
+        },
+        {
+          "id": "altar",
+          "part": "circle-altar",
+          "position": [0, 0.18, 0]
+        },
+        {
+          "id": "rune-disc",
+          "part": "rune-disc",
+          "position": [0, 0.38, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["awakened"]
+          }
+        },
+        {
+          "id": "rune-light",
+          "kind": "light",
+          "position": [0, 0.9, 0],
+          "color": "#7FE8FF",
+          "intensity": 0.9,
+          "range": 5,
+          "shows": {
+            "channel": "operational",
+            "in": ["awakened"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-0.6, 0, 2.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-2.3, 0.2, 0.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [2.2, 0.18, 1.2],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, -0.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.7, 0, -2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.6, 0, -2.6],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.9, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-ruined-shrine",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "ruined-shrine"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"],
+        "presence": ["empty"]
+      },
+      "elements": [
+        {
+          "id": "base",
+          "part": "shrine-base",
+          "position": [0, 0.15, 0]
+        },
+        {
+          "id": "post-l",
+          "part": "shrine-post",
+          "position": [-0.75, 1.05, -0.4]
+        },
+        {
+          "id": "post-r",
+          "part": "shrine-post",
+          "position": [0.75, 1.05, -0.4]
+        },
+        {
+          "id": "roof",
+          "part": "shrine-roof",
+          "position": [0, 2.0, -0.4],
+          "poseChannel": "operational",
+          "poses": {
+            "decayed": {
+              "position": [0.15, -0.25, 0],
+              "euler": [0, 0, 9]
+            },
+            "desecrated": {
+              "position": [0.2, -0.3, 0],
+              "euler": [0, 0, 14]
+            }
+          }
+        },
+        {
+          "id": "idol",
+          "part": "shrine-idol",
+          "position": [0, 0.68, -0.3],
+          "poseChannel": "operational",
+          "poses": {
+            "desecrated": {
+              "position": [0.3, -0.5, 0.5],
+              "euler": [70, 0, 20]
+            }
+          }
+        },
+        {
+          "id": "flower-a",
+          "part": "shrine-flower",
+          "position": [-0.4, 0.4, 0.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["tended"]
+          }
+        },
+        {
+          "id": "flower-b",
+          "part": "shrine-flower",
+          "position": [0.0, 0.4, 0.55],
+          "shows": {
+            "channel": "operational",
+            "in": ["tended"]
+          }
+        },
+        {
+          "id": "flower-c",
+          "part": "shrine-flower",
+          "position": [0.45, 0.4, 0.35],
+          "shows": {
+            "channel": "operational",
+            "in": ["tended"]
+          }
+        },
+        {
+          "id": "candle",
+          "kind": "light",
+          "position": [0, 0.8, 0.4],
+          "color": "#FFC070",
+          "intensity": 0.6,
+          "range": 3,
+          "shows": {
+            "channel": "operational",
+            "in": ["tended"]
+          }
+        },
+        {
+          "id": "stain",
+          "part": "shrine-stain",
+          "position": [0, 0.32, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["desecrated"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.5, 0, 1.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.2, 0.2, 1.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.3, 0.18, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-1.9, 0, 1.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.7, 0, -2.0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.6, 0, -2.3],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-cold-fireplace",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "cold-fireplace"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["cold"],
+        "interaction": ["untouched"],
+        "presence": ["abandoned"]
+      },
+      "elements": [
+        {
+          "id": "stone-0",
+          "part": "fire-stone",
+          "position": [0.75, 0.15, 0.3],
+          "euler": [0, 0.0, 0]
+        },
+        {
+          "id": "stone-1",
+          "part": "fire-stone",
+          "position": [0.375, 0.15, 0.95],
+          "euler": [0, 60.0, 0]
+        },
+        {
+          "id": "stone-2",
+          "part": "fire-stone",
+          "position": [-0.375, 0.15, 0.95],
+          "euler": [0, 120.0, 0]
+        },
+        {
+          "id": "stone-3",
+          "part": "fire-stone",
+          "position": [-0.75, 0.15, 0.3],
+          "euler": [0, 180.0, 0]
+        },
+        {
+          "id": "stone-4",
+          "part": "fire-stone",
+          "position": [-0.375, 0.15, -0.35],
+          "euler": [0, 240.0, 0]
+        },
+        {
+          "id": "stone-5",
+          "part": "fire-stone",
+          "position": [0.375, 0.15, -0.35],
+          "euler": [0, 300.0, 0]
+        },
+        {
+          "id": "ash",
+          "part": "ash-ring",
+          "position": [0, 0.04, 0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["cold", "smoldering"]
+          }
+        },
+        {
+          "id": "log-a",
+          "part": "camp-log",
+          "position": [-0.1, 0.1, 0.25],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["cold", "smoldering"]
+          }
+        },
+        {
+          "id": "log-b",
+          "part": "camp-log",
+          "position": [0.15, 0.1, 0.4],
+          "euler": [0, -35, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["cold", "smoldering"]
+          }
+        },
+        {
+          "id": "ember",
+          "part": "ember",
+          "position": [0, 0.15, 0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["smoldering"]
+          }
+        },
+        {
+          "id": "ember-light",
+          "kind": "light",
+          "position": [0, 0.5, 0.3],
+          "color": "#FF8A40",
+          "intensity": 0.5,
+          "range": 3,
+          "shows": {
+            "channel": "operational",
+            "in": ["smoldering"]
+          }
+        },
+        {
+          "id": "ember-smoke",
+          "kind": "smoke",
+          "position": [0, 0.5, 0.3],
+          "color": "#9A968C",
+          "size": 0.6,
+          "shows": {
+            "channel": "operational",
+            "in": ["smoldering"]
+          }
+        },
+        {
+          "id": "cleared-cairn",
+          "part": "cairn",
+          "position": [1.7, 0, -0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["cleared"]
+          }
+        },
+        {
+          "id": "bedroll",
+          "part": "bedroll",
+          "position": [-1.5, 0.06, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "crate",
+          "part": "crate",
+          "position": [-2.0, 0.2, 0.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "person-a",
+          "part": "camp-person",
+          "position": [1.4, 0, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "person-b",
+          "part": "camp-person",
+          "position": [-0.5, 0, 2.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.2, 0, -0.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.7, 0, -1.8],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.6, 0, -2.1],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-broken-cart",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "broken-cart"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"],
+        "presence": ["abandoned"]
+      },
+      "elements": [
+        {
+          "id": "bed",
+          "part": "cart-bed",
+          "position": [0, 0.45, 0],
+          "euler": [0, 18, 14]
+        },
+        {
+          "id": "wheel-a",
+          "part": "cart-wheel",
+          "position": [-0.9, 0.45, 0.7],
+          "euler": [90, 18, 0]
+        },
+        {
+          "id": "wheel-b",
+          "part": "cart-wheel",
+          "position": [1.3, 0.1, -0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["wrecked", "looted"]
+          }
+        },
+        {
+          "id": "axle",
+          "part": "cart-axle",
+          "position": [0.3, 0.12, 1.1],
+          "euler": [0, 35, 0]
+        },
+        {
+          "id": "sack-a",
+          "part": "cart-sack",
+          "position": [0.5, 0.4, 0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["wrecked"]
+          }
+        },
+        {
+          "id": "sack-b",
+          "part": "cart-sack",
+          "position": [-0.4, 0.3, -0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["wrecked"]
+          }
+        },
+        {
+          "id": "crate",
+          "part": "crate",
+          "position": [1.0, 0.25, 0.9],
+          "euler": [0, 25, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["wrecked"]
+          }
+        },
+        {
+          "id": "rags",
+          "part": "cart-rags",
+          "position": [0.2, 0.06, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["looted"]
+          }
+        },
+        {
+          "id": "planks",
+          "part": "cart-planks",
+          "position": [-1.6, 0.1, -1.0],
+          "euler": [0, 30, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["salvaged"]
+          }
+        },
+        {
+          "id": "tracks-a",
+          "part": "fresh-tracks",
+          "position": [-0.2, 0.02, 1.8],
+          "euler": [0, 15, 0],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "tracks-b",
+          "part": "fresh-tracks",
+          "position": [0.7, 0.02, 2.0],
+          "euler": [0, -10, 0],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "person-a",
+          "part": "camp-person",
+          "position": [-1.5, 0, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "person-b",
+          "part": "camp-person",
+          "position": [1.6, 0, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.0, 0, 0.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.8, 0, -2.0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.4, 0, -2.2],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.3, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-old-boat-camp",
+      "match": {
+        "archetypeId": "investigation-site",
+        "variantId": "old-boat-camp"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"],
+        "presence": ["abandoned"]
+      },
+      "elements": [
+        {
+          "id": "hull",
+          "part": "boat-hull",
+          "position": [0, 0.3, 0],
+          "euler": [0, 15, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "derelict": {
+              "position": [0, -0.15, 0],
+              "euler": [0, 0, 12]
+            }
+          }
+        },
+        {
+          "id": "mast",
+          "part": "boat-mast",
+          "position": [0, 1.0, 0],
+          "euler": [0, 15, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "in-use"]
+          }
+        },
+        {
+          "id": "sail",
+          "part": "boat-sail",
+          "position": [0.1, 1.2, 0],
+          "euler": [0, 15, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "patch",
+          "part": "boat-patch",
+          "position": [0.5, 0.3, -0.05],
+          "euler": [0, 15, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "in-use"]
+          }
+        },
+        {
+          "id": "oar-leaning",
+          "part": "boat-oar",
+          "position": [-1.3, 0.55, 0.9],
+          "euler": [0, 30, 55],
+          "shows": {
+            "channel": "operational",
+            "in": ["repaired", "in-use"]
+          }
+        },
+        {
+          "id": "oar-broken",
+          "part": "boat-oar",
+          "position": [-1.2, 0.08, 1.2],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["derelict"]
+          }
+        },
+        {
+          "id": "rack",
+          "part": "drying-rack",
+          "position": [1.5, 0, 1.2],
+          "euler": [0, -20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "fire-ash",
+          "part": "ash-ring",
+          "position": [-0.2, 0.04, 1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "fire-flame",
+          "part": "campfire-flame",
+          "position": [-0.2, 0.3, 1.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "fire-light",
+          "kind": "light",
+          "position": [-0.2, 0.9, 1.5],
+          "color": "#FFA040",
+          "intensity": 1.0,
+          "range": 5,
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "fire-smoke",
+          "kind": "smoke",
+          "position": [-0.2, 0.7, 1.5],
+          "color": "#B8B2A4",
+          "size": 0.8,
+          "shows": {
+            "channel": "operational",
+            "in": ["in-use"]
+          }
+        },
+        {
+          "id": "bedroll",
+          "part": "bedroll",
+          "position": [-1.9, 0.06, 0.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "crate",
+          "part": "crate",
+          "position": [-2.2, 0.2, -0.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["recently-used", "watched"]
+          }
+        },
+        {
+          "id": "person-a",
+          "part": "camp-person",
+          "position": [1.2, 0, 2.2],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "person-b",
+          "part": "camp-person",
+          "position": [-0.8, 0, 2.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.3, 0, 1.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["inspected", "searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-a",
+          "part": "dug-soil",
+          "position": [-0.7, 0, -1.8],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "dug-soil-b",
+          "part": "dug-soil",
+          "position": [0.7, 0, -2.0],
+          "euler": [0, 40, 0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["searched", "investigated", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.9, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
           }
         }
       ]
