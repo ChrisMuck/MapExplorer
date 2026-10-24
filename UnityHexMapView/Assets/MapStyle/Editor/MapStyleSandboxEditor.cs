@@ -15,6 +15,7 @@ namespace MapExplorer.MapStyle.EditorTools
     {
         private const string ScenePath = "Assets/MapStyle/Scenes/MapStyleSandbox.unity";
         private const string WorldScenePath = "Assets/MapStyle/Scenes/MapStyleWorld.unity";
+        private const string GalleryScenePath = "Assets/MapStyle/Scenes/MapStyleSiteGallery.unity";
         private const string ShaderPath = "Assets/MapStyle/Shaders/MapStyleLit.shader";
 
         [MenuItem("Map Style/Create Sandbox Scene")]
@@ -36,6 +37,21 @@ namespace MapExplorer.MapStyle.EditorTools
             }
 
             EditorSceneManager.SaveScene(scene, WorldScenePath);
+        }
+
+        [MenuItem("Map Style/Create Site Gallery Scene (all places, switchable states)")]
+        public static void CreateGalleryScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var go = new GameObject("MapStyleSiteGallery");
+            var gallery = go.AddComponent<MapStyleSiteGallery>();
+            gallery.shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            if (!AssetDatabase.IsValidFolder("Assets/MapStyle/Scenes"))
+            {
+                AssetDatabase.CreateFolder("Assets/MapStyle", "Scenes");
+            }
+
+            EditorSceneManager.SaveScene(scene, GalleryScenePath);
         }
 
         private static MapStyleSandbox CreateSceneInternal()

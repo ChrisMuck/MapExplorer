@@ -11,6 +11,8 @@ var locationTextKeyTests = new LocationTextKeyTests();
 locationTextKeyTests.RunAll();
 var generatorVariantContentTests = new GeneratorVariantContentTests();
 generatorVariantContentTests.RunAll();
+var siteVisualTests = new SiteVisualTests();
+siteVisualTests.RunAll();
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
