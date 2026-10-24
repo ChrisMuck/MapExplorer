@@ -120,6 +120,41 @@ public sealed class WorldGeneratorPlacementTests
         (108, 90, 68, 4, 3.5f, 15704071949197913498UL),
     };
 
+    // The generator names its locations by catalog variant id now; the pinned digests were taken with the old display names.
+    private static readonly Dictionary<string, string> LegacyNames = new()
+    {
+        ["broken-bridge"] = "Zerstörte Brücke",
+        ["blocked-pass"] = "Verschütteter Pass",
+        ["old-ruin"] = "Alte Ruine",
+        ["marked-grave"] = "Vergessenes Grab",
+        ["stone-circle"] = "Steinkreis",
+        ["ruined-shrine"] = "Verfallener Schrein",
+        ["sealed-gate"] = "Versiegeltes Tor",
+        ["sealed-cave"] = "Verschlossene Höhle",
+        ["warded-threshold"] = "Gebannte Schwelle",
+        ["abandoned-camp"] = "Verlassenes Lager",
+        ["cold-fireplace"] = "Kalte Feuerstelle",
+        ["broken-cart"] = "Zerbrochener Karren",
+        ["old-boat-camp"] = "Altes Bootslager",
+        ["freshwater-spring"] = "Süßwasserquelle",
+        ["fishing-grounds"] = "Fischgrund",
+        ["healing-herbs"] = "Heilkräuter",
+        ["timber-stand"] = "Holzbestand",
+        ["salt-deposit"] = "Salzvorkommen",
+        ["berry-grove"] = "Beerenhain",
+        ["restless-marsh"] = "Giftiger Sumpf",
+        ["volcanic-vent"] = "Vulkanschlund",
+        ["dead-zone"] = "Tote Zone",
+        ["signal-tower"] = "Signalturm",
+        ["wind-carved-peak"] = "Gipfelmal",
+        ["colossus-statue"] = "Kolossstatue",
+        ["old-lighthouse"] = "Alter Leuchtturm",
+        ["border-stones"] = "Grenzsteine",
+        ["border-warning-sign"] = "Warnzeichen",
+        ["skull-marks"] = "Schädelmarken",
+        ["wind-ribbons"] = "Bänder im Wind"
+    };
+
     public void RunAll()
     {
         var print = Environment.GetEnvironmentVariable("GOLDEN_PRINT") == "1";
@@ -181,7 +216,7 @@ public sealed class WorldGeneratorPlacementTests
         var text = new StringBuilder();
         foreach (var special in world.Specials)
         {
-            text.Append(special.Cell.I).Append('|').Append(special.Archetype).Append('|').Append(special.Variant)
+            text.Append(special.Cell.I).Append('|').Append(special.Archetype).Append('|').Append(LegacyNames.TryGetValue(special.Variant, out var legacy) ? legacy : special.Variant)
                 .Append('|').Append(special.Owner).Append('|').Append(special.WatchedBy).Append('|').Append(special.Ancient)
                 .Append('|').Append(string.Join(",", special.Modifiers)).Append('|').Append(string.Join(",", special.ContextTags))
                 .Append('|').Append(string.Join(",", special.EvidenceSeedIds)).Append('|').Append(special.Anchor.Kind);
@@ -196,7 +231,7 @@ public sealed class WorldGeneratorPlacementTests
         text.Append("cells:");
         foreach (var cell in world.Grid.Cells)
         {
-            text.Append(cell.Biome).Append(cell.Special ?? "-").Append(';');
+            text.Append(cell.Biome).Append(cell.Special == null ? "-" : LegacyNames.TryGetValue(cell.Special, out var legacy) ? legacy : cell.Special).Append(';');
         }
 
         ulong hash = 14695981039346656037UL;

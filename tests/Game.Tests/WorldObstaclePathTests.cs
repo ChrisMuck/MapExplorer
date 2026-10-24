@@ -94,7 +94,7 @@ internal sealed class WorldObstaclePathTests
         {
             var request = new WorldGenerationRequest { Seed = seed, Width = 40, Height = 30, FactionCount = 3 };
             var result = new WorldGenBridge().Generate(request);
-            foreach (var location in result.World.Locations.Where(location => location.Name == "Zerstörte Brücke"))
+            foreach (var location in result.World.Locations.Where(location => location.VariantId == "broken-bridge"))
             {
                 bridges++;
                 AssertEqual("broken-bridge", location.VariantId, $"Seed {seed}: generated bridge maps to the catalog variant");

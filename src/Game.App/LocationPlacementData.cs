@@ -319,6 +319,33 @@ public static class LocationPlacementLoader
         }
     }
 
+    /// <summary>
+    /// Checks the rules against the authored catalog: every variant a group may place exists as a scenario profile
+    /// of the archetype the group stands for, so a generated location always has states, actions and texts.
+    /// </summary>
+    public static void ValidateAgainstCatalog(PlacementTable table, CrossSystemAuthoringBundle authoring)
+    {
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        if (authoring == null) throw new ArgumentNullException(nameof(authoring));
+        var byVariant = authoring.ScenarioProfiles.Values.GroupBy(scenario => scenario.VariantId, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        foreach (var group in table.Groups)
+        {
+            var archetype = WorldGenBridge.CatalogArchetypeFor(group.Archetype);
+            foreach (var variant in group.VariantRules.SelectMany(rule => rule.Variants).Distinct(StringComparer.Ordinal))
+            {
+                if (!byVariant.TryGetValue(variant, out var scenario))
+                {
+                    throw new LocationDataException($"Placement group '{group.Id}' places variant '{variant}', which has no scenario profile in the catalog.");
+                }
+
+                if (scenario.ArchetypeId != archetype)
+                {
+                    throw new LocationDataException($"Placement group '{group.Id}' (archetype '{archetype}') places variant '{variant}', which belongs to archetype '{scenario.ArchetypeId}'.");
+                }
+            }
+        }
+    }
+
     private static void ValidateCount(PlacementGroup group, Func<string, string> fail)
     {
         var count = group.Count;

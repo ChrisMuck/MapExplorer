@@ -74,6 +74,282 @@
       "description": "Wind und Wetter haben den Fels zu einer weithin sichtbaren Form geschliffen; von hier koennte sich die Landschaft neu lesen lassen.",
       "imageId": "placeholder-landmark",
       "journalText": { "discovered": "Ein windgeformter Gipfel wurde als Bezugspunkt entdeckt.", "resolved": "Der Gipfel wurde vermessen und in die Kartenkenntnis aufgenommen." }
+    },
+    {
+      "id": "content-old-ruin",
+      "title": "Alte Ruine",
+      "subtitle": "Untersuchungsstelle",
+      "shortDescription": "Verfallene Mauern aus einer früheren Zeit.",
+      "description": "Von dem Bauwerk steht nur noch ein Teil der Mauern. Wer hier gebaut hat und wozu, lässt sich nur aus den Resten schließen.",
+      "imageId": "placeholder-grave",
+      "journalText": {
+        "discovered": "Eine alte Ruine wurde gefunden.",
+        "resolved": "Die Ruine wurde untersucht und ihr Zustand festgehalten."
+      }
+    },
+    {
+      "id": "content-stone-circle",
+      "title": "Steinkreis",
+      "subtitle": "Untersuchungsstelle",
+      "shortDescription": "Aufrecht stehende Steine in einem Kreis.",
+      "description": "Die Steine stehen in einem genauen Kreis. Spuren von Gebrauch sind selten, doch niemand scheint sie je ganz verlassen zu haben.",
+      "imageId": "placeholder-grave",
+      "journalText": {
+        "discovered": "Ein Steinkreis wurde gefunden.",
+        "resolved": "Der Steinkreis wurde untersucht und vermessen."
+      }
+    },
+    {
+      "id": "content-ruined-shrine",
+      "title": "Verfallener Schrein",
+      "subtitle": "Untersuchungsstelle",
+      "shortDescription": "Ein kleiner Schrein, den die Zeit angegriffen hat.",
+      "description": "Der Schrein ist halb zerfallen. Jemand hat ihn einmal gepflegt; ob das noch jemand tut, ist nicht sicher.",
+      "imageId": "placeholder-grave",
+      "journalText": {
+        "discovered": "Ein verfallener Schrein wurde gefunden.",
+        "resolved": "Der Schrein wurde untersucht und sein Zustand festgehalten."
+      }
+    },
+    {
+      "id": "content-cold-fireplace",
+      "title": "Kalte Feuerstelle",
+      "subtitle": "Spurenfeld",
+      "shortDescription": "Asche und geschwärzte Steine am Wegrand.",
+      "description": "Die Feuerstelle ist kalt. Ob hier gestern oder vor Jahren jemand gelagert hat, zeigt erst die genauere Betrachtung.",
+      "imageId": "placeholder-camp",
+      "journalText": {
+        "discovered": "Eine kalte Feuerstelle wurde gefunden.",
+        "resolved": "Die Feuerstelle wurde untersucht."
+      }
+    },
+    {
+      "id": "content-broken-cart",
+      "title": "Zerbrochener Karren",
+      "subtitle": "Spurenfeld",
+      "shortDescription": "Ein umgestürzter Karren mit gebrochener Achse.",
+      "description": "Der Karren liegt abseits der Spur. Die Ladung ist zum Teil verstreut; wer ihn zurückließ, hatte es offenbar eilig.",
+      "imageId": "placeholder-camp",
+      "journalText": {
+        "discovered": "Ein zerbrochener Karren wurde gefunden.",
+        "resolved": "Der Karren wurde untersucht."
+      }
+    },
+    {
+      "id": "content-old-boat-camp",
+      "title": "Altes Bootslager",
+      "subtitle": "Spurenfeld",
+      "shortDescription": "Ein Boot und ein Lagerplatz am Ufer.",
+      "description": "Das Boot liegt halb im Schilf. Die Spuren am Lagerplatz sind alt, aber das Boot wirkt reparierbar.",
+      "imageId": "placeholder-camp",
+      "journalText": {
+        "discovered": "Ein altes Bootslager wurde gefunden.",
+        "resolved": "Das Bootslager wurde untersucht."
+      }
+    },
+    {
+      "id": "content-sealed-cave",
+      "title": "Verschlossene Höhle",
+      "subtitle": "Verschlussstelle",
+      "shortDescription": "Ein Höhleneingang, der von Menschen verschlossen wurde.",
+      "description": "Der Eingang ist mit Steinen und Zeichen versperrt. Wer ihn verschloss, wollte, dass nichts hinaus- oder hineingelangt.",
+      "imageId": "placeholder-gate",
+      "journalText": {
+        "discovered": "Eine verschlossene Höhle wurde gefunden.",
+        "resolved": "Die Höhle wurde untersucht."
+      }
+    },
+    {
+      "id": "content-warded-threshold",
+      "title": "Gebannte Schwelle",
+      "subtitle": "Verschlussstelle",
+      "shortDescription": "Eine Schwelle mit eingeritzten Bannzeichen.",
+      "description": "Zeichen in den Stein gehauen kennzeichnen die Schwelle als verboten. Die Linien sind an einigen Stellen verwittert.",
+      "imageId": "placeholder-gate",
+      "journalText": {
+        "discovered": "Eine gebannte Schwelle wurde gefunden.",
+        "resolved": "Die Bannzeichen wurden dokumentiert."
+      }
+    },
+    {
+      "id": "content-blocked-pass",
+      "title": "Verschütteter Pass",
+      "subtitle": "Streckenhindernis",
+      "shortDescription": "Geröll versperrt den Weg über den Pass.",
+      "description": "Ein Erdrutsch hat den Pass verschüttet. Ob sich ein Weg hindurchfinden lässt oder nur ein Umweg bleibt, ist offen.",
+      "imageId": "placeholder-bridge",
+      "journalText": {
+        "discovered": "Ein verschütteter Pass wurde entdeckt.",
+        "resolved": "Der Pass wurde untersucht."
+      }
+    },
+    {
+      "id": "content-freshwater-spring",
+      "title": "Süßwasserquelle",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Eine Quelle mit klarem Wasser.",
+      "description": "Frisches Wasser tritt hier aus dem Boden. Für eine Expedition kann das Wasser den Unterschied machen.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Eine Süßwasserquelle wurde entdeckt.",
+        "resolved": "Die Quelle wurde erfasst."
+      }
+    },
+    {
+      "id": "content-fishing-grounds",
+      "title": "Fischgrund",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Ein Abschnitt mit reichem Fischbestand.",
+      "description": "Im flachen Wasser steht viel Fisch. Spuren von Reusen verraten, dass andere den Platz kennen.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Fischgrund wurde entdeckt.",
+        "resolved": "Der Fischgrund wurde erfasst."
+      }
+    },
+    {
+      "id": "content-healing-herbs",
+      "title": "Heilkräuter",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Ein Fleck mit Kräutern, die als heilsam gelten.",
+      "description": "Zwischen den Bäumen wachsen Kräuter, die Kundige für Heilmittel nutzen. Wer sie erntet, sollte nicht alles nehmen.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Bestand an Heilkräutern wurde entdeckt.",
+        "resolved": "Der Kräuterbestand wurde erfasst."
+      }
+    },
+    {
+      "id": "content-timber-stand",
+      "title": "Holzbestand",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Alte, hohe Bäume nahe am Weg.",
+      "description": "Der Wald liefert gutes Bauholz. Einzelne Stümpfe zeigen, dass schon einmal jemand hier geschlagen hat.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Holzbestand wurde entdeckt.",
+        "resolved": "Der Holzbestand wurde erfasst."
+      }
+    },
+    {
+      "id": "content-salt-deposit",
+      "title": "Salzvorkommen",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Weiße Kruste auf dem Boden.",
+      "description": "Das Salz liegt offen an der Küste. Es lässt sich ohne viel Aufwand abtragen und haltbar machen.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Salzvorkommen wurde entdeckt.",
+        "resolved": "Das Salzvorkommen wurde erfasst."
+      }
+    },
+    {
+      "id": "content-berry-grove",
+      "title": "Beerenhain",
+      "subtitle": "Ressourcenort",
+      "shortDescription": "Sträucher voller Beeren.",
+      "description": "Die Sträucher tragen reichlich. Zertretene Stellen deuten darauf hin, dass auch Tiere den Platz kennen.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Beerenhain wurde entdeckt.",
+        "resolved": "Der Beerenhain wurde erfasst."
+      }
+    },
+    {
+      "id": "content-volcanic-vent",
+      "title": "Vulkanschlund",
+      "subtitle": "Gefahrenzone",
+      "shortDescription": "Ein Schlund, aus dem Rauch aufsteigt.",
+      "description": "Heiße Luft und Schwefel steigen aus dem Fels. Der Boden ringsum ist brüchig und warm.",
+      "imageId": "placeholder-hazard",
+      "journalText": {
+        "discovered": "Ein Vulkanschlund wurde entdeckt.",
+        "resolved": "Der Vulkanschlund wurde erfasst."
+      }
+    },
+    {
+      "id": "content-dead-zone",
+      "title": "Tote Zone",
+      "subtitle": "Gefahrenzone",
+      "shortDescription": "Ein Landstrich ohne Leben.",
+      "description": "Kein Vogel, kein Gras. Der Boden wirkt unversehrt und ist es doch nicht; die Ursache ist unbekannt.",
+      "imageId": "placeholder-hazard",
+      "journalText": {
+        "discovered": "Eine tote Zone wurde entdeckt.",
+        "resolved": "Die tote Zone wurde erfasst."
+      }
+    },
+    {
+      "id": "content-signal-tower",
+      "title": "Signalturm",
+      "subtitle": "Landmarke",
+      "shortDescription": "Ein Turm, von dem man weit sieht.",
+      "description": "Von der Plattform lässt sich das Land überblicken. Die Feuerstelle oben ist lange nicht benutzt worden.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein Signalturm wurde als Bezugspunkt entdeckt.",
+        "resolved": "Der Signalturm wurde vermessen."
+      }
+    },
+    {
+      "id": "content-colossus-statue",
+      "title": "Kolossstatue",
+      "subtitle": "Landmarke",
+      "shortDescription": "Eine riesige Gestalt aus Stein.",
+      "description": "Die Statue überragt jeden Baum in der Umgebung. Das Gesicht ist verwittert; wen sie darstellt, weiß niemand.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Eine Kolossstatue wurde als Bezugspunkt entdeckt.",
+        "resolved": "Die Statue wurde vermessen."
+      }
+    },
+    {
+      "id": "content-old-lighthouse",
+      "title": "Alter Leuchtturm",
+      "subtitle": "Landmarke",
+      "shortDescription": "Ein Leuchtturm an der Küste.",
+      "description": "Der Turm steht noch, die Lampe oben ist erloschen. Von hier sieht man die Küste weit entlang.",
+      "imageId": "placeholder-landmark",
+      "journalText": {
+        "discovered": "Ein alter Leuchtturm wurde als Bezugspunkt entdeckt.",
+        "resolved": "Der Leuchtturm wurde vermessen."
+      }
+    },
+    {
+      "id": "content-border-stones",
+      "title": "Grenzsteine",
+      "subtitle": "Territoriales Zeichen",
+      "shortDescription": "Gesetzte Steine entlang einer Grenze.",
+      "description": "Die Steine stehen in Abständen und tragen eingeritzte Zeichen. Sie markieren, wo ein Anspruch endet.",
+      "imageId": "placeholder-warning",
+      "journalText": {
+        "discovered": "Grenzsteine wurden gefunden.",
+        "resolved": "Das Zeichen wurde gedeutet und festgehalten."
+      }
+    },
+    {
+      "id": "content-skull-marks",
+      "title": "Schädelmarken",
+      "subtitle": "Territoriales Zeichen",
+      "shortDescription": "Schädel auf Pfählen am Rand eines Gebiets.",
+      "description": "Die Schädel sind unübersehbar aufgesteckt. Die Warnung gilt jedem, der weitergeht.",
+      "imageId": "placeholder-warning",
+      "journalText": {
+        "discovered": "Schädelmarken wurden gefunden.",
+        "resolved": "Das Zeichen wurde gedeutet und festgehalten."
+      }
+    },
+    {
+      "id": "content-wind-ribbons",
+      "title": "Bänder im Wind",
+      "subtitle": "Territoriales Zeichen",
+      "shortDescription": "Farbige Bänder an Stangen.",
+      "description": "Die Bänder flattern im Wind und kennzeichnen den Rand eines Gebiets. Ihre Farben verraten, wer sie setzt.",
+      "imageId": "placeholder-warning",
+      "journalText": {
+        "discovered": "Bänder im Wind wurden gefunden.",
+        "resolved": "Das Zeichen wurde gedeutet und festgehalten."
+      }
     }
   ]
 }
