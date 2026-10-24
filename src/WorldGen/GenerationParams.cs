@@ -61,6 +61,10 @@ namespace WorldGen
         public float RoadDirectness = 3f;
         public float LocationDensity = 2.2f;
 
+        // --- Special locations (design §9) ---
+        /// <summary>Rules for placing special locations; null uses <see cref="PlacementTable.Default"/>.</summary>
+        public PlacementTable Placement;
+
         public GenerationParams Clone()
         {
             var c = (GenerationParams)MemberwiseClone();

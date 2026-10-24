@@ -3,6 +3,10 @@ using Game.App;
 
 try
 {
+var placementTests = new WorldGeneratorPlacementTests();
+placementTests.RunAll();
+var locationPlacementTests = new LocationPlacementTests();
+locationPlacementTests.RunAll();
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
