@@ -5,7 +5,7 @@
   "items": [
     {
       "id": "coastal-landing",
-      "name": "Uferzeichen",
+      "nameTextId": "location.instance.coastal-landing.name",
       "locationKind": "Settlement",
       "archetypeId": "contact-site",
       "variantId": "first-contact",
@@ -16,7 +16,7 @@
     },
     {
       "id": "broken-ravine",
-      "name": "Zerstoerte Bruecke",
+      "nameTextId": "location.instance.broken-ravine.name",
       "locationKind": "BrokenRavine",
       "archetypeId": "route-obstacle",
       "variantId": "broken-bridge",
@@ -27,7 +27,7 @@
     },
     {
       "id": "marked-grave",
-      "name": "Markiertes Grab",
+      "nameTextId": "location.instance.marked-grave.name",
       "locationKind": "MarkedGrave",
       "archetypeId": "investigation-site",
       "variantId": "marked-grave",
@@ -39,7 +39,7 @@
     },
     {
       "id": "abandoned-camp",
-      "name": "Verlassenes Lager",
+      "nameTextId": "location.instance.abandoned-camp.name",
       "locationKind": "AbandonedCamp",
       "archetypeId": "investigation-site",
       "variantId": "abandoned-camp",
@@ -50,7 +50,7 @@
     },
     {
       "id": "border-warning",
-      "name": "Grenzwarnung",
+      "nameTextId": "location.instance.border-warning.name",
       "locationKind": "Landmark",
       "archetypeId": "territorial-marker",
       "variantId": "border-warning-sign",
@@ -62,7 +62,7 @@
     },
     {
       "id": "sealed-gate",
-      "name": "Versiegeltes Tor",
+      "nameTextId": "location.instance.sealed-gate.name",
       "locationKind": "Ruin",
       "archetypeId": "containment-site",
       "variantId": "sealed-gate",

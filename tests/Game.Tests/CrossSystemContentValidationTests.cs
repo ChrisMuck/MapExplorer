@@ -17,7 +17,7 @@ internal sealed class CrossSystemContentValidationTests
     private static void AuthoredGameDataPassesCrossSystemValidation()
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
-        var locations = LocationDataLoader.LoadFromDirectory(Path.Combine(root, "Locations"));
+        var locations = LocationDataLoader.LoadFromDirectory(Path.Combine(root, "Locations"), TestLocationTexts.For(Path.Combine(root, "Locations")));
         var crossSystem = CrossSystemDataLoader.LoadFromDirectories(new[]
         {
             Path.Combine(root, "World"),

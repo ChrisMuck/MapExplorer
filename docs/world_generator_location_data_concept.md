@@ -153,10 +153,24 @@ Ressourcen, Verwahrung, Grenzzeichen, Gefahrenzonen, Siedlungen).
 - Aktionen: Jede Variante verwendet nur Aktionen, deren Zustandsänderungen ihr Zustandsprofil kennt (der Validator prüft das). Daher haben z. B.
   die Naturorte keine Aktion „Umgebung kartieren" (sie setzt den Betriebszustand `mapped`), die Gebannte Schwelle keine „Siegel öffnen"-Aktion und der
   Verschüttete Pass keine Aktion „Behelfsübergang bauen". Funde, Beweise und Folgen sind bei den neuen Varianten noch leer.
-- Abweichung von der Owner-Entscheidung zu Textschlüsseln: Die Namen und Beschreibungen der Orte stehen wie bei den bisherigen Varianten
+- ~~Abweichung von der Owner-Entscheidung zu Textschlüsseln: Die Namen und Beschreibungen der Orte stehen wie bei den bisherigen Varianten
   im Inhaltsprofil (Klartext); Textschlüssel (`Scenes`-Texte) tragen nur Szenentexte. Eine Umstellung der Ortsnamen auf Schlüssel braucht
-  Änderungen an Loader und Oberfläche und bleibt ein eigener Schritt.
+  Änderungen an Loader und Oberfläche und bleibt ein eigener Schritt.~~ (nachgeholt, siehe unten)
 - Speicherstand: Der Code kennt noch kein Speichern von Spielständen; es gibt daher keine alten `worldgen-…`-Stände, die zu verwerfen wären.
+
+### Stand Textschlüssel (umgesetzt)
+
+- Inhaltsprofile (`content-profiles.json`) nennen ihre Wörter über Textschlüssel: `titleTextId`, `subtitleTextId`, `shortDescriptionTextId`,
+  `descriptionTextId` und `journalText.discoveredTextId` / `resolvedTextId`. Die Schlüssel heißen `location.<variante>.<feld>`
+  (`title`, `subtitle`, `short`, `desc`, `found`, `done`); die Texte stehen in `Scenes/Locales/de.json` neben den Szenentexten. Weitere Sprachen
+  sind damit eigene Locale-Dateien.
+- Tutorialorte nennen ihren Namen über `nameTextId` (`location.instance.<id>.name`). Wörtliche Felder (`title` usw.) bleiben im Format gültig,
+  sind in den ausgelieferten Daten aber nicht mehr in Gebrauch.
+- `GameDataCatalog` lädt die Szenentexte zuerst und löst die Schlüssel beim Laden in der Standardsprache auf; der Kern (`LocationContentProfileDefinition`)
+  und die Oberfläche bleiben unverändert und bekommen fertige Texte. Ein Schlüssel ohne Textkatalog oder ohne Eintrag wird beim Laden abgelehnt.
+- `Variants/variants.json` trägt `label` und `subtitle` nicht mehr; sie waren ungenutzte Doppelungen des Inhaltsprofils.
+- Die Umschrift der ersten acht Profile (`Zerstoerte Bruecke`, `Naturphaenomen` …) ist durch echte Umlaute ersetzt.
+- Offen: Umschalten der Sprache zur Laufzeit (die Auflösung geschieht beim Laden), Textschlüssel für Aktions- und Modifikatortexte.
 
 ## 6. Risiken und Absicherung
 

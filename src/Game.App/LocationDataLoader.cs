@@ -54,7 +54,7 @@ public static class LocationDataLoader
     };
 
     /// <summary>Loads every <c>*.json</c> under a folder tree. Returns null if the folder is absent.</summary>
-    public static LocationDataBundle? LoadFromDirectory(string rootFolder)
+    public static LocationDataBundle? LoadFromDirectory(string rootFolder, Func<string, string>? resolveText = null)
     {
         if (string.IsNullOrWhiteSpace(rootFolder) || !Directory.Exists(rootFolder))
         {
@@ -68,7 +68,7 @@ public static class LocationDataLoader
             .Select(File.ReadAllText)
             .ToList();
 
-        return documents.Count == 0 ? null : LoadFromJson(documents);
+        return documents.Count == 0 ? null : LoadFromJson(documents, resolveText);
     }
 
     // Directory discovery is a migration convenience. It must ignore target-schema documents that
@@ -86,7 +86,9 @@ public static class LocationDataLoader
         }
     }
 
-    public static LocationDataBundle LoadFromJson(IEnumerable<string> jsonDocuments)
+    /// <param name="resolveText">Looks up authored text by id (the localized scene texts). Content profiles and instances may name their
+    /// texts by id instead of carrying the words; without a resolver such a document is rejected.</param>
+    public static LocationDataBundle LoadFromJson(IEnumerable<string> jsonDocuments, Func<string, string>? resolveText = null)
     {
         if (jsonDocuments == null)
         {
@@ -140,8 +142,8 @@ public static class LocationDataLoader
             }
         }
 
-        var definitions = BuildDefinitions(archetypes, variants, modifiers, actions, outcomeTables, contentProfiles);
-        var builtInstances = instances.Select(instance => BuildInstance(instance, definitions)).ToList();
+        var definitions = BuildDefinitions(archetypes, variants, modifiers, actions, outcomeTables, contentProfiles, resolveText);
+        var builtInstances = instances.Select(instance => BuildInstance(instance, definitions, resolveText)).ToList();
         Validate(definitions, builtInstances);
         return new LocationDataBundle(definitions, builtInstances);
     }
@@ -152,7 +154,8 @@ public static class LocationDataLoader
         List<ModifierDto> modifiers,
         List<ActionDto> actions,
         List<OutcomeTableDto> outcomeTables,
-        List<ContentProfileDto> contentProfiles)
+        List<ContentProfileDto> contentProfiles,
+        Func<string, string>? resolveText)
     {
         return new LocationInteractionDefinitionSet(
             archetypes.Select(BuildArchetype),
@@ -160,7 +163,7 @@ public static class LocationDataLoader
             modifiers.Select(BuildModifier),
             actions.Select(BuildAction),
             outcomeTables.Select(BuildOutcomeTable),
-            contentProfiles.Select(BuildContentProfile));
+            contentProfiles.Select(profile => BuildContentProfile(profile, resolveText)));
     }
 
     private static LocationArchetypeDefinition BuildArchetype(ArchetypeDto dto)
@@ -322,27 +325,37 @@ public static class LocationDataLoader
             dto.DelayDays);
     }
 
-    private static LocationContentProfileDefinition BuildContentProfile(ContentProfileDto dto)
+    private static LocationContentProfileDefinition BuildContentProfile(ContentProfileDto dto, Func<string, string>? resolveText)
     {
+        var id = Require(dto.Id, "contentProfile.id");
+        string? Text(string? literal, string? textId, string field) => TextOf(literal, textId, resolveText, $"contentProfile '{id}' {field}");
         return new LocationContentProfileDefinition(
-            Require(dto.Id, "contentProfile.id"),
-            Require(dto.Title, "contentProfile.title"),
-            dto.Subtitle,
-            dto.ShortDescription,
-            dto.Description,
+            id,
+            Require(Text(dto.Title, dto.TitleTextId, "title"), "contentProfile.title"),
+            Text(dto.Subtitle, dto.SubtitleTextId, "subtitle"),
+            Text(dto.ShortDescription, dto.ShortDescriptionTextId, "shortDescription"),
+            Text(dto.Description, dto.DescriptionTextId, "description"),
             dto.ImageId,
-            dto.JournalText?.Discovered,
-            dto.JournalText?.Resolved);
+            Text(dto.JournalText?.Discovered, dto.JournalText?.DiscoveredTextId, "journalText.discovered"),
+            Text(dto.JournalText?.Resolved, dto.JournalText?.ResolvedTextId, "journalText.resolved"));
     }
 
-    private static SpecialLocationState BuildInstance(InstanceDto dto, LocationInteractionDefinitionSet definitions)
+    /// <summary>The authored words: looked up by text id when one is named, else the literal text of the document.</summary>
+    private static string? TextOf(string? literal, string? textId, Func<string, string>? resolveText, string where)
+    {
+        if (string.IsNullOrWhiteSpace(textId)) return literal;
+        if (resolveText == null) throw new LocationDataException($"{where} names text '{textId}', but no text catalog was supplied.");
+        return resolveText(textId!.Trim());
+    }
+
+    private static SpecialLocationState BuildInstance(InstanceDto dto, LocationInteractionDefinitionSet definitions, Func<string, string>? resolveText)
     {
         var anchor = BuildAnchor(dto.Anchor, dto.Id);
         var coord = anchor.Kind == LocationAnchorKind.Edge && anchor.Coords.Count == 2
             ? anchor.Coords[1]
             : anchor.PrimaryCoord;
 
-        var name = dto.Name;
+        var name = TextOf(dto.Name, dto.NameTextId, resolveText, $"instance '{dto.Id}' name");
         if (string.IsNullOrWhiteSpace(name))
         {
             name = definitions.FindContentProfile(dto.ContentProfileId)?.Title ?? dto.Id;
@@ -648,9 +661,13 @@ public static class LocationDataLoader
     {
         public string? Id { get; set; }
         public string? Title { get; set; }
+        public string? TitleTextId { get; set; }
         public string? Subtitle { get; set; }
+        public string? SubtitleTextId { get; set; }
         public string? ShortDescription { get; set; }
+        public string? ShortDescriptionTextId { get; set; }
         public string? Description { get; set; }
+        public string? DescriptionTextId { get; set; }
         public string? ImageId { get; set; }
         public JournalDto? JournalText { get; set; }
     }
@@ -658,13 +675,16 @@ public static class LocationDataLoader
     private sealed class JournalDto
     {
         public string? Discovered { get; set; }
+        public string? DiscoveredTextId { get; set; }
         public string? Resolved { get; set; }
+        public string? ResolvedTextId { get; set; }
     }
 
     private sealed class InstanceDto
     {
         public string? Id { get; set; }
         public string? Name { get; set; }
+        public string? NameTextId { get; set; }
         public string? LocationKind { get; set; }
         public string? ArchetypeId { get; set; }
         public string? VariantId { get; set; }

@@ -46,7 +46,7 @@ internal sealed class FactionTerritorialPolicyTests
     private static (GameApplication App, CrossSystemDataBundle Content, GameState Game) CreateDocumentingGame(LocationFactionRelationKind relationKind)
     {
         var root = Path.Combine(Directory.GetCurrentDirectory(), "UnityHexMapView", "Assets", "StreamingAssets", "GameData");
-        var locations = LocationDataLoader.LoadFromDirectory(Path.Combine(root, "Locations"))
+        var locations = LocationDataLoader.LoadFromDirectory(Path.Combine(root, "Locations"), TestLocationTexts.For(Path.Combine(root, "Locations")))
             ?? throw new InvalidOperationException("Location content was not loaded.");
         var content = CrossSystemDataLoader.LoadFromDirectories(new[]
         {

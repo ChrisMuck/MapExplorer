@@ -424,7 +424,7 @@ Nach G3 vom Owner zur Umsetzung aufgenommen:
 
 | Punkt | Beobachtung | Zuordnung |
 | --- | --- | --- |
-| Ortsnamen als Textschlüssel | Namen, Untertitel und Beschreibungen der Orte stehen als Klartext im Inhaltsprofil (`content-profiles.json`) und, bei den älteren Varianten, mit Umschrift (`Zerstoerte Bruecke`). Weitere Sprachen sind so nicht möglich. | eigener Schritt nach G3: Textschlüssel im Inhaltsprofil (`titleTextId`, `subtitleTextId`, `shortDescriptionTextId`, `descriptionTextId`, `journalText`), Auflösung über `Scenes/Locales`, Umstellung aller Varianten und der Oberfläche, Umlaute wieder korrekt |
+| Ortsnamen als Textschlüssel (erledigt, siehe Konzept „Stand Textschlüssel") | Namen, Untertitel und Beschreibungen der Orte stehen als Klartext im Inhaltsprofil (`content-profiles.json`) und, bei den älteren Varianten, mit Umschrift (`Zerstoerte Bruecke`). Weitere Sprachen sind so nicht möglich. | eigener Schritt nach G3: Textschlüssel im Inhaltsprofil (`titleTextId`, `subtitleTextId`, `shortDescriptionTextId`, `descriptionTextId`, `journalText`), Auflösung über `Scenes/Locales`, Umstellung aller Varianten und der Oberfläche, Umlaute wieder korrekt |
 | Funde, Beweise und Folgen der neuen Varianten | Die 23 neuen Varianten haben leere Fund-, Beweis- und Folgenpools; es gibt dort noch nichts zu finden. Aktionen mit Zustandsänderungen außerhalb des Zustandsprofils fehlen (z. B. Kartieren bei Naturorten, Behelfsübergang beim Pass). | eigener Schritt nach G3: je Variante Funde (`finding-…`), Beweise (`evidence-…`) und Folgen (`consequence-…`) entwerfen, Listen vor dem Anlegen dem Owner vorlegen, fehlende Zustände und Aktionen ergänzen |
 
 ## 14. Risiken
