@@ -22,15 +22,32 @@ Die Erkundung zeigt wie bei Lager und Grab Pfahl, Grabungsstellen und Feldtafel.
 
 ## 2. Prüfanleitung
 
+### Ortsgalerie (neu)
+
+Menü **Map Style → Create Site Gallery Scene (all places, switchable states)** legt die Szene `Assets/MapStyle/Scenes/MapStyleSiteGallery.unity` an und
+speichert sie (wie bei „Create Sandbox Scene"). Beim Start zeigt die Galerie alle Orte, die eine Punktkomposition haben (heute: Lager, Grab, Tor,
+Grenzwarnung, Ufer und die sechs Orte aus V3a; jede künftige Komposition erscheint von selbst).
+
+- **Ort wählen:** Liste „Alle Orte" links, Knöpfe „zurück" und „weiter", Bild-Hoch/Bild-Runter oder `[` `]`.
+- **Zustände:** je Kanal (Betrieb, Anwesenheit, Erkundung) eine Knopfreihe mit den Werten des Zustandsprofils. Der Ort startet im Anfangszustand.
+- **Reihe:** „Reihe: Betrieb" (oder Anwesenheit, Erkundung) stellt alle Werte eines Kanals nebeneinander, die anderen Kanäle bleiben wie gewählt.
+- **Wissen:** „Zustand dem Spieler unbekannt" zeigt den Ort ohne Beobachtung; die Leiste bestätigt, alt, gemeldet zeigt die Kenntnisstufen.
+- **Tageszeit** und Kamera (Drehen mit Q/E, Ziehen, Zoomen) wie in der Entwicklungsansicht der Welt.
+
+Die Galerie nutzt denselben Auflöser und dieselbe Ortsansicht wie das Spiel, auf einer flachen Platte. Brücke (Kantenort) und Gefahrenzonen mit Fläche
+kommen später dazu.
+
+### In der Welt
+
 Entwicklungsansicht (`MapStyleWorld`) mit generierter Welt: Orte dieser Varianten kommen je nach Seed vor. Testort wechseln, springen, Zustandsreihen
-durchschalten. In der Spielszene `Debug Jump Location Id` auf die Id eines Ortes setzen (z. B. `worldgen-location-3`; die Id steht in der Entwicklungsansicht).
+durchschalten. In der Spielszene `Debug Jump Location Id` auf die Id eines Ortes setzen (z. B. `worldgen-location-3`).
 
 ## 3. Geprüft und nicht geprüft
 
 Geprüft: alle `Game.Tests`; neu `SiteVisualTests` mit den Elementzahlen je Betriebs-, Anwesenheits- und Erkundungszustand (und unbeobachtet) für alle sechs
 Varianten. Der Validator prüft, dass jeder Zustandswert gezeigt, gepost oder als schlicht gelistet ist.
 
-Nicht geprüft: Aussehen, Größe und Lichtstärke in Unity; die Plattenneigungen und Kippposen; Fußpunkt auf dem Relief.
+Nicht geprüft: die Ortsgalerie selbst (nur kompiliert), Aussehen, Größe und Lichtstärke in Unity; die Plattenneigungen und Kippposen; Fußpunkt auf dem Relief.
 
 ## 4. Offen
 
