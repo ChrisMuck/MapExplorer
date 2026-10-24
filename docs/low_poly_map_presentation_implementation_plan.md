@@ -417,8 +417,15 @@ Bei der Sichtprüfung von V2a aufgefallen und bewusst vertagt:
 
 | Punkt | Beobachtung | Zuordnung |
 | --- | --- | --- |
-| Straße führt nicht zur Brücke | Straßen sind nur Bodenfarbe entlang ihrer Pfadpunkte und enden vor der Schlucht; die Brücke steht an der besten Stelle der Schlucht, nicht auf dem Straßenverlauf. | V2b oder V3: Straßen als Linienobjekte, die an beiden Brückenenden anschließen |
+| Straße führt nicht zur Brücke | Straßen sind nur Bodenfarbe entlang ihrer Pfadpunkte und enden vor der Schlucht; die Brücke steht an der besten Stelle der Schlucht, nicht auf dem Straßenverlauf. | erledigt in V2g: kurze Wegstrecken von den Brückenenden zum nächsten Weg (Straßen bleiben Bodenfarbe) |
 | Generierte Brücke an unpassender Stelle | Der Generator setzt das Wegehindernis auf eine Straßenkante entlang eines Flusses oder an einem Höhensprung; das ergibt nicht immer einen sinnvollen Übergang (zum Beispiel am Berg ohne Wasser). | V3: Platzierung im Generator neu bewerten, etwa nur dort, wo eine Straße einen Fluss oder eine Schlucht wirklich kreuzt |
+
+Nach G3 vom Owner zur Umsetzung aufgenommen:
+
+| Punkt | Beobachtung | Zuordnung |
+| --- | --- | --- |
+| Ortsnamen als Textschlüssel | Namen, Untertitel und Beschreibungen der Orte stehen als Klartext im Inhaltsprofil (`content-profiles.json`) und, bei den älteren Varianten, mit Umschrift (`Zerstoerte Bruecke`). Weitere Sprachen sind so nicht möglich. | eigener Schritt nach G3: Textschlüssel im Inhaltsprofil (`titleTextId`, `subtitleTextId`, `shortDescriptionTextId`, `descriptionTextId`, `journalText`), Auflösung über `Scenes/Locales`, Umstellung aller Varianten und der Oberfläche, Umlaute wieder korrekt |
+| Funde, Beweise und Folgen der neuen Varianten | Die 23 neuen Varianten haben leere Fund-, Beweis- und Folgenpools; es gibt dort noch nichts zu finden. Aktionen mit Zustandsänderungen außerhalb des Zustandsprofils fehlen (z. B. Kartieren bei Naturorten, Behelfsübergang beim Pass). | eigener Schritt nach G3: je Variante Funde (`finding-…`), Beweise (`evidence-…`) und Folgen (`consequence-…`) entwerfen, Listen vor dem Anlegen dem Owner vorlegen, fehlende Zustände und Aktionen ergänzen |
 
 ## 14. Risiken
 
