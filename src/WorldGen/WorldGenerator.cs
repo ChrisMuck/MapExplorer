@@ -815,13 +815,33 @@ namespace WorldGen
                 if (_base != null && (g.Dist(a, _base) < baseGuard || g.Dist(b, _base) < baseGuard)) continue;
                 if (IsRiverEdge(a, b) || Math.Abs(a.Elevation - b.Elevation) > _elevMax * 0.3) crossings.Add(e);
             }
-            bool swampExists = false; foreach (var c in land) if (c.Biome == (int)Biome.Swamp) { swampExists = true; break; }
-            int nInv = Math.Max(1, D(1.1)), nCont = Math.Max(1, D(0.45)), nTrace = Math.Max(1, D(1.0)), nRes = Math.Max(1, D(1.1)), nLm = Math.Max(1, D(0.7));
-            int nVolc = 1 + (nLand >= 6000 ? 1 : 0);
-            int nDead = (nLand >= 1200 ? 1 : 0) + (nLand >= 7000 ? 1 : 0);
             int areaSize = 5 + Math.Min(14, nLand / 900);
-            int nObs = Math.Min(6, Math.Max(1, (int)Math.Round(crossings.Count * 0.4)));
-            int estTotal = nInv + nCont + nTrace + nRes + nLm + nVolc + nDead + (swampExists ? 1 : 0) + nObs + _factions.Count + 1;
+            var table = p.Placement ?? PlacementTable.Default();
+            int EstimateCount(PlacementGroup grp)
+            {
+                var count = grp.Count;
+                switch (count.Kind)
+                {
+                    case PlacementCountKind.LandDensity:
+                        return Math.Max(count.Min, D(count.Factor));
+                    case PlacementCountKind.CrossingsShare:
+                        return Math.Min(count.Max, Math.Max(count.Min, (int)Math.Round(crossings.Count * count.Factor)));
+                    case PlacementCountKind.PerFaction:
+                        return _factions.Count;
+                    default:
+                        if (grp.Candidates == PlacementCandidates.BiomeCells)
+                        {
+                            var present = false;
+                            foreach (var c in land) if (c.Biome == (int)grp.CandidateBiome) { present = true; break; }
+                            if (!present) return 0;
+                        }
+                        var total = count.Base;
+                        foreach (var step in count.Steps) if (nLand >= step.MinLandCells) total += step.Add;
+                        return total;
+                }
+            }
+            int estTotal = 1;
+            foreach (var grp in table.Groups) estTotal += EstimateCount(grp);
             double spacing = Math.Max(2.2, Math.Sqrt((double)nLand / Math.Max(1, estTotal)) * 0.9);
 
             SpecialLocation AddLoc(HexCell cell, string archetype, string variant,
@@ -911,71 +931,125 @@ namespace WorldGen
                 return best;
             }
 
-            // 1. Route obstacles (edge)
-            var seenEdge = new HashSet<string>(); int obs = 0;
-            foreach (var e in crossings)
+            bool Holds(PlacementCondition when, HexCell c)
             {
-                if (obs >= nObs) break; var a = e[0]; var b = e[1];
-                string k = HexGrid.EdgeKey(a, b);
-                if (seenEdge.Contains(k) || a.Special != null || b.Special != null || used.Contains(a.I) || used.Contains(b.I)) continue;
-                if (placedCells.Count > 0 && Spread(a) < spacing * 0.6) continue;
-                seenEdge.Add(k);
-                AddLoc(a.Elevation <= b.Elevation ? a : b, "Wegehindernis", IsRiverEdge(a, b) ? "Zerstörte Brücke" : "Verschütteter Pass", ancient: true, anchor: new Anchor(AnchorKind.Edge, new List<HexCell> { a, b })); obs++;
-            }
-            if (obs == 0)
-                foreach (var e in crossings)
+                switch (when)
                 {
-                    var a = e[0]; var b = e[1]; if (a.Special != null || b.Special != null) continue;
-                    AddLoc(a.Elevation <= b.Elevation ? a : b, "Wegehindernis", IsRiverEdge(a, b) ? "Zerstörte Brücke" : "Verschütteter Pass", ancient: true, anchor: new Anchor(AnchorKind.Edge, new List<HexCell> { a, b })); break;
+                    case PlacementCondition.Always: return true;
+                    case PlacementCondition.NearWater: return NearWater(c);
+                    case PlacementCondition.Forest: return c.Biome == (int)Biome.Forest || c.Biome == (int)Biome.DeepForest;
+                    case PlacementCondition.Coastal: return Coastal(c);
+                    default: return false;
+                }
+            }
+
+            string ChooseVariant(PlacementGroup grp, Func<PlacementCondition, bool> holds)
+            {
+                foreach (var rule in grp.VariantRules)
+                {
+                    if (rule.Variants.Count == 0 || !holds(rule.When)) continue;
+                    return rule.Variants.Count == 1 ? rule.Variants[0] : _rng.Pick(rule.Variants);
+                }
+                return null;
+            }
+
+            double CellScore(PlacementGroup grp, HexCell c)
+            {
+                if (grp.ScoreTiers.Count > 0)
+                {
+                    foreach (var tier in grp.ScoreTiers) if (Holds(tier.When, c)) return tier.Score;
+                    return 0;
                 }
 
-            // 2. Investigation sites (remote, ancient)
-            var ruinNames = new[] { "Alte Ruine", "Vergessenes Grab", "Steinkreis", "Verfallener Schrein" };
-            for (int k = 0; k < nInv; k++)
-                AddLoc(TakeBest(land, c => Remote(c) * 1.3), "Untersuchungsort", _rng.Pick(ruinNames), ancient: true, biome: (_rng.NextDouble() < 0.5 ? (int)Biome.Ruins : -1));
-
-            // 3. Containment sites (remote + high, ancient)
-            var contNames = new[] { "Versiegeltes Tor", "Verschlossene Höhle", "Gebannte Schwelle" };
-            for (int k = 0; k < nCont; k++)
-                AddLoc(TakeBest(land, c => Remote(c) * 0.7 + (c.Elevation / _elevMax) * 0.8), "Verwahrungsort", _rng.Pick(contNames), ancient: true);
-
-            // 4. Trace sites (along roads, neutral)
-            var roadCells = new List<HexCell>(); foreach (var path in _roads) foreach (var c in path) if (c.Special == null) roadCells.Add(c);
-            var traceNames = new[] { "Verlassenes Lager", "Kalte Feuerstelle", "Zerbrochener Karren", "Altes Bootslager" };
-            for (int k = 0; k < nTrace; k++)
-                AddLoc(TakeBest(roadCells.Count > 0 ? roadCells : land, c => 1 - Remote(c) * 0.5), "Spurenort", _rng.Pick(traceNames), neutral: true);
-
-            // 5. Resource sites (biome-appropriate)
-            for (int k = 0; k < nRes; k++)
-            {
-                var c = TakeBest(land, cc => NearWater(cc) ? 1.0 : ((cc.Biome == (int)Biome.Forest || cc.Biome == (int)Biome.DeepForest) ? 0.7 : (Coastal(cc) ? 0.6 : 0.1)));
-                if (c == null) break;
-                string v = NearWater(c) ? _rng.Pick(new[] { "Süßwasserquelle", "Fischgrund" })
-                    : (c.Biome == (int)Biome.Forest || c.Biome == (int)Biome.DeepForest) ? _rng.Pick(new[] { "Heilkräuter", "Holzbestand" })
-                    : (Coastal(c) ? "Salzvorkommen" : "Beerenhain");
-                AddLoc(c, "Ressourcenort", v);
+                double score = 0;
+                foreach (var term in grp.Score)
+                {
+                    switch (term.Term)
+                    {
+                        case PlacementTerm.Constant: score += term.Weight; break;
+                        case PlacementTerm.Remote: score += Remote(c) * term.Weight; break;
+                        case PlacementTerm.Elevation: { var e = c.Elevation / _elevMax; score += e * term.Weight; break; }
+                        case PlacementTerm.Coastal: score += term.Weight * (Coastal(c) ? 1 : 0); break;
+                    }
+                }
+                return score;
             }
 
-            // 6. Hazard zones (area, biome-driven, neutral)
-            var swamps = new List<HexCell>(); foreach (var c in land) if (c.Biome == (int)Biome.Swamp && c.Special == null) swamps.Add(c);
-            if (swamps.Count > 0) AddLoc(TakeBest(swamps, c => 1), "Gefahrenzone", "Giftiger Sumpf", neutral: true, anchor: new Anchor(AnchorKind.Area, new List<HexCell>()));
-            for (int k = 0; k < nVolc; k++)
-                AddLoc(TakeBest(land, c => (c.Elevation / _elevMax) * 0.8 + Remote(c) * 0.4), "Gefahrenzone", "Vulkanschlund", neutral: true, biome: (int)Biome.Volcanic, aSize: areaSize);
-            for (int k = 0; k < nDead; k++)
-                AddLoc(TakeBest(land, c => Remote(c)), "Gefahrenzone", "Tote Zone", neutral: true, biome: (int)Biome.DeadZones, aSize: (int)Math.Round(areaSize * 0.7));
-
-            // 7. Landmarks (high/prominent, ancient-neutral)
-            var lmNames = new[] { "Signalturm", "Gipfelmal", "Kolossstatue", "Alter Leuchtturm" };
-            for (int k = 0; k < nLm; k++)
-                AddLoc(TakeBest(land, c => (c.Elevation / _elevMax) + (Coastal(c) ? 0.3 : 0)), "Landmarke", _rng.Pick(lmNames), ancient: true);
-
-            // 8. Territorial markers (faction, on borders)
-            var gzNames = new[] { "Grenzsteine", "Warnzeichen", "Schädelmarken", "Bänder im Wind" };
-            foreach (var f in _factions)
+            foreach (var grp in table.Groups)
             {
-                var border = new List<HexCell>(); foreach (var c in g.Cells) if (c.Faction == f.Id && c.Special == null && IsBorderOf(c, f.Id)) border.Add(c);
-                int nn = Math.Min(border.Count, 1 + (f.Taboo.Count > 1 ? 1 : 0));
-                for (int k = 0; k < nn; k++) { var c = TakeBest(border, cc => 1); if (c == null) break; AddLoc(c, "Grenzzeichen", _rng.Pick(gzNames), factionOwned: f.Id); }
+                var group = grp;
+                switch (group.Candidates)
+                {
+                    case PlacementCandidates.CrossingEdges:
+                    {
+                        // Route obstacles sit on a road edge that crosses a river or a steep slope.
+                        var seenEdge = new HashSet<string>(); int obs = 0; int nObs = EstimateCount(group);
+                        void AddEdge(HexCell a, HexCell b)
+                        {
+                            var variant = ChooseVariant(group, when => when == PlacementCondition.Always || (when == PlacementCondition.RiverEdge && IsRiverEdge(a, b)));
+                            AddLoc(a.Elevation <= b.Elevation ? a : b, group.Archetype, variant, ancient: group.Ancient, anchor: new Anchor(AnchorKind.Edge, new List<HexCell> { a, b }));
+                        }
+                        foreach (var e in crossings)
+                        {
+                            if (obs >= nObs) break; var a = e[0]; var b = e[1];
+                            string k = HexGrid.EdgeKey(a, b);
+                            if (seenEdge.Contains(k) || a.Special != null || b.Special != null || used.Contains(a.I) || used.Contains(b.I)) continue;
+                            if (placedCells.Count > 0 && Spread(a) < spacing * 0.6) continue;
+                            seenEdge.Add(k);
+                            AddEdge(a, b); obs++;
+                        }
+                        if (obs == 0)
+                            foreach (var e in crossings)
+                            {
+                                var a = e[0]; var b = e[1]; if (a.Special != null || b.Special != null) continue;
+                                AddEdge(a, b); break;
+                            }
+                        break;
+                    }
+                    case PlacementCandidates.FactionBorder:
+                        foreach (var f in _factions)
+                        {
+                            var border = new List<HexCell>(); foreach (var c in g.Cells) if (c.Faction == f.Id && c.Special == null && IsBorderOf(c, f.Id)) border.Add(c);
+                            int nn = Math.Min(border.Count, group.Count.Base + (f.Taboo.Count > 1 ? group.Count.ExtraWithTaboo : 0));
+                            for (int k = 0; k < nn; k++)
+                            {
+                                var c = TakeBest(border, cc => CellScore(group, cc));
+                                if (c == null) break;
+                                AddLoc(c, group.Archetype, ChooseVariant(group, when => Holds(when, c)), ancient: group.Ancient, neutral: group.Neutral, factionOwned: f.Id);
+                            }
+                        }
+                        break;
+                    default:
+                    {
+                        List<HexCell> candidates;
+                        if (group.Candidates == PlacementCandidates.RoadCellsOrLand)
+                        {
+                            var roadCells = new List<HexCell>(); foreach (var path in _roads) foreach (var c in path) if (c.Special == null) roadCells.Add(c);
+                            candidates = roadCells.Count > 0 ? roadCells : land;
+                        }
+                        else if (group.Candidates == PlacementCandidates.BiomeCells)
+                        {
+                            candidates = new List<HexCell>(); foreach (var c in land) if (c.Biome == (int)group.CandidateBiome && c.Special == null) candidates.Add(c);
+                            if (candidates.Count == 0) break;
+                        }
+                        else candidates = land;
+
+                        int count = EstimateCount(group);
+                        for (int k = 0; k < count; k++)
+                        {
+                            var cell = TakeBest(candidates, c => CellScore(group, c));
+                            if (cell == null && group.StopWhenExhausted) break;
+                            var variant = ChooseVariant(group, when => cell != null && Holds(when, cell) || when == PlacementCondition.Always);
+                            int biome = -1;
+                            if (group.ForcedBiome.HasValue && (!group.ForcedBiomeChance.HasValue || _rng.NextDouble() < group.ForcedBiomeChance.Value))
+                                biome = (int)group.ForcedBiome.Value;
+                            int aSize = group.AreaScale.HasValue ? (int)Math.Round(areaSize * group.AreaScale.Value) : 0;
+                            Anchor anchor = group.Anchor == AnchorKind.Area && !group.AreaScale.HasValue ? new Anchor(AnchorKind.Area, new List<HexCell>()) : null;
+                            AddLoc(cell, group.Archetype, variant, ancient: group.Ancient, neutral: group.Neutral, biome: biome, aSize: aSize, anchor: anchor);
+                        }
+                        break;
+                    }
+                }
             }
 
             DeriveHexData();

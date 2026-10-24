@@ -116,6 +116,17 @@ Jede Stufe auf eigenem Branch und mit eigenem PR, jeweils vom Owner gemergt.
 Die Reihenfolge der Bilder in G4 folgt `low_poly_map_presentation_implementation_plan.md` (Spuren und Untersuchung, Landmarken,
 Ressourcen, Verwahrung, Grenzzeichen, Gefahrenzonen, Siedlungen).
 
+### Stand G1 (umgesetzt)
+
+- `src/WorldGen/PlacementTable.cs`: Typen (`PlacementGroup`, `PlacementCount`, Bewertungsterme, Bedingungen, Variantenregeln) und
+  `PlacementTable.Default()` mit den bisherigen Regeln. `GenerationParams.Placement` (null = Standardtabelle).
+- `WorldGenerator.PlaceSpecials` liest die Gruppen der Tabelle in Reihenfolge, statt feste Listen zu benutzen. Anzahl, Kandidaten,
+  Bewertung, Variantenwahl (die erste passende Regel, eine Variante zieht keine Zufallszahl), Herkunft, Biom und Flächen kommen aus der Gruppe.
+- Absicherung: `WorldGeneratorPlacementTests` prüft 108 Welten (4 Größen, 2 bis 4 Fraktionen, 3 Dichten, je 3 Seeds) mit einer Prüfsumme
+  über alle Sonderorte, Anker und Biome. Die Prüfsummen wurden **vor** dem Umbau erzeugt und stimmen nach dem Umbau unverändert.
+  Mit `GOLDEN_PRINT=1` lassen sich nach gewollten Änderungen neue Werte ausgeben.
+- Noch nicht in G1: JSON-Laden, Gewichte, Textschlüssel (G2).
+
 ## 6. Risiken und Absicherung
 
 - **Zufallsreihenfolge.** Der Generator zieht seine Zufallszahlen in fester Reihenfolge. Wer Schleifen oder Auswahl umbaut,
