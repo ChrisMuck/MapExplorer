@@ -307,7 +307,10 @@ Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 > Heilkräuter, Holzbestand, Salz, Beerenhain); siehe `low_poly_map_presentation_v3b_review.md`.
 >
 > **V3c (umgesetzt, in Unity ungeprüft):** Verwahrungsorte (Höhle, Schwelle) und Grenzzeichen (Grenzsteine, Schädelmarken, Bänder im Wind);
-> siehe `low_poly_map_presentation_v3c_review.md`. Offen: Pass, Gefahrenzonen (Fläche), Siedlungen, Fraktionsfarbe der Grenzzeichen.
+> siehe `low_poly_map_presentation_v3c_review.md`.
+>
+> **V3d (umgesetzt, in Unity ungeprüft):** Gefahrenzonen (Moor, Vulkanschlund, Tote Zone) als Kompositionen auf dem mittleren Feld der Fläche; siehe
+> `low_poly_map_presentation_v3d_review.md`. Offen: Pass, Siedlungen, Fraktionsfarbe der Grenzzeichen, Flächenmodus.
 
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 

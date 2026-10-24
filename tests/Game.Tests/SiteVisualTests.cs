@@ -1,7 +1,7 @@
 using Game.App;
 using Game.Core;
 
-/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places, V3c containment sites and territorial markers).</summary>
+/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places, V3c containment sites and territorial markers, V3d hazard zones).</summary>
 public sealed class SiteVisualTests
 {
     private sealed record Case(string Archetype, string[] Interactions, string Variant, string BaseOperational, string[] Operational, int[] OperationalCounts, string BasePresence, string[] Presence, int[] PresenceCounts, int[] InteractionCounts, int Unknown);
@@ -31,6 +31,10 @@ public sealed class SiteVisualTests
         new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "border-stones", "standing", new[] { "standing", "respected", "violated" }, new[] { 7, 10, 8 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 7, 8, 9 }, new[] { 8, 9, 10 }, 7),
         new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "skull-marks", "standing", new[] { "standing", "respected", "violated" }, new[] { 4, 7, 5 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 4, 5, 6 }, new[] { 5, 6, 7 }, 4),
         new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "wind-ribbons", "standing", new[] { "standing", "respected", "violated" }, new[] { 12, 15, 13 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 12, 13, 14 }, new[] { 13, 14, 15 }, 12),
+
+        new("hazard-site", new[] { "assessed", "contained", "documented" }, "restless-marsh", "active", new[] { "active", "avoided", "traversed", "restricted", "contained" }, new[] { 11, 13, 13, 13, 13 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 11, 13, 12 }, new[] { 12, 14, 13 }, 10),
+        new("hazard-site", new[] { "assessed", "contained", "documented" }, "volcanic-vent", "dormant", new[] { "dormant", "smoldering", "erupting", "avoided" }, new[] { 2, 4, 9, 5 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 2, 4, 3 }, new[] { 3, 5, 4 }, 2),
+        new("hazard-site", new[] { "assessed", "contained", "documented" }, "dead-zone", "lifeless", new[] { "lifeless", "avoided", "traversed", "contained" }, new[] { 7, 9, 11, 10 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 7, 8, 8 }, new[] { 8, 10, 9 }, 7),
     };
 
     public void RunAll()
