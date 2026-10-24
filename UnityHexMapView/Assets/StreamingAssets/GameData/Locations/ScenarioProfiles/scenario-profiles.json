@@ -202,8 +202,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-old-ruin"],
+      "findingPoolIds": ["finding-old-ruin-mason-mark", "finding-old-ruin-mortar-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["old-structure", "ruin"]
     },
@@ -231,8 +231,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-stone-circle"],
+      "findingPoolIds": ["finding-stone-circle-alignment-record", "finding-stone-circle-stone-rubbing"],
       "consequencePoolIds": [],
       "connectionTags": ["ritual-site", "old-knowledge"]
     },
@@ -260,8 +260,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-ruined-shrine"],
+      "findingPoolIds": ["finding-ruined-shrine-votive-object", "finding-ruined-shrine-dedication-inscription"],
       "consequencePoolIds": [],
       "connectionTags": ["shrine", "ritual-site"]
     },
@@ -289,8 +289,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-cold-fireplace"],
+      "findingPoolIds": ["finding-cold-fireplace-ash-sample", "finding-cold-fireplace-tally-marks"],
       "consequencePoolIds": [],
       "connectionTags": ["camp-trace", "old-trade-route"]
     },
@@ -318,8 +318,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-broken-cart"],
+      "findingPoolIds": ["finding-broken-cart-cargo-manifest", "finding-broken-cart-axle-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["trade-trace", "old-trade-route"]
     },
@@ -347,8 +347,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-old-boat-camp"],
+      "findingPoolIds": ["finding-old-boat-camp-hull-pitch-sample", "finding-old-boat-camp-coast-chart"],
       "consequencePoolIds": [],
       "connectionTags": ["shore-camp", "water-route"]
     },
@@ -381,8 +381,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-sealed-cave"],
+      "findingPoolIds": ["finding-sealed-cave-seal-stone", "finding-sealed-cave-wall-markings"],
       "consequencePoolIds": [],
       "connectionTags": ["sealed-symbol", "containment-history"]
     },
@@ -405,8 +405,8 @@
         "contextActionRules": [],
         "stateActionRules": []
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-warded-threshold"],
+      "findingPoolIds": ["finding-warded-threshold-ward-rubbing", "finding-warded-threshold-lintel-fragment"],
       "consequencePoolIds": [],
       "connectionTags": ["sealed-symbol", "containment-history"]
     },
@@ -435,8 +435,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-blocked-pass"],
+      "findingPoolIds": ["finding-blocked-pass-rockfall-sample", "finding-blocked-pass-old-waymarks"],
       "consequencePoolIds": [],
       "connectionTags": ["pass", "old-trade-route"]
     },
@@ -468,8 +468,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-freshwater-spring"],
+      "findingPoolIds": ["finding-freshwater-spring-spring-water-sample", "finding-freshwater-spring-spring-flow-record"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "water"]
     },
@@ -501,8 +501,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-fishing-grounds"],
+      "findingPoolIds": ["finding-fishing-grounds-net-fragment", "finding-fishing-grounds-catch-record"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "water"]
     },
@@ -534,8 +534,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-healing-herbs"],
+      "findingPoolIds": ["finding-healing-herbs-herb-specimen", "finding-healing-herbs-herb-use-notes"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "herbs"]
     },
@@ -567,8 +567,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-timber-stand"],
+      "findingPoolIds": ["finding-timber-stand-ring-sample", "finding-timber-stand-cut-marks"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "timber"]
     },
@@ -600,8 +600,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-salt-deposit"],
+      "findingPoolIds": ["finding-salt-deposit-salt-crust-sample", "finding-salt-deposit-salt-tools"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "salt"]
     },
@@ -633,8 +633,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-berry-grove"],
+      "findingPoolIds": ["finding-berry-grove-berry-sample", "finding-berry-grove-animal-tracks"],
       "consequencePoolIds": [],
       "connectionTags": ["resource", "food"]
     },
@@ -657,8 +657,8 @@
         "contextActionRules": [],
         "stateActionRules": []
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-volcanic-vent"],
+      "findingPoolIds": ["finding-volcanic-vent-sulfur-sample", "finding-volcanic-vent-heat-record"],
       "consequencePoolIds": [],
       "connectionTags": ["hazard-route", "volcanic"]
     },
@@ -687,8 +687,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-dead-zone"],
+      "findingPoolIds": ["finding-dead-zone-dead-soil-sample", "finding-dead-zone-boundary-record"],
       "consequencePoolIds": [],
       "connectionTags": ["hazard-route", "dead-zone"]
     },
@@ -720,8 +720,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-signal-tower"],
+      "findingPoolIds": ["finding-signal-tower-signal-code", "finding-signal-tower-view-record"],
       "consequencePoolIds": [],
       "connectionTags": ["landmark", "highland-route"]
     },
@@ -753,8 +753,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-colossus-statue"],
+      "findingPoolIds": ["finding-colossus-statue-base-inscription", "finding-colossus-statue-stone-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["landmark", "old-knowledge"]
     },
@@ -786,8 +786,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-old-lighthouse"],
+      "findingPoolIds": ["finding-old-lighthouse-lens-fragment", "finding-old-lighthouse-keeper-log"],
       "consequencePoolIds": [],
       "connectionTags": ["landmark", "coast-route"]
     },
@@ -820,8 +820,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-border-stones"],
+      "findingPoolIds": ["finding-border-stones-stones-rubbing", "finding-border-stones-boundary-line-record"],
       "consequencePoolIds": [],
       "connectionTags": ["boundary-signature", "watched-route"]
     },
@@ -854,8 +854,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-skull-marks"],
+      "findingPoolIds": ["finding-skull-marks-marking-record", "finding-skull-marks-bone-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["boundary-signature", "watched-route"]
     },
@@ -888,8 +888,8 @@
           }
         ]
       },
-      "evidencePoolIds": [],
-      "findingPoolIds": [],
+      "evidencePoolIds": ["evidence-site-wind-ribbons"],
+      "findingPoolIds": ["finding-wind-ribbons-ribbon-colors-record", "finding-wind-ribbons-pole-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["boundary-signature", "watched-route"]
     }

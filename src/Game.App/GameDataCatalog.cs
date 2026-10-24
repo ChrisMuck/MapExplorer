@@ -294,7 +294,7 @@ public sealed class GameDataCatalog
             SceneDescriptionContentValidator.ValidateReferences(scenes, locations, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
             var placement = placementDocuments.Count == 0 ? null : LocationPlacementLoader.LoadFromJson(placementDocuments);
-            if (placement != null) LocationPlacementLoader.ValidateAgainstCatalog(placement, authoring);
+            if (placement != null) LocationPlacementLoader.ValidateAgainstCatalog(placement, authoring, seed => crossSystem.Evidence.Find(seed) != null);
             var tutorial = TutorialCampaignDataLoader.LoadFromJson(tutorialDocuments, locations);
             return new GameDataCatalog(
                 rootPath,

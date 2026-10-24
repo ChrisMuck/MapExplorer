@@ -140,6 +140,8 @@ public static class CrossSystemContentValidator
             if (table.Entries.Count == 0) errors.Add($"Finding table '{table.Id}' has no entries.");
             foreach (var findingId in table.Entries.Select(entry => entry.FindingId).Where(id => id != null).Cast<string>())
                 if (!authoring.Findings.ContainsKey(findingId)) errors.Add($"Finding table '{table.Id}' references unknown finding '{findingId}'.");
+            foreach (var variantId in table.Entries.SelectMany(entry => entry.RequiredVariantIdsAny).Distinct(StringComparer.Ordinal))
+                if (!locations.Definitions.Variants.ContainsKey(variantId)) errors.Add($"Finding table '{table.Id}' filters for unknown variant '{variantId}'.");
         }
 
         foreach (var consequence in crossSystem.Consequences.Values)

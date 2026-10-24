@@ -155,6 +155,7 @@ public static class LocationPlacementLoader
         {
             var variant = new JObject { ["name"] = rule.Variants[i] };
             if (i < rule.Weights.Count) variant["weight"] = rule.Weights[i];
+            if (i < rule.EvidenceSeeds.Count && !string.IsNullOrEmpty(rule.EvidenceSeeds[i])) variant["evidenceSeedId"] = rule.EvidenceSeeds[i];
             variants.Add(variant);
         }
 
@@ -197,16 +198,22 @@ public static class LocationPlacementLoader
         {
             var names = new List<string>();
             var weights = new List<double>();
+            var seeds = new List<string>();
             var anyWeight = false;
+            var anySeed = false;
             foreach (var variant in Objects(rule, "variants"))
             {
                 names.Add(Required(variant, "name"));
                 anyWeight |= variant["weight"] != null;
                 weights.Add((double?)variant["weight"] ?? 1d);
+                var seed = (string?)variant["evidenceSeedId"];
+                anySeed |= !string.IsNullOrWhiteSpace(seed);
+                seeds.Add(string.IsNullOrWhiteSpace(seed) ? string.Empty : seed!.Trim());
             }
 
             var parsed = new PlacementVariantRule(Lookup(ConditionNames, Required(rule, "when"), "variant rule condition"), names.ToArray());
             if (anyWeight) parsed.Weights.AddRange(weights);
+            if (anySeed) parsed.EvidenceSeeds.AddRange(seeds);
             group.VariantRules.Add(parsed);
         }
 
@@ -303,6 +310,7 @@ public static class LocationPlacementLoader
                 if (rule.When == PlacementCondition.RiverEdge && !isEdge) throw new LocationDataException(Fail("uses 'riverEdge' outside an edge group."));
                 if (rule.When != PlacementCondition.Always && rule.When != PlacementCondition.RiverEdge && isEdge) throw new LocationDataException(Fail("uses a cell condition in an edge group."));
                 if (rule.Variants.Count == 0) throw new LocationDataException(Fail("has a variant rule without variants."));
+                if (rule.EvidenceSeeds.Count != 0 && rule.EvidenceSeeds.Count != rule.Variants.Count) throw new LocationDataException(Fail("gives evidence seeds for only some variants of a rule."));
                 if (rule.Weights.Count != 0 && rule.Weights.Count != rule.Variants.Count) throw new LocationDataException(Fail("gives weights for only some variants of a rule."));
                 if (rule.Weights.Any(weight => !(weight > 0) || double.IsInfinity(weight))) throw new LocationDataException(Fail("has a variant weight that is not a positive number."));
                 foreach (var name in rule.Variants)
@@ -323,7 +331,7 @@ public static class LocationPlacementLoader
     /// Checks the rules against the authored catalog: every variant a group may place exists as a scenario profile
     /// of the archetype the group stands for, so a generated location always has states, actions and texts.
     /// </summary>
-    public static void ValidateAgainstCatalog(PlacementTable table, CrossSystemAuthoringBundle authoring)
+    public static void ValidateAgainstCatalog(PlacementTable table, CrossSystemAuthoringBundle authoring, Func<string, bool>? evidenceExists = null)
     {
         if (table == null) throw new ArgumentNullException(nameof(table));
         if (authoring == null) throw new ArgumentNullException(nameof(authoring));
@@ -331,6 +339,14 @@ public static class LocationPlacementLoader
         foreach (var group in table.Groups)
         {
             var archetype = WorldGenBridge.CatalogArchetypeFor(group.Archetype);
+            if (evidenceExists != null)
+            {
+                foreach (var seed in group.VariantRules.SelectMany(rule => rule.EvidenceSeeds).Where(seed => !string.IsNullOrEmpty(seed)).Distinct(StringComparer.Ordinal))
+                {
+                    if (!evidenceExists(seed)) throw new LocationDataException($"Placement group '{group.Id}' names evidence seed '{seed}', which is not defined.");
+                }
+            }
+
             foreach (var variant in group.VariantRules.SelectMany(rule => rule.Variants).Distinct(StringComparer.Ordinal))
             {
                 if (!byVariant.TryGetValue(variant, out var scenario))

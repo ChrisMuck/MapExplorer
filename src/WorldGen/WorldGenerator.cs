@@ -960,6 +960,19 @@ namespace WorldGen
                 return null;
             }
 
+            // A variant may name an evidence seed; it goes first so scouts report something typical for the place.
+            void SeedEvidence(SpecialLocation loc, PlacementGroup grp)
+            {
+                if (loc == null || loc.Variant == null) return;
+                foreach (var rule in grp.VariantRules)
+                {
+                    var index = rule.Variants.IndexOf(loc.Variant);
+                    if (index < 0 || index >= rule.EvidenceSeeds.Count || string.IsNullOrEmpty(rule.EvidenceSeeds[index])) continue;
+                    loc.EvidenceSeedIds.Insert(0, rule.EvidenceSeeds[index]);
+                    return;
+                }
+            }
+
             double CellScore(PlacementGroup grp, HexCell c)
             {
                 if (grp.ScoreTiers.Count > 0)
@@ -994,7 +1007,7 @@ namespace WorldGen
                         void AddEdge(HexCell a, HexCell b)
                         {
                             var variant = ChooseVariant(group, when => when == PlacementCondition.Always || (when == PlacementCondition.RiverEdge && IsRiverEdge(a, b)));
-                            AddLoc(a.Elevation <= b.Elevation ? a : b, group.Archetype, variant, ancient: group.Ancient, anchor: new Anchor(AnchorKind.Edge, new List<HexCell> { a, b }));
+                            SeedEvidence(AddLoc(a.Elevation <= b.Elevation ? a : b, group.Archetype, variant, ancient: group.Ancient, anchor: new Anchor(AnchorKind.Edge, new List<HexCell> { a, b })), group);
                         }
                         foreach (var e in crossings)
                         {
@@ -1022,7 +1035,7 @@ namespace WorldGen
                             {
                                 var c = TakeBest(border, cc => CellScore(group, cc));
                                 if (c == null) break;
-                                AddLoc(c, group.Archetype, ChooseVariant(group, when => Holds(when, c)), ancient: group.Ancient, neutral: group.Neutral, factionOwned: f.Id);
+                                SeedEvidence(AddLoc(c, group.Archetype, ChooseVariant(group, when => Holds(when, c)), ancient: group.Ancient, neutral: group.Neutral, factionOwned: f.Id), group);
                             }
                         }
                         break;
@@ -1052,7 +1065,7 @@ namespace WorldGen
                                 biome = (int)group.ForcedBiome.Value;
                             int aSize = group.AreaScale.HasValue ? (int)Math.Round(areaSize * group.AreaScale.Value) : 0;
                             Anchor anchor = group.Anchor == AnchorKind.Area && !group.AreaScale.HasValue ? new Anchor(AnchorKind.Area, new List<HexCell>()) : null;
-                            AddLoc(cell, group.Archetype, variant, ancient: group.Ancient, neutral: group.Neutral, biome: biome, aSize: aSize, anchor: anchor);
+                            SeedEvidence(AddLoc(cell, group.Archetype, variant, ancient: group.Ancient, neutral: group.Neutral, biome: biome, aSize: aSize, anchor: anchor), group);
                         }
                         break;
                     }

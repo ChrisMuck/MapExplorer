@@ -112,6 +112,8 @@ namespace WorldGen
         public List<string> Variants { get; }
         /// <summary>Draw weights, one per variant; empty (or all equal) means every variant is equally likely.</summary>
         public List<double> Weights { get; } = new List<double>();
+        /// <summary>Evidence seed per variant (parallel to <see cref="Variants"/>; empty means none). The generator puts it first on a placed location.</summary>
+        public List<string> EvidenceSeeds { get; } = new List<string>();
     }
 
     /// <summary>One kind of special location: how many, where, and which variants. A variant belongs to exactly one group.</summary>

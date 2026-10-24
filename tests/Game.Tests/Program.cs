@@ -9,6 +9,8 @@ var locationPlacementTests = new LocationPlacementTests();
 locationPlacementTests.RunAll();
 var locationTextKeyTests = new LocationTextKeyTests();
 locationTextKeyTests.RunAll();
+var generatorVariantContentTests = new GeneratorVariantContentTests();
+generatorVariantContentTests.RunAll();
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
