@@ -1322,6 +1322,599 @@
           "position": [0, 0.7, 0]
         }
       ]
+    },
+    {
+      "id": "tower-shaft",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.6, 3.0, 1.6],
+          "sides": 4,
+          "topScale": 0.7,
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "tower-platform",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.7, 0.25, 1.7],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "tower-brazier",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.3, 0.5],
+          "color": "#3E4048"
+        }
+      ]
+    },
+    {
+      "id": "statue-base",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.8, 0.5, 1.8],
+          "color": "#9A978C"
+        }
+      ]
+    },
+    {
+      "id": "statue-legs",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.0, 1.3, 0.7],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "statue-torso",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [1.2, 1.4, 0.7],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "statue-head",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.75, 0.8, 0.75],
+          "color": "#9A978C"
+        }
+      ]
+    },
+    {
+      "id": "statue-arm",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.3, 1.2, 0.3],
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "statue-crack",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.08, 1.1, 0.04],
+          "color": "#2F2D28"
+        }
+      ]
+    },
+    {
+      "id": "lh-tower",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.5, 3.0, 1.5],
+          "sides": 8,
+          "topScale": 0.7,
+          "color": "#E4E0D0"
+        }
+      ]
+    },
+    {
+      "id": "lh-stripe",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.15, 0.5, 1.15],
+          "sides": 8,
+          "topScale": 0.9,
+          "color": "#B23A2A"
+        }
+      ]
+    },
+    {
+      "id": "lh-lamp",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.8, 0.6, 0.8],
+          "color": "#9CC8FF"
+        }
+      ]
+    },
+    {
+      "id": "lh-lamp-lit",
+      "category": "effect",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.7, 0.55, 0.7],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#FFE9A0",
+          "emissive": true
+        }
+      ]
+    },
+    {
+      "id": "lh-roof",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.1, 0.5, 1.1],
+          "sides": 8,
+          "topScale": 0.0,
+          "color": "#3E4048"
+        }
+      ]
+    },
+    {
+      "id": "peak-spire",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.5, 3.6, 1.5],
+          "sides": 5,
+          "topScale": 0.15,
+          "color": "#9A978C"
+        }
+      ]
+    },
+    {
+      "id": "peak-base",
+      "category": "structure",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [2.8, 1.0, 2.5],
+          "color": "#8A867B"
+        }
+      ]
+    },
+    {
+      "id": "peak-step",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.5, 0.1, 0.3],
+          "color": "#B59A68"
+        }
+      ]
+    },
+    {
+      "id": "spring-basin",
+      "category": "structure",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.9, 0.22, 1.9],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#8D8A80"
+        }
+      ]
+    },
+    {
+      "id": "spring-water",
+      "category": "effect",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.5, 0.06, 1.5],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#4F8FB8"
+        }
+      ]
+    },
+    {
+      "id": "spring-mud",
+      "category": "effect",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.5, 0.06, 1.5],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#8A7350"
+        }
+      ]
+    },
+    {
+      "id": "spring-cracks",
+      "category": "effect",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.5, 0.05, 1.5],
+          "sides": 8,
+          "topScale": 1.0,
+          "color": "#6B4A2F"
+        }
+      ]
+    },
+    {
+      "id": "reed",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.05, 0.75, 0.05],
+          "color": "#6F8F4A"
+        }
+      ]
+    },
+    {
+      "id": "fishing-water",
+      "category": "structure",
+      "sizeClass": "L",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [4.4, 0.06, 3.6],
+          "sides": 9,
+          "topScale": 1.0,
+          "color": "#4A7FA6"
+        }
+      ]
+    },
+    {
+      "id": "fish",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.32, 0.12, 0.14],
+          "color": "#C8D4DC"
+        }
+      ]
+    },
+    {
+      "id": "fishing-stake",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.08, 0.9, 0.08],
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "herb",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.4, 0.3, 0.4],
+          "color": "#5F8D4A"
+        },
+        {
+          "shape": "ico",
+          "size": [0.14, 0.14, 0.14],
+          "color": "#B07ACF",
+          "position": [0, 0.28, 0]
+        }
+      ]
+    },
+    {
+      "id": "herb-stub",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.25, 0.1, 0.25],
+          "color": "#4A5A38"
+        }
+      ]
+    },
+    {
+      "id": "herb-dead",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.4, 0.22, 0.4],
+          "color": "#8A7350"
+        }
+      ]
+    },
+    {
+      "id": "tree",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.2, 0.9, 0.2],
+          "color": "#5E4528",
+          "position": [0, 0.45, 0]
+        },
+        {
+          "shape": "prism",
+          "size": [1.1, 1.6, 1.1],
+          "sides": 6,
+          "topScale": 0.0,
+          "color": "#3E7A3A",
+          "position": [0, 1.6, 0]
+        }
+      ]
+    },
+    {
+      "id": "stump",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [0.35, 0.22, 0.35],
+          "sides": 6,
+          "topScale": 1.0,
+          "color": "#7A5A38"
+        }
+      ]
+    },
+    {
+      "id": "log-pile",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.9, 0.2, 0.18],
+          "color": "#7A5A38",
+          "position": [0, 0.1, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.9, 0.2, 0.18],
+          "color": "#7A5A38",
+          "position": [0, 0.1, 0.2]
+        },
+        {
+          "shape": "box",
+          "size": [0.9, 0.2, 0.18],
+          "color": "#7A5A38",
+          "position": [0, 0.3, 0.1]
+        }
+      ]
+    },
+    {
+      "id": "salt-crust",
+      "category": "effect",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [2.8, 0.06, 2.4],
+          "sides": 7,
+          "topScale": 1.0,
+          "color": "#F2EFE6"
+        }
+      ]
+    },
+    {
+      "id": "salt-crust-thin",
+      "category": "effect",
+      "sizeClass": "M",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "prism",
+          "size": [1.6, 0.04, 1.4],
+          "sides": 7,
+          "topScale": 1.0,
+          "color": "#D8D2C0"
+        }
+      ]
+    },
+    {
+      "id": "salt-heap",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.7, 0.4, 0.7],
+          "color": "#F2EFE6"
+        }
+      ]
+    },
+    {
+      "id": "pickaxe",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 0.8, 0.06],
+          "color": "#7A5A38",
+          "position": [0, 0.4, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.45, 0.08, 0.08],
+          "color": "#777770",
+          "position": [0, 0.8, 0]
+        }
+      ]
+    },
+    {
+      "id": "berry-bush",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.9, 0.7, 0.9],
+          "color": "#4F7D3C"
+        }
+      ]
+    },
+    {
+      "id": "berry",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.12, 0.12, 0.12],
+          "color": "#B8283A"
+        }
+      ]
+    },
+    {
+      "id": "blight-spot",
+      "category": "prop",
+      "sizeClass": "XS",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "ico",
+          "size": [0.3, 0.16, 0.3],
+          "color": "#4A3A28"
+        }
+      ]
+    },
+    {
+      "id": "survey-tripod",
+      "category": "prop",
+      "sizeClass": "S",
+      "quality": "generated",
+      "primitives": [
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38",
+          "position": [-0.15, 0.5, 0],
+          "euler": [0, 0, 8]
+        },
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38",
+          "position": [0.15, 0.5, 0],
+          "euler": [0, 0, -8]
+        },
+        {
+          "shape": "box",
+          "size": [0.06, 1.0, 0.06],
+          "color": "#7A5A38",
+          "position": [0, 0.5, 0.15],
+          "euler": [8, 0, 0]
+        },
+        {
+          "shape": "box",
+          "size": [0.3, 0.2, 0.2],
+          "color": "#C8A24A",
+          "position": [0, 1.05, 0]
+        }
+      ]
     }
   ],
   "compositions": [
@@ -3706,6 +4299,1696 @@
           "id": "field-board",
           "part": "field-board",
           "position": [0.9, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-signal-tower",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "signal-tower"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["dark"],
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "shaft",
+          "part": "tower-shaft",
+          "position": [0, 1.5, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [0.3, -0.85, 0.2],
+              "euler": [0, 0, 9],
+              "scale": [1, 0.45, 1]
+            }
+          }
+        },
+        {
+          "id": "platform",
+          "part": "tower-platform",
+          "position": [0, 3.1, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [0.5, -2.3, 0.3],
+              "euler": [8, 0, 18]
+            }
+          }
+        },
+        {
+          "id": "brazier",
+          "part": "tower-brazier",
+          "position": [0, 3.4, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [0.9, -2.6, 0.6],
+              "euler": [20, 0, 40]
+            }
+          }
+        },
+        {
+          "id": "flame",
+          "part": "campfire-flame",
+          "position": [0, 3.7, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["lit"]
+          }
+        },
+        {
+          "id": "beacon",
+          "kind": "light",
+          "position": [0, 4.0, 0],
+          "color": "#FFB060",
+          "intensity": 1.6,
+          "range": 8,
+          "shows": {
+            "channel": "operational",
+            "in": ["lit"]
+          }
+        },
+        {
+          "id": "beacon-smoke",
+          "kind": "smoke",
+          "position": [0, 4.0, 0],
+          "color": "#B8B2A4",
+          "size": 1.0,
+          "shows": {
+            "channel": "operational",
+            "in": ["lit"]
+          }
+        },
+        {
+          "id": "rubble-a",
+          "part": "ruin-rubble",
+          "position": [1.0, 0.2, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["ruined"]
+          }
+        },
+        {
+          "id": "rubble-b",
+          "part": "ruin-rubble",
+          "position": [-0.9, 0.18, 1.0],
+          "euler": [0, 60, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["ruined"]
+          }
+        },
+        {
+          "id": "rubble-c",
+          "part": "ruin-rubble",
+          "position": [0.2, 0.15, -1.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["ruined"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.3, 0.2, 1.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.4, 0.18, -1.3],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.2, 0, 0.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [1.9, 0, 1.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-colossus-statue",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "colossus-statue"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["standing"],
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "base",
+          "part": "statue-base",
+          "position": [0, 0.25, 0]
+        },
+        {
+          "id": "legs",
+          "part": "statue-legs",
+          "position": [0, 1.15, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "cracked": {
+              "position": [0, 0, 0],
+              "euler": [0, 0, 2]
+            }
+          }
+        },
+        {
+          "id": "torso",
+          "part": "statue-torso",
+          "position": [0, 2.5, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "cracked": {
+              "position": [0.05, 0, 0],
+              "euler": [0, 0, 4]
+            },
+            "toppled": {
+              "position": [1.3, -1.6, 0.9],
+              "euler": [0, 20, 84]
+            }
+          }
+        },
+        {
+          "id": "head",
+          "part": "statue-head",
+          "position": [0, 3.55, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "cracked": {
+              "position": [0.1, -0.05, 0],
+              "euler": [0, 0, 8]
+            },
+            "toppled": {
+              "position": [2.7, -3.1, 1.2],
+              "euler": [20, 0, 60]
+            }
+          }
+        },
+        {
+          "id": "arm-l",
+          "part": "statue-arm",
+          "position": [-0.75, 2.4, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "toppled": {
+              "position": [-0.8, -1.9, 0.9],
+              "euler": [0, 0, 78]
+            }
+          }
+        },
+        {
+          "id": "arm-r",
+          "part": "statue-arm",
+          "position": [0.75, 2.4, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "toppled": {
+              "position": [1.9, -1.9, -0.7],
+              "euler": [0, 30, -80]
+            }
+          }
+        },
+        {
+          "id": "crack-a",
+          "part": "statue-crack",
+          "position": [0.15, 2.4, 0.37],
+          "euler": [0, 0, 12],
+          "shows": {
+            "channel": "operational",
+            "in": ["cracked"]
+          }
+        },
+        {
+          "id": "crack-b",
+          "part": "statue-crack",
+          "position": [-0.2, 1.2, 0.37],
+          "euler": [0, 0, -9],
+          "shows": {
+            "channel": "operational",
+            "in": ["cracked"]
+          }
+        },
+        {
+          "id": "rubble-a",
+          "part": "ruin-rubble",
+          "position": [1.4, 0.2, 1.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["toppled"]
+          }
+        },
+        {
+          "id": "rubble-b",
+          "part": "ruin-rubble",
+          "position": [-1.2, 0.18, 1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["toppled"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-2.0, 0, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.6, 0.18, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, 0.1],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, -1.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.5, 0, 2.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-old-lighthouse",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "old-lighthouse"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "tower",
+          "part": "lh-tower",
+          "position": [0, 1.5, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [0.3, -0.85, 0.2],
+              "euler": [0, 0, 10],
+              "scale": [1, 0.45, 1]
+            }
+          }
+        },
+        {
+          "id": "stripe",
+          "part": "lh-stripe",
+          "position": [0, 1.7, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [0.3, -0.95, 0.2],
+              "euler": [0, 0, 10],
+              "scale": [1, 0.45, 1]
+            }
+          }
+        },
+        {
+          "id": "lamp-dark",
+          "part": "lh-lamp",
+          "position": [0, 3.3, 0],
+          "poseChannel": "operational",
+          "shows": {
+            "channel": "operational",
+            "in": ["dark", "ruined"]
+          },
+          "poses": {
+            "ruined": {
+              "position": [1.1, -2.9, 0.5],
+              "euler": [0, 0, 60]
+            }
+          }
+        },
+        {
+          "id": "lamp-lit",
+          "part": "lh-lamp-lit",
+          "position": [0, 3.3, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["lit"]
+          }
+        },
+        {
+          "id": "roof",
+          "part": "lh-roof",
+          "position": [0, 3.85, 0],
+          "poseChannel": "operational",
+          "poses": {
+            "ruined": {
+              "position": [1.4, -3.4, 0.7],
+              "euler": [0, 0, 70]
+            }
+          }
+        },
+        {
+          "id": "beam",
+          "kind": "light",
+          "position": [0, 3.4, 0],
+          "color": "#FFE9A0",
+          "intensity": 2.0,
+          "range": 9,
+          "shows": {
+            "channel": "operational",
+            "in": ["lit"]
+          }
+        },
+        {
+          "id": "rubble-a",
+          "part": "ruin-rubble",
+          "position": [1.0, 0.2, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["ruined"]
+          }
+        },
+        {
+          "id": "rubble-b",
+          "part": "ruin-rubble",
+          "position": [-0.9, 0.18, 1.0],
+          "euler": [0, 60, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["ruined"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.3, 0.2, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.4, 0.18, -1.2],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.2, 0, 0.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [1.9, 0, 1.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-wind-carved-peak",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "wind-carved-peak"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "operational": ["stable"],
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "base",
+          "part": "peak-base",
+          "position": [0, 0.35, 0]
+        },
+        {
+          "id": "spire",
+          "part": "peak-spire",
+          "position": [0.1, 2.2, -0.1]
+        },
+        {
+          "id": "summit-flag",
+          "part": "flag-cloth",
+          "position": [0.35, 3.8, -0.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["mapped"]
+          }
+        },
+        {
+          "id": "summit-pole",
+          "part": "flag-pole",
+          "position": [0.1, 3.9, -0.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["mapped"]
+          }
+        },
+        {
+          "id": "step-0",
+          "part": "peak-step",
+          "position": [-1.3, 0.15, 1.2],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["accessible", "mapped"]
+          }
+        },
+        {
+          "id": "step-1",
+          "part": "peak-step",
+          "position": [-0.85, 0.6, 0.95],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["accessible", "mapped"]
+          }
+        },
+        {
+          "id": "step-2",
+          "part": "peak-step",
+          "position": [-0.4, 1.05, 0.7],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["accessible", "mapped"]
+          }
+        },
+        {
+          "id": "step-3",
+          "part": "peak-step",
+          "position": [0.05, 1.5, 0.45],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["accessible", "mapped"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.4, 0.2, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.5, 0.18, 1.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.3, 0, 0.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, 0.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.5, 0, 2.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-freshwater-spring",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "freshwater-spring"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "basin",
+          "part": "spring-basin",
+          "position": [0, 0.11, 0]
+        },
+        {
+          "id": "water",
+          "part": "spring-water",
+          "position": [0, 0.24, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["clear", "unknown"]
+          }
+        },
+        {
+          "id": "mud",
+          "part": "spring-mud",
+          "position": [0, 0.24, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["muddied"]
+          }
+        },
+        {
+          "id": "cracks",
+          "part": "spring-cracks",
+          "position": [0, 0.22, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["dried-up"]
+          }
+        },
+        {
+          "id": "rock-a",
+          "part": "ruin-rubble",
+          "position": [1.3, 0.2, -0.8]
+        },
+        {
+          "id": "rock-b",
+          "part": "ruin-rubble",
+          "position": [-1.2, 0.18, -1.0],
+          "euler": [0, 70, 0]
+        },
+        {
+          "id": "reed-0",
+          "part": "reed",
+          "position": [1.059, 0.37, 0.448]
+        },
+        {
+          "id": "reed-1",
+          "part": "reed",
+          "position": [-0.372, 0.37, 1.088]
+        },
+        {
+          "id": "reed-2",
+          "part": "reed",
+          "position": [-1.077, 0.37, -0.403]
+        },
+        {
+          "id": "reed-3",
+          "part": "reed",
+          "position": [0.326, 0.37, -1.103]
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.4, 0.2, 1.4],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.5, 0.18, 1.3],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.3, 0, 0.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, 0.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-fishing-grounds",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "fishing-grounds"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "water",
+          "part": "fishing-water",
+          "position": [0, 0.04, 0]
+        },
+        {
+          "id": "stake-a",
+          "part": "fishing-stake",
+          "position": [-1.8, 0.45, 1.0]
+        },
+        {
+          "id": "stake-b",
+          "part": "fishing-stake",
+          "position": [-1.5, 0.45, -0.2]
+        },
+        {
+          "id": "net",
+          "part": "drying-rack",
+          "position": [1.9, 0, 1.4],
+          "euler": [0, -30, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["thin", "fished-out"]
+          }
+        },
+        {
+          "id": "reed-a",
+          "part": "reed",
+          "position": [1.9, 0.37, -0.9]
+        },
+        {
+          "id": "reed-b",
+          "part": "reed",
+          "position": [2.1, 0.37, -0.6]
+        },
+        {
+          "id": "fish-0",
+          "part": "fish",
+          "position": [-0.9, 0.1, 0.2],
+          "euler": [0, 20, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["rich", "thin"]
+          }
+        },
+        {
+          "id": "fish-1",
+          "part": "fish",
+          "position": [0.6, 0.1, -0.5],
+          "euler": [0, 140, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["rich", "thin"]
+          }
+        },
+        {
+          "id": "fish-2",
+          "part": "fish",
+          "position": [0.1, 0.1, 0.9],
+          "euler": [0, 80, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["rich"]
+          }
+        },
+        {
+          "id": "fish-3",
+          "part": "fish",
+          "position": [-0.4, 0.1, -0.9],
+          "euler": [0, 200, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["rich"]
+          }
+        },
+        {
+          "id": "fish-4",
+          "part": "fish",
+          "position": [1.2, 0.1, 0.5],
+          "euler": [0, 300, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["rich"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-2.0, 0, 1.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.2, 0.18, 2.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, 0.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [0.8, 0, 2.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.1, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-healing-herbs",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "healing-herbs"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "rock-a",
+          "part": "ruin-rubble",
+          "position": [1.5, 0.2, -0.9]
+        },
+        {
+          "id": "rock-b",
+          "part": "ruin-rubble",
+          "position": [-1.4, 0.18, -0.9],
+          "euler": [0, 70, 0]
+        },
+        {
+          "id": "herb-0",
+          "part": "herb",
+          "position": [-0.9, 0.15, -0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-0",
+          "part": "herb-stub",
+          "position": [-0.9, 0.06, -0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-0",
+          "part": "herb-dead",
+          "position": [-0.9, 0.1, -0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "herb-1",
+          "part": "herb",
+          "position": [0.2, 0.15, -0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-1",
+          "part": "herb-stub",
+          "position": [0.2, 0.06, -0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-1",
+          "part": "herb-dead",
+          "position": [0.2, 0.1, -0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "herb-2",
+          "part": "herb",
+          "position": [0.9, 0.15, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-2",
+          "part": "herb-stub",
+          "position": [0.9, 0.06, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-2",
+          "part": "herb-dead",
+          "position": [0.9, 0.1, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "herb-3",
+          "part": "herb",
+          "position": [-0.2, 0.15, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-3",
+          "part": "herb-stub",
+          "position": [-0.2, 0.06, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-3",
+          "part": "herb-dead",
+          "position": [-0.2, 0.1, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "herb-4",
+          "part": "herb",
+          "position": [0.6, 0.15, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-4",
+          "part": "herb-stub",
+          "position": [0.6, 0.06, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-4",
+          "part": "herb-dead",
+          "position": [0.6, 0.1, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "herb-5",
+          "part": "herb",
+          "position": [-1.0, 0.15, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["growing", "unknown"]
+          }
+        },
+        {
+          "id": "stub-5",
+          "part": "herb-stub",
+          "position": [-1.0, 0.06, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["picked"]
+          }
+        },
+        {
+          "id": "dead-5",
+          "part": "herb-dead",
+          "position": [-1.0, 0.1, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["withered"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.6],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.6, 0.18, 1.5],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.3, 0, 0.4],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, 0.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.4, 0, 2.5],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-timber-stand",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "timber-stand"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "tree-0",
+          "part": "tree",
+          "position": [-1.3, 0, -0.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["standing", "partly-felled", "unknown"]
+          }
+        },
+        {
+          "id": "stump-0",
+          "part": "stump",
+          "position": [-1.3, 0.11, -0.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["cleared"]
+          }
+        },
+        {
+          "id": "tree-1",
+          "part": "tree",
+          "position": [-0.2, 0, -1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["standing", "partly-felled", "unknown"]
+          }
+        },
+        {
+          "id": "stump-1",
+          "part": "stump",
+          "position": [-0.2, 0.11, -1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["cleared"]
+          }
+        },
+        {
+          "id": "tree-2",
+          "part": "tree",
+          "position": [1.1, 0, -0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["standing", "partly-felled", "unknown"]
+          }
+        },
+        {
+          "id": "stump-2",
+          "part": "stump",
+          "position": [1.1, 0.11, -0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["cleared"]
+          }
+        },
+        {
+          "id": "tree-3",
+          "part": "tree",
+          "position": [0.8, 0, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["standing", "unknown"]
+          }
+        },
+        {
+          "id": "stump-3",
+          "part": "stump",
+          "position": [0.8, 0.11, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["partly-felled", "cleared"]
+          }
+        },
+        {
+          "id": "tree-4",
+          "part": "tree",
+          "position": [-1.0, 0, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["standing", "unknown"]
+          }
+        },
+        {
+          "id": "stump-4",
+          "part": "stump",
+          "position": [-1.0, 0.11, 0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["partly-felled", "cleared"]
+          }
+        },
+        {
+          "id": "logs",
+          "part": "log-pile",
+          "position": [1.7, 0, 1.4],
+          "euler": [0, 25, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["partly-felled", "cleared"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.6, 0.18, 2.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, 0.3],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, -1.0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.1, 0, 2.6],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-salt-deposit",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "salt-deposit"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "crust",
+          "part": "salt-crust",
+          "position": [0, 0.04, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["exposed", "mined", "unknown"]
+          }
+        },
+        {
+          "id": "crust-thin",
+          "part": "salt-crust-thin",
+          "position": [0, 0.03, 0],
+          "shows": {
+            "channel": "operational",
+            "in": ["exhausted"]
+          }
+        },
+        {
+          "id": "heap-a",
+          "part": "salt-heap",
+          "position": [-0.7, 0.2, -0.3],
+          "shows": {
+            "channel": "operational",
+            "in": ["exposed", "unknown"]
+          }
+        },
+        {
+          "id": "heap-b",
+          "part": "salt-heap",
+          "position": [0.6, 0.2, 0.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["exposed", "unknown"]
+          }
+        },
+        {
+          "id": "heap-c",
+          "part": "salt-heap",
+          "position": [0.1, 0.2, -0.9],
+          "shows": {
+            "channel": "operational",
+            "in": ["exposed", "mined", "unknown"]
+          }
+        },
+        {
+          "id": "pickaxe",
+          "part": "pickaxe",
+          "position": [1.2, 0, -0.6],
+          "euler": [0, 30, 70],
+          "shows": {
+            "channel": "operational",
+            "in": ["mined"]
+          }
+        },
+        {
+          "id": "sack-a",
+          "part": "cart-sack",
+          "position": [-1.5, 0.25, 1.0],
+          "shows": {
+            "channel": "operational",
+            "in": ["mined"]
+          }
+        },
+        {
+          "id": "sack-b",
+          "part": "cart-sack",
+          "position": [-1.1, 0.25, 1.4],
+          "shows": {
+            "channel": "operational",
+            "in": ["mined"]
+          }
+        },
+        {
+          "id": "rock-a",
+          "part": "ruin-rubble",
+          "position": [1.7, 0.2, 0.9]
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 2.1],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.6, 0.18, 2.0],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, 0.1],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, -1.0],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.1, 0, 2.7],
+          "shows": {
+            "channel": "interaction",
+            "in": ["documented"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "vis-berry-grove",
+      "match": {
+        "archetypeId": "natural-phenomenon",
+        "variantId": "berry-grove"
+      },
+      "anchorMode": "point",
+      "ringRadius": 3.3,
+      "scale": 0.65,
+      "plain": {
+        "interaction": ["untouched"]
+      },
+      "elements": [
+        {
+          "id": "bush-0",
+          "part": "berry-bush",
+          "position": [-1.0, 0.3, -0.3]
+        },
+        {
+          "id": "bush-1",
+          "part": "berry-bush",
+          "position": [0.2, 0.3, -0.9]
+        },
+        {
+          "id": "bush-2",
+          "part": "berry-bush",
+          "position": [1.0, 0.3, 0.1]
+        },
+        {
+          "id": "bush-3",
+          "part": "berry-bush",
+          "position": [-0.2, 0.3, 0.7]
+        },
+        {
+          "id": "berry-0-0",
+          "part": "berry",
+          "position": [-1.25, 0.55, 0.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "picked-over", "unknown"]
+          }
+        },
+        {
+          "id": "berry-0-1",
+          "part": "berry",
+          "position": [-0.75, 0.55, 0.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "blight-0",
+          "part": "blight-spot",
+          "position": [-0.8, 0.62, -0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["blighted"]
+          }
+        },
+        {
+          "id": "berry-1-0",
+          "part": "berry",
+          "position": [-0.05, 0.55, -0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "berry-1-1",
+          "part": "berry",
+          "position": [0.45, 0.55, -0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "blight-1",
+          "part": "blight-spot",
+          "position": [0.4, 0.62, -0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["blighted"]
+          }
+        },
+        {
+          "id": "berry-2-0",
+          "part": "berry",
+          "position": [0.75, 0.55, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "berry-2-1",
+          "part": "berry",
+          "position": [1.25, 0.55, 0.5],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "blight-2",
+          "part": "blight-spot",
+          "position": [1.2, 0.62, 0.2],
+          "shows": {
+            "channel": "operational",
+            "in": ["blighted"]
+          }
+        },
+        {
+          "id": "berry-3-0",
+          "part": "berry",
+          "position": [-0.45, 0.55, 1.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "berry-3-1",
+          "part": "berry",
+          "position": [0.05, 0.55, 1.1],
+          "shows": {
+            "channel": "operational",
+            "in": ["ripe", "unknown"]
+          }
+        },
+        {
+          "id": "blight-3",
+          "part": "blight-spot",
+          "position": [0.0, 0.62, 0.8],
+          "shows": {
+            "channel": "operational",
+            "in": ["blighted"]
+          }
+        },
+        {
+          "id": "watcher",
+          "part": "camp-person",
+          "position": [-1.9, 0, 1.9],
+          "shows": {
+            "channel": "presence",
+            "in": ["watched"]
+          }
+        },
+        {
+          "id": "overgrowth-a",
+          "part": "grave-bush",
+          "position": [-1.5, 0.2, 1.7],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "overgrowth-b",
+          "part": "grave-bush",
+          "position": [1.6, 0.18, 1.8],
+          "shows": {
+            "channel": "presence",
+            "in": ["abandoned"]
+          }
+        },
+        {
+          "id": "expedition-stake",
+          "part": "expedition-stake",
+          "position": [-2.4, 0, 0.2],
+          "shows": {
+            "channel": "interaction",
+            "in": ["observed", "approached", "surveyed", "documented"]
+          }
+        },
+        {
+          "id": "survey-tripod",
+          "part": "survey-tripod",
+          "position": [2.0, 0, -0.9],
+          "shows": {
+            "channel": "interaction",
+            "in": ["surveyed", "documented"]
+          }
+        },
+        {
+          "id": "field-board",
+          "part": "field-board",
+          "position": [0.1, 0, 2.6],
           "shows": {
             "channel": "interaction",
             "in": ["documented"]

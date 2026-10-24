@@ -302,6 +302,9 @@ Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 >
 > **V3a (umgesetzt, in Unity ungeprüft):** Untersuchungs- und Spurenorte (Alte Ruine, Steinkreis, Verfallener Schrein, Kalte Feuerstelle,
 > Zerbrochener Karren, Altes Bootslager) als Kompositionen; siehe `low_poly_map_presentation_v3a_review.md`.
+>
+> **V3b (umgesetzt, in Unity ungeprüft):** Landmarken (Signalturm, Kolossstatue, Alter Leuchtturm, Gipfel) und Ressourcenorte (Quelle, Fischgrund,
+> Heilkräuter, Holzbestand, Salz, Beerenhain); siehe `low_poly_map_presentation_v3b_review.md`.
 
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 
