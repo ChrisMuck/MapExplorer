@@ -110,6 +110,8 @@ namespace WorldGen
 
         public PlacementCondition When { get; }
         public List<string> Variants { get; }
+        /// <summary>Draw weights, one per variant; empty (or all equal) means every variant is equally likely.</summary>
+        public List<double> Weights { get; } = new List<double>();
     }
 
     /// <summary>One kind of special location: how many, where, and which variants. A variant belongs to exactly one group.</summary>
@@ -149,13 +151,6 @@ namespace WorldGen
 
         public static PlacementTable Default()
         {
-            PlacementScoreTerm[] Terms(params (PlacementTerm Term, double Weight)[] terms)
-            {
-                var result = new PlacementScoreTerm[terms.Length];
-                for (var i = 0; i < terms.Length; i++) result[i] = new PlacementScoreTerm(terms[i].Term, terms[i].Weight);
-                return result;
-            }
-
             PlacementCount Density(double factor) => new PlacementCount { Kind = PlacementCountKind.LandDensity, Factor = factor, Min = 1 };
 
             return new PlacementTable

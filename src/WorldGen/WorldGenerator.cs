@@ -948,7 +948,14 @@ namespace WorldGen
                 foreach (var rule in grp.VariantRules)
                 {
                     if (rule.Variants.Count == 0 || !holds(rule.When)) continue;
-                    return rule.Variants.Count == 1 ? rule.Variants[0] : _rng.Pick(rule.Variants);
+                    if (rule.Variants.Count == 1) return rule.Variants[0];
+                    var uniform = rule.Weights.Count != rule.Variants.Count;
+                    if (!uniform) { uniform = true; foreach (var w in rule.Weights) if (w != rule.Weights[0]) { uniform = false; break; } }
+                    if (uniform) return _rng.Pick(rule.Variants);
+                    double total = 0; foreach (var w in rule.Weights) total += w;
+                    double roll = _rng.NextDouble() * total;
+                    for (int i = 0; i < rule.Variants.Count; i++) { roll -= rule.Weights[i]; if (roll < 0) return rule.Variants[i]; }
+                    return rule.Variants[rule.Variants.Count - 1];
                 }
                 return null;
             }

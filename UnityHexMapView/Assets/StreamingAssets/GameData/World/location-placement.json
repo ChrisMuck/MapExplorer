@@ -1,0 +1,410 @@
+{
+  "documentType": "location-placement",
+  "schemaVersion": 1,
+  "groups": [
+    {
+      "id": "placement-route-obstacles",
+      "archetype": "Wegehindernis",
+      "count": {
+        "kind": "crossingsShare",
+        "factor": 0.4,
+        "min": 1,
+        "max": 6
+      },
+      "candidates": "crossingEdges",
+      "anchor": "edge",
+      "variantRules": [
+        {
+          "when": "riverEdge",
+          "variants": [
+            {
+              "name": "Zerstörte Brücke"
+            }
+          ]
+        },
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Verschütteter Pass"
+            }
+          ]
+        }
+      ],
+      "ancient": true
+    },
+    {
+      "id": "placement-investigation-sites",
+      "archetype": "Untersuchungsort",
+      "count": {
+        "kind": "landDensity",
+        "factor": 1.1,
+        "min": 1
+      },
+      "candidates": "land",
+      "anchor": "point",
+      "score": [
+        {
+          "term": "remote",
+          "weight": 1.3
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Alte Ruine"
+            },
+            {
+              "name": "Vergessenes Grab"
+            },
+            {
+              "name": "Steinkreis"
+            },
+            {
+              "name": "Verfallener Schrein"
+            }
+          ]
+        }
+      ],
+      "ancient": true,
+      "forcedBiome": "Ruins",
+      "forcedBiomeChance": 0.5
+    },
+    {
+      "id": "placement-containment-sites",
+      "archetype": "Verwahrungsort",
+      "count": {
+        "kind": "landDensity",
+        "factor": 0.45,
+        "min": 1
+      },
+      "candidates": "land",
+      "anchor": "point",
+      "score": [
+        {
+          "term": "remote",
+          "weight": 0.7
+        },
+        {
+          "term": "elevation",
+          "weight": 0.8
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Versiegeltes Tor"
+            },
+            {
+              "name": "Verschlossene Höhle"
+            },
+            {
+              "name": "Gebannte Schwelle"
+            }
+          ]
+        }
+      ],
+      "ancient": true
+    },
+    {
+      "id": "placement-trace-sites",
+      "archetype": "Spurenort",
+      "count": {
+        "kind": "landDensity",
+        "factor": 1.0,
+        "min": 1
+      },
+      "candidates": "roadCellsOrLand",
+      "anchor": "point",
+      "score": [
+        {
+          "term": "constant",
+          "weight": 1.0
+        },
+        {
+          "term": "remote",
+          "weight": -0.5
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Verlassenes Lager"
+            },
+            {
+              "name": "Kalte Feuerstelle"
+            },
+            {
+              "name": "Zerbrochener Karren"
+            },
+            {
+              "name": "Altes Bootslager"
+            }
+          ]
+        }
+      ],
+      "neutral": true
+    },
+    {
+      "id": "placement-resource-sites",
+      "archetype": "Ressourcenort",
+      "count": {
+        "kind": "landDensity",
+        "factor": 1.1,
+        "min": 1
+      },
+      "candidates": "land",
+      "anchor": "point",
+      "scoreTiers": [
+        {
+          "when": "nearWater",
+          "score": 1.0
+        },
+        {
+          "when": "forest",
+          "score": 0.7
+        },
+        {
+          "when": "coastal",
+          "score": 0.6
+        },
+        {
+          "when": "always",
+          "score": 0.1
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "nearWater",
+          "variants": [
+            {
+              "name": "Süßwasserquelle"
+            },
+            {
+              "name": "Fischgrund"
+            }
+          ]
+        },
+        {
+          "when": "forest",
+          "variants": [
+            {
+              "name": "Heilkräuter"
+            },
+            {
+              "name": "Holzbestand"
+            }
+          ]
+        },
+        {
+          "when": "coastal",
+          "variants": [
+            {
+              "name": "Salzvorkommen"
+            }
+          ]
+        },
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Beerenhain"
+            }
+          ]
+        }
+      ],
+      "stopWhenExhausted": true
+    },
+    {
+      "id": "placement-hazard-swamp",
+      "archetype": "Gefahrenzone",
+      "count": {
+        "kind": "steps",
+        "base": 1,
+        "steps": []
+      },
+      "candidates": "biomeCells",
+      "anchor": "area",
+      "candidateBiome": "Swamp",
+      "score": [
+        {
+          "term": "constant",
+          "weight": 1.0
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Giftiger Sumpf"
+            }
+          ]
+        }
+      ],
+      "neutral": true
+    },
+    {
+      "id": "placement-hazard-volcano",
+      "archetype": "Gefahrenzone",
+      "count": {
+        "kind": "steps",
+        "base": 1,
+        "steps": [
+          {
+            "minLandCells": 6000,
+            "add": 1
+          }
+        ]
+      },
+      "candidates": "land",
+      "anchor": "area",
+      "score": [
+        {
+          "term": "elevation",
+          "weight": 0.8
+        },
+        {
+          "term": "remote",
+          "weight": 0.4
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Vulkanschlund"
+            }
+          ]
+        }
+      ],
+      "neutral": true,
+      "forcedBiome": "Volcanic",
+      "areaScale": 1.0
+    },
+    {
+      "id": "placement-hazard-dead-zone",
+      "archetype": "Gefahrenzone",
+      "count": {
+        "kind": "steps",
+        "base": 0,
+        "steps": [
+          {
+            "minLandCells": 1200,
+            "add": 1
+          },
+          {
+            "minLandCells": 7000,
+            "add": 1
+          }
+        ]
+      },
+      "candidates": "land",
+      "anchor": "area",
+      "score": [
+        {
+          "term": "remote",
+          "weight": 1.0
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Tote Zone"
+            }
+          ]
+        }
+      ],
+      "neutral": true,
+      "forcedBiome": "DeadZones",
+      "areaScale": 0.7
+    },
+    {
+      "id": "placement-landmarks",
+      "archetype": "Landmarke",
+      "count": {
+        "kind": "landDensity",
+        "factor": 0.7,
+        "min": 1
+      },
+      "candidates": "land",
+      "anchor": "point",
+      "score": [
+        {
+          "term": "elevation",
+          "weight": 1.0
+        },
+        {
+          "term": "coastal",
+          "weight": 0.3
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Signalturm"
+            },
+            {
+              "name": "Gipfelmal"
+            },
+            {
+              "name": "Kolossstatue"
+            },
+            {
+              "name": "Alter Leuchtturm"
+            }
+          ]
+        }
+      ],
+      "ancient": true
+    },
+    {
+      "id": "placement-territorial-markers",
+      "archetype": "Grenzzeichen",
+      "count": {
+        "kind": "perFaction",
+        "base": 1,
+        "extraWithTaboo": 1
+      },
+      "candidates": "factionBorder",
+      "anchor": "point",
+      "score": [
+        {
+          "term": "constant",
+          "weight": 1.0
+        }
+      ],
+      "variantRules": [
+        {
+          "when": "always",
+          "variants": [
+            {
+              "name": "Grenzsteine"
+            },
+            {
+              "name": "Warnzeichen"
+            },
+            {
+              "name": "Schädelmarken"
+            },
+            {
+              "name": "Bänder im Wind"
+            }
+          ]
+        }
+      ],
+      "stopWhenExhausted": true
+    }
+  ]
+}

@@ -70,17 +70,21 @@ public sealed class WorldGenBridge
 {
     private readonly FactionSignatureDefinitionSet? factionSignatures;
     private readonly FactionProfileDefinitionSet? factionProfiles;
+    private readonly PlacementTable? placement;
 
-    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null, FactionProfileDefinitionSet? factionProfiles = null)
+    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null, FactionProfileDefinitionSet? factionProfiles = null, PlacementTable? placement = null)
     {
         this.factionSignatures = factionSignatures;
         this.factionProfiles = factionProfiles;
+        this.placement = placement;
     }
 
     public WorldGenerationBridgeResult Generate(WorldGenerationRequest request)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
-        return Bridge(new WorldGenerator().Generate(request.ToGeneratorParams()));
+        var parameters = request.ToGeneratorParams();
+        parameters.Placement = placement;
+        return Bridge(new WorldGenerator().Generate(parameters));
     }
 
     public WorldGenerationBridgeResult Bridge(GeneratedWorld generated)

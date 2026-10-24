@@ -127,6 +127,19 @@ Ressourcen, Verwahrung, Grenzzeichen, Gefahrenzonen, Siedlungen).
   Mit `GOLDEN_PRINT=1` lassen sich nach gewollten Änderungen neue Werte ausgeben.
 - Noch nicht in G1: JSON-Laden, Gewichte, Textschlüssel (G2).
 
+### Stand G2 (umgesetzt)
+
+- Neues Dokument `GameData/World/location-placement.json` (im Manifest, im Katalog optional: fehlt es, gilt die eingebaute Tabelle).
+  Es enthält genau die bisherigen zehn Gruppen und 30 Varianten, erzeugt aus `PlacementTable.Default()`.
+- `LocationPlacementLoader` (`Game.App`): lädt, schreibt (`ToJson`) und prüft die Regeln. Der Validator meldet unbekannte Archetypen,
+  Biome, Kandidaten- und Bedingungsnamen, doppelte Gruppen-Ids, eine Variante in zwei Gruppen, Variantenregeln ohne abschließendes
+  `always`, Gewichte kleiner oder gleich null, ungültige Zählregeln und Anker, die nicht zu den Kandidaten passen.
+- Gewichte: je Variante optional (`weight`); gleiche oder fehlende Gewichte ziehen wie bisher gleichverteilt (dieselben Zufallszahlen).
+- `GameDataCatalog.Placement` wird über `GameApplication` an `WorldGenBridge` und `GenerationParams.Placement` gereicht.
+- Tests (`LocationPlacementTests`): Dokument entspricht der Standardtabelle, Welten aus dem Dokument sind für 27 Seeds identisch zu den
+  eingebauten, zwölf Validatorfälle, Gewichtung wirkt und bleibt deterministisch.
+- Die Varianten heißen noch wie im Generator (`"Alte Ruine"`); G3 ersetzt die Namen durch Katalog-Varianten-Ids.
+
 ## 6. Risiken und Absicherung
 
 - **Zufallsreihenfolge.** Der Generator zieht seine Zufallszahlen in fester Reihenfolge. Wer Schleifen oder Auswahl umbaut,

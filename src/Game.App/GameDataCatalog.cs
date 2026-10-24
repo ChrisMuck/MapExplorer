@@ -104,6 +104,12 @@ public sealed class GameDataCatalog
         "visual-definitions"
     };
 
+    // Optional: without the document the world generator uses its built-in placement rules.
+    private static readonly HashSet<string> LocationPlacementDocumentTypes = new(StringComparer.Ordinal)
+    {
+        "location-placement"
+    };
+
     private static readonly HashSet<string> TutorialDocumentTypes = new(StringComparer.Ordinal)
     {
         "tutorial-campaign"
@@ -158,6 +164,7 @@ public sealed class GameDataCatalog
         SceneDescriptionCatalog scenes,
         VisualAssetCatalog visualAssets,
         VisualDefinitionSet visualDefinitions,
+        WorldGen.PlacementTable? placement,
         WorldGenerationPresetCatalog worldGeneration,
         TutorialCampaignDefinition tutorial,
         IEnumerable<GameDataDocumentInfo> documents)
@@ -171,6 +178,7 @@ public sealed class GameDataCatalog
         Scenes = scenes ?? throw new ArgumentNullException(nameof(scenes));
         VisualAssets = visualAssets ?? throw new ArgumentNullException(nameof(visualAssets));
         VisualDefinitions = visualDefinitions ?? throw new ArgumentNullException(nameof(visualDefinitions));
+        Placement = placement;
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
         Tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
@@ -189,6 +197,8 @@ public sealed class GameDataCatalog
     public VisualAssetCatalog VisualAssets { get; }
     /// <summary>Parts, compositions and archetype markers that describe how locations look on the map.</summary>
     public VisualDefinitionSet VisualDefinitions { get; }
+    /// <summary>Rules for placing special locations in generated worlds; null means the generator's built-in rules.</summary>
+    public WorldGen.PlacementTable? Placement { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
     /// <summary>Validated deterministic composition of the curated tutorial world.</summary>
     public TutorialCampaignDefinition Tutorial { get; }
@@ -233,6 +243,7 @@ public sealed class GameDataCatalog
         var sceneDocuments = sources.Where(source => SceneDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var visualDocuments = sources.Where(source => VisualDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var visualDefinitionDocuments = sources.Where(source => VisualDefinitionDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
+        var placementDocuments = sources.Where(source => LocationPlacementDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
         var tutorialDocuments = sources.Where(source => TutorialDocumentTypes.Contains(source.DocumentType)).Select(source => source.Json).ToList();
 
         var unsupported = sources
@@ -243,6 +254,7 @@ public sealed class GameDataCatalog
                 && !SceneDocumentTypes.Contains(source.DocumentType)
                 && !VisualDocumentTypes.Contains(source.DocumentType)
                 && !VisualDefinitionDocumentTypes.Contains(source.DocumentType)
+                && !LocationPlacementDocumentTypes.Contains(source.DocumentType)
                 && !TutorialDocumentTypes.Contains(source.DocumentType))
             .Select(source => $"{source.RelativePath} ({source.DocumentType})")
             .ToList();
@@ -270,6 +282,7 @@ public sealed class GameDataCatalog
             VisualDefinitionValidator.Validate(visualDefinitions, locations, authoring);
             SceneDescriptionContentValidator.ValidateReferences(scenes, locations, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
+            var placement = placementDocuments.Count == 0 ? null : LocationPlacementLoader.LoadFromJson(placementDocuments);
             var tutorial = TutorialCampaignDataLoader.LoadFromJson(tutorialDocuments, locations);
             return new GameDataCatalog(
                 rootPath,
@@ -281,6 +294,7 @@ public sealed class GameDataCatalog
                 scenes,
                 visualAssets,
                 visualDefinitions,
+                placement,
                 worldGeneration,
                 tutorial,
                 sources.Select(source => new GameDataDocumentInfo(source.RelativePath, source.DocumentType, source.SchemaVersion)));

@@ -145,7 +145,7 @@ public sealed class WorldGeneratorPlacementTests
         }
     }
 
-    private static IEnumerable<(uint Seed, int Width, int Height, int Factions, float Density)> BuildCases()
+    public static IEnumerable<(uint Seed, int Width, int Height, int Factions, float Density)> BuildCases()
     {
         var sizes = new[] { (30, 22), (40, 30), (60, 45), (90, 68) };
         var factionCounts = new[] { 2, 3, 4 };
@@ -166,7 +166,7 @@ public sealed class WorldGeneratorPlacementTests
         }
     }
 
-    private static ulong DigestFor(uint seed, int width, int height, int factions, float density)
+    public static ulong DigestFor(uint seed, int width, int height, int factions, float density, PlacementTable? placement = null)
     {
         var parameters = new GenerationParams
         {
@@ -174,7 +174,8 @@ public sealed class WorldGeneratorPlacementTests
             MapWidth = width,
             MapHeight = height,
             FactionCount = factions,
-            LocationDensity = density
+            LocationDensity = density,
+            Placement = placement
         };
         var world = new WorldGenerator().Generate(parameters);
         var text = new StringBuilder();

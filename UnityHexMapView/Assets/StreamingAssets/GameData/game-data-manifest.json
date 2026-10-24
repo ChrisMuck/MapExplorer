@@ -37,6 +37,7 @@
     "World/consequence-definitions.json",
     "World/context-definitions.json",
     "World/evidence-definitions.json",
+    "World/location-placement.json",
     "World/world-generation-option-presets.json",
     "World/world-generation-presets.json",
     "World/situation-definitions.json",
