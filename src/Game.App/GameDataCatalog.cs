@@ -280,11 +280,12 @@ public sealed class GameDataCatalog
 
         try
         {
-            var locations = LocationDataLoader.LoadFromJson(locationDocuments);
+            // Scene texts load first: location content names its words by text id.
+            var scenes = SceneDescriptionDataLoader.LoadFromJson(sceneDocuments);
+            var locations = LocationDataLoader.LoadFromJson(locationDocuments, textId => scenes.Texts.Resolve(textId));
             var crossSystem = CrossSystemDataLoader.LoadFromJson(crossSystemDocuments);
             var authoring = CrossSystemAuthoringDataLoader.LoadFromJson(authoringDocuments);
             CrossSystemContentValidator.Validate(locations, crossSystem, authoring);
-            var scenes = SceneDescriptionDataLoader.LoadFromJson(sceneDocuments);
             var visualAssets = VisualAssetDataLoader.LoadFromJson(visualDocuments);
             var visualDefinitions = visualDefinitionDocuments.Count == 0
                 ? VisualDefinitionSet.Empty

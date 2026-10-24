@@ -6,8 +6,6 @@
     {
       "id": "broken-bridge",
       "archetypeId": "route-obstacle",
-      "label": "Zerstoerte Bruecke",
-      "subtitle": "Streckenhindernis",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-repairable", "modifier-unstable", "modifier-watched"],
@@ -16,8 +14,6 @@
     {
       "id": "marked-grave",
       "archetypeId": "investigation-site",
-      "label": "Markiertes Grab",
-      "subtitle": "Untersuchungsstelle",
       "addedActionIds": ["action-leave-offering", "action-disturb"],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-sacred", "modifier-faction-owned", "modifier-watched"],
@@ -26,8 +22,6 @@
     {
       "id": "abandoned-camp",
       "archetypeId": "investigation-site",
-      "label": "Verlassenes Lager",
-      "subtitle": "Spurenfeld",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-searchable", "modifier-campable", "modifier-weather-damaged"],
@@ -36,8 +30,6 @@
     {
       "id": "border-warning-sign",
       "archetypeId": "territorial-marker",
-      "label": "Grenzwarnung",
-      "subtitle": "Territoriales Zeichen",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-faction-owned", "modifier-watched"],
@@ -46,8 +38,6 @@
     {
       "id": "sealed-gate",
       "archetypeId": "containment-site",
-      "label": "Versiegeltes Tor",
-      "subtitle": "Verschlussstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-sealed", "modifier-guarded"],
@@ -56,8 +46,6 @@
     {
       "id": "first-contact",
       "archetypeId": "contact-site",
-      "label": "Erste Begegnung",
-      "subtitle": "Kontaktort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-guarded", "modifier-invitation", "modifier-occupied"],
@@ -66,8 +54,6 @@
     {
       "id": "restless-marsh",
       "archetypeId": "hazard-site",
-      "label": "Unruhiges Moor",
-      "subtitle": "Gefahrenzone",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-flooded", "modifier-contaminated", "modifier-spreading", "modifier-creature-presence"],
@@ -76,8 +62,6 @@
     {
       "id": "wind-carved-peak",
       "archetypeId": "natural-phenomenon",
-      "label": "Windgeformter Gipfel",
-      "subtitle": "Naturphaenomen",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-climbable", "modifier-signal-capable", "modifier-damaged", "modifier-old-knowledge-linked", "modifier-watched"],
@@ -86,8 +70,6 @@
     {
       "id": "old-ruin",
       "archetypeId": "investigation-site",
-      "label": "Alte Ruine",
-      "subtitle": "Untersuchungsstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-collapsed", "modifier-damaged"],
@@ -96,8 +78,6 @@
     {
       "id": "stone-circle",
       "archetypeId": "investigation-site",
-      "label": "Steinkreis",
-      "subtitle": "Untersuchungsstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-old-knowledge-linked", "modifier-taboo"],
@@ -106,8 +86,6 @@
     {
       "id": "ruined-shrine",
       "archetypeId": "investigation-site",
-      "label": "Verfallener Schrein",
-      "subtitle": "Untersuchungsstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-weather-damaged", "modifier-taboo"],
@@ -116,8 +94,6 @@
     {
       "id": "cold-fireplace",
       "archetypeId": "investigation-site",
-      "label": "Kalte Feuerstelle",
-      "subtitle": "Spurenfeld",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-searchable", "modifier-recently-used"],
@@ -126,8 +102,6 @@
     {
       "id": "broken-cart",
       "archetypeId": "investigation-site",
-      "label": "Zerbrochener Karren",
-      "subtitle": "Spurenfeld",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-searchable", "modifier-contains-heavy-object"],
@@ -136,8 +110,6 @@
     {
       "id": "old-boat-camp",
       "archetypeId": "investigation-site",
-      "label": "Altes Bootslager",
-      "subtitle": "Spurenfeld",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-searchable", "modifier-campable"],
@@ -146,8 +118,6 @@
     {
       "id": "sealed-cave",
       "archetypeId": "containment-site",
-      "label": "Verschlossene Höhle",
-      "subtitle": "Verschlussstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-sealed", "modifier-underground"],
@@ -156,8 +126,6 @@
     {
       "id": "warded-threshold",
       "archetypeId": "containment-site",
-      "label": "Gebannte Schwelle",
-      "subtitle": "Verschlussstelle",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-sealed", "modifier-taboo"],
@@ -166,8 +134,6 @@
     {
       "id": "blocked-pass",
       "archetypeId": "route-obstacle",
-      "label": "Verschütteter Pass",
-      "subtitle": "Streckenhindernis",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-collapsed", "modifier-unstable"],
@@ -176,8 +142,6 @@
     {
       "id": "freshwater-spring",
       "archetypeId": "natural-phenomenon",
-      "label": "Süßwasserquelle",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-contaminated"],
@@ -186,8 +150,6 @@
     {
       "id": "fishing-grounds",
       "archetypeId": "natural-phenomenon",
-      "label": "Fischgrund",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -196,8 +158,6 @@
     {
       "id": "healing-herbs",
       "archetypeId": "natural-phenomenon",
-      "label": "Heilkräuter",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -206,8 +166,6 @@
     {
       "id": "timber-stand",
       "archetypeId": "natural-phenomenon",
-      "label": "Holzbestand",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -216,8 +174,6 @@
     {
       "id": "salt-deposit",
       "archetypeId": "natural-phenomenon",
-      "label": "Salzvorkommen",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -226,8 +182,6 @@
     {
       "id": "berry-grove",
       "archetypeId": "natural-phenomenon",
-      "label": "Beerenhain",
-      "subtitle": "Ressourcenort",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -236,8 +190,6 @@
     {
       "id": "volcanic-vent",
       "archetypeId": "hazard-site",
-      "label": "Vulkanschlund",
-      "subtitle": "Gefahrenzone",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-burning"],
@@ -246,8 +198,6 @@
     {
       "id": "dead-zone",
       "archetypeId": "hazard-site",
-      "label": "Tote Zone",
-      "subtitle": "Gefahrenzone",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-contaminated"],
@@ -256,8 +206,6 @@
     {
       "id": "signal-tower",
       "archetypeId": "natural-phenomenon",
-      "label": "Signalturm",
-      "subtitle": "Landmarke",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-signal-capable", "modifier-climbable"],
@@ -266,8 +214,6 @@
     {
       "id": "colossus-statue",
       "archetypeId": "natural-phenomenon",
-      "label": "Kolossstatue",
-      "subtitle": "Landmarke",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-old-knowledge-linked", "modifier-damaged"],
@@ -276,8 +222,6 @@
     {
       "id": "old-lighthouse",
       "archetypeId": "natural-phenomenon",
-      "label": "Alter Leuchtturm",
-      "subtitle": "Landmarke",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded", "modifier-signal-capable", "modifier-damaged"],
@@ -286,8 +230,6 @@
     {
       "id": "border-stones",
       "archetypeId": "territorial-marker",
-      "label": "Grenzsteine",
-      "subtitle": "Territoriales Zeichen",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -296,8 +238,6 @@
     {
       "id": "skull-marks",
       "archetypeId": "territorial-marker",
-      "label": "Schädelmarken",
-      "subtitle": "Territoriales Zeichen",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
@@ -306,8 +246,6 @@
     {
       "id": "wind-ribbons",
       "archetypeId": "territorial-marker",
-      "label": "Bänder im Wind",
-      "subtitle": "Territoriales Zeichen",
       "addedActionIds": [],
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],

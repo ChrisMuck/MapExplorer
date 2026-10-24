@@ -7,6 +7,8 @@ var placementTests = new WorldGeneratorPlacementTests();
 placementTests.RunAll();
 var locationPlacementTests = new LocationPlacementTests();
 locationPlacementTests.RunAll();
+var locationTextKeyTests = new LocationTextKeyTests();
+locationTextKeyTests.RunAll();
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
@@ -2004,7 +2006,7 @@ internal sealed class LocationDataJsonTests
 
     private static LocationDataBundle LoadBundle()
     {
-        var bundle = LocationDataLoader.LoadFromDirectory(LocationsDataRoot());
+        var bundle = LocationDataLoader.LoadFromDirectory(LocationsDataRoot(), TestLocationTexts.For(LocationsDataRoot()));
         AssertTrue(bundle != null, "Location JSON bundle loads from StreamingAssets");
         return bundle!;
     }
@@ -2060,8 +2062,8 @@ internal sealed class LocationDataJsonTests
         var defs = LoadBundle().Definitions;
         var profile = defs.FindContentProfile("content-old-trade-road-bridge");
         AssertTrue(profile != null, "Bridge content profile is present");
-        AssertEqual("Zerstoerte Bruecke", profile!.Title, "Content profile carries the authored title");
-        AssertEqual("Zerstoerte Bruecke", profile.Title, "Content profile retains stable non-state presentation metadata");
+        AssertEqual("Zerstörte Brücke", profile!.Title, "Content profile carries the authored title");
+        AssertEqual("Zerstörte Brücke", profile.Title, "Content profile retains stable non-state presentation metadata");
     }
 
     private static void WeightedOutcomeStaysWithinAuthoredBandRow()
