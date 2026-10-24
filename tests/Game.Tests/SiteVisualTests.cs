@@ -1,7 +1,7 @@
 using Game.App;
 using Game.Core;
 
-/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places).</summary>
+/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places, V3c containment sites and territorial markers).</summary>
 public sealed class SiteVisualTests
 {
     private sealed record Case(string Archetype, string[] Interactions, string Variant, string BaseOperational, string[] Operational, int[] OperationalCounts, string BasePresence, string[] Presence, int[] PresenceCounts, int[] InteractionCounts, int Unknown);
@@ -25,6 +25,12 @@ public sealed class SiteVisualTests
         new("natural-phenomenon", new[] { "observed", "surveyed", "documented" }, "timber-stand", "standing", new[] { "standing", "partly-felled", "cleared" }, new[] { 5, 6, 6 }, "unknown", new[] { "unknown", "watched", "abandoned" }, new[] { 5, 6, 7 }, new[] { 6, 7, 8 }, 5),
         new("natural-phenomenon", new[] { "observed", "surveyed", "documented" }, "salt-deposit", "exposed", new[] { "exposed", "mined", "exhausted" }, new[] { 5, 6, 2 }, "unknown", new[] { "unknown", "watched", "abandoned" }, new[] { 5, 6, 7 }, new[] { 6, 7, 8 }, 5),
         new("natural-phenomenon", new[] { "observed", "surveyed", "documented" }, "berry-grove", "ripe", new[] { "ripe", "picked-over", "blighted" }, new[] { 12, 5, 8 }, "unknown", new[] { "unknown", "watched", "abandoned" }, new[] { 12, 13, 14 }, new[] { 13, 14, 15 }, 12),
+
+        new("containment-site", new[] { "inspected", "investigated", "secured", "documented" }, "sealed-cave", "sealed", new[] { "sealed", "opened", "collapsed" }, new[] { 5, 6, 7 }, "unknown", new[] { "unknown", "watched", "guarded", "abandoned" }, new[] { 5, 6, 7, 7 }, new[] { 6, 8, 7, 7 }, 4),
+        new("containment-site", new[] { "inspected", "investigated", "secured", "documented" }, "warded-threshold", "warded", new[] { "warded", "weakened", "broken" }, new[] { 8, 6, 6 }, "unknown", new[] { "unknown", "watched", "guarded", "abandoned" }, new[] { 8, 9, 10, 10 }, new[] { 9, 11, 10, 10 }, 4),
+        new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "border-stones", "standing", new[] { "standing", "respected", "violated" }, new[] { 7, 10, 8 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 7, 8, 9 }, new[] { 8, 9, 10 }, 7),
+        new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "skull-marks", "standing", new[] { "standing", "respected", "violated" }, new[] { 4, 7, 5 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 4, 5, 6 }, new[] { 5, 6, 7 }, 4),
+        new("territorial-marker", new[] { "observed", "interpreted", "documented" }, "wind-ribbons", "standing", new[] { "standing", "respected", "violated" }, new[] { 12, 15, 13 }, "unknown", new[] { "unknown", "watched", "guarded" }, new[] { 12, 13, 14 }, new[] { 13, 14, 15 }, 12),
     };
 
     public void RunAll()
@@ -44,13 +50,16 @@ public sealed class SiteVisualTests
             for (var i = 0; i < testCase.Operational.Length; i++)
             {
                 AssertEqual(testCase.OperationalCounts[i], Count(testCase.Operational[i], testCase.BasePresence, "untouched"), $"{testCase.Variant}: operational '{testCase.Operational[i]}'");
+            }
+
+            for (var i = 0; i < testCase.Presence.Length; i++)
+            {
                 AssertEqual(testCase.PresenceCounts[i], Count(testCase.BaseOperational, testCase.Presence[i], "untouched"), $"{testCase.Variant}: presence '{testCase.Presence[i]}'");
             }
 
-            var interactions = testCase.Interactions;
-            for (var i = 0; i < interactions.Length; i++)
+            for (var i = 0; i < testCase.Interactions.Length; i++)
             {
-                AssertEqual(testCase.InteractionCounts[i], Count(testCase.BaseOperational, testCase.BasePresence, interactions[i]), $"{testCase.Variant}: interaction '{interactions[i]}'");
+                AssertEqual(testCase.InteractionCounts[i], Count(testCase.BaseOperational, testCase.BasePresence, testCase.Interactions[i]), $"{testCase.Variant}: interaction '{testCase.Interactions[i]}'");
             }
 
             AssertEqual(testCase.Unknown, Count(null, null, null), $"{testCase.Variant}: an unobserved site shows only its neutral parts");

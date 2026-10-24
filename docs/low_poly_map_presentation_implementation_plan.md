@@ -305,6 +305,9 @@ Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 >
 > **V3b (umgesetzt, in Unity ungeprüft):** Landmarken (Signalturm, Kolossstatue, Alter Leuchtturm, Gipfel) und Ressourcenorte (Quelle, Fischgrund,
 > Heilkräuter, Holzbestand, Salz, Beerenhain); siehe `low_poly_map_presentation_v3b_review.md`.
+>
+> **V3c (umgesetzt, in Unity ungeprüft):** Verwahrungsorte (Höhle, Schwelle) und Grenzzeichen (Grenzsteine, Schädelmarken, Bänder im Wind);
+> siehe `low_poly_map_presentation_v3c_review.md`. Offen: Pass, Gefahrenzonen (Fläche), Siedlungen, Fraktionsfarbe der Grenzzeichen.
 
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 
