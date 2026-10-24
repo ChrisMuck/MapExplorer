@@ -167,8 +167,8 @@ namespace WorldGen
                         Ancient = true,
                         VariantRules =
                         {
-                            new PlacementVariantRule(PlacementCondition.RiverEdge, "Zerstörte Brücke"),
-                            new PlacementVariantRule(PlacementCondition.Always, "Verschütteter Pass")
+                            new PlacementVariantRule(PlacementCondition.RiverEdge, "broken-bridge"),
+                            new PlacementVariantRule(PlacementCondition.Always, "blocked-pass")
                         }
                     },
                     new PlacementGroup
@@ -180,7 +180,7 @@ namespace WorldGen
                         Ancient = true,
                         ForcedBiome = Biome.Ruins,
                         ForcedBiomeChance = 0.5,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Alte Ruine", "Vergessenes Grab", "Steinkreis", "Verfallener Schrein") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "old-ruin", "marked-grave", "stone-circle", "ruined-shrine") }
                     },
                     new PlacementGroup
                     {
@@ -189,7 +189,7 @@ namespace WorldGen
                         Count = Density(0.45),
                         Score = { new PlacementScoreTerm(PlacementTerm.Remote, 0.7), new PlacementScoreTerm(PlacementTerm.Elevation, 0.8) },
                         Ancient = true,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Versiegeltes Tor", "Verschlossene Höhle", "Gebannte Schwelle") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "sealed-gate", "sealed-cave", "warded-threshold") }
                     },
                     new PlacementGroup
                     {
@@ -199,7 +199,7 @@ namespace WorldGen
                         Candidates = PlacementCandidates.RoadCellsOrLand,
                         Score = { new PlacementScoreTerm(PlacementTerm.Constant, 1), new PlacementScoreTerm(PlacementTerm.Remote, -0.5) },
                         Neutral = true,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Verlassenes Lager", "Kalte Feuerstelle", "Zerbrochener Karren", "Altes Bootslager") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "abandoned-camp", "cold-fireplace", "broken-cart", "old-boat-camp") }
                     },
                     new PlacementGroup
                     {
@@ -216,10 +216,10 @@ namespace WorldGen
                         },
                         VariantRules =
                         {
-                            new PlacementVariantRule(PlacementCondition.NearWater, "Süßwasserquelle", "Fischgrund"),
-                            new PlacementVariantRule(PlacementCondition.Forest, "Heilkräuter", "Holzbestand"),
-                            new PlacementVariantRule(PlacementCondition.Coastal, "Salzvorkommen"),
-                            new PlacementVariantRule(PlacementCondition.Always, "Beerenhain")
+                            new PlacementVariantRule(PlacementCondition.NearWater, "freshwater-spring", "fishing-grounds"),
+                            new PlacementVariantRule(PlacementCondition.Forest, "healing-herbs", "timber-stand"),
+                            new PlacementVariantRule(PlacementCondition.Coastal, "salt-deposit"),
+                            new PlacementVariantRule(PlacementCondition.Always, "berry-grove")
                         }
                     },
                     new PlacementGroup
@@ -232,7 +232,7 @@ namespace WorldGen
                         Score = { new PlacementScoreTerm(PlacementTerm.Constant, 1) },
                         Neutral = true,
                         Anchor = AnchorKind.Area,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Giftiger Sumpf") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "restless-marsh") }
                     },
                     new PlacementGroup
                     {
@@ -244,7 +244,7 @@ namespace WorldGen
                         Anchor = AnchorKind.Area,
                         ForcedBiome = Biome.Volcanic,
                         AreaScale = 1.0,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Vulkanschlund") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "volcanic-vent") }
                     },
                     new PlacementGroup
                     {
@@ -256,7 +256,7 @@ namespace WorldGen
                         Anchor = AnchorKind.Area,
                         ForcedBiome = Biome.DeadZones,
                         AreaScale = 0.7,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Tote Zone") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "dead-zone") }
                     },
                     new PlacementGroup
                     {
@@ -265,7 +265,7 @@ namespace WorldGen
                         Count = Density(0.7),
                         Score = { new PlacementScoreTerm(PlacementTerm.Elevation, 1), new PlacementScoreTerm(PlacementTerm.Coastal, 0.3) },
                         Ancient = true,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Signalturm", "Gipfelmal", "Kolossstatue", "Alter Leuchtturm") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "signal-tower", "wind-carved-peak", "colossus-statue", "old-lighthouse") }
                     },
                     new PlacementGroup
                     {
@@ -275,7 +275,7 @@ namespace WorldGen
                         Candidates = PlacementCandidates.FactionBorder,
                         Score = { new PlacementScoreTerm(PlacementTerm.Constant, 1) },
                         StopWhenExhausted = true,
-                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "Grenzsteine", "Warnzeichen", "Schädelmarken", "Bänder im Wind") }
+                        VariantRules = { new PlacementVariantRule(PlacementCondition.Always, "border-stones", "border-warning-sign", "skull-marks", "wind-ribbons") }
                     }
                 }
             };

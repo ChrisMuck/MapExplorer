@@ -179,6 +179,14 @@ public sealed class GameDataCatalog
         VisualAssets = visualAssets ?? throw new ArgumentNullException(nameof(visualAssets));
         VisualDefinitions = visualDefinitions ?? throw new ArgumentNullException(nameof(visualDefinitions));
         Placement = placement;
+        var labels = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var scenario in authoring.ScenarioProfiles.Values)
+        {
+            var title = locations.Definitions.FindContentProfile(scenario.ContentProfileId)?.Title;
+            if (!string.IsNullOrWhiteSpace(title)) labels[scenario.VariantId] = title;
+        }
+
+        VariantLabels = labels;
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
         Tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
@@ -199,6 +207,8 @@ public sealed class GameDataCatalog
     public VisualDefinitionSet VisualDefinitions { get; }
     /// <summary>Rules for placing special locations in generated worlds; null means the generator's built-in rules.</summary>
     public WorldGen.PlacementTable? Placement { get; }
+    /// <summary>Display name of every authored location variant (the title of its content profile), by variant id.</summary>
+    public IReadOnlyDictionary<string, string> VariantLabels { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
     /// <summary>Validated deterministic composition of the curated tutorial world.</summary>
     public TutorialCampaignDefinition Tutorial { get; }
@@ -283,6 +293,7 @@ public sealed class GameDataCatalog
             SceneDescriptionContentValidator.ValidateReferences(scenes, locations, authoring);
             var worldGeneration = WorldGenerationPresetLoader.LoadCatalogFromJson(worldGenerationDocuments);
             var placement = placementDocuments.Count == 0 ? null : LocationPlacementLoader.LoadFromJson(placementDocuments);
+            if (placement != null) LocationPlacementLoader.ValidateAgainstCatalog(placement, authoring);
             var tutorial = TutorialCampaignDataLoader.LoadFromJson(tutorialDocuments, locations);
             return new GameDataCatalog(
                 rootPath,

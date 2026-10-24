@@ -9,6 +9,7 @@ public sealed class LocationPlacementTests
         CatalogCarriesTheBuiltInRules();
         CatalogRulesReproduceTheBuiltInWorlds();
         ValidatorRejectsInconsistentRules();
+        CatalogValidationChecksTheVariantsAgainstTheScenarioProfiles();
         WeightsSteerTheVariantChoice();
     }
 
@@ -76,7 +77,7 @@ public sealed class LocationPlacementTests
         ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["id"] = "placement-trace-sites"), "used twice", "Group ids are unique");
         ExpectFailure(Mutated(d => ((JArray)Group(d, "placement-landmarks")["variantRules"]!).RemoveAt(0)), "at least one variant rule", "A group needs variant rules");
         ExpectFailure(Mutated(d => ((JArray)Group(d, "placement-resource-sites")["variantRules"]!).Last!["when"] = "coastal"), "end its variant rules with 'always'", "The last rule must always match");
-        ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["variantRules"]![0]!["variants"]![0]!["name"] = "Verlassenes Lager"), "belongs to two placement groups", "A variant belongs to exactly one group");
+        ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["variantRules"]![0]!["variants"]![0]!["name"] = "abandoned-camp"), "belongs to two placement groups", "A variant belongs to exactly one group");
         ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["variantRules"]![0]!["variants"]![0]!["weight"] = -1), "weight", "Weights must be positive");
         ExpectFailure(Mutated(d => Group(d, "placement-hazard-swamp")["candidateBiome"] = "Lava"), "unknown biome", "Biome names are checked");
         ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["candidates"] = "everywhere"), "unknown candidates", "Candidate names are checked");
@@ -84,6 +85,43 @@ public sealed class LocationPlacementTests
         ExpectFailure(Mutated(d => Group(d, "placement-route-obstacles")["anchor"] = "point"), "edge anchor", "Edge groups use the edge anchor");
         ExpectFailure(Mutated(d => Group(d, "placement-landmarks")["areaScale"] = 1.0), "area scale", "An area scale needs an area anchor");
         ExpectFailure(Mutated(d => d["schemaVersion"] = 2), "schemaVersion 1", "The schema version is checked");
+    }
+
+    private static void CatalogValidationChecksTheVariantsAgainstTheScenarioProfiles()
+    {
+        var catalog = Catalog();
+        LocationPlacementLoader.ValidateAgainstCatalog(catalog.Placement!, catalog.Authoring);
+
+        var unknown = PlacementTable.Default();
+        unknown.Groups.First(group => group.Id == "placement-landmarks").VariantRules[0].Variants[0] = "flying-island";
+        try
+        {
+            LocationPlacementLoader.ValidateAgainstCatalog(unknown, catalog.Authoring);
+            throw new InvalidOperationException("A variant without a scenario profile was accepted.");
+        }
+        catch (LocationDataException exception)
+        {
+            AssertTrue(exception.Message.Contains("no scenario profile"), "An unknown variant is reported: " + exception.Message);
+        }
+
+        var wrongArchetype = PlacementTable.Default();
+        wrongArchetype.Groups.First(group => group.Id == "placement-landmarks").VariantRules[0].Variants[0] = "old-ruin";
+        try
+        {
+            LocationPlacementLoader.ValidateAgainstCatalog(wrongArchetype, catalog.Authoring);
+            throw new InvalidOperationException("A variant of another archetype was accepted.");
+        }
+        catch (LocationDataException exception)
+        {
+            AssertTrue(exception.Message.Contains("belongs to archetype"), "A variant of another archetype is reported: " + exception.Message);
+        }
+
+        var labels = catalog.VariantLabels;
+        AssertTrue(labels["old-lighthouse"] == "Alter Leuchtturm" && labels["freshwater-spring"] == "Süßwasserquelle", "Variants carry their display names");
+        foreach (var variant in catalog.Placement!.Groups.SelectMany(group => group.VariantRules).SelectMany(rule => rule.Variants))
+        {
+            AssertTrue(labels.ContainsKey(variant), "Every placed variant has a display name: " + variant);
+        }
     }
 
     private static void WeightsSteerTheVariantChoice()
@@ -101,7 +139,7 @@ public sealed class LocationPlacementTests
             foreach (var special in world.Specials.Where(special => special.Archetype == "Spurenort"))
             {
                 traces++;
-                if (special.Variant == "Altes Bootslager") boatCamps++;
+                if (special.Variant == "old-boat-camp") boatCamps++;
             }
         }
 

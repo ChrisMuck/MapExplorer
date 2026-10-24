@@ -296,6 +296,10 @@ Entfernen der alten Zweige, übrige Tutorial-Orte als Kompositionen.
 - Danach die übrigen fünf Tutorial-Orte als Kompositionen (Grab, Lager, Tor, Grenzwarnung, Ufer) und
   Abschalten der alten Darstellungszweige (`BuildLandmarkObject`, Chunk-Renderer).
 
+> **V3-Vorarbeit (erledigt):** Die Generator-Orte kommen aus JSON-Regeln (`World/location-placement.json`) und haben 30 Katalogvarianten mit
+> Zuständen und Texten. Siehe `world_generator_location_data_concept.md` (Stand G1 bis G3). Die Bilder der Varianten (Arbeitspaket 3 unten)
+> sind der nächste Schritt; Flächenanker für Gefahrenzonen sind noch offen.
+
 ## 9. Stufe V3 – Generator-Orte, neue Varianten, Modifier
 
 Ziel: Alle heute vom Generator erzeugten Orte und die ergänzten Varianten haben ein Bild.

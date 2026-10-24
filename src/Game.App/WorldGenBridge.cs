@@ -71,12 +71,19 @@ public sealed class WorldGenBridge
     private readonly FactionSignatureDefinitionSet? factionSignatures;
     private readonly FactionProfileDefinitionSet? factionProfiles;
     private readonly PlacementTable? placement;
+    private readonly IReadOnlyDictionary<string, string>? variantLabels;
 
-    public WorldGenBridge(FactionSignatureDefinitionSet? factionSignatures = null, FactionProfileDefinitionSet? factionProfiles = null, PlacementTable? placement = null)
+    /// <param name="variantLabels">Display names by catalog variant id; a variant without one is shown by its id.</param>
+    public WorldGenBridge(
+        FactionSignatureDefinitionSet? factionSignatures = null,
+        FactionProfileDefinitionSet? factionProfiles = null,
+        PlacementTable? placement = null,
+        IReadOnlyDictionary<string, string>? variantLabels = null)
     {
         this.factionSignatures = factionSignatures;
         this.factionProfiles = factionProfiles;
         this.placement = placement;
+        this.variantLabels = variantLabels;
     }
 
     public WorldGenerationBridgeResult Generate(WorldGenerationRequest request)
@@ -95,7 +102,7 @@ public sealed class WorldGenBridge
         HexCoord ToCore(HexCell cell) => new(cell.AX + qOffset, cell.AZ);
         var factionIds = generated.Factions.ToDictionary(faction => faction.Id, faction => $"faction-{faction.Id}");
         var signatureProfiles = AssignSignatureProfiles(generated);
-        var locations = BuildLocations(generated, ToCore, factionIds);
+        var locations = BuildLocations(generated, ToCore, factionIds, variantLabels);
         var locationByCell = locations
             .Where(location => location.Anchor.Kind == LocationAnchorKind.Point)
             .ToDictionary(location => location.Coord, location => location.Id);
@@ -192,7 +199,8 @@ public sealed class WorldGenBridge
     private static IReadOnlyList<SpecialLocationState> BuildLocations(
         GeneratedWorld world,
         Func<HexCell, HexCoord> toCore,
-        IReadOnlyDictionary<int, string> factionIds)
+        IReadOnlyDictionary<int, string> factionIds,
+        IReadOnlyDictionary<string, string>? variantLabels)
     {
         var results = new List<SpecialLocationState>();
         for (var index = 0; index < world.Specials.Count; index++)
@@ -210,10 +218,10 @@ public sealed class WorldGenBridge
                 $"worldgen-location-{index + 1}",
                 KindFor(source.Archetype),
                 toCore(source.Cell),
-                source.Variant,
+                variantLabels != null && variantLabels.TryGetValue(source.Variant, out var label) ? label : source.Variant,
                 anchor,
-                ArchetypeIdFor(source.Archetype),
-                VariantIdFor(source.Variant),
+                CatalogArchetypeFor(source.Archetype),
+                source.Variant,
                 source.Modifiers.Select(ModifierIdFor),
                 factionRelations: relations,
                 contextTags: source.ContextTags,
@@ -308,7 +316,7 @@ public sealed class WorldGenBridge
         _ => TerrainType.Grassland
     };
 
-    private static LocationKind KindFor(string archetype) => ArchetypeIdFor(archetype) switch
+    private static LocationKind KindFor(string archetype) => CatalogArchetypeFor(archetype) switch
     {
         "route-obstacle" => LocationKind.BrokenRavine,
         "investigation-site" or "containment-site" => LocationKind.Ruin,
@@ -316,7 +324,8 @@ public sealed class WorldGenBridge
         _ => LocationKind.Landmark
     };
 
-    private static string ArchetypeIdFor(string archetype) => archetype switch
+    /// <summary>Catalog archetype id for a generator archetype name.</summary>
+    public static string CatalogArchetypeFor(string archetype) => archetype switch
     {
         "Wegehindernis" => "route-obstacle",
         "Untersuchungsort" => "investigation-site",
@@ -327,15 +336,6 @@ public sealed class WorldGenBridge
         "Landmarke" => "natural-phenomenon",
         "Grenzzeichen" => "territorial-marker",
         _ => "natural-phenomenon"
-    };
-
-    private static string VariantIdFor(string variant) => variant switch
-    {
-        "Zerstörte Brücke" => "broken-bridge",
-        "Vergessenes Grab" => "marked-grave",
-        "Verlassenes Lager" => "abandoned-camp",
-        "Versiegeltes Tor" => "sealed-gate",
-        _ => $"worldgen-{Normalize(variant)}"
     };
 
     private static string ModifierIdFor(string modifier) => modifier switch

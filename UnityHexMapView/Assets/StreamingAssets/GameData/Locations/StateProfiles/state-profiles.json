@@ -74,6 +74,186 @@
         "operational": { "initial": "stable", "values": ["stable", "accessible", "mapped"] },
         "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
       }
+    },
+    {
+      "id": "state-old-ruin",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "crumbling", "values": ["crumbling", "shored-up", "collapsed"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "empty", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-stone-circle",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "dormant", "values": ["dormant", "awakened", "broken"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "empty", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-ruined-shrine",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "decayed", "values": ["decayed", "tended", "desecrated"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "empty", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-cold-fireplace",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "cold", "values": ["cold", "smoldering", "cleared"] },
+        "presence": { "initial": "abandoned", "values": ["abandoned", "recently-used", "watched"] }
+      }
+    },
+    {
+      "id": "state-broken-cart",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "wrecked", "values": ["wrecked", "looted", "salvaged"] },
+        "presence": { "initial": "abandoned", "values": ["abandoned", "recently-used", "watched"] }
+      }
+    },
+    {
+      "id": "state-old-boat-camp",
+      "archetypeId": "investigation-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "searched", "investigated", "documented"] },
+        "operational": { "initial": "derelict", "values": ["derelict", "repaired", "in-use"] },
+        "presence": { "initial": "abandoned", "values": ["abandoned", "recently-used", "watched"] }
+      }
+    },
+    {
+      "id": "state-sealed-cave",
+      "archetypeId": "containment-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "investigated", "secured", "documented"] },
+        "operational": { "initial": "sealed", "values": ["sealed", "opened", "collapsed"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-warded-threshold",
+      "archetypeId": "containment-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected", "investigated", "secured", "documented"] },
+        "operational": { "initial": "warded", "values": ["warded", "weakened", "broken"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-blocked-pass",
+      "archetypeId": "route-obstacle",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "inspected"] },
+        "operational": { "initial": "blocked", "values": ["blocked", "narrow-path", "open", "cleared"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "guarded", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-freshwater-spring",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "clear", "values": ["clear", "muddied", "dried-up"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-fishing-grounds",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "rich", "values": ["rich", "thin", "fished-out"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-healing-herbs",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "growing", "values": ["growing", "picked", "withered"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-timber-stand",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "standing", "values": ["standing", "partly-felled", "cleared"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-salt-deposit",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "exposed", "values": ["exposed", "mined", "exhausted"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-berry-grove",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "ripe", "values": ["ripe", "picked-over", "blighted"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-volcanic-vent",
+      "archetypeId": "hazard-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "assessed", "contained", "documented"] },
+        "operational": { "initial": "smoldering", "values": ["smoldering", "erupting", "dormant", "avoided"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "spreading", "watched"] }
+      }
+    },
+    {
+      "id": "state-dead-zone",
+      "archetypeId": "hazard-site",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "assessed", "contained", "documented"] },
+        "operational": { "initial": "lifeless", "values": ["lifeless", "avoided", "traversed", "contained"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "spreading", "watched"] }
+      }
+    },
+    {
+      "id": "state-signal-tower",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "dark", "values": ["dark", "lit", "ruined"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-colossus-statue",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "standing", "values": ["standing", "cracked", "toppled"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
+    },
+    {
+      "id": "state-old-lighthouse",
+      "archetypeId": "natural-phenomenon",
+      "channels": {
+        "interaction": { "initial": "untouched", "values": ["untouched", "observed", "approached", "surveyed", "documented"] },
+        "operational": { "initial": "dark", "values": ["dark", "lit", "ruined"] },
+        "presence": { "initial": "unknown", "values": ["unknown", "watched", "abandoned"] }
+      }
     }
   ]
 }

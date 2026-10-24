@@ -39,7 +39,7 @@ namespace WorldGen
     {
         public HexCell Cell;
         public string Archetype;             // e.g. "Wegehindernis", "Untersuchungsort"
-        public string Variant;               // e.g. "Zerstörte Brücke"
+        public string Variant;               // catalog variant id, e.g. "broken-bridge"
         public int Owner = -1;               // faction id if FactionOwned, else -1
         public int WatchedBy = -1;           // faction whose territory it sits in (neutral-in-origin)
         public List<string> Modifiers = new List<string>();

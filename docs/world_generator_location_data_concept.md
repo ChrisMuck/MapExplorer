@@ -140,6 +140,24 @@ Ressourcen, Verwahrung, Grenzzeichen, Gefahrenzonen, Siedlungen).
   eingebauten, zwölf Validatorfälle, Gewichtung wirkt und bleibt deterministisch.
 - Die Varianten heißen noch wie im Generator (`"Alte Ruine"`); G3 ersetzt die Namen durch Katalog-Varianten-Ids.
 
+### Stand G3 (umgesetzt)
+
+- 23 neue Katalogvarianten (Variante, Zustandsprofil, Szenarioprofil, Inhaltsprofil) laut `world_generator_variant_states_proposal.md`.
+  Giftiger Sumpf, Warnzeichen und Gipfelmal verwenden die schon vorhandenen Varianten `restless-marsh`, `border-warning-sign` und
+  `wind-carved-peak`; Grenzsteine, Schädelmarken und Bänder im Wind teilen sich das Zustandsprofil `state-border-warning`.
+- Jede neue Variante hat einen Eröffnungstext und für jeden neuen Zustand einen Szenentext (58 Zustandsfragmente, 23 Eröffnungen,
+  81 Texte in `Scenes/Locales/de.json`). Alle Texte sind **Platzhalter** und warten auf Durchsicht.
+- Der Generator liefert Varianten-Ids (`old-ruin`, `blocked-pass`, ...) statt Namen; `WorldGenBridge.VariantIdFor` entfällt, der Anzeigename
+  kommt aus dem Katalog (`GameDataCatalog.VariantLabels`). Die Regeln in `location-placement.json` verweisen auf Varianten-Ids.
+- `LocationPlacementLoader.ValidateAgainstCatalog` prüft beim Laden, dass jede platzierte Variante ein Szenarioprofil des richtigen Archetyps hat.
+- Aktionen: Jede Variante verwendet nur Aktionen, deren Zustandsänderungen ihr Zustandsprofil kennt (der Validator prüft das). Daher haben z. B.
+  die Naturorte keine Aktion „Umgebung kartieren" (sie setzt den Betriebszustand `mapped`), die Gebannte Schwelle keine „Siegel öffnen"-Aktion und der
+  Verschüttete Pass keine Aktion „Behelfsübergang bauen". Funde, Beweise und Folgen sind bei den neuen Varianten noch leer.
+- Abweichung von der Owner-Entscheidung zu Textschlüsseln: Die Namen und Beschreibungen der Orte stehen wie bei den bisherigen Varianten
+  im Inhaltsprofil (Klartext); Textschlüssel (`Scenes`-Texte) tragen nur Szenentexte. Eine Umstellung der Ortsnamen auf Schlüssel braucht
+  Änderungen an Loader und Oberfläche und bleibt ein eigener Schritt.
+- Speicherstand: Der Code kennt noch kein Speichern von Spielständen; es gibt daher keine alten `worldgen-…`-Stände, die zu verwerfen wären.
+
 ## 6. Risiken und Absicherung
 
 - **Zufallsreihenfolge.** Der Generator zieht seine Zufallszahlen in fester Reihenfolge. Wer Schleifen oder Auswahl umbaut,

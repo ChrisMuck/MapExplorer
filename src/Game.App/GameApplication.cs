@@ -89,7 +89,7 @@ public sealed class GameApplication
             CrossSystemContentValidator.Validate(locationData, crossSystemData, dataCatalog?.Authoring);
         }
 
-        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles, dataCatalog?.Placement);
+        worldGenBridge = new WorldGenBridge(crossSystemData?.FactionSignatures, crossSystemData?.FactionProfiles, dataCatalog?.Placement, dataCatalog?.VariantLabels);
         factionSceneResolver = dataCatalog == null ? null : new FactionContactSceneResolver(
             dataCatalog.Scenes, crossSystemData?.FactionSignatures, dataCatalog.Authoring);
         scoutReturnSceneResolver = dataCatalog == null ? null : new ScoutReturnSceneResolver(dataCatalog.Scenes);

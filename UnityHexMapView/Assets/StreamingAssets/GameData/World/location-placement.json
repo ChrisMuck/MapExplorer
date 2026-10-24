@@ -18,7 +18,7 @@
           "when": "riverEdge",
           "variants": [
             {
-              "name": "Zerstörte Brücke"
+              "name": "broken-bridge"
             }
           ]
         },
@@ -26,7 +26,7 @@
           "when": "always",
           "variants": [
             {
-              "name": "Verschütteter Pass"
+              "name": "blocked-pass"
             }
           ]
         }
@@ -54,16 +54,16 @@
           "when": "always",
           "variants": [
             {
-              "name": "Alte Ruine"
+              "name": "old-ruin"
             },
             {
-              "name": "Vergessenes Grab"
+              "name": "marked-grave"
             },
             {
-              "name": "Steinkreis"
+              "name": "stone-circle"
             },
             {
-              "name": "Verfallener Schrein"
+              "name": "ruined-shrine"
             }
           ]
         }
@@ -97,13 +97,13 @@
           "when": "always",
           "variants": [
             {
-              "name": "Versiegeltes Tor"
+              "name": "sealed-gate"
             },
             {
-              "name": "Verschlossene Höhle"
+              "name": "sealed-cave"
             },
             {
-              "name": "Gebannte Schwelle"
+              "name": "warded-threshold"
             }
           ]
         }
@@ -135,16 +135,16 @@
           "when": "always",
           "variants": [
             {
-              "name": "Verlassenes Lager"
+              "name": "abandoned-camp"
             },
             {
-              "name": "Kalte Feuerstelle"
+              "name": "cold-fireplace"
             },
             {
-              "name": "Zerbrochener Karren"
+              "name": "broken-cart"
             },
             {
-              "name": "Altes Bootslager"
+              "name": "old-boat-camp"
             }
           ]
         }
@@ -184,10 +184,10 @@
           "when": "nearWater",
           "variants": [
             {
-              "name": "Süßwasserquelle"
+              "name": "freshwater-spring"
             },
             {
-              "name": "Fischgrund"
+              "name": "fishing-grounds"
             }
           ]
         },
@@ -195,10 +195,10 @@
           "when": "forest",
           "variants": [
             {
-              "name": "Heilkräuter"
+              "name": "healing-herbs"
             },
             {
-              "name": "Holzbestand"
+              "name": "timber-stand"
             }
           ]
         },
@@ -206,7 +206,7 @@
           "when": "coastal",
           "variants": [
             {
-              "name": "Salzvorkommen"
+              "name": "salt-deposit"
             }
           ]
         },
@@ -214,7 +214,7 @@
           "when": "always",
           "variants": [
             {
-              "name": "Beerenhain"
+              "name": "berry-grove"
             }
           ]
         }
@@ -243,7 +243,7 @@
           "when": "always",
           "variants": [
             {
-              "name": "Giftiger Sumpf"
+              "name": "restless-marsh"
             }
           ]
         }
@@ -280,7 +280,7 @@
           "when": "always",
           "variants": [
             {
-              "name": "Vulkanschlund"
+              "name": "volcanic-vent"
             }
           ]
         }
@@ -319,7 +319,7 @@
           "when": "always",
           "variants": [
             {
-              "name": "Tote Zone"
+              "name": "dead-zone"
             }
           ]
         }
@@ -353,16 +353,16 @@
           "when": "always",
           "variants": [
             {
-              "name": "Signalturm"
+              "name": "signal-tower"
             },
             {
-              "name": "Gipfelmal"
+              "name": "wind-carved-peak"
             },
             {
-              "name": "Kolossstatue"
+              "name": "colossus-statue"
             },
             {
-              "name": "Alter Leuchtturm"
+              "name": "old-lighthouse"
             }
           ]
         }
@@ -390,16 +390,16 @@
           "when": "always",
           "variants": [
             {
-              "name": "Grenzsteine"
+              "name": "border-stones"
             },
             {
-              "name": "Warnzeichen"
+              "name": "border-warning-sign"
             },
             {
-              "name": "Schädelmarken"
+              "name": "skull-marks"
             },
             {
-              "name": "Bänder im Wind"
+              "name": "wind-ribbons"
             }
           ]
         }
