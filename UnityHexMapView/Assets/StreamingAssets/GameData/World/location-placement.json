@@ -26,7 +26,8 @@
           "when": "always",
           "variants": [
             {
-              "name": "blocked-pass"
+              "name": "blocked-pass",
+              "evidenceSeedId": "evidence-site-blocked-pass"
             }
           ]
         }
@@ -54,16 +55,19 @@
           "when": "always",
           "variants": [
             {
-              "name": "old-ruin"
+              "name": "old-ruin",
+              "evidenceSeedId": "evidence-site-old-ruin"
             },
             {
               "name": "marked-grave"
             },
             {
-              "name": "stone-circle"
+              "name": "stone-circle",
+              "evidenceSeedId": "evidence-site-stone-circle"
             },
             {
-              "name": "ruined-shrine"
+              "name": "ruined-shrine",
+              "evidenceSeedId": "evidence-site-ruined-shrine"
             }
           ]
         }
@@ -100,10 +104,12 @@
               "name": "sealed-gate"
             },
             {
-              "name": "sealed-cave"
+              "name": "sealed-cave",
+              "evidenceSeedId": "evidence-site-sealed-cave"
             },
             {
-              "name": "warded-threshold"
+              "name": "warded-threshold",
+              "evidenceSeedId": "evidence-site-warded-threshold"
             }
           ]
         }
@@ -138,13 +144,16 @@
               "name": "abandoned-camp"
             },
             {
-              "name": "cold-fireplace"
+              "name": "cold-fireplace",
+              "evidenceSeedId": "evidence-site-cold-fireplace"
             },
             {
-              "name": "broken-cart"
+              "name": "broken-cart",
+              "evidenceSeedId": "evidence-site-broken-cart"
             },
             {
-              "name": "old-boat-camp"
+              "name": "old-boat-camp",
+              "evidenceSeedId": "evidence-site-old-boat-camp"
             }
           ]
         }
@@ -184,10 +193,12 @@
           "when": "nearWater",
           "variants": [
             {
-              "name": "freshwater-spring"
+              "name": "freshwater-spring",
+              "evidenceSeedId": "evidence-site-freshwater-spring"
             },
             {
-              "name": "fishing-grounds"
+              "name": "fishing-grounds",
+              "evidenceSeedId": "evidence-site-fishing-grounds"
             }
           ]
         },
@@ -195,10 +206,12 @@
           "when": "forest",
           "variants": [
             {
-              "name": "healing-herbs"
+              "name": "healing-herbs",
+              "evidenceSeedId": "evidence-site-healing-herbs"
             },
             {
-              "name": "timber-stand"
+              "name": "timber-stand",
+              "evidenceSeedId": "evidence-site-timber-stand"
             }
           ]
         },
@@ -206,7 +219,8 @@
           "when": "coastal",
           "variants": [
             {
-              "name": "salt-deposit"
+              "name": "salt-deposit",
+              "evidenceSeedId": "evidence-site-salt-deposit"
             }
           ]
         },
@@ -214,7 +228,8 @@
           "when": "always",
           "variants": [
             {
-              "name": "berry-grove"
+              "name": "berry-grove",
+              "evidenceSeedId": "evidence-site-berry-grove"
             }
           ]
         }
@@ -280,7 +295,8 @@
           "when": "always",
           "variants": [
             {
-              "name": "volcanic-vent"
+              "name": "volcanic-vent",
+              "evidenceSeedId": "evidence-site-volcanic-vent"
             }
           ]
         }
@@ -319,7 +335,8 @@
           "when": "always",
           "variants": [
             {
-              "name": "dead-zone"
+              "name": "dead-zone",
+              "evidenceSeedId": "evidence-site-dead-zone"
             }
           ]
         }
@@ -353,16 +370,19 @@
           "when": "always",
           "variants": [
             {
-              "name": "signal-tower"
+              "name": "signal-tower",
+              "evidenceSeedId": "evidence-site-signal-tower"
             },
             {
               "name": "wind-carved-peak"
             },
             {
-              "name": "colossus-statue"
+              "name": "colossus-statue",
+              "evidenceSeedId": "evidence-site-colossus-statue"
             },
             {
-              "name": "old-lighthouse"
+              "name": "old-lighthouse",
+              "evidenceSeedId": "evidence-site-old-lighthouse"
             }
           ]
         }
@@ -390,16 +410,19 @@
           "when": "always",
           "variants": [
             {
-              "name": "border-stones"
+              "name": "border-stones",
+              "evidenceSeedId": "evidence-site-border-stones"
             },
             {
               "name": "border-warning-sign"
             },
             {
-              "name": "skull-marks"
+              "name": "skull-marks",
+              "evidenceSeedId": "evidence-site-skull-marks"
             },
             {
-              "name": "wind-ribbons"
+              "name": "wind-ribbons",
+              "evidenceSeedId": "evidence-site-wind-ribbons"
             }
           ]
         }

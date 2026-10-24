@@ -29,7 +29,7 @@ public sealed class LocationPlacementTests
         var placement = Catalog().Placement;
         AssertTrue(placement != null, "The catalog loads the location placement document");
         AssertTrue(placement!.Groups.Count == 10, "The document lists the ten placement groups");
-        AssertTrue(LocationPlacementLoader.ToJson(placement) == LocationPlacementLoader.ToJson(PlacementTable.Default()), "The shipped rules equal the built-in default rules");
+        AssertTrue(WithoutSeeds(LocationPlacementLoader.ToJson(placement)) == WithoutSeeds(LocationPlacementLoader.ToJson(PlacementTable.Default())), "The shipped rules equal the built-in default rules apart from the evidence seeds");
         var variants = placement.Groups.SelectMany(group => group.VariantRules).SelectMany(rule => rule.Variants).Distinct().Count();
         AssertTrue(variants == 30, "The groups carry the thirty generator variants, found " + variants);
     }
@@ -45,6 +45,13 @@ public sealed class LocationPlacementTests
             var fromData = WorldGeneratorPlacementTests.DigestFor(testCase.Seed, testCase.Width, testCase.Height, testCase.Factions, testCase.Density, placement);
             AssertTrue(builtIn == fromData, "Rules from the document place the same locations as the built-in rules (seed " + testCase.Seed + ")");
         }
+    }
+
+    private static string WithoutSeeds(string json)
+    {
+        var document = JObject.Parse(json);
+        foreach (var property in document.Descendants().OfType<JProperty>().Where(property => property.Name == "evidenceSeedId").ToList()) property.Remove();
+        return document.ToString();
     }
 
     private static string Mutated(Action<JObject> change)

@@ -91,6 +91,98 @@
     {
       "id": "evidence-directional-witness-trace",
       "scoutReportText": "Die Scouts fanden in der gewaehlten Richtung Spuren oder indirekte Hinweise, deren Bedeutung offen bleibt."
+    },
+    {
+      "id": "evidence-site-old-ruin",
+      "scoutReportText": "Die Späher fanden Mauerreste mit Spuren früherer Aufräumarbeiten."
+    },
+    {
+      "id": "evidence-site-stone-circle",
+      "scoutReportText": "Die Späher sahen angebrannte Stellen in der Mitte des Kreises."
+    },
+    {
+      "id": "evidence-site-ruined-shrine",
+      "scoutReportText": "Die Späher fanden Reste von Gaben, die nicht alt aussehen."
+    },
+    {
+      "id": "evidence-site-cold-fireplace",
+      "scoutReportText": "Die Späher schätzen, dass das Feuer vor einigen Tagen erlosch."
+    },
+    {
+      "id": "evidence-site-broken-cart",
+      "scoutReportText": "Die Späher fanden Radspuren, die abrupt enden."
+    },
+    {
+      "id": "evidence-site-old-boat-camp",
+      "scoutReportText": "Die Späher sahen, dass das Boot zuletzt ausgebessert wurde."
+    },
+    {
+      "id": "evidence-site-sealed-cave",
+      "scoutReportText": "Die Späher fanden frische Kratzspuren am Verschluss."
+    },
+    {
+      "id": "evidence-site-warded-threshold",
+      "scoutReportText": "Die Späher meiden die Schwelle; Tiere tun es offenbar auch."
+    },
+    {
+      "id": "evidence-site-blocked-pass",
+      "scoutReportText": "Die Späher fanden Trittspuren, die vor dem Geröll umkehren."
+    },
+    {
+      "id": "evidence-site-freshwater-spring",
+      "scoutReportText": "Die Späher sahen Tiertrittspuren, die zur Quelle führen."
+    },
+    {
+      "id": "evidence-site-fishing-grounds",
+      "scoutReportText": "Die Späher fanden Reusen und Spuren häufigen Gebrauchs."
+    },
+    {
+      "id": "evidence-site-healing-herbs",
+      "scoutReportText": "Die Späher bemerkten abgeschnittene Stängel."
+    },
+    {
+      "id": "evidence-site-timber-stand",
+      "scoutReportText": "Die Späher fanden Stümpfe und Schleifspuren."
+    },
+    {
+      "id": "evidence-site-salt-deposit",
+      "scoutReportText": "Die Späher sahen Spuren von Abbau und Transport."
+    },
+    {
+      "id": "evidence-site-berry-grove",
+      "scoutReportText": "Die Späher fanden zertretene Stellen zwischen den Sträuchern."
+    },
+    {
+      "id": "evidence-site-volcanic-vent",
+      "scoutReportText": "Die Späher meldeten Rauch und einen Geruch nach Schwefel."
+    },
+    {
+      "id": "evidence-site-dead-zone",
+      "scoutReportText": "Die Späher kehrten an der Grenzlinie um; hinter ihr gibt es kein Leben."
+    },
+    {
+      "id": "evidence-site-signal-tower",
+      "scoutReportText": "Die Späher sahen Reste eines Feuers auf der Plattform."
+    },
+    {
+      "id": "evidence-site-colossus-statue",
+      "scoutReportText": "Die Späher meldeten Risse und frische Abplatzungen."
+    },
+    {
+      "id": "evidence-site-old-lighthouse",
+      "scoutReportText": "Die Späher sahen Glassplitter vor dem Turm."
+    },
+    {
+      "id": "evidence-site-border-stones",
+      "scoutReportText": "Die Späher fanden gesetzte Steine in gleichen Abständen."
+    },
+    {
+      "id": "evidence-site-skull-marks",
+      "scoutReportText": "Die Späher fanden aufgesteckte Schädel; einige sind frisch."
+    },
+    {
+      "id": "evidence-site-wind-ribbons",
+      "scoutReportText": "Die Späher sahen Bänder, die zuletzt erneuert wurden."
     }
   ]
 }

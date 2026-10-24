@@ -4,22 +4,56 @@
   "contentVersion": 2,
   "items": [
     { "id": "finding-table-burial-investigation", "rolls": 1, "repeatPolicy": "once-per-location", "entries": [
-      { "findingId": "finding-grave-inscription-rubbing", "weight": 80 },
-      { "findingId": null, "weight": 20 }
+      {"findingId": "finding-grave-inscription-rubbing", "weight": 80, "requiresVariantIdsAny": ["marked-grave"]},
+      {"findingId": "finding-old-ruin-mason-mark", "weight": 40, "requiresVariantIdsAny": ["old-ruin"]},
+      {"findingId": "finding-old-ruin-mortar-sample", "weight": 40, "requiresVariantIdsAny": ["old-ruin"]},
+      {"findingId": "finding-stone-circle-alignment-record", "weight": 40, "requiresVariantIdsAny": ["stone-circle"]},
+      {"findingId": "finding-stone-circle-stone-rubbing", "weight": 40, "requiresVariantIdsAny": ["stone-circle"]},
+      {"findingId": "finding-ruined-shrine-votive-object", "weight": 40, "requiresVariantIdsAny": ["ruined-shrine"]},
+      {"findingId": "finding-ruined-shrine-dedication-inscription", "weight": 40, "requiresVariantIdsAny": ["ruined-shrine"]},
+      {"findingId": "finding-cold-fireplace-ash-sample", "weight": 40, "requiresVariantIdsAny": ["cold-fireplace"]},
+      {"findingId": "finding-cold-fireplace-tally-marks", "weight": 40, "requiresVariantIdsAny": ["cold-fireplace"]},
+      {"findingId": "finding-broken-cart-cargo-manifest", "weight": 40, "requiresVariantIdsAny": ["broken-cart"]},
+      {"findingId": "finding-broken-cart-axle-sample", "weight": 40, "requiresVariantIdsAny": ["broken-cart"]},
+      {"findingId": "finding-old-boat-camp-hull-pitch-sample", "weight": 40, "requiresVariantIdsAny": ["old-boat-camp"]},
+      {"findingId": "finding-old-boat-camp-coast-chart", "weight": 40, "requiresVariantIdsAny": ["old-boat-camp"]},
+      {"findingId": null, "weight": 20}
     ] },
     { "id": "finding-table-sealed-interior", "rolls": 1, "repeatPolicy": "once-per-state", "entries": [
-      { "findingId": "finding-seal-fragment", "weight": 85 },
-      { "findingId": null, "weight": 15 }
+      {"findingId": "finding-seal-fragment", "weight": 85, "requiresVariantIdsAny": ["sealed-gate"]},
+      {"findingId": "finding-sealed-cave-seal-stone", "weight": 50, "requiresVariantIdsAny": ["sealed-cave"]},
+      {"findingId": "finding-sealed-cave-wall-markings", "weight": 50, "requiresVariantIdsAny": ["sealed-cave"]},
+      {"findingId": null, "weight": 15}
     ] },
     { "id": "finding-table-hazard-site", "rolls": 1, "repeatPolicy": "once-per-state", "entries": [
-      { "findingId": "finding-marsh-water-sample", "weight": 40 },
-      { "findingId": "finding-marsh-sediment-sample", "weight": 35 },
-      { "findingId": "finding-marsh-spore-sample", "weight": 25, "requiresContextTagsAny": ["contaminated", "spreading"] }
+      {"findingId": "finding-marsh-water-sample", "weight": 40, "requiresVariantIdsAny": ["restless-marsh"]},
+      {"findingId": "finding-marsh-sediment-sample", "weight": 35, "requiresVariantIdsAny": ["restless-marsh"]},
+      {"findingId": "finding-marsh-spore-sample", "weight": 25, "requiresVariantIdsAny": ["restless-marsh"], "requiresContextTagsAny": ["contaminated", "spreading"]},
+      {"findingId": "finding-dead-zone-dead-soil-sample", "weight": 50, "requiresVariantIdsAny": ["dead-zone"]},
+      {"findingId": "finding-dead-zone-boundary-record", "weight": 50, "requiresVariantIdsAny": ["dead-zone"]}
     ] },
     { "id": "finding-table-natural-phenomenon", "rolls": 1, "repeatPolicy": "once-per-location", "entries": [
-      { "findingId": "finding-wind-carved-survey", "weight": 45 },
-      { "findingId": "finding-peak-stone-sample", "weight": 30 },
-      { "findingId": "finding-peak-echo-record", "weight": 25 }
+      {"findingId": "finding-wind-carved-survey", "weight": 45, "requiresVariantIdsAny": ["wind-carved-peak"]},
+      {"findingId": "finding-peak-stone-sample", "weight": 30, "requiresVariantIdsAny": ["wind-carved-peak"]},
+      {"findingId": "finding-peak-echo-record", "weight": 25, "requiresVariantIdsAny": ["wind-carved-peak"]},
+      {"findingId": "finding-freshwater-spring-spring-water-sample", "weight": 50, "requiresVariantIdsAny": ["freshwater-spring"]},
+      {"findingId": "finding-freshwater-spring-spring-flow-record", "weight": 50, "requiresVariantIdsAny": ["freshwater-spring"]},
+      {"findingId": "finding-fishing-grounds-net-fragment", "weight": 50, "requiresVariantIdsAny": ["fishing-grounds"]},
+      {"findingId": "finding-fishing-grounds-catch-record", "weight": 50, "requiresVariantIdsAny": ["fishing-grounds"]},
+      {"findingId": "finding-healing-herbs-herb-specimen", "weight": 50, "requiresVariantIdsAny": ["healing-herbs"]},
+      {"findingId": "finding-healing-herbs-herb-use-notes", "weight": 50, "requiresVariantIdsAny": ["healing-herbs"]},
+      {"findingId": "finding-timber-stand-ring-sample", "weight": 50, "requiresVariantIdsAny": ["timber-stand"]},
+      {"findingId": "finding-timber-stand-cut-marks", "weight": 50, "requiresVariantIdsAny": ["timber-stand"]},
+      {"findingId": "finding-salt-deposit-salt-crust-sample", "weight": 50, "requiresVariantIdsAny": ["salt-deposit"]},
+      {"findingId": "finding-salt-deposit-salt-tools", "weight": 50, "requiresVariantIdsAny": ["salt-deposit"]},
+      {"findingId": "finding-berry-grove-berry-sample", "weight": 50, "requiresVariantIdsAny": ["berry-grove"]},
+      {"findingId": "finding-berry-grove-animal-tracks", "weight": 50, "requiresVariantIdsAny": ["berry-grove"]},
+      {"findingId": "finding-signal-tower-signal-code", "weight": 50, "requiresVariantIdsAny": ["signal-tower"]},
+      {"findingId": "finding-signal-tower-view-record", "weight": 50, "requiresVariantIdsAny": ["signal-tower"]},
+      {"findingId": "finding-colossus-statue-base-inscription", "weight": 50, "requiresVariantIdsAny": ["colossus-statue"]},
+      {"findingId": "finding-colossus-statue-stone-sample", "weight": 50, "requiresVariantIdsAny": ["colossus-statue"]},
+      {"findingId": "finding-old-lighthouse-lens-fragment", "weight": 50, "requiresVariantIdsAny": ["old-lighthouse"]},
+      {"findingId": "finding-old-lighthouse-keeper-log", "weight": 50, "requiresVariantIdsAny": ["old-lighthouse"]}
     ] }
   ]
 }

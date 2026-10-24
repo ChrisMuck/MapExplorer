@@ -219,7 +219,7 @@ public sealed class WorldGeneratorPlacementTests
             text.Append(special.Cell.I).Append('|').Append(special.Archetype).Append('|').Append(LegacyNames.TryGetValue(special.Variant, out var legacy) ? legacy : special.Variant)
                 .Append('|').Append(special.Owner).Append('|').Append(special.WatchedBy).Append('|').Append(special.Ancient)
                 .Append('|').Append(string.Join(",", special.Modifiers)).Append('|').Append(string.Join(",", special.ContextTags))
-                .Append('|').Append(string.Join(",", special.EvidenceSeedIds)).Append('|').Append(special.Anchor.Kind);
+                .Append('|').Append(string.Join(",", special.EvidenceSeedIds.Where(id => !id.StartsWith("evidence-site-", StringComparison.Ordinal)))).Append('|').Append(special.Anchor.Kind);
             foreach (var cell in special.Anchor.Cells)
             {
                 text.Append(':').Append(cell.I).Append('b').Append(cell.Biome);

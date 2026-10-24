@@ -172,6 +172,19 @@ Ressourcen, Verwahrung, Grenzzeichen, Gefahrenzonen, Siedlungen).
 - Die Umschrift der ersten acht Profile (`Zerstoerte Bruecke`, `Naturphaenomen` …) ist durch echte Umlaute ersetzt.
 - Offen: Umschalten der Sprache zur Laufzeit (die Auflösung geschieht beim Laden), Textschlüssel für Aktions- und Modifikatortexte.
 
+### Stand Funde und Beweise (umgesetzt)
+
+- 46 neue Funde (`finding-<variante>-<name>`, je Variante zwei: Aufzeichnung, Probe, Gegenstand oder Dokument mit den Belohnungsstufen aus
+  `world_generator_finds_proposal.md`) und 23 Beweise (`evidence-site-<variante>`). Jede neue Variante nennt beide Funde im Pool und den Beweis
+  im Szenarioprofil.
+- Fundtabelleneinträge haben das neue Feld `requiresVariantIdsAny`. Die vier vorhandenen Tabellen sind danach gefiltert: Grabinschrift nur für das
+  Grab, Siegelfragment nur für das Tor, Moorproben nur fürs Moor, Gipfelfunde nur für den Gipfel. Die neuen Varianten haben eigene Einträge in der
+  Tabelle ihrer Aktion (Untersuchen, Inneres untersuchen, Gefahr eindämmen, Aufnehmen). Der Validator meldet einen Filter auf eine unbekannte Variante.
+- Der Generator stellt dem Ort den Beweis seiner Variante voran (`evidenceSeedId` je Variante in `location-placement.json`), sodass der
+  Späherbericht Ortstypisches meldet. Der Katalog prüft, dass der Beweis definiert ist. Die Prüfsummen der Vergleichswelten ignorieren diese
+  Beweiskeime und gelten unverändert; die Orte und ihre Plätze sind dieselben.
+- Folgen: bewusst keine neuen (die neuen Varianten haben keine Aktion, die eine Folge einplant).
+
 ## 6. Risiken und Absicherung
 
 - **Zufallsreihenfolge.** Der Generator zieht seine Zufallszahlen in fester Reihenfolge. Wer Schleifen oder Auswahl umbaut,

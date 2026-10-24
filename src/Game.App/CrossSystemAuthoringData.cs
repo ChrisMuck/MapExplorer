@@ -253,7 +253,7 @@ public sealed class FindingTableEntryDefinition
 {
     public FindingTableEntryDefinition(string? findingId, int weight, IEnumerable<string>? interactionStateIds = null,
         IEnumerable<string>? operationalStateIds = null, IEnumerable<string>? presenceStateIds = null,
-        IEnumerable<string>? requiredContextTagsAny = null)
+        IEnumerable<string>? requiredContextTagsAny = null, IEnumerable<string>? requiredVariantIdsAny = null)
     {
         FindingId = string.IsNullOrWhiteSpace(findingId) ? null : findingId.Trim();
         Weight = weight > 0 ? weight : throw new ArgumentOutOfRangeException(nameof(weight), "Finding table weight must be positive.");
@@ -261,6 +261,7 @@ public sealed class FindingTableEntryDefinition
         OperationalStateIds = LocationContextActionRuleDefinition.NormalizeOptional(operationalStateIds);
         PresenceStateIds = LocationContextActionRuleDefinition.NormalizeOptional(presenceStateIds);
         RequiredContextTagsAny = LocationContextActionRuleDefinition.NormalizeOptional(requiredContextTagsAny);
+        RequiredVariantIdsAny = LocationContextActionRuleDefinition.NormalizeOptional(requiredVariantIdsAny);
     }
 
     public string? FindingId { get; }
@@ -269,8 +270,11 @@ public sealed class FindingTableEntryDefinition
     public IReadOnlyList<string> OperationalStateIds { get; }
     public IReadOnlyList<string> PresenceStateIds { get; }
     public IReadOnlyList<string> RequiredContextTagsAny { get; }
+    /// <summary>When set, the entry belongs to these location variants only (an archetype table serves several variants).</summary>
+    public IReadOnlyList<string> RequiredVariantIdsAny { get; }
 
     public bool Matches(SpecialLocationState location) =>
+        (RequiredVariantIdsAny.Count == 0 || RequiredVariantIdsAny.Contains(location.VariantId ?? string.Empty, StringComparer.Ordinal)) &&
         (InteractionStateIds.Count == 0 || InteractionStateIds.Contains(location.InteractionStateId, StringComparer.Ordinal)) &&
         (OperationalStateIds.Count == 0 || OperationalStateIds.Contains(location.OperationalStateId, StringComparer.Ordinal)) &&
         (PresenceStateIds.Count == 0 || PresenceStateIds.Contains(location.PresenceStateId, StringComparer.Ordinal)) &&
@@ -543,7 +547,7 @@ public static class CrossSystemAuthoringDataLoader
         Text(item, "id"), Int(item, "rolls"), Text(item, "repeatPolicy"),
         (item["entries"] as JArray ?? new JArray()).OfType<JObject>().Select(entry => new FindingTableEntryDefinition(
             (string?)entry["findingId"], Int(entry, "weight"), Strings(entry, "whenInteractionStatesAny"),
-            Strings(entry, "whenOperationalStatesAny"), Strings(entry, "whenPresenceStatesAny"), Strings(entry, "requiresContextTagsAny"))));
+            Strings(entry, "whenOperationalStatesAny"), Strings(entry, "whenPresenceStatesAny"), Strings(entry, "requiresContextTagsAny"), Strings(entry, "requiresVariantIdsAny"))));
 
     private static ContextDefinition ParseContext(JObject item) => new(Text(item, "id"), Strings(item, "applicableArchetypeIds"), Strings(item, "contextTags"), Strings(item, "discoverableBy"), Strings(item, "candidateEvidenceIds"), Strings(item, "candidateActionTags"), Strings(item, "candidateConsequenceFamilies"));
 
