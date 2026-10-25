@@ -1,6 +1,6 @@
 # Konzept: Siedlungen des Generators im Spielzustand und im Bild
 
-Status: **Entwurf zur Owner-Freigabe; es wurde noch nichts am Code oder an den Daten geändert**
+Status: **Entscheidungen des Owners eingetragen (Abschnitt 6); es wurde noch nichts am Code oder an den Daten geändert**
 
 Zugehörige Dokumente:
 
@@ -24,7 +24,7 @@ Zugehörige Dokumente:
 
 ## 2. Ziel
 
-1. Hauptstädte und Städte (und optional Dörfer) des Generators sind **Orte im Spielzustand**: auffindbar, mit Namen, Besitzerfraktion, Zuständen und Aktionen.
+1. Hauptstädte, Städte, Dörfer und Fischerdörfer des Generators sind **Orte im Spielzustand**: auffindbar, mit Namen, Besitzerfraktion, Zuständen und Aktionen.
 2. Sie sind **Daten**: Varianten, Zustände, Texte und Bilder kommen aus JSON wie die übrigen Generator-Orte.
 3. Straßen enden an Siedlungen; die Expeditionsbasis ist ein Ort mit Bild.
 4. Wissensehrlichkeit bleibt: Ein Ort erscheint erst, wenn das Gelände bekannt ist; die Fraktionsfarbe zeigt nur, was der Spieler schon weiß.
@@ -33,13 +33,14 @@ Zugehörige Dokumente:
 
 ### 3.1 Datenmodell
 
-- Archetyp `contact-site` (keine Änderung). Neue Varianten:
+- Archetyp `contact-site` (keine Änderung). Neue Varianten (vier Stufen: Hauptstadt, Stadt, Dorf, Fischerdorf):
 
 | Variante | Quelle | Bedeutung |
 | --- | --- | --- |
 | `faction-capital` | `Faction.Seed` | Sitz einer Fraktion: größte Siedlung, Mauer, Tor, mehrere Häuser, Markt |
 | `faction-town` | `Faction.Towns` | Stadt: Häuser, Palisade oder Zaun, Tor |
-| `faction-village` | neu (Abschnitt 3.3) | kleiner Weiler: wenige Häuser, Zaun |
+| `faction-village` | neu (Abschnitt 3.3) | Landdorf: wenige Häuser, Zaun |
+| `fishing-village` | neu (Abschnitt 3.3) | Fischerdorf an Küste oder Wasser: Hütten, Boote, Trockengestelle |
 
 - Jede Variante bekommt wie die anderen Generator-Orte Zustandsprofil, Szenarioprofil, Inhaltsprofil, Textschlüssel, Szenen- und Eröffnungstexte (Entwurf).
 - **Zustände (Vorschlag).** Betrieb: `open` (Anfang), `restricted` (Zutritt beschränkt), `closed` (schließt sich Fremden), `abandoned` (verlassen); Anwesenheit:
@@ -59,19 +60,44 @@ Zugehörige Dokumente:
 - Die **Expeditionsbasis** wird in generierten Welten zu einem Ort der Art `BaseCamp` (wie im Tutorial), damit sie ein Bild und eine Marke bekommt.
   Das ändert keine Spielregel.
 
-### 3.3 Dörfer (Entscheidung offen)
+### 3.3 Dörfer (entschieden: im Generator)
 
-Der Generator kennt nur zwei Stufen. Für kleine Weiler (Konzept Anhang A.2) gibt es zwei Wege:
+Der Generator bekommt eine dritte Stufe. Dörfer sind klein, zahlreicher als Städte, aber **begrenzt**:
 
-1. **Nur Hauptstadt und Stadt** (Vorschlag für den ersten Schnitt). Der Dorf-Look kann später als Variante dazukommen, ohne etwas umzubauen.
-2. **Dörfer im Generator**: je Stadt null bis zwei Dörfer als Satelliten im eigenen Gebiet, mit eigener Regel in `PlacementTable` (Gruppe `settlements`, Kandidaten „Gebietsfelder
-   mit Abstand zu Städten"). Das verändert Weltaufbau und Zufallsfolge (die Prüfsummen der Vergleichswelten ändern sich einmal gewollt).
+- Varianten: `faction-village` (Landdorf) und `fishing-village` (**Fischerdorf**, nur an Küste oder am Wasser). Ein Fischerdorf kann keine Stadt sein; Städte und Hauptstädte
+  entstehen weiter nur im Landesinneren des Gebiets (Biom und Abstand wie heute).
+- Platzierung in `PlaceSettlements` nach den Städten, im Gebiet der Fraktion, mit eigenem Abstand zu allen Siedlungen. Die Regeln liegen als Daten vor
+  (Gruppe `settlements` im Platzierungsdokument, siehe unten), nicht als feste Zahlen im Code.
+- **Begrenzung (Startwerte, werden an Testwelten geprüft):**
+
+| Regel | Startwert |
+| --- | --- |
+| Dörfer je Stadt | 0,6 (aufgerundet nach Zufall, aber nie mehr als der Deckel) |
+| Dörfer je Fraktion höchstens | 4 |
+| Abstand zu jeder anderen Siedlung mindestens | 3 Felder |
+| Dörfer an der Küste werden zu Fischerdörfern | ja; höchstens die Hälfte der Dörfer einer Fraktion |
+| Gesamtzahl Siedlungen je Welt | höchstens ein Drittel der Zahl der Sonderorte der Welt (Prüfwert im Test) |
+
+Zum Vergleich (Mittel aus acht Welten je Größe, drei Fraktionen): 40 x 30 Felder haben 610 Landfelder, 3 Hauptstädte, 10,6 Städte und 22,6 Sonderorte; 90 x 68 haben 3185
+Landfelder, 3 Hauptstädte, 14,9 Städte und 93 Sonderorte. Mit den Startwerten kämen im ersten Fall rund 6 Dörfer, im zweiten rund 9 dazu; Siedlungen blieben damit klar in der Minderheit
+gegenüber den Orten zum Erkunden.
+
+- Die Regeln sind Daten: Das Platzierungsdokument bekommt einen Abschnitt `settlements` mit `villagesPerTown`, `maxVillagesPerFaction`, `minSpacing`, `coastalVillageVariant`.
+- Der Zufallsablauf des Generators ändert sich dadurch; die Prüfsummen der Vergleichswelten (Sonderorte) gelten nur, wenn die Dörfer nach den Sonderorten gewürfelt werden (eigener
+  Zufallsstrom für Siedlungen). Das ist die Absicherung: **die Sonderorte bleiben für jeden Seed unverändert**.
 
 ### 3.4 Kontakt und Fraktion
 
 Die Aktion „sprechen" beim Kontaktort soll die **besitzende Fraktion** ansprechen. Heute nennt eine Wirkung die Fraktion fest (`AddFactionMemory` mit `FactionId`).
 Damit generierte Siedlungen jeder Fraktion gehören können, braucht die Wirkung die Angabe „Fraktion des Ortes" (neuer Platzhalter `owner-of-location`). Das ist die
 einzige Änderung an der Spiellogik und braucht Tests (Kontakt, Anger, Gedächtnis). Ohne sie sind Siedlungen sicht- und besuchbar, aber noch ohne Folgen für die Fraktion.
+
+### 3.5a Wissen und Name (entschieden)
+
+- Eine Siedlung erscheint **erst, wenn ihr Feld aufgedeckt ist**, wie jeder Ort. Kontakt verrät nur grobe Richtungen („im Norden", „im Westen"), nie ein Feld; Kontakt deckt kein Gelände auf.
+- Vor dem Kontakt zeigt die Karte die **allgemeine Bezeichnung der Variante** (Hauptstadt, Stadt, Dorf, Fischerdorf). Den **Eigennamen** erfährt der Spieler erst durch Kontakt
+  (Erkundungszustand „contacted"). Technisch: `SpecialLocationState` trägt den allgemeinen Namen und den Eigennamen getrennt; `KnowledgeState` speichert den bekannten Namen
+  (`KnownName`), den die Kontaktaktion setzt; die Karte zeigt `KnownName ?? allgemeine Bezeichnung`. Der Eigenname liegt damit nur in der Wahrheit (`WorldState`), nicht im Spielerwissen.
 
 ### 3.5 Darstellung
 
@@ -82,25 +108,31 @@ Drei Kompositionen und eine für die Basis (Punktanker, größerer Maßstab als 
 | `faction-capital` | 6 bis 8 Häuser um einen Marktplatz, Mauerring mit Tor und Turm, Fahnen, Rauch, Figurengruppen |
 | `faction-town` | 4 bis 5 Häuser, Palisade mit Tor, Rauch, Figuren |
 | `faction-village` | 2 bis 3 Häuser, Zaun, Rauch |
-| Basis (`BaseCamp`) | Zelte, Lagerfeuer, Flagge der Expedition |
+| `fishing-village` | 2 bis 3 Häuser auf Pfählen oder am Ufer, Boote, Trockengestelle, Rauch |
+| Basis (`BaseCamp`) | **eigenes Design**: befestigtes Expeditionslager mit Zelten, Lagerhaus, Fahnenmast, Feuer und Tor, anders als jede Siedlung (kein Zaun einer Fraktion) |
+| Expedition unterwegs | **eigenes Bild** für die Gruppe auf der Karte: Figurengruppe mit Tragtieren und Fahne; Größe nach Zahl der Mitglieder, Haltung nach Zustand (marschiert, lagert, erschöpft) |
 
 - **Zustände im Bild:** offen: Tor offen, Figuren; beschränkt: Tor halb geschlossen, Wachen; geschlossen: Tor zu, Wachen, kein Rauch; verlassen: Dächer eingesunken, Bewuchs, kein Licht.
   Anwesenheit „Wachen": Figuren am Tor. Erkundung: Pfahl, Feldtafel wie bei den anderen Orten.
 - **Fraktionsfarbe.** Fahnen und Dachfarbe zeigen die Farbe der Fraktion, wenn der Spieler die Fraktion kennt; sonst neutral (grau/Papier). Dafür braucht es die offene
   Fraktionsfarbe der Grenzzeichen: `FactionState` trägt eine Farbe (aus den Fraktionsdaten statt fest im Generator), `LocationVisualContext` trägt eine **bekannte** Besitzerfarbe,
   Teile dürfen eine Farbe aus dem Kontext beziehen (`colorFrom: "owner"`). Dieselbe Mechanik färbt Grenzzeichen.
+- Die Expedition ist kein Ort, sondern eine Einheit der Karte. Ihr Bild gehört zu V4 (Figuren und Gruppen); es bekommt in der Galerie eine eigene Rubrik „Gruppen". Die Basis
+  ist ein Ort mit Bild und steht in S3.
 - Siedlungen werden in der **Ortsgalerie** (Menü Map Style) wie die übrigen Orte geprüft; für die Fraktionsfarbe bekommt die Galerie einen Farbwähler.
 
 ## 4. Stufen
 
+Reihenfolge nach Owner-Entscheid: zuerst Orte, Straßen und Bilder, danach Farbe und Kontakt.
+
 | Stufe | Inhalt | Prüfung |
 | --- | --- | --- |
 | S0 | Dieses Konzept; Freigabe | Review |
-| S1 | Varianten, Profile, Texte; Brücke erzeugt Siedlungsorte und Basisort; Straßen enden an Orten; Tests (Anzahl, Besitzer, Namen, Reihenfolge der Ids) | `Game.Tests` |
-| S2 | Fraktionsfarbe: Spielzustand, Kontext, Teile mit Farbquelle; Grenzzeichen nutzen sie zuerst | `Game.Tests`, Galerie |
-| S3 | Kompositionen für Hauptstadt, Stadt (und Dorf, falls Weg 2), Basis | Galerie, Unity |
-| S4 | Wirkung „Fraktion des Ortes" (Abschnitt 3.4) und Kontaktablauf | `Game.Tests`, Spieltest |
-| S5 (optional) | Dörfer im Generator (Abschnitt 3.3, Weg 2) | Prüfsummen neu begründet |
+| S1 | Generator: Dörfer und Fischerdörfer (Regeln als Daten, eigener Zufallsstrom, Deckel); Varianten, Profile und Texte für Hauptstadt, Stadt, Dorf, Fischerdorf; Brücke erzeugt Siedlungsorte und den Basisort; Straßen enden an Orten | `Game.Tests`: Anzahl und Deckel für viele Seeds, Sonderorte unverändert (Prüfsummen), Besitzer, Namen, Ids |
+| S3 | Kompositionen für Hauptstadt, Stadt, Dorf, Fischerdorf und Basis (Galerie), Zustände im Bild | Galerie, Unity |
+| S3b | Bild der Expedition (Gruppe) als eigene Rubrik; gehört zu V4, hier nur vorgemerkt | Galerie |
+| S2 | Fraktionsfarbe: Spielzustand, Kontext, Teile mit Farbquelle; Grenzzeichen nutzen sie zuerst; nur bei bekannter Fraktion | `Game.Tests`, Galerie |
+| S4 | Kontakt: Wirkung „Fraktion des Ortes", Eigenname erst nach Kontakt (`KnownName`), Richtungshinweis statt Feld | `Game.Tests`, Spieltest |
 
 ## 5. Risiken
 
@@ -111,11 +143,13 @@ Drei Kompositionen und eine für die Basis (Punktanker, größerer Maßstab als 
 - **Aufwand der Bilder** (Maßstab, Leistung bei vielen Siedlungen): Kompositionen bleiben klein; Rauch und Lichter nur bei offenen Orten.
 - **Alte Prototypen:** Die fünf Tutorialsiedlungen bleiben unverändert, bis S3 Bilder liefert; ihre Umstellung auf die neuen Varianten wäre ein getrennter Schritt.
 
-## 6. Fragen an den Owner
+## 6. Entscheidungen des Owners
 
-1. Dörfer: Weg 1 (nur Hauptstadt und Stadt, Dorf später) oder Weg 2 (Dörfer im Generator)?
-2. Sollen Siedlungen zu Beginn **unbekannt** sein und erst beim Aufdecken des Feldes erscheinen (Vorschlag), oder sollen Hauptstädte immer bekannt sein?
-3. Soll der **Ortsname** einer Siedlung sofort auf der Karte stehen, oder erst nach Kontakt (vorher „Siedlung")?
-4. Fraktionsfarbe nur bei bekannter Fraktion (Vorschlag) oder immer?
-5. Die Basis als Ort mit Bild: einverstanden?
-6. Reihenfolge: erst S1 (Orte und Straßen) und S3 (Bilder), danach S2 und S4 (Farbe und Kontakt), oder die Farbe zuerst?
+| Frage | Entscheidung | Folge |
+| --- | --- | --- |
+| 1. Dörfer | **Weg 2: Dörfer im Generator**, auch Fischerdörfer; von allen Siedlungsarten darf es nicht zu viele geben | Abschnitt 3.3: eigene Stufe, Deckel, eigener Zufallsstrom, Prüfwert |
+| 2. Sichtbarkeit | **Erst bekannt, wenn das Feld aufgedeckt ist**; Kontakt nennt nur Richtungen, keine Koordinate | Abschnitt 3.5a: Kontakt deckt kein Gelände auf |
+| 3. Ortsname | **Erst nach Kontakt** | `KnownName` im Spielerwissen (S4); davor allgemeine Bezeichnung |
+| 4. Fraktionsfarbe | **Nur bei bekannter Fraktion** | S2 |
+| 5. Basis | **Eigenes Design** für die Basis, ebenso ein eigenes Bild für die Expedition unterwegs | Abschnitt 3.5; Expedition gehört zu V4 |
+| 6. Reihenfolge | **Erst Orte, Straßen, Bilder; dann Farbe und Kontakt** | Stufen S1, S3, danach S2, S4 |
