@@ -72,18 +72,21 @@ public sealed class WorldGenBridge
     private readonly FactionProfileDefinitionSet? factionProfiles;
     private readonly PlacementTable? placement;
     private readonly IReadOnlyDictionary<string, string>? variantLabels;
+    private readonly IReadOnlyDictionary<string, LocationInitialStates>? variantInitialStates;
 
     /// <param name="variantLabels">Display names by catalog variant id; a variant without one is shown by its id.</param>
     public WorldGenBridge(
         FactionSignatureDefinitionSet? factionSignatures = null,
         FactionProfileDefinitionSet? factionProfiles = null,
         PlacementTable? placement = null,
-        IReadOnlyDictionary<string, string>? variantLabels = null)
+        IReadOnlyDictionary<string, string>? variantLabels = null,
+        IReadOnlyDictionary<string, LocationInitialStates>? variantInitialStates = null)
     {
         this.factionSignatures = factionSignatures;
         this.factionProfiles = factionProfiles;
         this.placement = placement;
         this.variantLabels = variantLabels;
+        this.variantInitialStates = variantInitialStates;
     }
 
     public WorldGenerationBridgeResult Generate(WorldGenerationRequest request)
@@ -102,7 +105,10 @@ public sealed class WorldGenBridge
         HexCoord ToCore(HexCell cell) => new(cell.AX + qOffset, cell.AZ);
         var factionIds = generated.Factions.ToDictionary(faction => faction.Id, faction => $"faction-{faction.Id}");
         var signatureProfiles = AssignSignatureProfiles(generated);
-        var locations = BuildLocations(generated, ToCore, factionIds, variantLabels);
+        var specialLocations = BuildLocations(generated, ToCore, factionIds, variantLabels, variantInitialStates);
+        var locations = specialLocations
+            .Concat(BuildSettlements(generated, ToCore, factionIds, variantLabels, variantInitialStates, placement, specialLocations))
+            .ToList();
         var locationByCell = locations
             .Where(location => location.Anchor.Kind == LocationAnchorKind.Point)
             .ToDictionary(location => location.Coord, location => location.Id);
@@ -126,7 +132,7 @@ public sealed class WorldGenBridge
             paths,
             locations,
             random: new DeterministicRandomState(generated.Params.Seed));
-        AddGeneratedSoftConnections(world, locations);
+        AddGeneratedSoftConnections(world, specialLocations);
         var factions = generated.Factions
             .Select(faction => new FactionState(
                 factionIds[faction.Id],
@@ -200,7 +206,8 @@ public sealed class WorldGenBridge
         GeneratedWorld world,
         Func<HexCell, HexCoord> toCore,
         IReadOnlyDictionary<int, string> factionIds,
-        IReadOnlyDictionary<string, string>? variantLabels)
+        IReadOnlyDictionary<string, string>? variantLabels,
+        IReadOnlyDictionary<string, LocationInitialStates>? variantInitialStates)
     {
         var results = new List<SpecialLocationState>();
         for (var index = 0; index < world.Specials.Count; index++)
@@ -223,9 +230,79 @@ public sealed class WorldGenBridge
                 CatalogArchetypeFor(source.Archetype),
                 source.Variant,
                 source.Modifiers.Select(ModifierIdFor),
+                interactionStateId: StartState(variantInitialStates, source.Variant).Interaction,
+                operationalStateId: StartState(variantInitialStates, source.Variant).Operational,
+                presenceStateId: StartState(variantInitialStates, source.Variant).Presence,
                 factionRelations: relations,
                 contextTags: source.ContextTags,
                 evidenceSeedIds: source.EvidenceSeedIds));
+        }
+
+        return results;
+    }
+
+    private static LocationInitialStates StartState(IReadOnlyDictionary<string, LocationInitialStates>? states, string variantId)
+    {
+        return states != null && states.TryGetValue(variantId, out var found)
+            ? found
+            : new LocationInitialStates(LocationStateIds.Interaction.Untouched, LocationStateIds.Operational.None, LocationStateIds.Presence.Unknown);
+    }
+
+    /// <summary>
+    /// Capitals, towns and villages of the factions become contact places owned by their faction, and the expedition base becomes a place of its own.
+    /// The player sees the general designation of the variant; the generated own name stays in <see cref="SpecialLocationState.ProperName"/>.
+    /// </summary>
+    private static IReadOnlyList<SpecialLocationState> BuildSettlements(
+        GeneratedWorld world,
+        Func<HexCell, HexCoord> toCore,
+        IReadOnlyDictionary<int, string> factionIds,
+        IReadOnlyDictionary<string, string>? variantLabels,
+        IReadOnlyDictionary<string, LocationInitialStates>? variantInitialStates,
+        PlacementTable? placement,
+        IReadOnlyList<SpecialLocationState> specials)
+    {
+        var rules = (placement ?? PlacementTable.Default()).Settlements;
+        var results = new List<SpecialLocationState>();
+        // An edge place (bridge, pass) lies between two hexes; only point places occupy a hex of their own.
+        var occupied = new HashSet<HexCoord>(specials.Where(location => location.Anchor.Kind == LocationAnchorKind.Point).Select(location => location.Coord));
+        var index = specials.Count;
+
+        void Add(HexCell cell, string variantId, string? properName, int factionId)
+        {
+            var coord = toCore(cell);
+            if (!occupied.Add(coord) || !factionIds.TryGetValue(factionId, out var owner)) return;
+            index++;
+            var state = StartState(variantInitialStates, variantId);
+            var label = variantLabels != null && variantLabels.TryGetValue(variantId, out var found) ? found : variantId;
+            results.Add(new SpecialLocationState(
+                $"worldgen-location-{index}",
+                LocationKind.Settlement,
+                coord,
+                label,
+                LocationAnchor.Point(coord),
+                "contact-site",
+                variantId,
+                new[] { "modifier-faction-owned" },
+                interactionStateId: state.Interaction,
+                operationalStateId: state.Operational,
+                presenceStateId: state.Presence,
+                factionRelations: new[] { new LocationFactionRelationState(owner, LocationFactionRelationKind.Claimed, new[] { "settlement" }) },
+                contextTags: new[] { "settlement", "territorial-claim" },
+                evidenceSeedIds: new[] { "evidence-claim-markers" },
+                properName: properName));
+        }
+
+        foreach (var faction in world.Factions.OrderBy(item => item.Id))
+        {
+            if (faction.Seed != null) Add(faction.Seed, rules.CapitalVariant, faction.Seed.PlaceName, faction.Id);
+            foreach (var town in faction.Towns) Add(town, rules.TownVariant, town.PlaceName, faction.Id);
+            foreach (var village in faction.Villages) Add(village.Cell, village.Fishing ? rules.FishingVillageVariant : rules.VillageVariant, village.Name, faction.Id);
+        }
+
+        if (world.Base != null)
+        {
+            var coord = toCore(world.Base);
+            if (occupied.Add(coord)) results.Add(new SpecialLocationState("base-camp", LocationKind.BaseCamp, coord, "Basislager"));
         }
 
         return results;

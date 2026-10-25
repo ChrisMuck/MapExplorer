@@ -48,8 +48,10 @@ public sealed class SpecialLocationState
         IEnumerable<string>? factionIds = null,
         IEnumerable<LocationFactionRelationState>? factionRelations = null,
         IEnumerable<string>? contextTags = null,
-        IEnumerable<string>? evidenceSeedIds = null)
+        IEnumerable<string>? evidenceSeedIds = null,
+        string? properName = null)
     {
+        ProperName = string.IsNullOrWhiteSpace(properName) ? null : properName;
         Id = RequireText(id, nameof(id));
         Kind = kind;
         Coord = coord;
@@ -91,6 +93,9 @@ public sealed class SpecialLocationState
     }
 
     public string Id { get; }
+
+    /// <summary>The own name of the place as the world knows it. <see cref="Name"/> is what the player sees until the place has been contacted.</summary>
+    public string? ProperName { get; }
 
     public LocationKind Kind { get; }
 

@@ -5,7 +5,8 @@ public sealed class GeneratorVariantContentTests
 {
     private static readonly string[] AuthoredBefore =
     {
-        "broken-bridge", "marked-grave", "abandoned-camp", "sealed-gate", "border-warning-sign", "restless-marsh", "wind-carved-peak", "first-contact"
+        "broken-bridge", "marked-grave", "abandoned-camp", "sealed-gate", "border-warning-sign", "restless-marsh", "wind-carved-peak", "first-contact",
+        "faction-capital", "faction-town", "faction-village", "fishing-village"
     };
 
     public void RunAll()

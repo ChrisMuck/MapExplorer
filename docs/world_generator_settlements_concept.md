@@ -76,7 +76,7 @@ Der Generator bekommt eine dritte Stufe. Dörfer sind klein, zahlreicher als St�
 | Dörfer je Fraktion höchstens | 4 |
 | Abstand zu jeder anderen Siedlung mindestens | 3 Felder |
 | Dörfer an der Küste werden zu Fischerdörfern | ja; höchstens die Hälfte der Dörfer einer Fraktion |
-| Gesamtzahl Siedlungen je Welt | höchstens ein Drittel der Zahl der Sonderorte der Welt (Prüfwert im Test) |
+| Prüfwert im Test | Dörfer je Fraktion höchstens `floor(Städte × 0,6) + 1` und nie mehr als der Deckel; Fischerdörfer höchstens die Hälfte (aufgerundet) |
 
 Zum Vergleich (Mittel aus acht Welten je Größe, drei Fraktionen): 40 x 30 Felder haben 610 Landfelder, 3 Hauptstädte, 10,6 Städte und 22,6 Sonderorte; 90 x 68 haben 3185
 Landfelder, 3 Hauptstädte, 14,9 Städte und 93 Sonderorte. Mit den Startwerten kämen im ersten Fall rund 6 Dörfer, im zweiten rund 9 dazu; Siedlungen blieben damit klar in der Minderheit
@@ -133,6 +133,20 @@ Reihenfolge nach Owner-Entscheid: zuerst Orte, Straßen und Bilder, danach Farbe
 | S3b | Bild der Expedition (Gruppe) als eigene Rubrik; gehört zu V4, hier nur vorgemerkt | Galerie |
 | S2 | Fraktionsfarbe: Spielzustand, Kontext, Teile mit Farbquelle; Grenzzeichen nutzen sie zuerst; nur bei bekannter Fraktion | `Game.Tests`, Galerie |
 | S4 | Kontakt: Wirkung „Fraktion des Ortes", Eigenname erst nach Kontakt (`KnownName`), Richtungshinweis statt Feld | `Game.Tests`, Spieltest |
+
+## 4a. Stand S1 (umgesetzt)
+
+- Generator: `PlaceVillages` nach den Sonderorten, eigener Zufallsstrom (`villages`), Regeln als `SettlementRules` in `PlacementTable` und im Abschnitt `settlements` von
+  `location-placement.json`. `Faction.Villages` enthält Dörfer und Fischerdörfer mit Eigennamen. **Die Sonderorte bleiben für jeden Seed unverändert**
+  (die 108 Vergleichsprüfsummen gelten weiter).
+- Katalog: Varianten `faction-capital`, `faction-town`, `faction-village`, `fishing-village` (Kontaktort, Zustandsprofil `state-first-contact`, Aktionen und Szenen wie `first-contact`),
+  Inhaltsprofile mit Textschlüsseln, Eröffnungstexte; die Texte sind Entwürfe.
+- Brücke: Hauptstädte, Städte und Dörfer werden Orte (`LocationKind.Settlement`, beansprucht von ihrer Fraktion, `ProperName` getrennt vom angezeigten Namen), die Basis wird der Ort `base-camp`.
+  Die weichen Verbindungen der Welt nutzen weiter nur die Sonderorte. Straßen enden an Siedlungen (Test über viele Welten).
+- **Fund beim Bau:** Generierte Orte starteten bisher alle im Zustand `untouched/none/unknown`, den die Zustandsprofile der meisten Varianten gar nicht kennen; beim ersten Zugriff
+  auf einen Ort hätte die Zustandsprüfung (`ValidateRuntimeState`) eine Ausnahme geworfen. Die Brücke setzt jetzt die Anfangszustände des Zustandsprofils der Variante
+  (`GameDataCatalog.VariantInitialStates`); ein Test prüft alle Orte vieler Welten.
+- Offen für S3 und S4: Bilder, Fraktionsfarbe, Eigenname erst nach Kontakt (`KnownName`; die Karte zeigt bis dahin die allgemeine Bezeichnung), „Richtung statt Feld".
 
 ## 5. Risiken
 

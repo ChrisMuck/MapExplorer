@@ -63,6 +63,10 @@ namespace WorldGen
             _rng = new Rng(Hashing.SubSeed(p.Seed, p.FactionSalt, p.LocationSalt, "locations"));
             PlaceSpecials();
 
+            // Villages come last and draw from their own random stream, so the special locations above stay what they were.
+            _rng = new Rng(Hashing.SubSeed(p.Seed, p.FactionSalt, p.LocationSalt, "villages"));
+            PlaceVillages((p.Placement ?? PlacementTable.Default()).Settlements);
+
             ComputeStats();
 
             return new GeneratedWorld
@@ -1073,6 +1077,83 @@ namespace WorldGen
             }
 
             DeriveHexData();
+        }
+
+        // ===================== Stage 10: Villages =====================
+
+        private bool IsCoastalCell(HexCell c)
+        {
+            if (c.Biome == (int)Biome.Coast) return true;
+            for (int d = 0; d < 6; d++) { var n = _g.Step(c, d); if (n != null && n.IsOcean) return true; }
+            return false;
+        }
+
+        private bool IsNearWaterCell(HexCell c)
+        {
+            if (c.HasRiver) return true;
+            for (int d = 0; d < 6; d++) { var n = _g.Step(c, d); if (n != null && (n.IsLake || n.HasRiver)) return true; }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds a few small villages in each faction's territory: near roads and water, away from every other settlement. Fishing
+        /// villages need a coast or water. The numbers come from <see cref="SettlementRules"/> and stay small on purpose.
+        /// </summary>
+        private void PlaceVillages(SettlementRules rules)
+        {
+            var g = _g;
+            foreach (var f in _factions) f.Villages = new List<Village>();
+            if (rules.VillagesPerTown <= 0 || rules.MaxVillagesPerFaction <= 0) return;
+
+            var taken = new List<HexCell>();
+            foreach (var f in _factions) { if (f.Seed != null) taken.Add(f.Seed); taken.AddRange(f.Towns); }
+            if (_base != null) taken.Add(_base);
+            var roadCells = new HashSet<int>();
+            foreach (var path in _roads) foreach (var c in path) roadCells.Add(c.I);
+
+            foreach (var f in _factions)
+            {
+                if (f.Style == null || f.Seed == null) continue;
+                double want = f.Towns.Count * rules.VillagesPerTown;
+                int count = (int)Math.Floor(want);
+                if (_rng.NextDouble() < want - count) count++;
+                count = Math.Min(count, rules.MaxVillagesPerFaction);
+                if (count == 0) continue;
+
+                int fishingLeft = (int)Math.Ceiling(count * rules.MaxFishingShare);
+                var seen = new HashSet<string>();
+                if (f.Seed.PlaceName != null) seen.Add(f.Seed.PlaceName);
+                foreach (var t in f.Towns) if (t.PlaceName != null) seen.Add(t.PlaceName);
+                string Gen(SyllableGen gg) => NamingData.Generate(gg, _rng);
+                string Uniq(SyllableGen gg) { string n = Gen(gg); for (int t = 0; t < 12 && seen.Contains(n); t++) n = Gen(gg); seen.Add(n); return n; }
+
+                var terr = new List<HexCell>();
+                foreach (var c in g.Cells)
+                    if (c.Faction == f.Id && !c.IsUnder && c.Special == null && c.Settlement < 0
+                        && c.Biome != (int)Biome.Mountains && c.Biome != (int)Biome.Volcanic && c.Biome != (int)Biome.DeadZones) terr.Add(c);
+
+                for (int k = 0; k < count; k++)
+                {
+                    HexCell best = null; double bestScore = double.NegativeInfinity; bool bestWater = false;
+                    foreach (var c in terr)
+                    {
+                        if (taken.Contains(c)) continue;
+                        double minD = double.PositiveInfinity;
+                        foreach (var q in taken) { int dd = g.Dist(c, q); if (dd < minD) minD = dd; }
+                        if (minD < rules.MinSpacing) continue;
+                        bool water = IsCoastalCell(c) || IsNearWaterCell(c);
+                        bool nearRoad = roadCells.Contains(c.I);
+                        if (!nearRoad) for (int d = 0; d < 6 && !nearRoad; d++) { var n = g.Step(c, d); if (n != null && roadCells.Contains(n.I)) nearRoad = true; }
+                        double score = Math.Min(minD, 8) * 0.3 - c.Hazard * 2 + (nearRoad ? 0.8 : 0) + (water && fishingLeft > 0 ? 1.0 : 0) + _rng.NextDouble() * 0.4;
+                        if (score > bestScore) { bestScore = score; best = c; bestWater = water; }
+                    }
+                    if (best == null) break;
+                    bool fishing = bestWater && fishingLeft > 0;
+                    if (fishing) fishingLeft--;
+                    f.Villages.Add(new Village { Cell = best, Fishing = fishing, Name = Uniq(f.Style.Settlements) });
+                    taken.Add(best);
+                }
+            }
         }
 
         // ===================== Stats & validation (§7.1, §15.1) =====================

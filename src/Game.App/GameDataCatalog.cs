@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using Game.Core;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,6 +37,21 @@ public sealed class GameDataDocumentInfo
 /// Individual loaders remain responsible for typed parsing; this catalog owns root discovery,
 /// explicit manifests and the declared document set.
 /// </summary>
+/// <summary>The three state channels a location starts in.</summary>
+public sealed class LocationInitialStates
+{
+    public LocationInitialStates(string interaction, string operational, string presence)
+    {
+        Interaction = interaction;
+        Operational = operational;
+        Presence = presence;
+    }
+
+    public string Interaction { get; }
+    public string Operational { get; }
+    public string Presence { get; }
+}
+
 public sealed class GameDataCatalog
 {
     private const string ManifestFileName = "game-data-manifest.json";
@@ -187,6 +203,19 @@ public sealed class GameDataCatalog
         }
 
         VariantLabels = labels;
+
+        var initialStates = new Dictionary<string, LocationInitialStates>(StringComparer.Ordinal);
+        foreach (var scenario in authoring.ScenarioProfiles.Values)
+        {
+            if (!authoring.StateProfiles.TryGetValue(scenario.StateProfileId, out var stateProfile)) continue;
+            string Initial(string channel, string fallback) => stateProfile.Channels.TryGetValue(channel, out var definition) ? definition.InitialValue : fallback;
+            initialStates[scenario.VariantId] = new LocationInitialStates(
+                Initial(LocationStateChannels.Interaction, LocationStateIds.Interaction.Untouched),
+                Initial(LocationStateChannels.Operational, LocationStateIds.Operational.None),
+                Initial(LocationStateChannels.Presence, LocationStateIds.Presence.Unknown));
+        }
+
+        VariantInitialStates = initialStates;
         WorldGeneration = worldGeneration ?? throw new ArgumentNullException(nameof(worldGeneration));
         Tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
         this.documents = (documents ?? throw new ArgumentNullException(nameof(documents))).ToList();
@@ -209,6 +238,8 @@ public sealed class GameDataCatalog
     public WorldGen.PlacementTable? Placement { get; }
     /// <summary>Display name of every authored location variant (the title of its content profile), by variant id.</summary>
     public IReadOnlyDictionary<string, string> VariantLabels { get; }
+    /// <summary>The start state of a new location of every authored variant (initial values of its state profile), by variant id.</summary>
+    public IReadOnlyDictionary<string, LocationInitialStates> VariantInitialStates { get; }
     public WorldGenerationPresetCatalog WorldGeneration { get; }
     /// <summary>Validated deterministic composition of the curated tutorial world.</summary>
     public TutorialCampaignDefinition Tutorial { get; }

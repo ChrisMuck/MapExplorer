@@ -429,5 +429,15 @@
       ],
       "stopWhenExhausted": true
     }
-  ]
+  ],
+  "settlements": {
+    "villagesPerTown": 0.6,
+    "maxVillagesPerFaction": 4,
+    "minSpacing": 3,
+    "maxFishingShare": 0.5,
+    "capitalVariant": "faction-capital",
+    "townVariant": "faction-town",
+    "villageVariant": "faction-village",
+    "fishingVillageVariant": "fishing-village"
+  }
 }

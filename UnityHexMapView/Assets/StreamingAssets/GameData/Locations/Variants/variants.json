@@ -250,6 +250,38 @@
       "removedActionIds": [],
       "compatibleModifierIds": ["modifier-watched", "modifier-faction-owned", "modifier-sacred", "modifier-guarded"],
       "defaultContentProfileId": "content-wind-ribbons"
+    },
+    {
+      "id": "faction-capital",
+      "archetypeId": "contact-site",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-faction-owned", "modifier-guarded", "modifier-watched", "modifier-occupied", "modifier-invitation"],
+      "defaultContentProfileId": "content-faction-capital"
+    },
+    {
+      "id": "faction-town",
+      "archetypeId": "contact-site",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-faction-owned", "modifier-guarded", "modifier-watched", "modifier-occupied", "modifier-invitation"],
+      "defaultContentProfileId": "content-faction-town"
+    },
+    {
+      "id": "faction-village",
+      "archetypeId": "contact-site",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-faction-owned", "modifier-guarded", "modifier-watched", "modifier-occupied", "modifier-invitation"],
+      "defaultContentProfileId": "content-faction-village"
+    },
+    {
+      "id": "fishing-village",
+      "archetypeId": "contact-site",
+      "addedActionIds": [],
+      "removedActionIds": [],
+      "compatibleModifierIds": ["modifier-faction-owned", "modifier-guarded", "modifier-watched", "modifier-occupied", "modifier-invitation"],
+      "defaultContentProfileId": "content-fishing-village"
     }
   ]
 }
