@@ -138,9 +138,11 @@ public sealed class LocationVisualResolver
         if (location == null) throw new ArgumentNullException(nameof(location));
         if (context == null) throw new ArgumentNullException(nameof(context));
 
-        var archetypeId = location.ArchetypeId ?? string.Empty;
-        var marker = definitions.FindMarker(location.ArchetypeId);
-        var composition = definitions.FindComposition(location.ArchetypeId, location.VariantId);
+        // The expedition base has no archetype in the catalog; its picture is found under a pseudo archetype of its own.
+        var lookupArchetype = location.ArchetypeId ?? (location.Kind == LocationKind.BaseCamp ? "base-camp" : null);
+        var archetypeId = lookupArchetype ?? string.Empty;
+        var marker = definitions.FindMarker(lookupArchetype);
+        var composition = definitions.FindComposition(lookupArchetype, location.VariantId);
         var states = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["operational"] = context.OperationalStateId ?? VisualDefinitionSet.UnknownState,

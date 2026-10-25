@@ -148,6 +148,23 @@ Reihenfolge nach Owner-Entscheid: zuerst Orte, Straßen und Bilder, danach Farbe
   (`GameDataCatalog.VariantInitialStates`); ein Test prüft alle Orte vieler Welten.
 - Offen für S3 und S4: Bilder, Fraktionsfarbe, Eigenname erst nach Kontakt (`KnownName`; die Karte zeigt bis dahin die allgemeine Bezeichnung), „Richtung statt Feld".
 
+## 4b. Stand S3 (umgesetzt, in Unity ungeprüft)
+
+Fünf Kompositionen in `Visuals/visual-definitions.json`, geprüft in der Ortsgalerie (Menü Map Style → Create Site Gallery Scene):
+
+| Ort | Bild | Zustände |
+| --- | --- | --- |
+| `faction-capital` (Hauptstadt) | Mauerring mit sechs Türmen, Torhaus mit zwei Türmen und Flügeltoren, Burg, sechs Häuser, zwei Marktstände, Brunnen, Banner; 48 Elemente | Betrieb: verfügbar und eingeladen: Tore offen und Rauch; geschlossen: Tore zu, kein Rauch; eingeladen: zusätzlich Fahne und Laterne. Anwesenheit: da: Figuren; bewacht: dazu Wachen mit Speeren. Erkundung: Pfahl, Feldtafel, kalte Scheite |
+| `faction-town` (Stadt) | Palisadenring mit Tor, fünf Häuser, Marktstand, Brunnen; 43 Elemente | wie oben |
+| `faction-village` (Dorf) | Zaun, drei Häuser, Heuhaufen, Feld, ein Schornstein; 29 Elemente | wie oben |
+| `fishing-village` (Fischerdorf) | drei Hütten auf Pfählen, Steg, zwei Boote, Trockengestelle, Fischfässer; 25 Elemente | wie oben |
+| Expeditionsbasis | Palisade mit Tor, drei Zelte, Lagerhaus, blaue Expeditionsfahne, Feuer mit Licht und Rauch, Kisten, zwei Figuren; 30 Elemente; **immer gleich**, kein Zustand | keine |
+
+- Die Basis hat keinen Archetyp im Katalog. Der Auflöser findet ihr Bild unter dem **Pseudo-Archetyp `base-camp`** (`VisualDefinitionSet.PseudoArchetypeIds`); der Validator lässt ihn für Kompositionen zu.
+  Eine Marke (Ring, Expeditionsblau) gehört dazu.
+- Fraktionsfarbe fehlt noch (S2): Fahnen und Dächer der Siedlungen sind neutral.
+- Das Bild der **Expedition unterwegs** ist noch offen (V4, Gruppen).
+
 ## 5. Risiken
 
 - **Mehr Orte pro Welt** (bis ca. 6 je Fraktion). Weiche Verbindungen (`AddGeneratedSoftConnections`) wählen Orte nach Koordinate; mit Siedlungen ändern sich diese Verbindungen

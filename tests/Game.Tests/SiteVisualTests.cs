@@ -1,7 +1,7 @@
 using Game.App;
 using Game.Core;
 
-/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places, V3c containment sites and territorial markers, V3d hazard zones).</summary>
+/// <summary>Pins what the data compositions of the generator sites show for each state (V3a investigation and trace sites, V3b landmarks and resource places, V3c containment sites and territorial markers, V3d hazard zones, S3 settlements).</summary>
 public sealed class SiteVisualTests
 {
     private sealed record Case(string Archetype, string[] Interactions, string Variant, string BaseOperational, string[] Operational, int[] OperationalCounts, string BasePresence, string[] Presence, int[] PresenceCounts, int[] InteractionCounts, int Unknown);
@@ -35,6 +35,11 @@ public sealed class SiteVisualTests
         new("hazard-site", new[] { "assessed", "contained", "documented" }, "restless-marsh", "active", new[] { "active", "avoided", "traversed", "restricted", "contained" }, new[] { 11, 13, 13, 13, 13 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 11, 13, 12 }, new[] { 12, 14, 13 }, 10),
         new("hazard-site", new[] { "assessed", "contained", "documented" }, "volcanic-vent", "dormant", new[] { "dormant", "smoldering", "erupting", "avoided" }, new[] { 2, 4, 9, 5 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 2, 4, 3 }, new[] { 3, 5, 4 }, 2),
         new("hazard-site", new[] { "assessed", "contained", "documented" }, "dead-zone", "lifeless", new[] { "lifeless", "avoided", "traversed", "contained" }, new[] { 7, 9, 11, 10 }, "unknown", new[] { "unknown", "spreading", "watched" }, new[] { 7, 8, 8 }, new[] { 8, 10, 9 }, 7),
+
+        new("contact-site", new[] { "approached", "contacted", "withdrawn" }, "faction-capital", "closed", new[] { "closed", "available", "invited" }, new[] { 33, 36, 39 }, "unknown", new[] { "unknown", "present", "guarded" }, new[] { 33, 35, 39 }, new[] { 34, 35, 35 }, 33),
+        new("contact-site", new[] { "approached", "contacted", "withdrawn" }, "faction-town", "closed", new[] { "closed", "available", "invited" }, new[] { 29, 31, 34 }, "unknown", new[] { "unknown", "present", "guarded" }, new[] { 29, 31, 35 }, new[] { 30, 31, 31 }, 29),
+        new("contact-site", new[] { "approached", "contacted", "withdrawn" }, "faction-village", "closed", new[] { "closed", "available", "invited" }, new[] { 16, 17, 20 }, "unknown", new[] { "unknown", "present", "guarded" }, new[] { 16, 18, 22 }, new[] { 17, 18, 18 }, 16),
+        new("contact-site", new[] { "approached", "contacted", "withdrawn" }, "fishing-village", "closed", new[] { "closed", "available", "invited" }, new[] { 12, 13, 16 }, "unknown", new[] { "unknown", "present", "guarded" }, new[] { 12, 14, 18 }, new[] { 13, 14, 14 }, 12),
     };
 
     public void RunAll()
@@ -68,6 +73,13 @@ public sealed class SiteVisualTests
 
             AssertEqual(testCase.Unknown, Count(null, null, null), $"{testCase.Variant}: an unobserved site shows only its neutral parts");
         }
+
+        // The expedition base has no archetype in the catalog; its picture is found through the pseudo archetype "base-camp".
+        var baseCamp = new SpecialLocationState("base-camp", LocationKind.BaseCamp, new HexCoord(1, 1), "Basislager");
+        var basePicture = resolver.Resolve(baseCamp, new LocationVisualContext(VisualKnowledge.Confirmed, null));
+        AssertTrue(basePicture.CompositionId == "vis-expedition-base" && basePicture.MarkerColorHex == "#3D8BD9", "The base has its own composition and marker");
+        AssertEqual(30, basePicture.ShownElements.Count(), "The base shows tents, store, flag, fire and palisade");
+        AssertTrue(basePicture.ShownElements.Any(element => element.Kind == VisualElementKind.Light), "The base fire gives light");
     }
 
     private static void AssertEqual(int expected, int actual, string message)

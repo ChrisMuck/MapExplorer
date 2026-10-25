@@ -272,6 +272,12 @@ public sealed class VisualDefinitionSet
     public VisualPartDefinition? FindPart(string id) => parts.TryGetValue(id, out var part) ? part : null;
 
     /// <summary>Marker for the archetype, else the default marker, else a neutral built-in one.</summary>
+    /// <summary>
+    /// Archetype ids for places that have no archetype in the location catalog but a place of their own on the map (the expedition base).
+    /// A composition may match them without a catalog archetype.
+    /// </summary>
+    public static readonly IReadOnlyCollection<string> PseudoArchetypeIds = new[] { "base-camp" };
+
     public VisualMarkerDefinition FindMarker(string? archetypeId)
     {
         if (archetypeId != null && markers.TryGetValue(archetypeId, out var exact)) return exact;
@@ -509,7 +515,7 @@ public static class VisualDefinitionValidator
         if (visuals == null) throw new ArgumentNullException(nameof(visuals));
         foreach (var composition in visuals.Compositions)
         {
-            if (!locations.Definitions.Archetypes.ContainsKey(composition.ArchetypeId))
+            if (!locations.Definitions.Archetypes.ContainsKey(composition.ArchetypeId) && !VisualDefinitionSet.PseudoArchetypeIds.Contains(composition.ArchetypeId))
             {
                 throw new LocationDataException($"Visual composition '{composition.Id}' references unknown archetype '{composition.ArchetypeId}'.");
             }
