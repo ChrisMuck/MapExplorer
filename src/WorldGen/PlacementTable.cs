@@ -143,6 +143,22 @@ namespace WorldGen
         public bool StopWhenExhausted { get; set; }
     }
 
+    /// <summary>How many villages the generator adds and which catalog variants the settlements use.</summary>
+    public sealed class SettlementRules
+    {
+        /// <summary>Villages per town of a faction (the fraction is drawn at random).</summary>
+        public double VillagesPerTown { get; set; } = 0.6;
+        public int MaxVillagesPerFaction { get; set; } = 4;
+        /// <summary>Minimum distance in hexes to every other settlement and to the base.</summary>
+        public int MinSpacing { get; set; } = 3;
+        /// <summary>Largest share of a faction's villages that may be fishing villages.</summary>
+        public double MaxFishingShare { get; set; } = 0.5;
+        public string CapitalVariant { get; set; } = "faction-capital";
+        public string TownVariant { get; set; } = "faction-town";
+        public string VillageVariant { get; set; } = "faction-village";
+        public string FishingVillageVariant { get; set; } = "fishing-village";
+    }
+
     /// <summary>
     /// The rules for placing special locations. The generator reads them in order. <see cref="Default"/> reproduces the
     /// rules the generator had in code before they became data.
@@ -150,6 +166,7 @@ namespace WorldGen
     public sealed class PlacementTable
     {
         public List<PlacementGroup> Groups { get; set; } = new List<PlacementGroup>();
+        public SettlementRules Settlements { get; set; } = new SettlementRules();
 
         public static PlacementTable Default()
         {

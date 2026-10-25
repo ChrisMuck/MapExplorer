@@ -130,8 +130,16 @@ namespace MapExplorer.MapStyle
             entries.Clear();
             foreach (var composition in catalog.VisualDefinitions.Compositions)
             {
-                if (composition.AnchorMode != "point" || composition.VariantId == null)
+                var isBase = composition.VariantId == null && VisualDefinitionSet.PseudoArchetypeIds.Contains(composition.ArchetypeId);
+                if (composition.AnchorMode != "point" || (composition.VariantId == null && !isBase))
                 {
+                    continue;
+                }
+
+                if (isBase)
+                {
+                    var baseLocation = new SpecialLocationState("gallery-base", LocationKind.BaseCamp, new HexCoord(0, 0), "Expeditionsbasis");
+                    entries.Add(new Entry { ArchetypeId = composition.ArchetypeId, VariantId = null, Name = baseLocation.Name, Location = baseLocation });
                     continue;
                 }
 

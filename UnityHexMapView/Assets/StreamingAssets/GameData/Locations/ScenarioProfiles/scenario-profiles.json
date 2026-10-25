@@ -892,6 +892,138 @@
       "findingPoolIds": ["finding-wind-ribbons-ribbon-colors-record", "finding-wind-ribbons-pole-sample"],
       "consequencePoolIds": [],
       "connectionTags": ["boundary-signature", "watched-route"]
+    },
+    {
+      "id": "scenario-faction-capital",
+      "archetypeId": "contact-site",
+      "variantId": "faction-capital",
+      "stateProfileId": "state-first-contact",
+      "contentProfileId": "content-faction-capital",
+      "worldgen": {
+        "anchorKinds": ["Point"],
+        "terrainTagsAny": ["settlement", "route"],
+        "initialModifierPoolIds": ["modifier-faction-owned", "modifier-guarded"],
+        "claimEligibility": "if-inside-current-territory"
+      },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-withdraw"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          {
+            "whenInteractionStatesAny": ["approached"],
+            "addActionIds": ["action-communicate"]
+          },
+          {
+            "whenInteractionStatesAny": ["contacted"],
+            "addActionIds": ["action-trade", "action-request-passage", "action-negotiate"]
+          }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["settlement", "watched-route"]
+    },
+    {
+      "id": "scenario-faction-town",
+      "archetypeId": "contact-site",
+      "variantId": "faction-town",
+      "stateProfileId": "state-first-contact",
+      "contentProfileId": "content-faction-town",
+      "worldgen": {
+        "anchorKinds": ["Point"],
+        "terrainTagsAny": ["settlement", "route"],
+        "initialModifierPoolIds": ["modifier-faction-owned", "modifier-guarded"],
+        "claimEligibility": "if-inside-current-territory"
+      },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-withdraw"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          {
+            "whenInteractionStatesAny": ["approached"],
+            "addActionIds": ["action-communicate"]
+          },
+          {
+            "whenInteractionStatesAny": ["contacted"],
+            "addActionIds": ["action-trade", "action-request-passage", "action-negotiate"]
+          }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["settlement", "watched-route"]
+    },
+    {
+      "id": "scenario-faction-village",
+      "archetypeId": "contact-site",
+      "variantId": "faction-village",
+      "stateProfileId": "state-first-contact",
+      "contentProfileId": "content-faction-village",
+      "worldgen": {
+        "anchorKinds": ["Point"],
+        "terrainTagsAny": ["settlement", "route"],
+        "initialModifierPoolIds": ["modifier-faction-owned", "modifier-guarded"],
+        "claimEligibility": "if-inside-current-territory"
+      },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-withdraw"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          {
+            "whenInteractionStatesAny": ["approached"],
+            "addActionIds": ["action-communicate"]
+          },
+          {
+            "whenInteractionStatesAny": ["contacted"],
+            "addActionIds": ["action-trade", "action-request-passage", "action-negotiate"]
+          }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["settlement", "watched-route"]
+    },
+    {
+      "id": "scenario-fishing-village",
+      "archetypeId": "contact-site",
+      "variantId": "fishing-village",
+      "stateProfileId": "state-first-contact",
+      "contentProfileId": "content-fishing-village",
+      "worldgen": {
+        "anchorKinds": ["Point"],
+        "terrainTagsAny": ["settlement", "route"],
+        "initialModifierPoolIds": ["modifier-faction-owned", "modifier-guarded"],
+        "claimEligibility": "if-inside-current-territory"
+      },
+      "actionSet": {
+        "sharedActionIds": ["action-observe", "action-approach-cautiously", "action-withdraw"],
+        "initialAdditionalActionIds": [],
+        "maximumVisibleAdditionalActions": 3,
+        "contextActionRules": [],
+        "stateActionRules": [
+          {
+            "whenInteractionStatesAny": ["approached"],
+            "addActionIds": ["action-communicate"]
+          },
+          {
+            "whenInteractionStatesAny": ["contacted"],
+            "addActionIds": ["action-trade", "action-request-passage", "action-negotiate"]
+          }
+        ]
+      },
+      "evidencePoolIds": [],
+      "findingPoolIds": [],
+      "consequencePoolIds": [],
+      "connectionTags": ["settlement", "watched-route"]
     }
   ]
 }

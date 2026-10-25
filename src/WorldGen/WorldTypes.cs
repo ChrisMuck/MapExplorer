@@ -16,10 +16,19 @@ namespace WorldGen
 
         public HexCell Seed;                 // capital location
         public List<HexCell> Towns = new List<HexCell>();
+        public List<Village> Villages = new List<Village>();
 
         public NamingStyle Style;            // assigned World Naming Style
         public string StyleId;
         public string Name;                  // faction / people name
+    }
+
+    /// <summary>A small settlement of a faction; a fishing village sits on a coast or at water.</summary>
+    public sealed class Village
+    {
+        public HexCell Cell;
+        public bool Fishing;
+        public string Name;
     }
 
     public enum AnchorKind { Point, Edge, Area }

@@ -71,6 +71,19 @@ public static class LocationPlacementLoader
             {
                 table.Groups.Add(ParseGroup(item));
             }
+
+            if (document["settlements"] is JObject settlements)
+            {
+                var rules = table.Settlements;
+                rules.VillagesPerTown = (double?)settlements["villagesPerTown"] ?? rules.VillagesPerTown;
+                rules.MaxVillagesPerFaction = (int?)settlements["maxVillagesPerFaction"] ?? rules.MaxVillagesPerFaction;
+                rules.MinSpacing = (int?)settlements["minSpacing"] ?? rules.MinSpacing;
+                rules.MaxFishingShare = (double?)settlements["maxFishingShare"] ?? rules.MaxFishingShare;
+                rules.CapitalVariant = (string?)settlements["capitalVariant"] ?? rules.CapitalVariant;
+                rules.TownVariant = (string?)settlements["townVariant"] ?? rules.TownVariant;
+                rules.VillageVariant = (string?)settlements["villageVariant"] ?? rules.VillageVariant;
+                rules.FishingVillageVariant = (string?)settlements["fishingVillageVariant"] ?? rules.FishingVillageVariant;
+            }
         }
 
         Validate(table);
@@ -112,11 +125,23 @@ public static class LocationPlacementLoader
             groups.Add(item);
         }
 
+        var rules = table.Settlements;
         var document = new JObject
         {
             ["documentType"] = "location-placement",
             ["schemaVersion"] = SupportedSchemaVersion,
-            ["groups"] = groups
+            ["groups"] = groups,
+            ["settlements"] = new JObject
+            {
+                ["villagesPerTown"] = rules.VillagesPerTown,
+                ["maxVillagesPerFaction"] = rules.MaxVillagesPerFaction,
+                ["minSpacing"] = rules.MinSpacing,
+                ["maxFishingShare"] = rules.MaxFishingShare,
+                ["capitalVariant"] = rules.CapitalVariant,
+                ["townVariant"] = rules.TownVariant,
+                ["villageVariant"] = rules.VillageVariant,
+                ["fishingVillageVariant"] = rules.FishingVillageVariant
+            }
         };
         return document.ToString(Newtonsoft.Json.Formatting.Indented);
     }
@@ -279,6 +304,20 @@ public static class LocationPlacementLoader
     public static void Validate(PlacementTable table)
     {
         if (table == null) throw new ArgumentNullException(nameof(table));
+        var settlementRules = table.Settlements;
+        if (double.IsNaN(settlementRules.VillagesPerTown) || double.IsInfinity(settlementRules.VillagesPerTown) || settlementRules.VillagesPerTown < 0
+            || settlementRules.MaxVillagesPerFaction < 0 || settlementRules.MinSpacing < 1
+            || double.IsNaN(settlementRules.MaxFishingShare) || settlementRules.MaxFishingShare < 0 || settlementRules.MaxFishingShare > 1)
+        {
+            throw new LocationDataException("Settlement rules need villagesPerTown >= 0, maxVillagesPerFaction >= 0, minSpacing >= 1 and maxFishingShare between 0 and 1.");
+        }
+
+        var settlementVariants = new[] { settlementRules.CapitalVariant, settlementRules.TownVariant, settlementRules.VillageVariant, settlementRules.FishingVillageVariant };
+        if (settlementVariants.Any(string.IsNullOrWhiteSpace) || settlementVariants.Distinct(StringComparer.Ordinal).Count() != settlementVariants.Length)
+        {
+            throw new LocationDataException("Settlement rules need four different variant ids (capital, town, village, fishing village).");
+        }
+
         var groupIds = new HashSet<string>(StringComparer.Ordinal);
         var variantOwner = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var group in table.Groups)
@@ -335,6 +374,14 @@ public static class LocationPlacementLoader
     {
         if (table == null) throw new ArgumentNullException(nameof(table));
         if (authoring == null) throw new ArgumentNullException(nameof(authoring));
+        foreach (var settlementVariant in new[] { table.Settlements.CapitalVariant, table.Settlements.TownVariant, table.Settlements.VillageVariant, table.Settlements.FishingVillageVariant })
+        {
+            if (!authoring.ScenarioProfiles.Values.Any(scenario => scenario.VariantId == settlementVariant && scenario.ArchetypeId == "contact-site"))
+            {
+                throw new LocationDataException($"Settlement variant '{settlementVariant}' has no contact-site scenario profile in the catalog.");
+            }
+        }
+
         var byVariant = authoring.ScenarioProfiles.Values.GroupBy(scenario => scenario.VariantId, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         foreach (var group in table.Groups)
         {

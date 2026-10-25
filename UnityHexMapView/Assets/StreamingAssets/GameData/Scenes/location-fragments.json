@@ -168,6 +168,10 @@
     {"id": "frag-open-old-lighthouse", "group": "opening", "appliesTo": {"variantIds": ["old-lighthouse"]}, "textId": "scene.fragment.open.old-lighthouse"},
     {"id": "frag-open-border-stones", "group": "opening", "appliesTo": {"variantIds": ["border-stones"]}, "textId": "scene.fragment.open.border-stones"},
     {"id": "frag-open-skull-marks", "group": "opening", "appliesTo": {"variantIds": ["skull-marks"]}, "textId": "scene.fragment.open.skull-marks"},
-    {"id": "frag-open-wind-ribbons", "group": "opening", "appliesTo": {"variantIds": ["wind-ribbons"]}, "textId": "scene.fragment.open.wind-ribbons"}
+    {"id": "frag-open-wind-ribbons", "group": "opening", "appliesTo": {"variantIds": ["wind-ribbons"]}, "textId": "scene.fragment.open.wind-ribbons"},
+    {"id": "frag-open-faction-capital", "group": "opening", "appliesTo": {"variantIds": ["faction-capital"]}, "textId": "scene.fragment.open.faction-capital"},
+    {"id": "frag-open-faction-town", "group": "opening", "appliesTo": {"variantIds": ["faction-town"]}, "textId": "scene.fragment.open.faction-town"},
+    {"id": "frag-open-faction-village", "group": "opening", "appliesTo": {"variantIds": ["faction-village"]}, "textId": "scene.fragment.open.faction-village"},
+    {"id": "frag-open-fishing-village", "group": "opening", "appliesTo": {"variantIds": ["fishing-village"]}, "textId": "scene.fragment.open.fishing-village"}
   ]
 }

@@ -374,6 +374,54 @@
         "discoveredTextId": "location.wind-ribbons.found",
         "resolvedTextId": "location.wind-ribbons.done"
       }
+    },
+    {
+      "id": "content-faction-capital",
+      "titleTextId": "location.faction-capital.title",
+      "subtitleTextId": "location.faction-capital.subtitle",
+      "shortDescriptionTextId": "location.faction-capital.short",
+      "descriptionTextId": "location.faction-capital.desc",
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discoveredTextId": "location.faction-capital.found",
+        "resolvedTextId": "location.faction-capital.done"
+      }
+    },
+    {
+      "id": "content-faction-town",
+      "titleTextId": "location.faction-town.title",
+      "subtitleTextId": "location.faction-town.subtitle",
+      "shortDescriptionTextId": "location.faction-town.short",
+      "descriptionTextId": "location.faction-town.desc",
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discoveredTextId": "location.faction-town.found",
+        "resolvedTextId": "location.faction-town.done"
+      }
+    },
+    {
+      "id": "content-faction-village",
+      "titleTextId": "location.faction-village.title",
+      "subtitleTextId": "location.faction-village.subtitle",
+      "shortDescriptionTextId": "location.faction-village.short",
+      "descriptionTextId": "location.faction-village.desc",
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discoveredTextId": "location.faction-village.found",
+        "resolvedTextId": "location.faction-village.done"
+      }
+    },
+    {
+      "id": "content-fishing-village",
+      "titleTextId": "location.fishing-village.title",
+      "subtitleTextId": "location.fishing-village.subtitle",
+      "shortDescriptionTextId": "location.fishing-village.short",
+      "descriptionTextId": "location.fishing-village.desc",
+      "imageId": "placeholder-contact",
+      "journalText": {
+        "discoveredTextId": "location.fishing-village.found",
+        "resolvedTextId": "location.fishing-village.done"
+      }
     }
   ]
 }

@@ -13,6 +13,8 @@ var generatorVariantContentTests = new GeneratorVariantContentTests();
 generatorVariantContentTests.RunAll();
 var siteVisualTests = new SiteVisualTests();
 siteVisualTests.RunAll();
+var settlementTests = new SettlementTests();
+settlementTests.RunAll();
 var tests = new HexCoordTests();
 tests.RunAll();
 var mapTests = new HexMapStateTests();
